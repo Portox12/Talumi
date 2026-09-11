@@ -1,0 +1,5 @@
+# Alle Suchmaschinen und KI-Crawler willkommen — Sichtbarkeit ist das Ziel.
+User-agent: *
+Allow: /
+
+Sitemap: https://example.invalid/sitemap.xml
