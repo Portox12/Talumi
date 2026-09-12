@@ -10,6 +10,19 @@
    6) Screens     7) Net (Stub)
    ===================================================================== */
 
+/* Adresse des Spielservers — die EINE Stelle, an der sie steht.
+   Leer bedeutet: aus der Seitenadresse ableiten, wie beim Entwickeln auf dem
+   eigenen Rechner. Steht hier ein Rechnername, gilt er für beides — die
+   Konto-Anfragen (https://…) und die Spielverbindung (wss://…).
+
+   Warum überhaupt nötig: Das Spiel liegt auf GitHub Pages, der Server nicht.
+   Ohne diesen Eintrag suchte der Client den Server unter der Adresse der
+   Spielseite und fand dort nichts — GitHub Pages liefert nur Dateien aus und
+   kann weder Konten führen noch eine Spielverbindung halten.
+
+   Zum Ausprobieren einer anderen Adresse: ?server=wss://… und ?api=https://… */
+const SERVER_HOST = "";
+
 const cvs = document.getElementById("sky");
 const ctx = cvs.getContext("2d");
 let DPR = 1, VW = 0, VH = 0, FIT = 1;
@@ -3441,6 +3454,7 @@ function kontoBasis(){
   try {
     const q = new URLSearchParams(location.search).get("api");
     if (q) return q.replace(/\/+$/, "");
+    if (SERVER_HOST) return "https://" + SERVER_HOST;
     if (location.protocol === "https:") return location.origin;
     return "http://" + (location.hostname || "localhost") + ":8080";
   } catch(_){ return "http://localhost:8080"; }
@@ -3660,6 +3674,7 @@ function serverUrl(){
   try {
     const q = new URLSearchParams(location.search).get("server");
     if (q) return q;
+    if (SERVER_HOST) return "wss://" + SERVER_HOST + "/play";
     if (location.protocol === "https:") return "wss://" + location.host + "/play";
     return "ws://" + (location.hostname || "localhost") + ":8080";
   } catch(_) { return "ws://localhost:8080"; }
