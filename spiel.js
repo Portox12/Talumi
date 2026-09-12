@@ -21,7 +21,7 @@
    kann weder Konten führen noch eine Spielverbindung halten.
 
    Zum Ausprobieren einer anderen Adresse: ?server=wss://… und ?api=https://… */
-const SERVER_HOST = "";
+const SERVER_HOST = "api.talumi.io";
 
 const cvs = document.getElementById("sky");
 const ctx = cvs.getContext("2d");
