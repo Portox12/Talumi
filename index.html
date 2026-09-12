@@ -62,7 +62,7 @@
   .side{display:flex;flex-direction:column;align-items:flex-end;gap:9px;
         max-height:100%;overflow:hidden}
   .side .plate{margin-top:0}
-  body.touch .side{max-height:calc(100% - 104px)}
+  body.touch .side{max-height:calc(100% - var(--pad-room, 104px))}
   .mass{font-family:var(--serif);font-size:36px;line-height:.9;color:var(--brass)}
   .mass small{display:block;font-family:var(--sans);font-size:11px;color:var(--paper-2);margin-top:7px}
   .stage{margin-top:14px;max-width:260px}
@@ -286,6 +286,10 @@
   .tally.sum span:last-child{color:var(--brass)}
   .gain{font-size:13.5px;line-height:1.9;margin:8px 0 4px}
   .gain b{color:var(--brass)}
+  /* Die Abrechnung darf die Knöpfe niemals aus dem Bild schieben: Wer gerade
+     gestorben ist, muss ohne Scrollen zurück ins Menü kommen. Lieber scrollt
+     die Liste in sich, als dass „Menü" unter dem Bildrand verschwindet. */
+  #endGains,#endRecap{max-height:min(46vh,300px);overflow:auto;padding-right:4px}
 
   /* ---- Touch-Steuerung ------------------------------------------------
      Zwei Daumentasten rechts unten. Nur auf Geräten mit grobem Zeiger
@@ -300,7 +304,9 @@
   #pads button:active{background:color-mix(in srgb, var(--brass) 22%, transparent);border-color:var(--brass)}
   #pads button small{display:block;font-family:var(--sans);font-size:9.5px;
         font-weight:400;color:var(--paper-2);margin-top:2px}
-  body.touch #pads{display:flex}
+  /* Nur während einer Runde. Vorher hingen die beiden Daumentasten auch im
+     Menü und auf dem Ergebnisbildschirm herum, wo sie nichts tun. */
+  body.touch.playing #pads{display:flex}
   body.lefty #pads{right:auto;flex-direction:row-reverse;
         left:calc(30px + env(safe-area-inset-left))}
   body.touch #sky{cursor:none}
@@ -317,10 +323,14 @@
   @keyframes tip{0%,45%{transform:rotate(90deg)}60%,100%{transform:rotate(0)}}
   body.portrait #rotate{display:grid}
 
-  /* Kurze Querformat-Bildschirme: alles enger */
+  /* Kurze Querformat-Bildschirme: alles enger.
+     Die Breite wird dabei NICHT beschnitten. Eine frühere Fassung deckelte
+     hier auf 520 px — auf einem Handy im Querformat (812 px) blieb damit ein
+     Drittel der Fläche leer, während der Inhalt über zwei Bildschirmhöhen
+     scrollte. Flache Schirme brauchen mehr Breite, nicht weniger. */
   @media (max-height:520px){
     .veil{padding:14px;align-items:start}
-    .card{max-width:520px}
+    .card{max-width:min(940px, 100%)}
     h1{font-size:clamp(30px,7vh,44px)}
     .sub{font-size:14px;margin:8px 0 12px}
     button{padding:10px;font-size:14px;margin-top:8px}
@@ -340,6 +350,35 @@
     .clock{font-size:18px}
     .purse{padding-bottom:7px;margin-bottom:10px}
     .purse .lv,.purse .ore{font-size:15px}
+
+    /* Auf einem Handy im Querformat stehen nur rund 350 px Höhe je Spalte zur
+       Verfügung. Die Modusauswahl allein brauchte untereinander 350 — man
+       scrollte durch zweieinhalb Bildschirme, bevor der Startknopf kam.
+       Zu zweit nebeneinander passt sie in ein Drittel davon. */
+    .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .modes button{padding:7px 9px}
+    .modes b{font-size:13.5px}
+    /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen
+       nebeneinander brechen in der schmalen Spalte auf je fünf Zeilen um und
+       kosten mehr Höhe als die ganze übrige Spalte. Man liest ohnehin nur die
+       des Modus, für den man sich gerade entscheidet. */
+    .modes span{font-size:10.5px;line-height:1.3;display:none}
+    .modes button[aria-pressed=true] span{display:block}
+    /* Erklärtexte, die man einmal liest und danach nie wieder braucht.
+       Der Platz gehört hier dem, was man tatsächlich bedient. */
+    #nameNote,#boostNote,#controls{display:none}
+    #startVeil h1{font-size:28px!important;margin:4px 0 2px!important}
+    /* Die Abstände stehen als Inline-Angabe im HTML und brauchen darum
+       ausdrücklichen Vorrang. */
+    .card .col > label{margin-top:8px!important}
+    label{margin-bottom:3px}
+    .purse{margin-bottom:6px;padding-bottom:5px}
+    .purse .lv small,.purse .ore small{font-size:10px}
+    .recbox{margin-top:9px}
+    .strip button{width:42px}
+    .strip canvas{width:42px;height:42px}
+    .strip .nm{font-size:8px;padding:1px 2px 2px}
+    .strip .more{width:52px;min-height:52px;font-size:9px}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -509,8 +548,6 @@
     <div class="xpbar"><i id="xpBar"></i></div>
 
     <h1 style="font-size:52px;margin-top:20px">Talumi</h1>
-    <label data-i18n="mode">Mode</label>
-    <div class="modes" id="modes"></div>
 
     <label for="name" style="margin-top:16px" data-i18n="designation">Name</label>
     <input type="text" id="name" maxlength="14" placeholder="Unnamed body" data-i18n-ph="unnamed"
@@ -526,6 +563,9 @@
     <div class="pow" id="powText" data-i18n="powrun">Running the entry check …</div>
     </div>
     <div class="col">
+    <label data-i18n="mode">Mode</label>
+    <div class="modes" id="modes"></div>
+
     <div class="plate recbox" id="recBox"></div>
 
     <div class="two">
@@ -617,15 +657,20 @@
 
 <!-- Ende -->
 <div class="veil" id="endVeil" hidden>
-  <div class="card">
-    <h1 style="font-size:46px" data-i18n="scattered">Scattered</h1>
-    <p class="sub" id="endText"></p>
-    <div id="endGains"></div>
-    <button id="again" data-i18n="again">Play again</button>
-    <p class="hintline" style="text-align:center" data-i18n="enterstarts">Enter or space starts the next run</p>
-    <div class="two">
-      <button class="quiet" id="endShop" data-i18n="skins">Skins</button>
-      <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
+  <div class="card wide">
+    <div class="col">
+      <h1 data-i18n="scattered">Scattered</h1>
+      <p class="sub" id="endText"></p>
+      <div id="endRecap"></div>
+    </div>
+    <div class="col">
+      <div id="endGains"></div>
+      <button id="again" data-i18n="again">Play again</button>
+      <p class="hintline" style="text-align:center" data-i18n="enterstarts">Enter or space starts the next run</p>
+      <div class="two">
+        <button class="quiet" id="endShop" data-i18n="skins">Skins</button>
+        <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
+      </div>
     </div>
   </div>
 </div>

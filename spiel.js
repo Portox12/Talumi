@@ -22,12 +22,24 @@ const REF_VIEW = Math.sqrt(1440 * 810);
 const isTouch = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
 if (isTouch) document.body.classList.add("touch");
 
+/* Einstellungen. Sitzungsweit, aber bewusst als eigenes Objekt gebaut —
+   sobald es Konten gibt, wandert genau dieses Objekt auf den Server.
+   Steht hier oben, weil resize() gleich darunter schon lowPower liest. */
+const Settings = {
+  volume:0.7, shake:true, sens:62, lefty:false,
+  teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
+  theme:"earth"
+};
+
 function resize(){
-  /* Füllrate ist die Hauptursache für warme Handys: Bei Faktor 1,75 sind das
-     auf einem 844×390-Schirm rund 60 Millionen Bildpunkte pro Sekunde. Auf
-     1,25 gesenkt halbiert sich das fast. Sichtbar ist der Unterschied bei
-     einem dunklen Spiel mit weichen Kanten kaum, spürbar dagegen deutlich. */
-  const cap = Math.min(innerWidth, innerHeight) < 500 ? 1.25 : 2;
+  /* Schärfe gegen Füllrate. Handys haben meist die dreifache Pixeldichte;
+     jeder Punkt davon kostet Rechenzeit und Wärme. Vorher wurde auf kleinen
+     Schirmen hart auf 1,25 gedeckelt — sparsam, aber Schrift und Ränder
+     wirkten dort weich und ausgefranst.
+     Jetzt ist scharf der Normalfall (bis zur doppelten Dichte, darüber sieht
+     man nichts mehr), und wer Akku oder Wärme sparen will, schaltet in den
+     Einstellungen den Sparmodus ein. */
+  const cap = Settings.lowPower ? 1.25 : 2;
   DPR = Math.min(devicePixelRatio || 1, cap);
   VW = innerWidth; VH = innerHeight;
   cvs.width = Math.round(VW*DPR); cvs.height = Math.round(VH*DPR);
@@ -49,8 +61,6 @@ const rnd = (a,b) => a + Math.random()*(b-a);
 const avg = a => a.reduce((s,x)=>s+x,0)/(a.length||1);
 const sd  = a => { const m = avg(a); return Math.sqrt(avg(a.map(x=>(x-m)*(x-m)))); };
 const $ = id => document.getElementById(id);
-/* Einstellungen. Sitzungsweit, aber bewusst als eigenes Objekt gebaut —
-   sobald es Konten gibt, wandert genau dieses Objekt auf den Server. */
 /* =====================================================================
    6c) PORTAL — Anbindung an Poki, CrazyGames und Co.
    Beide Portale erwarten dieselben vier Signale: Ladebeginn, Ladeende,
@@ -66,9 +76,9 @@ const $ = id => document.getElementById(id);
    CDNs bleibt für die eigene Adresse unberührt.
 
    Werberegel als Code, nicht als Vorsatz: MIN_BREAK ist der Mindestabstand
-   zwischen zwei Unterbrechungen. Die Recherche zu Agar.io nennt Werbung nach
-   jedem Tod als lautesten Beschwerdegrund — das darf hier technisch nicht
-   passieren können. */
+   zwischen zwei Unterbrechungen. Werbung nach jedem Tod ist im Genre der
+   häufigste Beschwerdegrund — das darf hier technisch nicht passieren
+   können. */
 const Portal = {
   ready:false, lastBreak:0, deaths:0, sinceAd:0,
   started: performance.now()/1000,
@@ -182,7 +192,7 @@ const THEMES = {
     us:"#a9e7cf", them:"#ff9a72", good:"#8fc98f",
     dust:{h:[196,232], s:[18,40], l:[58,78]}, shatter:"#8fe3ff",
     star:"#e8d9bd", border:"#2b1f15", label:"rgba(14,10,7,.78)",
-    pulsar:"rgba(44,30,18,.96)", pulsarEdge:"rgba(216,167,95,.7)",
+    pulsar:"rgb(44,30,18)", pulsarEdge:"rgba(216,167,95,.7)",
     pulsarCore:"rgba(216,167,95,.2)", zone:"rgba(120,44,18,.34)",
     zoneEdge:"224,122,60", rival:{rock:"#8a7659", dark:"#4a3c2a", hot:"#e07a3c", air:"#d8c4a0"}
   },
@@ -192,7 +202,7 @@ const THEMES = {
     us:"#1f6b4f", them:"#a8391a", good:"#2f6b33",
     dust:{h:[24,44], s:[24,46], l:[30,46]}, shatter:"#1f6b7a",
     star:"#a68e68", border:"#c9b590", label:"rgba(250,244,232,.85)",
-    pulsar:"rgba(120,96,64,.92)", pulsarEdge:"rgba(70,48,24,.8)",
+    pulsar:"rgb(120,96,64)", pulsarEdge:"rgba(70,48,24,.8)",
     pulsarCore:"rgba(70,48,24,.22)", zone:"rgba(176,74,36,.30)",
     zoneEdge:"152,58,24", rival:{rock:"#9c8a6c", dark:"#6b5b40", hot:"#b8501f", air:"#7a6440"}
   }
@@ -217,13 +227,6 @@ function applyTheme(){
   const meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", th.ink);
 }
-
-const Settings = {
-  volume:0.22, shake:true, sens:62, lefty:false,
-  teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
-  theme:"earth"
-};
-
 
 /* =====================================================================
    1) INTEGRITY — Botschutz (Client-Heuristik, Entscheidung gehört auf den Server)
@@ -552,9 +555,29 @@ let skin = SKINS[0];
    starten, deshalb wird er am Startknopf geweckt.
    ===================================================================== */
 const Sound = {
-  ctx:null, bus:null, on:true, noise:null, last:0,
+  ctx:null, bus:null, on:true, noise:null, last:0, keep:null,
+
+  /* iPhones behandeln Web Audio wie einen Klingelton: Liegt der kleine
+     Schalter an der Seite auf „lautlos", bleibt das Spiel stumm, obwohl
+     technisch alles läuft — die häufigste Ursache für „der Ton geht nicht".
+     Läuft dagegen ein gewöhnliches Audioelement, stuft iOS die Tonausgabe der
+     Seite als Wiedergabe ein und lässt sie auch dann hören. Dafür genügt eine
+     stille Tonspur in Dauerschleife; sie steckt als Datenadresse im Code, also
+     ohne zusätzliche Datei und ohne fremde Quelle. */
+  wachhalten(){
+    if (this.keep) return;
+    try {
+      const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEA" +
+        "RKwAAIhYAQACABAAZGF0YQAAAAA=");
+      a.loop = true; a.volume = 0.0001;
+      const p = a.play();
+      if (p && p.catch) p.catch(() => {});
+      this.keep = a;
+    } catch(_){}
+  },
 
   unlock(){
+    this.wachhalten();
     if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -811,7 +834,14 @@ function safeSpawn(mass, x0, x1, inside){
    überdeckt, wird zerrissen. Mit abgeworfener Masse lassen sie sich füttern,
    bis sie einen neuen Pulsar in Wurfrichtung ausstoßen — damit wird das
    Hindernis zur Waffe gegen größere Gegner. */
-const PULSAR_R = 52, PULSAR_BITE = 240, PULSAR_MAX = 22, PULSAR_FEED = 5;
+const PULSAR_R = 52, PULSAR_BITE = 240, PULSAR_FEED = 5;
+
+/* Obergrenze für ausgestoßene Pulsare. Vorher stand hier fest 22 — der offene
+   Raum startet aber mit 42. Die Bedingung „weniger als 22 Pulsare im Feld" war
+   dort nie erfüllt, und damit war das Füttern im meistgespielten Modus ohne
+   jede Wirkung: Man warf Masse hinein und es passierte nichts. Jetzt richtet
+   sich die Grenze nach dem Modus und lässt in jedem genug Luft. */
+const pulsarMax = () => MODE().pulsars + 14;
 
 /* Pulsare verschlingen. Wer sich fast maximal geteilt hat, ist am
    verwundbarsten überhaupt — acht bis sechzehn kleine Stücke, jedes einzeln
@@ -959,6 +989,7 @@ function start(name){
   Game.cells = [newCell(spot.x, spot.y, startMass)];
   Game.safe = SAFE_TIME;
   Game.running = true; Game.t = 0; Game.kills = 0; peak = 0;
+  document.body.classList.add("playing");
   // Die Anzeige gehört zur laufenden Runde. Die Menüs sind absichtlich leicht
   // durchscheinend, damit das Sternenfeld dahinter zu sehen ist — eine
   // Masseanzeige von 0 und leere Aufgaben sollen dabei nicht mitscheinen.
@@ -1194,19 +1225,22 @@ function ring(x, y, max, colour){
 function shatter(cell){
   Sound.shatter(); ring(cell.x, cell.y, radiusOf(cell.m)*2.4, TH().shatter);
   Game.shake = Math.min(1, Game.shake + .6);
-  /* Wie im Vorbild: Ein großer Restkörper bleibt, drumherum fliegen mehrere
-     kleine weg. Sechzehn gleich große Krümel wären zu viel — dann ist man
-     sofort erledigt statt angeschlagen.
-     Der Mutterkörper behält 45 %, der Rest verteilt sich auf höchstens acht
-     Stücke, deren Zahl an der Masse hängt: Kleine zerfallen in wenige große,
-     Große in viele kleine. 15 % gehen beim Aufprall verloren. */
+  /* Der Pulsar soll zerlegen, nicht nur wehtun. Vorher behielt der
+     Mutterkörper 45 % und es flogen höchstens acht Stücke weg — man blieb
+     danach der größte Brocken im Bild und spielte fast unbeirrt weiter.
+     Gemeint ist das Gegenteil: Wer hineinfliegt, zerfällt in viele kleine
+     Teile und wird für kurze Zeit zur leichten Beute auch für Kleinere. Genau
+     das macht den Pulsar zur Waffe des Unterlegenen.
+     Jetzt behält der Mutterkörper nur ein knappes Viertel, der Rest verteilt
+     sich auf bis zu zwölf Stücke. Der Aufprallverlust sinkt dafür von 15 auf
+     10 % — die Strafe liegt in der Zerlegung, nicht im Schwund. */
   const room = MAX_CELLS - Game.cells.length;
   if (room <= 0){ cell.m *= .82; return; }
-  const gesamt = cell.m * .85;
-  const mutter = gesamt * .45;
+  const gesamt = cell.m * .90;
+  const mutter = gesamt * .22;
   const rest   = gesamt - mutter;
-  const minStk = Math.max(35, gesamt*.06);
-  const parts  = clamp(Math.floor(rest/minStk), 2, Math.min(room, 8));
+  const minStk = Math.max(24, gesamt*.045);
+  const parts  = clamp(Math.floor(rest/minStk), 2, Math.min(room, 12));
   const each   = rest / parts;
 
   cell.m = mutter; cell.merge = mergeDelay(mutter);
@@ -1541,9 +1575,34 @@ function step(dt){
       r.goal = rivalGoal(r);
     }
     if (r.goal){
-      const ax = r.goal.x-r.x, ay = r.goal.y-r.y, l = Math.hypot(ax,ay)||1, v = speedOf(r.m);
-      r.x += (ax/l*v + Math.sin(Game.t*3 + r.mood*9)*28 + r.vx)*dt;
-      r.y += (ay/l*v + Math.cos(Game.t*2.4 + r.mood*7)*28 + r.vy)*dt;
+      let dx = r.goal.x-r.x, dy = r.goal.y-r.y;
+      const l = Math.hypot(dx,dy)||1, v = speedOf(r.m);
+      dx /= l; dy /= l;
+      /* Ausweichen in JEDEM Bild, nicht nur beim Zielwechsel. Das Ziel wird
+         höchstens alle 1,3 Sekunden neu gewählt — in der Zeit legt ein großer
+         Körper mehrere hundert Einheiten zurück. Pulsare driften außerdem, und
+         das Schlingern unten schiebt zusätzlich seitlich. Deshalb fuhren
+         Rivalen weiter in Pulsare hinein, obwohl die Zielwahl sie mied:
+         besonders auf der Flucht, wo Pulsare bisher gar nicht geprüft wurden,
+         und genau dann, wenn jemand sich darin versteckt hatte.
+         Die Abstoßung wächst zum Rand hin und überstimmt das Ziel erst dicht
+         davor — sonst würden Rivalen einen Bogen um das halbe Feld machen. */
+      if (r.m > PULSAR_BITE*.8){
+        const nah = radiusOf(r.m) + PULSAR_R + 60;
+        let wx = 0, wy = 0;
+        for (const p of Game.pulsars){
+          const px = r.x-p.x, py = r.y-p.y, d = Math.hypot(px,py);
+          if (d > nah || d < 1) continue;
+          const kraft = 1 - d/nah;
+          wx += px/d * kraft; wy += py/d * kraft;
+        }
+        if (wx || wy){
+          dx += wx*2.6; dy += wy*2.6;
+          const n = Math.hypot(dx,dy)||1; dx /= n; dy /= n;
+        }
+      }
+      r.x += (dx*v + Math.sin(Game.t*3 + r.mood*9)*28 + r.vx)*dt;
+      r.y += (dy*v + Math.cos(Game.t*2.4 + r.mood*7)*28 + r.vy)*dt;
       r.vx *= decay; r.vy *= decay;
     }
     r.m *= Math.pow(1-decayOf(r.m)*1.2, dt);
@@ -1583,7 +1642,8 @@ function step(dt){
     const p = Game.pulsars[pi];
     p.spin += dt*.35;
     p.x += p.vx*dt; p.y += p.vy*dt;
-    p.vx *= Math.exp(-1.6*dt); p.vy *= Math.exp(-1.6*dt);
+    if (p.schuss > 0){ p.schuss -= dt; p.vx *= Math.exp(-.5*dt); p.vy *= Math.exp(-.5*dt); }
+    else { p.vx *= Math.exp(-1.6*dt); p.vy *= Math.exp(-1.6*dt); }
     p.x = clamp(p.x, PULSAR_R, WORLD-PULSAR_R);
     p.y = clamp(p.y, PULSAR_R, WORLD-PULSAR_R);
     for (let i=Game.shed.length-1;i>=0;i--){
@@ -1592,10 +1652,15 @@ function step(dt){
       const l = Math.hypot(s.vx, s.vy) || 1;
       p.fed++;
       Game.shed.splice(i,1);
-      if (p.fed >= PULSAR_FEED && Game.pulsars.length < PULSAR_MAX){
+      if (p.fed >= PULSAR_FEED && Game.pulsars.length < pulsarMax()){
         p.fed = 0;
         const q = newPulsar(p.x + s.vx/l*PULSAR_R*1.2, p.y + s.vy/l*PULSAR_R*1.2);
-        q.vx = s.vx/l*520; q.vy = s.vy/l*520;
+        /* Der ausgestoßene Pulsar ist die Waffe. Mit 520 und der normalen
+           Bremsung kam er keine sieben Radien weit — zu wenig, um damit auf
+           jemanden zu zielen. Jetzt fliegt er weit genug, um einen Gegner zu
+           treffen, den man vor sich hat. `schuss` schaltet die schwächere
+           Bremsung frei; danach driftet er wie jeder andere. */
+        q.vx = s.vx/l*1150; q.vy = s.vy/l*1150; q.schuss = 1.6;
         Game.pulsars.push(q);
         Game.pulsarSpawns++;
         Sound.pop();
@@ -1769,6 +1834,7 @@ function endeOnline(d){
 
 function finish(timeUp){
   Game.running = false;
+  document.body.classList.remove("playing");
   $("hud").hidden = true;
   Portal.gameplayStop();
   if (!timeUp) Portal.countDeath();
@@ -1864,10 +1930,11 @@ function finish(timeUp){
       Game.kills === 1 ? t("r_body") : t("r_bodies", Game.kills),
       Math.floor(Game.t));
 
+  $("endRecap").innerHTML = recap;
   if (!paid){
-    $("endGains").innerHTML = recap +
-      `<p class="hintline">${t("practice")}</p>`;
+    $("endGains").innerHTML = `<p class="hintline">${t("practice")}</p>`;
     hideAll(); $("endVeil").hidden = false;
+    $("again").focus();
     return;
   }
   const rows = [
@@ -1880,7 +1947,7 @@ function finish(timeUp){
   for (const it of Game.goals)
     if (it.done) rows.push([t("objective") + ": " + t("g_"+it.def.id), it.def.ore]);
 
-  let html = recap;
+  let html = "";
   html += rows.filter(r => r[1] > 0)
     .map(r => `<div class="tally"><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("");
   html += `<div class="tally sum"><span>${t("oreearned")}</span><span>+${oreGain}</span></div>`;
@@ -2425,6 +2492,41 @@ function paintStage(m){
   } else sl.hidden = true;
 }
 const esc = s => String(s).replace(/[<>&"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
+/* Wie viele Ranglistenzeilen passen wirklich? Vorher war das eine Schätzung
+   aus festen Pixelwerten je Tafel. Sie stimmte nicht: Aufgabentexte brechen in
+   langen Sprachen um, und die rechte Spalte ist zusätzlich gedeckelt, damit sie
+   die Daumentasten frei lässt. Auf einem Handy im Querformat lag die Rangliste
+   dadurch gut hundert Pixel unterhalb der Kante und wurde abgeschnitten.
+   Jetzt wird der Platz gemessen statt geraten — zweimal pro Sekunde, weil
+   Geometrie abzufragen den Bildaufbau anhält und sich hier selten etwas ändert. */
+/* Höhe, die die Daumentasten unten rechts beanspruchen. Steht auch im CSS
+   (`--pad-room`), von dort gesetzt aus dieser Konstante. */
+const PAD_ROOM = 104;
+document.documentElement.style.setProperty("--pad-room", PAD_ROOM + "px");
+
+let boardMax = 6, boardNext = 0;
+function boardRoom(){
+  const now = performance.now();
+  if (now < boardNext) return boardMax;
+  boardNext = now + 500;
+  const plate = $("board") && $("board").parentElement;
+  const side = plate && plate.parentElement;
+  if (!plate || !side) return boardMax;
+  /* Gemessen wird von der Oberkante der Ranglistentafel bis zur Unterkante
+     dessen, was die Spalte einnehmen darf. Die aktuelle Höhe der Spalte taugt
+     dafür nicht: Sie hängt an der Zeilenzahl, die hier gerade bestimmt werden
+     soll — die Rangliste könnte dann nie wieder wachsen.
+     Die Grenze ist der Innenbereich der Anzeige, auf Touchgeräten abzüglich
+     des Streifens für die Daumentasten (PAD_ROOM, dieselbe Zahl wie im CSS). */
+  const hud = side.parentElement;
+  const unten = hud.getBoundingClientRect().bottom
+    - (parseFloat(getComputedStyle(hud).paddingBottom) || 0)
+    - (isTouch ? PAD_ROOM : 0);
+  const frei = unten - plate.getBoundingClientRect().top - 42;  // 42: Überschrift, Rahmen
+  boardMax = clamp(Math.floor(frei / 19), 3, 10);
+  return boardMax;
+}
+
 function paintBoard(gm){
   let list;
   if (Game.online){
@@ -2449,13 +2551,7 @@ function paintBoard(gm){
   }
   list.sort((a,b) => b.m-a.m);
 
-  /* Zeilenzahl an die Bildhöhe anpassen. Die rechte Spalte ist nach oben
-     begrenzt, damit sie die Daumentasten frei lässt — bei sechs festen Zeilen
-     wurde die Rangliste auf flachen Querformaten unten abgeschnitten. */
-  const platz = VH - 104 - (Game.goals.length ? 92 : 0)
-                        - ((Game.royale || Game.teams) ? 96 : 0)
-                        - (Integrity.score < 100 ? 74 : 0);
-  const max = clamp(Math.floor((platz - 34) / 19), 3, 8);
+  const max = boardRoom();
 
   /* Der eigene Eintrag steht immer im Bild, auch wenn er weit hinten liegt —
      sonst sieht man ausgerechnet die eigene Platzierung nicht. */
@@ -2536,8 +2632,11 @@ const ORE_PACKS = [
 
 
 const SET_UI = [
+  /* Die Stufen lagen bei 0,12 bis 0,4. Zusammen mit den ohnehin leisen
+     Einzeltönen (0,08 bis 0,34) kam am Lautsprecher eines Handys ein Bruchteil
+     der Vollaussteuerung an — das Spiel galt schlicht als tonlos. */
   {key:"volume", label:"s_sound", hint:"s_sound_h",
-   opts:[["o_off",0],["o_quiet",0.12],["o_normal",0.22],["o_loud",0.4]]},
+   opts:[["o_off",0],["o_quiet",0.35],["o_normal",0.7],["o_loud",1]]},
   {key:"shake", label:"s_shake", hint:"s_shake_h",
    opts:[["o_on",true],["o_off",false]]},
   {key:"sens", label:"s_stick", hint:"s_stick_h",
@@ -2578,7 +2677,7 @@ function applySetting(key){
     Profile.hintRuns = 0;          // wieder zwei Runden lang zeigen
   }
   if (key === "theme") applyTheme();
-  if (key === "lowPower") seedStars();
+  if (key === "lowPower"){ seedStars(); resize(); }   // resize: Sparmodus regelt die Bildschärfe
 }
 
 function buildSettings(){
