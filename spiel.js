@@ -1931,6 +1931,46 @@ function finish(timeUp){
       Math.floor(Game.t));
 
   $("endRecap").innerHTML = recap;
+
+  /* Onlinerunde eines angemeldeten Spielers: Die Abrechnung kommt fertig vom
+     Server (`Net.lohn`) und wird hier nur angezeigt. Selbst nachzurechnen
+     wäre nicht nur doppelte Arbeit — es würde auch eine zweite Wahrheit
+     schaffen, die von der ersten abweichen kann. */
+  if (Net.lohn && Net.profil){
+    const L = Net.lohn, T = L.teile;
+    const zeilen = [
+      [t("peakmass") + " " + Math.round(peak), T.masse],
+      [t("swallowed") + " " + Game.kills, T.koerper],
+      [t("reached") + " " + t("st" + L.stufe), T.stufen]
+    ];
+    if (T.rekord) zeilen.push([t("newbest"), T.rekord]);
+    if (T.sieg)   zeilen.push([t("wonround"), T.sieg]);
+
+    let html = zeilen.filter(z => z[1] > 0)
+      .map(z => `<div class="tally"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
+    html += `<div class="tally sum"><span>${t("oreearned")}</span><span>+${L.ore}</span></div>`;
+    html += `<p class="gain">+<b>${L.xp}</b> XP</p>`;
+    if (Net.aufgestiegen){
+      /* Der Server schickt Kennungen, keine Namen — Namen und Farben stehen
+         nur hier. Ohne diese Zuordnung stünde „Freigeschaltet:" mit nichts
+         dahinter. */
+      const namen = (Net.neueSkins || [])
+        .map(id => (SKINS.find(s => s.id === id) || {}).label)
+        .filter(Boolean);
+      html += namen.length
+        ? `<p class="gain">${t("levelup", Net.aufgestiegen)} <b>${esc(namen.join(", "))}</b></p>`
+        : `<p class="gain">${t("levelonly", Net.aufgestiegen)}</p>`;
+    }
+    $("endGains").innerHTML = html;
+
+    Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
+    Net.lohn = null; Net.profil = null;
+    paintPurse(); buildGrid();
+    hideAll(); $("endVeil").hidden = false;
+    $("again").focus();
+    return;
+  }
+
   if (!paid){
     $("endGains").innerHTML = `<p class="hintline">${t("practice")}</p>`;
     hideAll(); $("endVeil").hidden = false;
@@ -2712,6 +2752,31 @@ function buildSettings(){
     wrap.appendChild(text); wrap.appendChild(seg);
     box.appendChild(wrap);
   }
+
+  /* Konto ganz unten: Wer angemeldet ist, sieht hier, als wer — und kommt
+     wieder heraus. Ohne Konto steht hier nichts; ein Abmeldeknopf für
+     niemanden wäre nur Verwirrung. */
+  if (!Konto.angemeldet()) return;
+  const wrap = document.createElement("div");
+  wrap.className = "opt";
+  const text = document.createElement("div");
+  text.innerHTML = `<b>${esc(Konto.profil.name)}</b>` +
+    `<small>${esc(Konto.profil.email || Konto.profil.anbieter || "")}</small>`;
+  const knopf = document.createElement("button");
+  knopf.type = "button";
+  knopf.className = "quiet";
+  knopf.style.cssText = "margin:0;width:auto;padding:6px 12px";
+  knopf.textContent = t("k_signout");
+  knopf.addEventListener("click", async () => {
+    knopf.disabled = true;
+    await Konto.abmelden();
+    /* Zurück auf Anfang: Ein abgemeldetes Fenster darf den Fortschritt des
+       Kontos nicht weiter anzeigen — sonst spielt man weiter und wundert
+       sich, dass nichts davon ankommt. */
+    location.reload();
+  });
+  wrap.appendChild(text); wrap.appendChild(knopf);
+  box.appendChild(wrap);
 }
 function hideAll(){ VEILS.forEach(v => $(v).hidden = true); }
 function show(id){
@@ -2810,6 +2875,50 @@ function addFriend(){
   $("friendName").value = "";
   buildFriends();
   friendNote(t("fr_added", name), "good");
+}
+
+/* Anmeldebonus im Startbildschirm. Nur für angemeldete Spieler — ohne Konto
+   gäbe es nichts, woran sich die Reihe festmachen ließe, und ein Bonus, den
+   man durch Leeren des Browsers beliebig oft bekommt, ist keiner.
+
+   Die Staffel steht auf dem Server; hier wird nur angezeigt, was er meldet.
+   Abgeholt wird auf Knopfdruck, nicht von allein: Eine Belohnung, die man
+   nicht bemerkt hat, holt niemanden zurück. */
+const BONUS_ANZEIGE = [50, 75, 100, 150, 200, 300, 500];
+
+function paintBonus(){
+  const box = $("bonusBox");
+  if (!box) return;
+  if (!Konto.angemeldet() || !Konto.bonus){ box.hidden = true; return; }
+  box.hidden = false;
+
+  const serie = Konto.bonus.serie || 0;
+  const naechster = Konto.bonus.offen ? Math.min(7, serie + 1) : serie;
+  const perlen = BONUS_ANZEIGE.map((ore, i) => {
+    const nr = i + 1;
+    const zustand = nr <= serie && !Konto.bonus.offen ? "done"
+                  : nr < naechster ? "done"
+                  : nr === naechster ? "next" : "";
+    return `<i class="bead ${zustand}" title="${ore} Ore">${nr}</i>`;
+  }).join("");
+
+  let unten;
+  if (Konto.bonus.offen){
+    unten = `<button class="quiet" id="bonusGo">` +
+            `${esc(t("b_get", naechster, BONUS_ANZEIGE[naechster-1]))}</button>`;
+  } else {
+    unten = `<p class="recline"><span>${esc(t("b_next"))}</span></p>`;
+  }
+  box.innerHTML = `<h2>${esc(t("b_title"))}</h2><div class="beads">${perlen}</div>${unten}`;
+
+  const knopf = $("bonusGo");
+  if (knopf) knopf.addEventListener("click", async () => {
+    knopf.disabled = true;
+    const e = await Konto.bonusHolen();
+    if (e.ok){ toast(t("b_got", e.tag, e.ore)); paintPurse(); }
+    else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
+    paintBonus();
+  });
 }
 
 function buildRecords(){
@@ -2948,8 +3057,92 @@ function pick(s){
 })();
 
 $("guestBtn").addEventListener("click", () => { paintPurse(); buildGrid(); show("startVeil"); });
-$("googleBtn").addEventListener("click", () => {});
-$("facebookBtn").addEventListener("click", () => {});
+
+/* ---- Anmeldung ----------------------------------------------------
+   Ein Formular für beides. `anlegen` schaltet zwischen Anmelden und
+   Registrieren um; der Unterschied ist ein zusätzliches Namensfeld und ein
+   anderer Endpunkt. Zwei getrennte Formulare wären doppelte Pflege für
+   denselben Vorgang.
+   ------------------------------------------------------------------- */
+
+let anlegen = false;
+
+/* Die Fehlermeldungen des Servers sind Schlüssel, keine Sätze — sonst käme
+   der Text in einer Sprache zurück, die der Spieler nicht gewählt hat. */
+const KONTO_FEHLER = {
+  email_ungueltig: "e_email",
+  passwort_kurz:   "e_pwshort",
+  email_vergeben:  "e_taken",
+  zugangsdaten:    "e_login",
+  zu_viele_versuche: "e_many",
+  name_ungueltig:  "e_name",
+  gesperrt:        "e_blocked",
+  netz:            "e_net"
+};
+
+function kontoMeldung(text, art){
+  const n = $("acctNote");
+  n.textContent = text || "";
+  n.className = "notice" + (art ? " " + art : "");
+}
+
+function kontoFormZeichnen(){
+  $("acctNameRow").hidden = !anlegen;
+  $("acctPwHint").hidden = !anlegen;
+  $("acctGo").textContent = t(anlegen ? "k_signup" : "k_signin");
+  $("acctSwap").textContent = t(anlegen ? "k_have" : "k_new");
+  $("acctPw").autocomplete = anlegen ? "new-password" : "current-password";
+  kontoMeldung("");
+}
+
+$("acctSwap").addEventListener("click", () => { anlegen = !anlegen; kontoFormZeichnen(); });
+
+$("acctForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (Konto.laeuft) return;
+  const email = $("acctMail").value.trim();
+  const pw    = $("acctPw").value;
+  const name  = $("acctName").value.trim();
+
+  /* Was sich hier prüfen lässt, wird hier geprüft — das spart dem Spieler
+     die Wartezeit auf eine Antwort, die ohnehin absehbar ist. Verbindlich
+     prüft trotzdem der Server; diese Prüfung ist Bequemlichkeit, kein Schutz. */
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email))
+    return kontoMeldung(t("e_email"), "warn");
+  if (anlegen && pw.length < 8) return kontoMeldung(t("e_pwshort"), "warn");
+  if (anlegen && !name)         return kontoMeldung(t("e_name"), "warn");
+
+  Konto.laeuft = true;
+  $("acctGo").disabled = true;
+  kontoMeldung(t("k_wait"));
+  const e2 = anlegen ? await Konto.registrieren(email, pw, name)
+                     : await Konto.anmelden(email, pw);
+  Konto.laeuft = false;
+  $("acctGo").disabled = false;
+
+  if (e2.fehler) return kontoMeldung(t(KONTO_FEHLER[e2.fehler] || "e_net"), "warn");
+
+  $("acctPw").value = "";
+  nachAnmeldung();
+});
+
+/* Nach erfolgreicher Anmeldung: Anzeige auffrischen und ins Menü. Der
+   Anmeldebonus wird nicht von allein abgeholt — er soll ein sichtbarer
+   Knopf sein, keine Zahl, die unbemerkt hochspringt. */
+function nachAnmeldung(){
+  if (Konto.profil && Konto.profil.name) $("name").value = Konto.profil.name;
+  paintPurse(); buildGrid(); buildRecords(); paintBonus();
+  show("startVeil");
+  toast(t("k_hello", Konto.profil ? Konto.profil.name : ""));
+}
+
+/* Google und Facebook folgen, sobald die Anwendungen dort eingetragen sind.
+   Bis dahin bleiben die Knöpfe abgeschaltet und sagen auch, warum — ein
+   Knopf, der nichts tut, ist schlimmer als keiner. */
+for (const id of ["googleBtn", "facebookBtn"]){
+  $(id).disabled = true;
+  $(id).addEventListener("click", () => kontoMeldung(t("k_soon")));
+}
 $("shopBtn").addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
 $("endShop").addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
 $("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); });
@@ -3065,6 +3258,7 @@ lang = pickLang();
 applyTheme();
 applyLang();
 paintIntegrity(); paintPurse();
+kontoFormZeichnen();
 
 /* =====================================================================
    6b) APP-BETRIEB
@@ -3141,6 +3335,181 @@ function showUpdateHint(){
    verdrahtet ist. Zum Testen überschreibbar mit ?server=ws://…
    ===================================================================== */
 
+/* =====================================================================
+   6d) KONTO — Anmeldung und dauerhafter Fortschritt
+
+   Der Server führt die Wahrheit; hier steht nur, was gerade angezeigt wird.
+   Level, Ore und Bestwerte kommen ausschließlich aus seinen Antworten — was
+   dieses Modul hineinschreibt, ist eine Anzeige, keine Buchung.
+
+   Das Sitzungstoken liegt im lokalen Speicher des Browsers, nicht in einem
+   Cookie. Es wird dadurch nicht automatisch an den Server geschickt, sondern
+   nur dann, wenn dieser Code es ausdrücklich mitgibt — das schließt eine
+   ganze Angriffsklasse aus (Cross-Site-Request-Forgery). Und es ist kein
+   Cookie: Die Einwilligungspflicht knüpft ans Speichern auf dem Gerät an,
+   und was für die Anmeldung erforderlich ist, fällt unter die Ausnahme.
+
+   Ohne erreichbaren Server bleibt alles wie bisher: Man spielt ohne Konto,
+   der Fortschritt gilt für diese Sitzung. Das Spiel darf nie daran hängen,
+   dass die Anmeldung erreichbar ist.
+   ===================================================================== */
+
+const KONTO_SCHLUESSEL = "talumi.sitzung";
+
+function kontoBasis(){
+  try {
+    const q = new URLSearchParams(location.search).get("api");
+    if (q) return q.replace(/\/+$/, "");
+    if (location.protocol === "https:") return location.origin;
+    return "http://" + (location.hostname || "localhost") + ":8080";
+  } catch(_){ return "http://localhost:8080"; }
+}
+
+const Konto = {
+  token:null, profil:null, stand:null, bonus:null,
+  /* null = noch nicht versucht, true/false = Ergebnis des letzten Versuchs */
+  erreichbar:null,
+  laeuft:false,
+
+  merken(token){
+    this.token = token || null;
+    // Kann in privaten Fenstern und bei gesperrten Seitendaten werfen.
+    try {
+      if (token) localStorage.setItem(KONTO_SCHLUESSEL, token);
+      else localStorage.removeItem(KONTO_SCHLUESSEL);
+    } catch(_){}
+  },
+
+  gemerkt(){
+    try { return localStorage.getItem(KONTO_SCHLUESSEL); } catch(_){ return null; }
+  },
+
+  async ruf(pfad, daten){
+    const kopf = {};
+    if (this.token) kopf["authorization"] = "Bearer " + this.token;
+    if (daten) kopf["content-type"] = "application/json";
+    /* Abbruch nach acht Sekunden: Ohne Frist hängt der Anmeldeknopf
+       unbegrenzt, wenn der Server nicht antwortet. */
+    const stopp = new AbortController();
+    const wecker = setTimeout(() => stopp.abort(), 8000);
+    try {
+      const a = await fetch(kontoBasis() + pfad, {
+        method: daten ? "POST" : "GET",
+        headers: kopf,
+        body: daten ? JSON.stringify(daten) : undefined,
+        signal: stopp.signal
+      });
+      this.erreichbar = true;
+      const text = await a.text();
+      let inhalt = {};
+      try { inhalt = text ? JSON.parse(text) : {}; } catch(_){}
+      return { status: a.status, ...inhalt };
+    } catch(_){
+      this.erreichbar = false;
+      return { status: 0, fehler: "netz" };
+    } finally { clearTimeout(wecker); }
+  },
+
+  /* Übernimmt, was der Server geschickt hat, in die Anzeige. Der Besitz an
+     Oberflächen kommt ebenfalls von dort: Was nicht in der Liste steht, ist
+     nicht freigeschaltet — auch wenn der Browser etwas anderes meint. */
+  uebernehmen(antwort){
+    if (!antwort || !antwort.profil) return;
+    this.profil = antwort.profil;
+    if (antwort.stand) this.stand = antwort.stand;
+    if (antwort.bonus) this.bonus = antwort.bonus;
+
+    const p = antwort.profil;
+    Profile.level = p.level;
+    Profile.xp    = this.stand ? this.stand.rest : 0;
+    Profile.ore   = p.ore;
+    Profile.best  = p.best;
+    Profile.rec   = Object.assign({mass:0, kills:0, time:0, royale:0, clan:0, runs:0}, p.rec);
+    /* Alles bis zum erreichten Level plus alles Gekaufte. Der Server trägt
+       Level-Oberflächen beim Aufstieg zwar selbst ein, aber die Ableitung aus
+       dem Level ist die verlässlichere: Sie stimmt auch dann, wenn ein
+       Aufstieg vor dieser Fassung passiert ist. */
+    Profile.owned = new Set([
+      ...SKINS.filter(s => s.lv && s.lv <= p.level).map(s => s.id),
+      ...(p.skins || [])
+    ]);
+    const gewaehlt = SKINS.find(s => s.id === p.skin);
+    if (gewaehlt && Profile.owned.has(p.skin)){ Profile.skin = p.skin; skin = gewaehlt; }
+    if (p.name) Game.name = p.name;
+  },
+
+  angemeldet(){ return !!(this.token && this.profil); },
+
+  async wiederaufnehmen(){
+    const t = this.gemerkt();
+    if (!t) return false;
+    this.token = t;
+    const a = await this.ruf("/konto/ich");
+    if (a.status === 200){ this.uebernehmen(a); return true; }
+    // 401 heißt: Sitzung abgelaufen oder zurückgezogen. Dann weg damit.
+    if (a.status === 401) this.merken(null);
+    else this.token = t;              // nur Netzstörung — Token behalten
+    return false;
+  },
+
+  async registrieren(email, passwort, name){
+    const a = await this.ruf("/konto/registrieren",
+      { email, passwort, name, land: landAusSprache() });
+    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  async anmelden(email, passwort){
+    const a = await this.ruf("/konto/anmelden", { email, passwort });
+    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  async abmelden(){
+    if (this.token) await this.ruf("/konto/abmelden", {});
+    this.merken(null);
+    this.profil = null; this.stand = null; this.bonus = null;
+  },
+
+  async bonusHolen(){
+    const a = await this.ruf("/konto/bonus", {});
+    if (a.status === 200){ this.uebernehmen(a); this.bonus = {offen:false, serie:a.tag};
+                           return { ok:true, tag:a.tag, ore:a.ore }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Einmal anklopfen, bevor ein Anmeldeformular angeboten wird. Solange kein
+     Server läuft — und auf der öffentlichen Seite läuft noch keiner —, wäre
+     ein Formular, das jede Eingabe mit „Server antwortet nicht" quittiert,
+     schlechter als gar keines. */
+  async anklopfen(){
+    const a = await this.ruf("/health");
+    return a.status === 200;
+  },
+
+  async rangliste(art, land, ids){
+    const teile = ["art=" + encodeURIComponent(art || "best")];
+    if (land) teile.push("land=" + encodeURIComponent(land));
+    if (ids && ids.length) teile.push("ids=" + ids.join(","));
+    const a = await this.ruf("/rangliste?" + teile.join("&"));
+    return a.status === 200 ? a : null;
+  }
+};
+
+/* Landeskennung aus der Browsersprache, nicht aus der IP-Adresse. Eine
+   Ortsbestimmung über die Adresse wäre für ein Spiel nicht erforderlich und
+   müsste in der Datenschutzerklärung stehen. Der Spieler kann sie in den
+   Einstellungen ändern; hier wird nur ein Vorschlag gemacht. */
+function landAusSprache(){
+  try {
+    for (const w of (navigator.languages || [navigator.language || ""])){
+      const teil = String(w).split("-")[1];
+      if (teil && /^[A-Za-z]{2}$/.test(teil)) return teil.toUpperCase();
+    }
+  } catch(_){}
+  return null;
+}
+
 const NET_DELAY = 0.09;          // Sekunden Zeichenverzögerung, knapp zwei Serverschritte
 const NET_KEEP  = 1.5;           // Sekunden Schnappschüsse aufbewahren
 const jetzt = () => performance.now()/1000;
@@ -3184,6 +3553,7 @@ const Net = {
   eigen:null,                    // letzter autoritativer Stand eigener Zellen
   top:[],
   tot:null,
+  lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
   letzteEingabe:0,
 
   join(info){
@@ -3195,7 +3565,11 @@ const Net = {
     try { this.socket = new WebSocket(url); }
     catch(e){ this.lage = "fehler"; this.grund = String(e && e.message || e); return; }
     this.socket.onopen = () => {
-      try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin})); }
+      /* Ist ein Sitzungstoken da, geht es mit. Der Server nimmt dann Name und
+         Oberfläche aus dem Profil statt aus dieser Nachricht — und nur dann
+         wird die Runde einem Konto gutgeschrieben. */
+      try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin,
+                                             token: Konto.token || undefined})); }
       catch(_){}
     };
     this.socket.onmessage = e => this.onState(e.data);
@@ -3232,7 +3606,18 @@ const Net = {
       return;
     }
 
-    if (m.t === "dead"){ this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0}; return; }
+    if (m.t === "dead"){
+      this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0};
+      /* Abrechnung eines angemeldeten Spielers. Sie kommt nur mit, wenn beim
+         Beitritt ein gültiges Token dabei war; sonst bleiben die Felder leer
+         und der Ergebnisbildschirm zeigt wie bisher „Übung, keine Belohnung". */
+      this.lohn = m.lohn || null;
+      this.profil = m.profil || null;
+      this.stand = m.stand || null;
+      this.aufgestiegen = m.aufgestiegen || 0;
+      this.neueSkins = m.neueSkins || [];
+      return;
+    }
 
     if (m.t !== "state") return;
 
@@ -3391,3 +3776,30 @@ const Net = {
     if (this.lage === "verbunden") this.lage = "aus";
   }
 };
+
+/* Gemerkte Sitzung wieder aufnehmen. Steht bewusst am Dateiende: Das
+   Konto-Modul wird mit `const` angelegt und ist vorher noch nicht benutzbar.
+   Läuft nebenher, damit der Anmeldebildschirm sofort bedienbar ist — auch
+   wenn der Server langsam antwortet oder gar nicht. Wer schon angemeldet ist,
+   landet ohne Umweg im Menü. */
+(async () => {
+  if (Konto.gemerkt()){
+    kontoMeldung(t("k_wait"));
+    if (await Konto.wiederaufnehmen()){
+      if (!$("accountVeil").hidden) nachAnmeldung();
+      else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
+      return;
+    }
+    if (Konto.erreichbar) { kontoMeldung(""); return; }
+  } else if (await Konto.anklopfen()){
+    kontoMeldung("");
+    return;
+  }
+
+  /* Kein Server: Das Formular verschwindet, „Ohne Konto spielen" bleibt und
+     wird zum Hauptknopf. Erklärt wird der Grund einmal, statt ihn bei jedem
+     Anmeldeversuch neu zu melden. */
+  for (const id of ["acctForm", "acctSwap"]) $(id).hidden = true;
+  $("guestBtn").classList.remove("quiet");
+  kontoMeldung(t("k_offline"));
+})();
