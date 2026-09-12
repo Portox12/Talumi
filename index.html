@@ -103,14 +103,24 @@
   @media (min-width:660px){
     .card.wide{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
     .card.wide h1{margin-top:0}
+    /* Der Fließtext für Suchmaschinen steht unter beiden Spalten, nicht in
+       einer davon — sonst reißt er die linke Spalte auf das Doppelte. */
+    .card.wide > section.about{grid-column:1 / -1}
   }
   h1{font-family:var(--serif);font-size:clamp(40px,10vw,68px);line-height:.86;margin:0;
      color:var(--brass);font-weight:600;letter-spacing:-.025em}
   .card.wide h1{padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:4px}
   .sub{font-family:var(--serif);font-size:17px;line-height:1.5;margin:14px 0 22px;max-width:36ch}
   label{display:block;font-size:12px;color:var(--paper-2);margin-bottom:6px}
-  input[type=text]{width:100%;padding:11px 12px;background:var(--plate);color:var(--paper);
+  input[type=text],input[type=email],input[type=password]{
+     width:100%;padding:11px 12px;background:var(--plate);color:var(--paper);
      border:1px solid var(--line);border-radius:2px;font:inherit;font-size:15px}
+  /* Die Ausfüllhilfe des Browsers malt sonst einen weißen Kasten über das
+     Feld — auf dunklem Grund unlesbar. */
+  input:-webkit-autofill,input:-webkit-autofill:focus{
+     -webkit-text-fill-color:var(--paper);
+     -webkit-box-shadow:0 0 0 40px var(--plate) inset;
+     caret-color:var(--paper)}
   input:focus-visible,button:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
   button{margin-top:12px;width:100%;padding:13px;background:var(--brass);color:var(--on-brass);border:0;
      border-radius:2px;font:inherit;font-size:16px;font-weight:600;cursor:pointer}
@@ -158,6 +168,18 @@
   .recline{display:flex;justify-content:space-between;gap:12px;font-size:12.5px;
      padding:2.5px 0;color:var(--paper-2)}
   .recline b{color:var(--brass);font-weight:600;font-variant-numeric:tabular-nums}
+
+  /* Anmeldebonus: sieben Tage als Reihe. Abgeholte Tage sind gefüllt, der
+     nächste ist umrandet — man sieht auf einen Blick, wo man steht und was
+     eine ausgelassene Nacht kostet. */
+  .beads{display:flex;gap:5px;margin:2px 0 8px}
+  .bead{flex:1;font-style:normal;font-size:10px;text-align:center;padding:4px 0;
+     border:1px solid var(--line);border-radius:2px;color:var(--paper-2);
+     font-variant-numeric:tabular-nums}
+  .bead.done{background:var(--brass);border-color:var(--brass);color:var(--on-brass);
+     font-weight:600}
+  .bead.next{border-color:var(--brass);color:var(--brass);font-weight:600}
+  #bonusBox button{margin-top:2px}
 
   .setlist{max-height:56vh;overflow:auto;padding-right:4px}
   .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;
@@ -477,15 +499,11 @@
 
 <!-- Konto -->
 <div class="veil" id="accountVeil">
-  <div class="card">
+  <div class="card wide">
+    <div class="col">
     <h1>Talumi</h1>
     <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow debris, swallow rivals, and pull
       yourself into a world with rings and moons of your own.</p>
-    <button id="googleBtn" class="quiet" disabled>Continue with Google</button>
-    <button id="facebookBtn" class="quiet" disabled>Continue with Facebook</button>
-    <p class="notice" id="accountNote" data-i18n="guestnote">Sign-in is switched off in this build: it needs a server
-      with registered OAuth clients. Play as a guest and your progress lasts for this session only.</p>
-    <button id="guestBtn" data-i18n="play">Play as guest</button>
     <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
     <p class="foot" style="margin-top:10px">
       <a href="impressum.html" style="color:var(--brass)">Impressum</a> ·
@@ -493,6 +511,35 @@
     </p>
     <label style="margin-top:16px" data-i18n="language">Language</label>
     <div class="seg" id="langPick"></div>
+    </div>
+
+    <div class="col">
+    <form id="acctForm" autocomplete="on">
+      <label for="acctMail" data-i18n="k_email">E-mail</label>
+      <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
+             spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
+      <label for="acctPw" style="margin-top:12px" data-i18n="k_pw">Password</label>
+      <input type="password" id="acctPw" autocomplete="current-password">
+      <p class="hintline" id="acctPwHint" data-i18n="k_pwhint" hidden>At least 8 characters.</p>
+      <div id="acctNameRow" hidden>
+        <label for="acctName" style="margin-top:12px" data-i18n="designation">Name</label>
+        <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
+               autocapitalize="off" spellcheck="false" placeholder="Unnamed body"
+               data-i18n-ph="unnamed">
+      </div>
+      <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
+    </form>
+    <p class="notice" id="acctNote"></p>
+    <button class="quiet" id="acctSwap" data-i18n="k_new">No account yet? Create one</button>
+
+    <div class="two" style="margin-top:10px">
+      <button class="quiet" id="googleBtn" data-i18n="k_google">Continue with Google</button>
+      <button class="quiet" id="facebookBtn" data-i18n="k_facebook">Continue with Facebook</button>
+    </div>
+
+    <button class="quiet" id="guestBtn" data-i18n="play">Play as guest</button>
+    <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
+    </div>
 
     <!-- Sichtbarer, gegliederter Text. Studien 2026 zeigen: KI-Systeme
          ziehen ihre Antworten aus sichtbarem HTML, nicht aus versteckten
@@ -566,6 +613,7 @@
     <label data-i18n="mode">Mode</label>
     <div class="modes" id="modes"></div>
 
+    <div class="plate recbox" id="bonusBox" hidden></div>
     <div class="plate recbox" id="recBox"></div>
 
     <div class="two">
