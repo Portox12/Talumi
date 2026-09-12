@@ -7,10 +7,12 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v42";
+const VERSION = "v53";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
+  "./sprachen.js",
+  "./spiel.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -21,8 +23,17 @@ const ASSETS = [
   "./share-1200x630.png"
 ];
 
+/* Jede Datei einzeln ablegen, Fehler je Datei abfangen.
+   addAll() ist alles-oder-nichts: Fehlt eine einzige Datei auf dem Server,
+   schlägt die gesamte Installation fehl — dann gibt es keinen Offlinebetrieb
+   und keine Installationsaufforderung, ohne jede sichtbare Meldung. Genau das
+   war der Fall, als about.html und datenschutz.html im Repo fehlten. */
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.all(ASSETS.map(u => c.add(u).catch(() => null))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", e => {
