@@ -115,3 +115,22 @@ const LANGS11 = {
   ru:{rec:"Ваши рекорды", rec_mass:"Крупнейшее тело", rec_kills:"Больше всего поглощено", rec_time:"Самый долгий заход", rec_royale:"Победы в королевской", rec_clan:"Победы кланом", rec_runs:"Сыграно раундов", rec_none:"Сыграйте раунд, чтобы поставить первый рекорд."},
 };
 for (const c in LANGS11) Object.assign(LANGS[c], LANGS11[c]);
+/* Nachgetragene Schlüssel: Texte, die bisher fest auf Englisch im Spiel
+   standen, unabhängig von der gewählten Sprache. */
+const LANGS12 = {
+  en:{field:"Field", skincount:"{0} of {1}", allskins:"all skins",
+      powrun:"Running the entry check …", powdone:"Entry check cleared."},
+  de:{field:"Feld", skincount:"{0} von {1}", allskins:"alle Skins",
+      powrun:"Vorprüfung läuft …", powdone:"Vorprüfung bestanden."},
+  es:{field:"Campo", skincount:"{0} de {1}", allskins:"todos los skins",
+      powrun:"Comprobación de entrada en curso …", powdone:"Comprobación de entrada superada."},
+  pt:{field:"Campo", skincount:"{0} de {1}", allskins:"todos os skins",
+      powrun:"Verificação de entrada em andamento …", powdone:"Verificação de entrada concluída."},
+  fr:{field:"Champ", skincount:"{0} sur {1}", allskins:"tous les skins",
+      powrun:"Vérification d'entrée en cours …", powdone:"Vérification d'entrée réussie."},
+  tr:{field:"Alan", skincount:"{0} / {1}", allskins:"tüm skinler",
+      powrun:"Giriş kontrolü sürüyor …", powdone:"Giriş kontrolü geçildi."},
+  ru:{field:"Поле", skincount:"{0} из {1}", allskins:"все скины",
+      powrun:"Проверка входа выполняется …", powdone:"Проверка входа пройдена."},
+};
+for (const c in LANGS12) Object.assign(LANGS[c], LANGS12[c]);

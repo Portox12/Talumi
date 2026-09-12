@@ -161,6 +161,11 @@ function applyLang(){
     "<br>" + t("earned");
   buildModes(); buildStrip(); buildGrid(); paintPurse(); paintIntegrity();
   buildRecords(); buildBoost();
+  // Die Sprachknöpfe im Startbildschirm werden einmal gebaut, bevor die
+  // Browsersprache feststeht. Ohne dieses Nachzeichnen bleibt dort Englisch
+  // angehakt, während der Rest der Seite längst deutsch ist.
+  const lp = $("langPick");
+  if (lp && lp.draw) lp.draw();
   if ($("friendList")) buildFriends();
   if ($("setList") && !$("setVeil").hidden) buildSettings();
 }
@@ -174,6 +179,8 @@ const THEMES = {
   earth: {
     ink:"#0e0a07", ink2:"#1a120c", plate:"#1e150e", line:"#3c2c1d",
     brass:"#d8a75f", paper:"#f0e4d0", paper2:"#a8927a", ember:"#e07a3c", onBrass:"#1a120c",
+    us:"#a9e7cf", them:"#ff9a72", good:"#8fc98f",
+    dust:{h:[196,232], s:[18,40], l:[58,78]},
     star:"#e8d9bd", border:"#2b1f15", label:"rgba(14,10,7,.78)",
     pulsar:"rgba(44,30,18,.96)", pulsarEdge:"rgba(216,167,95,.7)",
     pulsarCore:"rgba(216,167,95,.2)", zone:"rgba(120,44,18,.34)",
@@ -182,6 +189,8 @@ const THEMES = {
   sand: {
     ink:"#e9dcc4", ink2:"#dccdb0", plate:"#f4ebdc", line:"#c2aa86",
     brass:"#8a5a24", paper:"#2c2117", paper2:"#6b5842", ember:"#b8501f", onBrass:"#f7f0e2",
+    us:"#1f6b4f", them:"#a8391a", good:"#2f6b33",
+    dust:{h:[24,44], s:[24,46], l:[30,46]},
     star:"#a68e68", border:"#c9b590", label:"rgba(250,244,232,.85)",
     pulsar:"rgba(120,96,64,.92)", pulsarEdge:"rgba(70,48,24,.8)",
     pulsarCore:"rgba(70,48,24,.22)", zone:"rgba(176,74,36,.30)",
@@ -202,6 +211,9 @@ function applyTheme(){
   r.style.setProperty("--paper-2", th.paper2);
   r.style.setProperty("--ember", th.ember);
   r.style.setProperty("--on-brass", th.onBrass);
+  r.style.setProperty("--us", th.us);
+  r.style.setProperty("--them", th.them);
+  r.style.setProperty("--good", th.good);
   const meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", th.ink);
 }
@@ -295,7 +307,7 @@ function paintIntegrity(){
   if (plate) plate.hidden = Integrity.score >= 100 && !Integrity.locked;
   const b = $("intBar");
   b.style.width = Integrity.score + "%";
-  b.style.background = Integrity.score>70 ? "#6f9ec4" : Integrity.score>40 ? "#d8b25f" : "#ff7a45";
+  b.style.background = Integrity.score>70 ? TH().good : Integrity.score>40 ? TH().brass : TH().ember;
   $("intText").textContent = t(Integrity.reason);
 }
 setInterval(()=>Integrity.audit(), 1500);
@@ -311,7 +323,7 @@ function entryProof(seed,bits,done){
   (function step(){
     const stop = n+60000;
     while (n<stop){ if (h32(seed+":"+n) <= target) return done(n); n++; }
-    $("powText").textContent = "Entry proof: " + n.toLocaleString(lang) + " attempts…";
+    $("powText").textContent = t("powrun");
     setTimeout(step,0);
   })();
 }
@@ -827,8 +839,15 @@ const speedOf  = m => Math.max(SPEED_FLOOR, SPEED_BASE*Math.pow(m, -SPEED_EXP));
 const splitPush = m => 700 + radiusOf(m)*1.5;
 const decayOf  = m => m > DECAY_FROM ? DECAY_RATE : 0;
 
-const newDebris = () => ({x:rnd(0,WORLD), y:rnd(0,WORLD), m:1,
-  c:`hsl(${rnd(196,232)} ${rnd(18,40)}% ${rnd(58,78)}%)`, r:rnd(2.6,4.4)});
+/* Trümmerfarbe aus dem Thema. Im dunklen Thema bleibt sie unverändert helles
+   Tintenblau; im hellen Thema wären so helle Punkte auf Sand kaum zu sehen,
+   deshalb dort dunklere, warme Körner. */
+const newDebris = () => {
+  const d = TH().dust;
+  return {x:rnd(0,WORLD), y:rnd(0,WORLD), m:1,
+    c:`hsl(${rnd(d.h[0],d.h[1])} ${rnd(d.s[0],d.s[1])}% ${rnd(d.l[0],d.l[1])}%)`,
+    r:rnd(2.6,4.4)};
+};
 const newCell = (x,y,m) => ({x,y,m,vx:0,vy:0,name:Game.name,merge:0,mine:true});
 /* gid = Gruppenkennung. Teilt sich ein Rivale, tragen alle Stücke dieselbe —
    sie fressen sich nicht gegenseitig, verschmelzen wieder und zählen auf der
@@ -856,7 +875,7 @@ function start(name){
   WORLD = M.world; DEBRIS = M.debris;
   seedStars();
 
-  Game.name = cleanName(name) || "Unnamed body";
+  Game.name = cleanName(name) || t("unnamed");
   Game.debris = Array.from({length:DEBRIS}, newDebris);
   Grid.cells = null;
   Grid.rebuild(Game.debris);   // einmal je Runde, danach nur noch Umtragen
@@ -930,6 +949,10 @@ function start(name){
   Game.cells = [newCell(spot.x, spot.y, startMass)];
   Game.safe = SAFE_TIME;
   Game.running = true; Game.t = 0; Game.kills = 0; peak = 0;
+  // Die Anzeige gehört zur laufenden Runde. Die Menüs sind absichtlich leicht
+  // durchscheinend, damit das Sternenfeld dahinter zu sehen ist — eine
+  // Masseanzeige von 0 und leere Aufgaben sollen dabei nicht mitscheinen.
+  $("hud").hidden = false;
   Portal.gameplayStart();
   Game.killer = null; Game.lastSplit = -99; Game.lostPieces = 0;
   Game.debrisEaten = 0; Game.pulsarSpawns = 0; Game.splitKills = 0;
@@ -1703,6 +1726,7 @@ function deathLesson(k, total){
 
 function finish(timeUp){
   Game.running = false;
+  $("hud").hidden = true;
   Portal.gameplayStop();
   if (!timeUp) Portal.countDeath();
   if (!timeUp) Sound.death();
@@ -2318,7 +2342,7 @@ function draw(){
     rp.hidden = false;
     $("brLeft").textContent = bodyCount() + 1;
     const nx = zoneNext(Game.t);
-    $("brZoneLabel").textContent = nx === null ? "Field" : "Field closes in";
+    $("brZoneLabel").textContent = nx === null ? t("field") : t("fieldcloses");
     $("brZone").textContent = nx === null ? t("final") : Math.ceil(nx) + "s";
     const s = Math.max(0, Math.round(Game.left));
     $("brClock").textContent = Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
@@ -2353,7 +2377,7 @@ function paintStage(m){
     sl.textContent = t("feast");
     if (!Game.feastSeen){
       Game.feastSeen = true;
-      toast("Pulsars are edible while you stay this split");
+      toast(t("feast"));
     }
   } else sl.hidden = true;
 }
@@ -2695,7 +2719,7 @@ function buildStrip(){
   }
   const more = document.createElement("button");
   more.type = "button";
-  more.innerHTML = `<span class="more">${Profile.owned.size} of ${SKINS.length}<br>all skins</span>`;
+  more.innerHTML = `<span class="more">${t("skincount", Profile.owned.size, SKINS.length)}<br>${t("allskins")}</span>`;
   more.addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
   strip.appendChild(more);
 }
@@ -2830,9 +2854,15 @@ buildModes();
 Portal.loadingStart();
 const startBtn = $("startBtn");
 entryProof("talumi-" + Date.now(), 17, n => {
-  $("powText").textContent = "Entry proof cleared (nonce " + n + ").";
+  const pw = $("powText");
+  pw.dataset.i18n = "powdone";
+  pw.textContent = t("powdone");
   Portal.loadingStop();
   startBtn.disabled = false;
+  // Der Schlüssel muss mitwandern: Sonst setzt der nächste applyLang() den
+  // Knopf aus data-i18n zurück auf „Formiert sich …" — auf schnellen Rechnern
+  // ist der Nachweis schon fertig, bevor die Sprache überhaupt feststeht.
+  startBtn.dataset.i18n = "start";
   startBtn.textContent = t("start");
 });
 startBtn.addEventListener("click", () => {
@@ -2841,10 +2871,6 @@ startBtn.addEventListener("click", () => {
 });
 $("settingsBtn").addEventListener("click", () => { buildSettings(); show("setVeil"); });
 $("setClose").addEventListener("click", () => show("startVeil"));
-if (isTouch)
-  $("controls").innerHTML = "<b>Drag</b> anywhere to steer · the two buttons " +
-    "<b>split</b> and <b>shed mass</b><br>Every skin is earned by playing. " +
-    "No lasting advantages for sale. Every skin can be earned by playing.";
 lang = pickLang();
 applyTheme();
 applyLang();
