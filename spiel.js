@@ -180,7 +180,7 @@ const THEMES = {
     ink:"#0e0a07", ink2:"#1a120c", plate:"#1e150e", line:"#3c2c1d",
     brass:"#d8a75f", paper:"#f0e4d0", paper2:"#a8927a", ember:"#e07a3c", onBrass:"#1a120c",
     us:"#a9e7cf", them:"#ff9a72", good:"#8fc98f",
-    dust:{h:[196,232], s:[18,40], l:[58,78]},
+    dust:{h:[196,232], s:[18,40], l:[58,78]}, shatter:"#8fe3ff",
     star:"#e8d9bd", border:"#2b1f15", label:"rgba(14,10,7,.78)",
     pulsar:"rgba(44,30,18,.96)", pulsarEdge:"rgba(216,167,95,.7)",
     pulsarCore:"rgba(216,167,95,.2)", zone:"rgba(120,44,18,.34)",
@@ -190,7 +190,7 @@ const THEMES = {
     ink:"#e9dcc4", ink2:"#dccdb0", plate:"#f4ebdc", line:"#c2aa86",
     brass:"#8a5a24", paper:"#2c2117", paper2:"#6b5842", ember:"#b8501f", onBrass:"#f7f0e2",
     us:"#1f6b4f", them:"#a8391a", good:"#2f6b33",
-    dust:{h:[24,44], s:[24,46], l:[30,46]},
+    dust:{h:[24,44], s:[24,46], l:[30,46]}, shatter:"#1f6b7a",
     star:"#a68e68", border:"#c9b590", label:"rgba(250,244,232,.85)",
     pulsar:"rgba(120,96,64,.92)", pulsarEdge:"rgba(70,48,24,.8)",
     pulsarCore:"rgba(70,48,24,.22)", zone:"rgba(176,74,36,.30)",
@@ -1132,8 +1132,8 @@ function addXpLive(n){
   Game.levelFx = {life:3.0, level:Profile.level, skin: neu.length ? neu[neu.length-1].label : null};
   Sound.levelUp();
   const [cx, cy] = centre();
-  ring(cx, cy, radiusOf(Math.max(30, Game.cells.reduce((s,c)=>s+c.m,0)))*4.5, "#d8b25f");
-  burst(cx, cy, 26, "#d8b25f", 420);
+  ring(cx, cy, radiusOf(Math.max(30, Game.cells.reduce((s,c)=>s+c.m,0)))*4.5, TH().brass);
+  burst(cx, cy, 26, TH().brass, 420);
 }
 
 /* Funken: kurzlebige Punkte für Teilen, Levelaufstieg und Treffer. */
@@ -1152,7 +1152,7 @@ function ring(x, y, max, colour){
 /* Zerreißen an einem Pulsar. Beim Spieler in viele Stücke, beim Gegner
    als harter Massenverlust — Gegner sind Einzelkörper. */
 function shatter(cell){
-  Sound.shatter(); ring(cell.x, cell.y, radiusOf(cell.m)*2.4, "#8fe3ff");
+  Sound.shatter(); ring(cell.x, cell.y, radiusOf(cell.m)*2.4, TH().shatter);
   Game.shake = Math.min(1, Game.shake + .6);
   /* Wie im Vorbild: Ein großer Restkörper bleibt, drumherum fliegen mehrere
      kleine weg. Sechzehn gleich große Krümel wären zu viel — dann ist man
@@ -1582,7 +1582,7 @@ function step(dt){
         c.m += PULSAR_MASS;
         Game.pulsarsEaten++;
         Sound.absorb(PULSAR_MASS);
-        ring(p.x, p.y, PULSAR_R*3.2, "#8fe3ff");
+        ring(p.x, p.y, PULSAR_R*3.2, TH().shatter);
         eaten = true;
         break;
       }
@@ -1599,7 +1599,7 @@ function step(dt){
         r.m *= .62;
         r.goal = {x: r.x*2-p.x, y: r.y*2-p.y};
         r.retarget = 1.4;
-        ring(r.x, r.y, radiusOf(r.m)*2.2, "#8fe3ff");
+        ring(r.x, r.y, radiusOf(r.m)*2.2, TH().shatter);
       }
     }
   }
@@ -1672,7 +1672,7 @@ function step(dt){
         c.m += r.m; gone = true; Game.kills++;
         if (Game.t - Game.lastSplit < 6) Game.splitKills++;
         addXpLive(40);
-        Sound.absorb(r.m); ring(r.x, r.y, radiusOf(r.m)*2.6, "#d8b25f");
+        Sound.absorb(r.m); ring(r.x, r.y, radiusOf(r.m)*2.6, TH().brass);
         break;
       }
       if (eats(r,c)){
@@ -2102,7 +2102,6 @@ function shade(hex,hue){
   const b = clamp((n&255)-hue*.4, 0, 255);
   return `rgb(${r|0},${g|0},${b|0})`;
 }
-const RIVAL_PAL_FEST = {rock:"#6d7688", dark:"#3d4453", hot:"#ff7a45", air:"#7fb0e8"};
 const RIVAL_PAL = new Proxy({}, {get:(t,k) => TH().rival[k]});
 /* Grün gegen Rot ist ausgerechnet die Paarung, die bei Rot-Grün-Schwäche
    zusammenfällt. Blau gegen Orange bleibt für alle unterscheidbar. */
@@ -2224,7 +2223,7 @@ function draw(){
     const puls = .35 + .25*Math.sin(Game.t*7);
     for (const c of Game.cells){
       ctx.beginPath(); ctx.arc(c.x, c.y, radiusOf(c.m)*1.28, 0, 7);
-      ctx.strokeStyle = `rgba(216,178,95,${puls})`;
+      ctx.strokeStyle = hexA(TH().brass, puls);
       ctx.lineWidth = 3; ctx.setLineDash([9, 7]); ctx.stroke();
       ctx.setLineDash([]);
     }
@@ -2266,10 +2265,10 @@ function draw(){
   // Stick sichtbar machen, solange der Daumen liegt
   if (isTouch && stick.active && Game.running){
     ctx.beginPath(); ctx.arc(stick.ox, stick.oy, STICK_MAX, 0, 7);
-    ctx.strokeStyle = "rgba(216,178,95,.22)"; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = hexA(TH().brass, .22); ctx.lineWidth = 1.5; ctx.stroke();
     ctx.beginPath();
     ctx.arc(stick.ox + stick.dx*STICK_MAX*.55, stick.oy + stick.dy*STICK_MAX*.55, 13, 0, 7);
-    ctx.fillStyle = "rgba(216,178,95,.30)"; ctx.fill();
+    ctx.fillStyle = hexA(TH().brass, .30); ctx.fill();
   }
 
   $("mass").firstChild.nodeValue = Math.round(gm);
@@ -2298,26 +2297,26 @@ function draw(){
     for (let i=0;i<3;i++){
       const rr = 40 + p*(260 + i*90);
       ctx.beginPath(); ctx.arc(0, 0, rr, 0, 7);
-      ctx.strokeStyle = `rgba(216,178,95,${a*(.35 - i*.09)})`;
+      ctx.strokeStyle = hexA(TH().brass, a*(.35 - i*.09));
       ctx.lineWidth = 3; ctx.stroke();
     }
     const glow = ctx.createRadialGradient(0,0,0, 0,0, 220);
-    glow.addColorStop(0, `rgba(216,178,95,${a*.22})`);
-    glow.addColorStop(1, "rgba(216,178,95,0)");
+    glow.addColorStop(0, hexA(TH().brass, a*.22));
+    glow.addColorStop(1, hexA(TH().brass, 0));
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(0,0,220,0,7); ctx.fill();
 
     ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const gross = 44 + ein*22;
     ctx.font = `600 ${gross}px Georgia, serif`;
-    ctx.fillStyle = `rgba(216,178,95,${a})`;
+    ctx.fillStyle = hexA(TH().brass, a);
     ctx.fillText(t("lvlup", fx.level), 0, 0);
     if (fx.skin){
       ctx.font = `600 20px Georgia, serif`;
-      ctx.fillStyle = `rgba(223,232,245,${a})`;
+      ctx.fillStyle = hexA(TH().paper, a);
       ctx.fillText(t("lvlskin", fx.skin), 0, gross*0.85);
       ctx.font = `400 14px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillStyle = `rgba(132,148,173,${a})`;
+      ctx.fillStyle = hexA(TH().paper2, a);
       ctx.fillText(t("lvlworn"), 0, gross*0.85 + 26);
     }
     ctx.restore();
