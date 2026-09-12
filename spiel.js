@@ -663,6 +663,15 @@ const MODES = {
     label:"Friendly match", blurb:"Mirrored arena, everyone starts equal. Practice — no rewards.",
     world:4200, debris:1000, rivals:10, pulsars:10, start:60,
     teams:false, mirror:true, time:240, rewards:0
+  },
+  /* Onlinebetrieb. Alle Zahlen stehen hier bei null: Trümmer, Pulsare und
+     Gegner kommen vom Server, nicht aus der lokalen Erzeugung. Keine
+     Belohnung — Ore und XP lokal zu vergeben hieße, dass sich jeder sein
+     Guthaben selbst schreibt. Das kommt, wenn der Server es vergibt. */
+  online: {
+    label:"Online", blurb:"Real players on an authoritative server.",
+    world:9000, debris:0, rivals:0, pulsars:0, start:24,
+    teams:false, mirror:false, time:0, rewards:0, online:true
   }
 };
 let modeId = "open";
@@ -761,7 +770,7 @@ const HINTS = [
   {id:"shed", test:s => s.mine >= 140 && s.pulsarD < 520, touch:true}
 ];
 
-const Game = {running:false, debris:[], rivals:[], shed:[], cells:[], pulsars:[],
+const Game = {running:false, online:false, debris:[], rivals:[], shed:[], cells:[], pulsars:[],
               rings:[], name:"", t:0, kills:0, shake:0,
               teams:false, left:0, result:"", safe:0,
               killer:null, lastSplit:-99, lostPieces:0,
@@ -872,6 +881,7 @@ seedStars();
 
 function start(name){
   const M = MODE();
+  Game.online = !!M.online;
   WORLD = M.world; DEBRIS = M.debris;
   seedStars();
 
@@ -981,7 +991,8 @@ function start(name){
   Integrity.reset();
   hideAll();
   goImmersive();
-  Net.join({name: Game.name, skin: skin.id});
+  // Die Verbindung steht im Onlinebetrieb schon: verbindenDannStarten() ruft
+  // start() erst, wenn der Server "welcome" geschickt hat.
 }
 
 /* Maus: Richtung ergibt sich aus der Zeigerposition zur Bildmitte.
@@ -1068,7 +1079,35 @@ function centre(){
   for (const c of Game.cells){ x+=c.x*c.m; y+=c.y*c.m; m+=c.m; }
   return m ? [x/m,y/m,m] : [WORLD/2,WORLD/2,0];
 }
+
+/* Eigenbewegung, allein stehend. Der Onlinebetrieb braucht sie zur
+   Vorausberechnung in genau derselben Form, in der der Server sie rechnet
+   (sim.js, schritt) — jede Abweichung zeigt sich als Zerren an der eigenen
+   Zelle, weil die Korrektur dann dauernd gegen die eigene Rechnung arbeitet. */
+function moveOwnCells(dt, tx, ty){
+  const decay = Math.exp(-2.4*dt);          // Stoß rollt über etwa eine Sekunde aus
+  for (const c of Game.cells){
+    const ax = tx-c.x, ay = ty-c.y, l = Math.hypot(ax,ay)||1;
+    // Nahe am Ziel abbremsen, sonst zittern die Stücke um den Punkt herum.
+    const ease = clamp(l/(radiusOf(c.m)+40), 0, 1);
+    const v = speedOf(c.m)*ease;
+    c.x += (ax/l*v + c.vx)*dt;
+    c.y += (ay/l*v + c.vy)*dt;
+    c.vx *= decay; c.vy *= decay;
+    c.merge = Math.max(0, c.merge-dt);
+    c.m *= Math.pow(1-decayOf(c.m), dt);
+    bound(c, dt);
+  }
+}
 function split(){
+  /* Online entscheidet der Server, ob geteilt wird — er kennt Masse und
+     Zellenzahl verbindlich. Lokal zu teilen und gleich darauf vom
+     Serverstand überschrieben zu werden, flackert nur. */
+  if (Game.online){
+    Net.send(split);
+    if (Game.cells.some(c => c.m >= 36)){ Game.lastSplit = Game.t; Sound.split(); }
+    return;
+  }
   const born = [], [dx,dy] = aim();
   for (const c of Game.cells){
     if (c.m < 36 || Game.cells.length+born.length >= MAX_CELLS) continue;
@@ -1100,6 +1139,7 @@ function split(){
 const SHED_COST = m => clamp(m*0.035, 8, 260);
 
 function shed(){
+  if (Game.online){ Net.send(shed); Sound.shedS(); return; }
   const [dx,dy] = aim();
   let fired = false;
   for (const c of Game.cells){
@@ -1410,6 +1450,7 @@ function checkGoals(){
 }
 
 function step(dt){
+  if (Game.online){ Net.schritt(dt); return; }
   Game.t += dt;
   if (Game.safe > 0) Game.safe = Math.max(0, Game.safe - dt);
   if (Game.toast) Game.toast.life -= dt;
@@ -1455,19 +1496,7 @@ function step(dt){
   }
 
   const [tx,ty] = aimTarget();
-  const decay = Math.exp(-2.4*dt);          // Stoß rollt über etwa eine Sekunde aus
-  for (const c of Game.cells){
-    const ax = tx-c.x, ay = ty-c.y, l = Math.hypot(ax,ay)||1;
-    // Nahe am Ziel abbremsen, sonst zittern die Stücke um den Punkt herum.
-    const ease = clamp(l/(radiusOf(c.m)+40), 0, 1);
-    const v = speedOf(c.m)*ease;
-    c.x += (ax/l*v + c.vx)*dt;
-    c.y += (ay/l*v + c.vy)*dt;
-    c.vx *= decay; c.vy *= decay;
-    c.merge = Math.max(0, c.merge-dt);
-    c.m *= Math.pow(1-decayOf(c.m), dt);
-    bound(c, dt);
-  }
+  moveOwnCells(dt, tx, ty);
   /* Zwei Zustände, vorher vermischt:
      Wartezeit läuft  → auseinanderdrücken, aber nur so weit wie nötig.
      Wartezeit vorbei → zueinander ziehen und verschmelzen. Vorher konnte das
@@ -1503,6 +1532,7 @@ function step(dt){
     }
   }
 
+  const decay = Math.exp(-2.4*dt);          // Stoß rollt über etwa eine Sekunde aus
   for (const r of Game.rivals){
     r.retarget -= dt;
     r.merge = Math.max(0, r.merge - dt);
@@ -1722,6 +1752,19 @@ function deathLesson(k, total){
   if (peak > total * 1.5) return t("l_shrunk");
   if (Game.t < 20) return t("l_early");
   return t("l_watch");
+}
+
+/* Ende einer Onlinerunde. Die Zahlen kommen vollständig vom Server; hier
+   werden sie nur in die Felder gelegt, die finish() ohnehin liest. Dass
+   MODE().rewards im Onlinemodus null ist, sorgt dafür, dass finish() kein
+   Ore vergibt — das darf erst der Server, wenn er Konten führt. */
+function endeOnline(d){
+  if (!Game.running) return;
+  peak = Math.max(peak, d.peak || 0);
+  Game.kills = d.kills || 0;
+  if (d.sek) Game.t = d.sek;
+  if (d.abbruch){ Game.result = t("net_lost"); Game.killer = null; }
+  finish(false);
 }
 
 function finish(timeUp){
@@ -2213,6 +2256,7 @@ function draw(){
   for (const {o,mine} of all){
     if (!mine && !seen(o)) continue;
     const pal = mine ? skin
+      : o.pal ? o.pal
       : Game.teams ? teamPal(o.team) : RIVAL_PAL;
     const label = Settings.labels === "off" ? ""
       : (Settings.labels === "lead" && mine && o !== lead) ? "" : o.name;
@@ -2382,13 +2426,27 @@ function paintStage(m){
 }
 const esc = s => String(s).replace(/[<>&"]/g, c => ({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]));
 function paintBoard(gm){
-  const byGid = new Map();
-  for (const r of Game.rivals){
-    const e = byGid.get(r.gid);
-    if (e) e.m += r.m; else byGid.set(r.gid, {name:r.name, m:r.m});
+  let list;
+  if (Game.online){
+    /* Online kommt die Rangliste vom Server. Die lokale Zählung könnte nur
+       Spieler im eigenen Sichtfeld sehen — das wäre keine Rangliste, sondern
+       eine Nachbarschaftsliste. Der Server schickt die besten zehn des Raums.
+       Steht man selbst nicht darunter, wird man angehängt; die angezeigte
+       Platzziffer ist dann eine Untergrenze, weil der eigene Rang nicht
+       mitgeschickt wird. */
+    list = Net.top.map(e => +e.id === Net.you
+      ? {name:Game.name, m:+e.m, me:true}
+      : {name:String(e.n || "?"), m:+e.m});
+    if (gm > 0 && !list.some(e => e.me)) list.push({name:Game.name, m:gm, me:true});
+  } else {
+    const byGid = new Map();
+    for (const r of Game.rivals){
+      const e = byGid.get(r.gid);
+      if (e) e.m += r.m; else byGid.set(r.gid, {name:r.name, m:r.m});
+    }
+    list = [...byGid.values()];
+    if (gm > 0) list.push({name:Game.name, m:gm, me:true});
   }
-  const list = [...byGid.values()];
-  if (gm > 0) list.push({name:Game.name, m:gm, me:true});
   list.sort((a,b) => b.m-a.m);
 
   /* Zeilenzahl an die Bildhöhe anpassen. Die rechte Spalte ist nach oben
@@ -2864,9 +2922,43 @@ entryProof("talumi-" + Date.now(), 17, n => {
   startBtn.dataset.i18n = "start";
   startBtn.textContent = t("start");
 });
+/* Erst verbinden, dann starten. Eine Runde zu beginnen und die Verbindung
+   danach scheitern zu lassen, hieße: der Spieler steht in einer leeren Welt
+   und weiß nicht, warum. Scheitert es, wird offline gegen KI weitergespielt —
+   ein Fehlschlag darf nicht in einem toten Bildschirm enden. */
+function verbindenDannStarten(name){
+  const btn = $("startBtn");
+  btn.disabled = true;
+  btn.dataset.i18n = "net_dial";
+  btn.textContent = t("net_dial");
+  Game.name = cleanName(name) || t("unnamed");
+  Net.join({name: Game.name, skin: skin.id});
+
+  const frist = jetzt() + 6;            // sechs Sekunden Geduld, dann offline
+  (function warten(){
+    const fertig = () => {
+      btn.disabled = false;
+      btn.dataset.i18n = "start";
+      btn.textContent = t("start");
+    };
+    if (Net.lage === "verbunden"){ fertig(); start(name); return; }
+    if (Net.lage === "fehler" || jetzt() > frist){
+      Net.leave();
+      fertig();
+      modeId = "open"; buildModes();     // zurück auf den lokalen Modus
+      start(name);
+      toast(t("net_fail"));
+      return;
+    }
+    setTimeout(warten, 100);
+  })();
+}
+
 startBtn.addEventListener("click", () => {
   Sound.unlock();                       // Nutzergeste: erst hier darf Ton starten
-  start($("name").value.trim().slice(0,14));
+  const name = $("name").value.trim().slice(0,14);
+  if (MODES[modeId] && MODES[modeId].online) verbindenDannStarten(name);
+  else start(name);
 });
 $("settingsBtn").addEventListener("click", () => { buildSettings(); show("setVeil"); });
 $("setClose").addEventListener("click", () => show("startVeil"));
@@ -2919,41 +3011,284 @@ function showUpdateHint(){
 
 
 /* =====================================================================
-   7) NET — Stub für den Mehrspielerbetrieb
-   Heute läuft die Simulation lokal. Sobald der Server steht, wird genau
-   dieses Modul ersetzt: der Client sendet nur Blickrichtung und Aktionen,
-   der Server schickt Weltzustände zurück und rechnet Masse, Ore und
-   Freischaltungen selbst aus.
+   7) NET — Onlinebetrieb
 
-   Protokoll (Entwurf):
-     Client → Server   join   {token, name, skin}
-                       input  {ax, ay, seq, t}      ~20/s
-                       action {kind:"split"|"shed", seq}
-                       leave  {}
-     Server → Client   welcome {playerId, worldSize, tickRate}
-                       state   {tick, bodies[], debrisDelta[], leaderboard[]}
-                       reward  {xp, ore, level, unlocked[]}
-                       kicked  {reason}
+   Der Server ist die Wahrheit. Er rechnet zwanzigmal je Sekunde und
+   schickt jedem Client nur dessen Ausschnitt; der Client schickt nur
+   Blickrichtung und Aktionen. Das Protokoll steht in der Server-README.
+
+   Hier liegen zwei Aufgaben, und beide sind nötig:
+
+   1) ZWISCHENBERECHNUNG für alles Fremde. Zwanzig Zustände je Sekunde
+      gegen sechzig Bilder heißt ohne Zwischenwerte: jede fremde Zelle
+      ruckelt sichtbar. Deshalb wird absichtlich um NET_DELAY verzögert
+      gezeichnet. Dann liegt zu jedem gezeichneten Zeitpunkt schon ein
+      späterer Zustand vor, und es lässt sich zwischen zwei echten
+      Zuständen rechnen statt über den letzten hinaus zu raten.
+
+   2) VORAUSBERECHNUNG für die eigenen Zellen. Auf das Netz zu warten
+      hieße, die eigene Maus verzögert zu sehen — das ist in einem Spiel
+      dieser Art das Erste, was auffällt. Die eigene Bewegung läuft
+      deshalb sofort, mit derselben Formel wie auf dem Server
+      (moveOwnCells). Der Serverzustand korrigiert nur, und umso härter,
+      je größer der Fehler ist.
+
+   Der Grundsatz dabei: STRUKTUR kommt vom Server, POSITION vom Client.
+   Ändert sich die Anzahl eigener Zellen — geteilt, verschmolzen, ein
+   Stück gefressen — wird neu aufgebaut statt korrigiert. Masse, Tode und
+   wer wen frisst entstehen ausschließlich auf dem Server.
+
+   Serveradresse: aus der Seitenadresse abgeleitet, damit nichts fest
+   verdrahtet ist. Zum Testen überschreibbar mit ?server=ws://…
    ===================================================================== */
+
+const NET_DELAY = 0.09;          // Sekunden Zeichenverzögerung, knapp zwei Serverschritte
+const NET_KEEP  = 1.5;           // Sekunden Schnappschüsse aufbewahren
+const jetzt = () => performance.now()/1000;
+
+function serverUrl(){
+  try {
+    const q = new URLSearchParams(location.search).get("server");
+    if (q) return q;
+    if (location.protocol === "https:") return "wss://" + location.host + "/play";
+    return "ws://" + (location.hostname || "localhost") + ":8080";
+  } catch(_) { return "ws://localhost:8080"; }
+}
+
+/* Nächster-Nachbar-Zuordnung. Das Protokoll schickt je Zelle nur die
+   Spielerkennung, nicht eine eigene je Stück — alle Stücke eines Spielers
+   tragen dieselbe. Zwischen zwei Zuständen muss deshalb über die Nähe
+   zugeordnet werden. Das ist hier verlässlich, weil Zellen sich in einem
+   Fünfzigstel Sekunde nur wenige Bildpunkte weit bewegen. Die Alternative
+   wäre eine Kennung je Zelle in jedem Zustand — das kostet Bandbreite bei
+   allen Spielern, und Bandbreite ist der Grund für den Sichtfeld-Ausschnitt. */
+function zuordnen(von, nach){
+  const frei = nach.slice(), paare = [];
+  for (const a of von){
+    let best = -1, bestQ = Infinity;
+    for (let i=0;i<frei.length;i++){
+      const q = (frei[i].x-a.x)**2 + (frei[i].y-a.y)**2;
+      if (q < bestQ){ bestQ = q; best = i; }
+    }
+    paare.push([a, best >= 0 ? frei.splice(best,1)[0] : null]);
+  }
+  return {paare, neu:frei};
+}
+
 const Net = {
   socket:null, seq:0, connected:false,
+  lage:"aus",                    // aus | waehlt | verbunden | fehler
+  grund:"",
+  you:0, rate:20,
+  wer:new Map(),                 // Spielerkennung -> {n, s}
+  schnapp:[],                    // Schnappschüsse, ältester zuerst
+  eigen:null,                    // letzter autoritativer Stand eigener Zellen
+  top:[],
+  tot:null,
+  letzteEingabe:0,
 
   join(info){
-    // const url = "wss://example.invalid/play";
-    // this.socket = new WebSocket(url);
-    // this.socket.onmessage = e => this.onState(JSON.parse(e.data));
-    this.connected = false;
-    this.info = info;
+    this.leave();
+    this.lage = "waehlt"; this.grund = "";
+    this.schnapp = []; this.wer.clear(); this.eigen = null;
+    this.top = []; this.tot = null; this.you = 0; this.seq = 0;
+    const url = serverUrl();
+    try { this.socket = new WebSocket(url); }
+    catch(e){ this.lage = "fehler"; this.grund = String(e && e.message || e); return; }
+    this.socket.onopen = () => {
+      try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin})); }
+      catch(_){}
+    };
+    this.socket.onmessage = e => this.onState(e.data);
+    this.socket.onerror = () => {
+      if (this.lage !== "verbunden"){ this.lage = "fehler"; this.grund = url; }
+    };
+    this.socket.onclose = () => {
+      this.connected = false;
+      if (this.lage === "verbunden") this.lage = "getrennt";
+      else if (this.lage !== "fehler") { this.lage = "fehler"; this.grund = url; }
+    };
   },
+
   send(kind){
-    if (!this.connected) return;                   // heute: lokale Simulation
-    this.socket.send(JSON.stringify({kind, seq:this.seq++}));
+    if (!this.connected) return;
+    try { this.socket.send(JSON.stringify({kind, seq:this.seq++})); } catch(_){}
   },
-  onState(){ /* Serverzustand übernehmen, lokale Vorhersage korrigieren */ },
-  leave(){ if (this.connected) this.socket.close(); this.connected = false; }
+
+  /* Alles, was hier ankommt, ist Text von außen: erst prüfen, dann glauben.
+     Ein unvollständiger Zustand darf die Runde nicht abbrechen. */
+  onState(roh){
+    let m; try { m = JSON.parse(roh); } catch(_){ return; }
+    if (!m || typeof m.t !== "string") return;
+
+    if (m.t === "welcome"){
+      this.you = +m.you || 0;
+      this.rate = +m.tick || 20;
+      this.connected = true; this.lage = "verbunden";
+      this.wer.clear();
+      for (const id in (m.names || {})){
+        const e = m.names[id];
+        if (e && typeof e.n === "string") this.wer.set(+id, {n:e.n, s:String(e.s || "basalt")});
+      }
+      return;
+    }
+
+    if (m.t === "dead"){ this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0}; return; }
+
+    if (m.t !== "state") return;
+
+    for (const e of (m.ev || [])){
+      if (!e) continue;
+      if (e.t === "join" && typeof e.n === "string")
+        this.wer.set(+e.id, {n:e.n, s:String(e.s || "basalt")});
+      if (e.t === "left") this.wer.delete(+e.id);
+      if (e.t === "burst" && isFinite(e.x) && isFinite(e.y))
+        ring(+e.x, +e.y, 120, TH().shatter);
+      /* Wer uns gefressen hat, sagt nur dieses Ereignis. Der Todesbildschirm
+         lebt von dieser Zeile, deshalb wird sie hier festgehalten — die
+         spätere "dead"-Nachricht enthält keinen Namen. */
+      if (e.t === "eat" && +e.wen === this.you){
+        const w = this.wer.get(+e.von);
+        const oben = (Array.isArray(m.top) ? m.top : []).find(x => x && +x.id === +e.von);
+        Game.killer = {
+          name: (w && w.n) || (oben && oben.n) || "?",
+          m: (oben && +oben.m) || 0,
+          left: Math.max(0, Game.cells.length - 1),
+          sinceSplit: Game.t - Game.lastSplit,
+          mine: Game.cells.reduce((s,c) => s+c.m, 0)
+        };
+      }
+    }
+
+    const gruppen = new Map();
+    for (const c of (m.cells || [])){
+      if (!c || c.length < 4) continue;
+      const id = +c[0];
+      let g = gruppen.get(id); if (!g) gruppen.set(id, g = []);
+      g.push({x:+c[1], y:+c[2], m:+c[3]});
+    }
+    this.top = Array.isArray(m.top) ? m.top : [];
+    if (gruppen.has(this.you)) this.eigen = gruppen.get(this.you);
+
+    this.schnapp.push({
+      at: jetzt(), gruppen,
+      deb: Array.isArray(m.deb) ? m.deb : [],
+      pul: Array.isArray(m.pul) ? m.pul : [],
+      wurf: Array.isArray(m.shed) ? m.shed : [],
+      safe: +m.safe || 0
+    });
+    const grenze = jetzt() - NET_KEEP;
+    while (this.schnapp.length > 2 && this.schnapp[0].at < grenze) this.schnapp.shift();
+  },
+
+  /* Ein Schritt im Onlinebetrieb. Tritt an die Stelle der lokalen
+     Simulation: gerechnet wird nichts mehr, nur übernommen und geglättet. */
+  schritt(dt){
+    Game.t += dt;
+    if (Game.toast) Game.toast.life -= dt;
+
+    if (this.connected && jetzt() - this.letzteEingabe >= 1/this.rate){
+      this.letzteEingabe = jetzt();
+      const [ax, ay] = aim();
+      try { this.socket.send(JSON.stringify({kind:"input", ax, ay, seq:this.seq++})); } catch(_){}
+    }
+
+    this.fremdes();
+    this.eigenes(dt);
+
+    if (this.tot){ const d = this.tot; this.tot = null; endeOnline(d); return; }
+    if (!this.connected && this.lage !== "waehlt" && Game.running)
+      endeOnline({peak:Math.round(peak), kills:Game.kills, sek:Math.round(Game.t), abbruch:true});
+  },
+
+  /* Fremde Körper, Trümmer, Pulsare, Würfe — zwischen zwei Zuständen gerechnet. */
+  fremdes(){
+    const ziel = jetzt() - NET_DELAY;
+    let a = null, b = null;
+    for (const s of this.schnapp){
+      if (s.at <= ziel) a = s; else { b = s; break; }
+    }
+    if (!a) a = this.schnapp[0];
+    if (!a) return;
+    const f = (b && b.at > a.at) ? clamp((ziel - a.at)/(b.at - a.at), 0, 1) : 0;
+
+    const rivalen = [];
+    for (const [id, von] of a.gruppen){
+      if (id === this.you) continue;
+      const info = this.wer.get(id) || {n:"?", s:"basalt"};
+      const haut = SKINS.find(s => s.id === info.s) || null;
+      const nach = (b && b.gruppen.get(id)) || null;
+      const {paare} = nach ? zuordnen(von, nach) : {paare: von.map(c => [c, null])};
+      for (const [c, d] of paare){
+        const x = d ? c.x + (d.x-c.x)*f : c.x;
+        const y = d ? c.y + (d.y-c.y)*f : c.y;
+        const mm = d ? c.m + (d.m-c.m)*f : c.m;
+        rivalen.push({x, y, m:mm, name:info.n, gid:id, vx:0, vy:0, merge:0,
+                      tint:0, pal:haut, tier:(haut && haut.tier) || 1,
+                      trait:(haut && haut.trait) || "plain"});
+      }
+    }
+    Game.rivals = rivalen;
+
+    /* Trümmer liegen still — der Server bewegt sie nicht. Deshalb ohne
+       Zwischenwerte direkt übernehmen. Der Farbton kommt vom Server, die
+       Sättigung aus dem Thema: so bleibt die Streuung erhalten, ohne dass
+       im hellen Thema bunte Punkte auf Sand liegen. */
+    const d = TH().dust;
+    const sat = (d.s[0]+d.s[1])/2, lig = (d.l[0]+d.l[1])/2;
+    Game.debris = a.deb.map(e => ({
+      x:e[0], y:e[1], m:1, r:3.4,
+      c:`hsl(${d.h[0] + (((+e[2]||0)%360)/360)*(d.h[1]-d.h[0])} ${sat}% ${lig}%)`
+    }));
+    Game.pulsars = a.pul.map(e => ({
+      x:e[0], y:e[1], vx:0, vy:0, fed:+e[2]||0,
+      spin:((e[0]*0.7 + e[1]*0.3) % 6.28)      // aus der Lage, damit er nicht flackert
+    }));
+    Game.shed = a.wurf.map(e => ({
+      x:e[0], y:e[1], vx:0, vy:0, m:+e[2]||0, r:radiusOf(+e[2]||0),
+      c:TH().rival.rock, hot:TH().rival.hot, tier:1
+    }));
+    Game.safe = a.safe;
+  },
+
+  /* Eigene Zellen: sofort bewegen, dann gegen den Serverstand korrigieren. */
+  eigenes(dt){
+    const auth = this.eigen;
+    if (!auth || !auth.length) return;
+
+    /* Struktur vom Server. Eine andere Zellenzahl heißt geteilt,
+       verschmolzen oder ein Stück verloren — dann ist Korrigieren falsch,
+       weil es kein Gegenstück zum Korrigieren gibt. */
+    if (Game.cells.length !== auth.length){
+      Game.cells = auth.map(c => ({x:c.x, y:c.y, m:c.m, vx:0, vy:0,
+                                   name:Game.name, merge:0, mine:true}));
+      return;
+    }
+
+    const [cx, cy] = centre(), [ax, ay] = aim();
+    moveOwnCells(dt, cx + ax*900, cy + ay*900);   // dieselbe Formel wie im Server
+
+    const {paare} = zuordnen(Game.cells, auth);
+    for (const [c, s] of paare){
+      if (!s) continue;
+      /* Umso härter, je größer der Fehler. Kleine Abweichungen entstehen
+         durch die Laufzeit und dürfen nicht dauernd zurückgezogen werden —
+         sonst gummibandet die eigene Zelle. Große Abweichungen sind echte
+         Ereignisse (Stoß, Wandkontakt, Rückstoß) und müssen durchgreifen. */
+      const fehler = Math.hypot(s.x-c.x, s.y-c.y);
+      const k = fehler > 260 ? 1 : fehler > 60 ? .10 : .02;
+      c.x += (s.x-c.x)*k;
+      c.y += (s.y-c.y)*k;
+      c.m = s.m;                                  // Masse immer vom Server
+    }
+  },
+
+  leave(){
+    if (this.socket){
+      try { if (this.connected) this.socket.send(JSON.stringify({kind:"leave"})); } catch(_){}
+      try { this.socket.onclose = null; this.socket.close(); } catch(_){}
+    }
+    this.socket = null; this.connected = false;
+    if (this.lage === "verbunden") this.lage = "aus";
+  }
 };
-setInterval(() => {
-  if (!Net.connected || !Game.running) return;
-  const [ax, ay] = aim();
-  Net.socket.send(JSON.stringify({kind:"input", ax, ay, seq:Net.seq++, t:Date.now()}));
-}, 50);

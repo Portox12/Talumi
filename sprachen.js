@@ -134,3 +134,28 @@ const LANGS12 = {
       powrun:"Проверка входа выполняется …", powdone:"Проверка входа пройдена."},
 };
 for (const c in LANGS12) Object.assign(LANGS[c], LANGS12[c]);
+/* Onlinebetrieb */
+const LANGS13 = {
+  en:{m_online:"Online", m_online_b:"Real players on an authoritative server. No rewards yet — the server has to grant them.",
+      net_dial:"Connecting to the server …", net_lost:"Connection lost.",
+      net_fail:"No server reachable. Playing offline against AI instead."},
+  de:{m_online:"Online", m_online_b:"Echte Mitspieler auf einem autoritativen Server. Noch keine Belohnung — die darf erst der Server vergeben.",
+      net_dial:"Verbindung zum Server …", net_lost:"Verbindung verloren.",
+      net_fail:"Kein Server erreichbar. Stattdessen offline gegen KI."},
+  es:{m_online:"En línea", m_online_b:"Jugadores reales en un servidor autoritativo. Aún sin recompensas — las otorgará el servidor.",
+      net_dial:"Conectando con el servidor …", net_lost:"Conexión perdida.",
+      net_fail:"Ningún servidor disponible. Se juega sin conexión contra la IA."},
+  pt:{m_online:"Online", m_online_b:"Jogadores reais num servidor autoritativo. Ainda sem recompensas — o servidor vai concedê-las.",
+      net_dial:"A ligar ao servidor …", net_lost:"Ligação perdida.",
+      net_fail:"Nenhum servidor acessível. A jogar offline contra a IA."},
+  fr:{m_online:"En ligne", m_online_b:"De vrais joueurs sur un serveur autoritatif. Pas encore de récompenses — c'est au serveur de les accorder.",
+      net_dial:"Connexion au serveur …", net_lost:"Connexion perdue.",
+      net_fail:"Aucun serveur joignable. Partie hors ligne contre l'IA."},
+  tr:{m_online:"Çevrimiçi", m_online_b:"Yetkili bir sunucuda gerçek oyuncular. Henüz ödül yok — onu sunucu verecek.",
+      net_dial:"Sunucuya bağlanılıyor …", net_lost:"Bağlantı kesildi.",
+      net_fail:"Erişilebilir sunucu yok. Çevrimdışı, yapay zekâya karşı oynanıyor."},
+  ru:{m_online:"Онлайн", m_online_b:"Живые игроки на авторитетном сервере. Награды пока нет — её должен выдавать сервер.",
+      net_dial:"Подключение к серверу …", net_lost:"Соединение потеряно.",
+      net_fail:"Сервер недоступен. Игра офлайн против ИИ."},
+};
+for (const c in LANGS13) Object.assign(LANGS[c], LANGS13[c]);
