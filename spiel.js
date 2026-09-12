@@ -688,9 +688,10 @@ const MODES = {
     teams:false, mirror:true, time:240, rewards:0
   },
   /* Onlinebetrieb. Alle Zahlen stehen hier bei null: Trümmer, Pulsare und
-     Gegner kommen vom Server, nicht aus der lokalen Erzeugung. Keine
-     Belohnung — Ore und XP lokal zu vergeben hieße, dass sich jeder sein
-     Guthaben selbst schreibt. Das kommt, wenn der Server es vergibt. */
+     Gegner kommen vom Server, nicht aus der lokalen Erzeugung.
+     `rewards:0` heißt **nicht** „zahlt nicht", sondern „rechnet hier nicht":
+     Ore und XP kommen fertig vom Server (`Net.lohn`). Lokal zu rechnen hieße,
+     dass sich jeder sein Guthaben selbst schreibt. */
   online: {
     label:"Online", blurb:"Real players on an authoritative server.",
     world:9000, debris:0, rivals:0, pulsars:0, start:24,
@@ -970,8 +971,12 @@ function start(name){
   Game.shed = [];
   /* Bonus nur im offenen Modus. Die gespiegelten Arenen sind ausdrücklich
      als faire Karten gebaut — ein Startvorteil dort wäre ein Widerspruch. */
+  /* Lokaler Startbonus nur ohne Konto. Bei einem Konto liegt das Ore auf dem
+     Server: Hier abzubuchen würde die Anzeige senken, ohne dass der Server
+     davon weiß — beim nächsten Neuladen wäre es wieder da. Im Onlinebetrieb
+     bucht der Server ab, siehe `welcome`. */
   let startMass = M.start;
-  if (modeId === "open" && Profile.boost > 1){
+  if (modeId === "open" && Profile.boost > 1 && !Konto.angemeldet()){
     const cost = BOOST_COST[Profile.boost];
     if (Profile.ore >= cost){
       Profile.ore -= cost;
@@ -1888,8 +1893,18 @@ function finish(timeUp){
 
   /* Freundschaftsspiele zahlen nichts. Sonst wäre die gespiegelte Arena mit
      schwachen Gegnern der schnellste Weg zu Ore — Übung soll Übung bleiben. */
-  /* Bestwerte fortschreiben, bevor die Belohnung gerechnet wird */
-  {
+
+  /* Lokale Runden zahlen einem angemeldeten Spieler nichts. Das ist keine
+     Strenge, sondern die einzige ehrliche Möglichkeit: Eine Runde gegen
+     Computergegner rechnet der Browser, und was der Browser rechnet, kann
+     jeder umschreiben. Guthaben, das hier vergeben wird, wäre beim nächsten
+     Neuladen ohnehin weg, weil der Server es nicht kennt — und genau das
+     fühlt sich beim Spielen wie ein Fehler an. Bestwerte gehören zum Konto
+     und werden aus demselben Grund nicht lokal fortgeschrieben. */
+  const aufKonto = Konto.angemeldet();
+  const paid = MODE().rewards > 0 && !aufKonto;
+
+  if (!aufKonto){
     const R = Profile.rec;
     R.runs++;
     R.mass  = Math.max(R.mass,  Math.round(peak));
@@ -1898,8 +1913,6 @@ function finish(timeUp){
     if (Game.won && Game.royale) R.royale++;
     if (Game.won && Game.teams)  R.clan++;
   }
-
-  const paid = MODE().rewards > 0;
   if (paid){
     Profile.ore += oreGain;
     if (beat) Profile.best = Math.round(peak);
@@ -1972,7 +1985,11 @@ function finish(timeUp){
   }
 
   if (!paid){
-    $("endGains").innerHTML = `<p class="hintline">${t("practice")}</p>`;
+    /* Zwei verschiedene Gründe, nichts zu bekommen: Übungsmodus oder
+       angemeldet und lokal gespielt. Ein Spieler, der den falschen Satz
+       liest, sucht den Fehler bei sich. */
+    $("endGains").innerHTML = `<p class="hintline">${
+      MODE().rewards > 0 ? t("practiceacct") : t("practice")}</p>`;
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
     return;
@@ -2654,7 +2671,7 @@ requestAnimationFrame(loop);
    6) SCREENS
    ===================================================================== */
 const VEILS = ["accountVeil","startVeil","shopVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","oreVeil"];
+               "friendsVeil","setVeil","oreVeil","rankVeil","pwVeil"];
 
 /* Ore-Pakete. Gemessene Verdienstrate: rund 5.300 Ore je Stunde. Die Pakete
    sind daran ausgerichtet und in Spielzeit umgerechnet direkt angeschrieben —
@@ -2944,22 +2961,46 @@ function buildRecords(){
     `<div class="recline"><span>${a}</span><b>${b}</b></div>`).join("");
 }
 
+/* Wo der Startbonus wirken kann, entscheidet sich daran, wo das Ore liegt:
+   Bei einem Konto liegt es auf dem Server, also nur im Onlinebetrieb — dort
+   bucht der Server beim Beitritt ab. Ohne Konto liegt es im Browser, also nur
+   auf der lokalen offenen Karte; online wüsste der Server nichts davon. */
+/* `Konto` wird erst weiter unten in der Datei angelegt. `buildBoost()` läuft
+   aber schon beim Aufbau des Menüs, also vorher — und ein `const` vor seiner
+   Zeile anzufassen wirft. Zu diesem Zeitpunkt ist niemand angemeldet, genau
+   das gibt die Klammer zurück. */
+function istAngemeldet(){
+  try { return Konto.angemeldet(); } catch(_){ return false; }
+}
+
+function boostErlaubt(){
+  return istAngemeldet() ? modeId === "online" : modeId === "open";
+}
+
 function buildBoost(){
   const box = $("boostPick");
   if (!box) return;
   box.innerHTML = "";
-  const nurOffen = modeId === "open";
+  const erlaubt = boostErlaubt();
+  /* Eine gewählte Stufe zurücksetzen, die hier nicht wirkt. Sonst steht im
+     Menü ein bezahlter Bonus, der niemals abgebucht wird — genau die Art
+     Unstimmigkeit, die sich beim Spielen als „irgendwas stimmt nicht" zeigt. */
+  if (!erlaubt) Profile.boost = 1;
   for (const f of [1,2,3]){
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = f === 1 ? t("boostoff")
       : "×" + f + "  " + BOOST_COST[f].toLocaleString(lang) + " Ore";
     b.setAttribute("aria-pressed", String(Profile.boost === f));
-    b.disabled = !nurOffen && f > 1;
+    b.disabled = !erlaubt && f > 1;
     b.addEventListener("click", () => { Profile.boost = f; buildBoost(); });
     box.appendChild(b);
   }
-  $("boostNote").textContent = nurOffen ? t("boostnote") : t("boostonly");
+  $("boostNote").textContent =
+    erlaubt                ? t("boostnote")
+    : istAngemeldet()      ? t("practiceacct")
+    : modeId === "online"  ? t("boostacct")
+                           : t("boostonly");
 }
 
 function buildStrip(){
@@ -3018,11 +3059,14 @@ function note(text, kind){
   n.textContent = text;
   n.className = "notice" + (kind ? " " + kind : "");
 }
-function pick(s){
+async function pick(s){
   if (Profile.owned.has(s.id)){
-    skin = s;
+    skin = s; Profile.skin = s.id;
     buildGrid();
     note(t("selected", s.label), "good");
+    /* Bei einem Konto gehört die Wahl auf den Server. Ohne diesen Aufruf wäre
+       sie nur eine Anzeige und nach dem Neuladen wieder verschwunden. */
+    if (Konto.angemeldet()) Konto.einstellen({skin: s.id});
     return;
   }
   if (s.lv){
@@ -3033,6 +3077,29 @@ function pick(s){
     note(t("needore", s.label, s.ore.toLocaleString(lang)), "warn");
     return;
   }
+
+  /* Angemeldet kauft der Server. Der Client darf sein Guthaben nicht selbst
+     senken und seine Besitzliste nicht selbst erweitern — beides käme beim
+     nächsten Neuladen vom Server zurück, und zwar unverändert. */
+  if (Konto.angemeldet()){
+    if (Konto.laeuft) return;
+    Konto.laeuft = true;
+    note(t("k_wait"));
+    const e = await Konto.kaufen(s.id);
+    Konto.laeuft = false;
+    if (e.ok){
+      skin = SKINS.find(x => x.id === Profile.skin) || s;
+      paintPurse(); buildGrid();
+      note(t("bought", s.label, s.ore.toLocaleString(lang)), "good");
+    } else if (e.fehler === "zu_wenig_ore"){
+      paintPurse();
+      note(t("needore", s.label, s.ore.toLocaleString(lang)), "warn");
+    } else {
+      note(t(e.fehler === "netz" ? "k_offline" : "k_buyfail"), "warn");
+    }
+    return;
+  }
+
   if (Profile.buy(s)){
     skin = s;
     paintPurse(); buildGrid();
@@ -3189,6 +3256,20 @@ function guardName(input, note){
 guardName($("name"), "nameNote");
 guardName($("friendName"));
 
+/* Der Name eines angemeldeten Spielers gehört auf den Server: Im
+   Onlinebetrieb nimmt der Server den Namen aus dem Profil, nicht aus der
+   Beitrittsnachricht. Ohne diesen Aufruf könnte man den Namen im Menü ändern
+   und würde im Spiel weiter unter dem alten auftreten — ohne Hinweis, warum.
+   `change` statt `input`: sonst geht bei jedem Tastendruck eine Anfrage los. */
+$("name").addEventListener("change", async () => {
+  if (!Konto.angemeldet()) return;
+  const n = cleanName($("name").value).trim();
+  if (!n || n === Konto.profil.name) return;
+  const e = await Konto.einstellen({name: n});
+  if (e.ok){ $("name").value = Konto.profil.name; Game.name = Konto.profil.name; }
+  else $("name").value = Konto.profil.name;
+});
+
 $("friendsBtn").addEventListener("click", () => {
   buildFriends(); friendNote(""); show("friendsVeil");
 });
@@ -3224,7 +3305,7 @@ function verbindenDannStarten(name){
   btn.dataset.i18n = "net_dial";
   btn.textContent = t("net_dial");
   Game.name = cleanName(name) || t("unnamed");
-  Net.join({name: Game.name, skin: skin.id});
+  Net.join({name: Game.name, skin: skin.id, bonus: Profile.boost});
 
   const frist = jetzt() + 6;            // sechs Sekunden Geduld, dann offline
   (function warten(){
@@ -3369,6 +3450,10 @@ const Konto = {
   token:null, profil:null, stand:null, bonus:null,
   /* null = noch nicht versucht, true/false = Ergebnis des letzten Versuchs */
   erreichbar:null,
+  /* Kann der Server Mails verschicken? Steht in der Antwort von `/health`.
+     Ohne Versand wird „Passwort vergessen" nicht angeboten — ein Knopf, der
+     zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. */
+  versand:false,
   laeuft:false,
 
   merken(token){
@@ -3484,13 +3569,70 @@ const Konto = {
      schlechter als gar keines. */
   async anklopfen(){
     const a = await this.ruf("/health");
+    this.versand = !!a.mail;
     return a.status === 200;
   },
 
-  async rangliste(art, land, ids){
+  /* Was der Spieler selbst ändern darf: Name, Land, Oberfläche. Ohne diesen
+     Aufruf wäre die Wahl nur eine Anzeige — nach dem Neuladen käme wieder,
+     was auf dem Server steht. */
+  async einstellen(felder){
+    if (!this.angemeldet()) return { fehler: "kein_konto" };
+    const a = await this.ruf("/konto/einstellen", felder);
+    if (a.status === 200){ this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Oberfläche kaufen. Den Preis kennt der Server; hier geht nur mit, welche
+     gemeint ist. Sonst könnte der Client seinen eigenen Preis nennen. */
+  async kaufen(skinId){
+    const a = await this.ruf("/konto/kaufen", { skin: skinId });
+    if (a.status === 200){ this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Zurücksetz-Link anfordern. Die Antwort ist immer dieselbe, auch bei einer
+     unbekannten Adresse — sonst wäre dieses Formular eine Abfrage, welche
+     Adressen registriert sind. */
+  async pwVergessen(email){
+    const a = await this.ruf("/konto/passwort-vergessen", { email, sprache: lang });
+    if (a.status === 200) return { ok:true };
+    return { fehler: a.status === 503 ? "versand_aus" : (a.fehler || "netz") };
+  },
+
+  async pwSetzen(marke, passwort){
+    const a = await this.ruf("/konto/passwort-neu", { marke, passwort });
+    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  async bestaetigen(marke){
+    const a = await this.ruf("/konto/bestaetigen", { marke });
+    if (a.status === 200){
+      // Läuft auch ohne Anmeldung. Ist gerade jemand angemeldet, zieht die
+      // Anzeige sofort nach, statt bis zum nächsten Neuladen falsch zu stehen.
+      if (this.profil) this.profil.emailOk = true;
+      return { ok:true };
+    }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  async bestaetigungNeu(){
+    const a = await this.ruf("/konto/bestaetigung", { sprache: lang });
+    if (a.status === 200) return { ok:true };
+    return { fehler: a.status === 503 ? "versand_aus" : (a.fehler || "netz") };
+  },
+
+  /* `namen` statt Kennungen: Die Freundesliste liegt im Browser und soll dort
+     bleiben. `freunde` sagt dem Server, dass eine Einschränkung gewollt war —
+     sonst käme bei unbekannten Namen die Weltrangliste zurück. */
+  async rangliste(art, land, namen){
     const teile = ["art=" + encodeURIComponent(art || "best")];
     if (land) teile.push("land=" + encodeURIComponent(land));
-    if (ids && ids.length) teile.push("ids=" + ids.join(","));
+    if (namen){
+      teile.push("freunde=1");
+      if (namen.length) teile.push("namen=" + namen.map(encodeURIComponent).join(","));
+    }
     const a = await this.ruf("/rangliste?" + teile.join("&"));
     return a.status === 200 ? a : null;
   }
@@ -3569,6 +3711,7 @@ const Net = {
          Oberfläche aus dem Profil statt aus dieser Nachricht — und nur dann
          wird die Runde einem Konto gutgeschrieben. */
       try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin,
+                                             bonus: info.bonus || 1,
                                              token: Konto.token || undefined})); }
       catch(_){}
     };
@@ -3603,6 +3746,17 @@ const Net = {
         const e = m.names[id];
         if (e && typeof e.n === "string") this.wer.set(+id, {n:e.n, s:String(e.s || "basalt")});
       }
+      /* Startbonus: Der Server sagt, was er abgebucht hat. Reichte das
+         Guthaben nicht, steht hier eine niedrigere Stufe als gewählt — dann
+         startet der Spieler normal und erfährt auch, warum. */
+      if (m.ore !== null && m.ore !== undefined && Konto.profil){
+        Konto.profil.ore = Math.max(0, +m.ore || 0);
+        Profile.ore = Konto.profil.ore;
+        paintPurse();
+      }
+      const bezahlt = Math.max(1, +m.bonus || 1);
+      if (bezahlt < Profile.boost) toast(t("boostpoor"));
+      Profile.boost = bezahlt;
       return;
     }
 
@@ -3777,29 +3931,251 @@ const Net = {
   }
 };
 
+/* =====================================================================
+   6e) RANGLISTEN
+   Gewertet wird nur, was der Server gerechnet hat. Eine lokale Runde gegen
+   Computergegner kann niemand nachprüfen, deshalb zählt sie nicht — das steht
+   auch im Bildschirm, sonst sucht ein Spieler den Fehler bei sich.
+
+   Drei Ansichten und drei Wertungen ergeben neun Listen. Alle kommen vom
+   Server fertig sortiert und auf fünfzig Zeilen begrenzt: Sortieren im
+   Browser hieße, erst alle Konten zu schicken.
+   ===================================================================== */
+
+let rangWer = "welt";      // welt | land | freunde
+let rangWas = "best";      // best | level | ore
+let rangLauf = 0;          // laufende Nummer, gegen überholende Antworten
+
+function rangKnoepfe(){
+  const wer = [["welt","r_world"], ["land","r_country"], ["freunde","r_friends"]];
+  const was = [["best","r_best"], ["level","r_level"], ["ore","r_ore"]];
+  for (const [box, liste, jetzt, setzen] of
+       [[$("rankWho"), wer, rangWer, v => rangWer = v],
+        [$("rankWhat"), was, rangWas, v => rangWas = v]]){
+    box.innerHTML = "";
+    for (const [wert, schluessel] of liste){
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = t(schluessel);
+      b.setAttribute("aria-pressed", String(jetzt === wert));
+      b.addEventListener("click", () => { setzen(wert); rangKnoepfe(); rangLaden(); });
+      box.appendChild(b);
+    }
+  }
+}
+
+function rangHinweis(text, art){
+  const n = $("rankNote");
+  n.textContent = text || "";
+  n.className = "notice" + (art ? " " + art : "");
+}
+
+/* Zahlen groß genug, dass sie nebeneinander lesbar bleiben: 1.240.000 statt
+   1240000. Masse und Ore werden gerundet, Level ist ohnehin ganz. */
+const rangWert = (e) => rangWas === "level"
+  ? t("level") + " " + e.wert
+  : Math.round(e.wert).toLocaleString(lang);
+
+async function rangLaden(){
+  const box = $("rankList");
+  const meine = ++rangLauf;
+
+  if (!Konto.angemeldet()){
+    box.innerHTML = "";
+    rangHinweis(t("r_guest"), "warn");
+    return;
+  }
+  if (rangWer === "land" && !Konto.profil.land){
+    box.innerHTML = "";
+    rangHinweis(t("r_noland"), "warn");
+    return;
+  }
+  if (rangWer === "freunde" && !Profile.friends.length){
+    box.innerHTML = "";
+    rangHinweis(t("r_nofriends"));
+    return;
+  }
+
+  box.innerHTML = `<p class="hintline">${t("r_loading")}</p>`;
+  rangHinweis("");
+
+  /* Der eigene Name gehört in die Freundesliste, sonst fehlt man in der
+     eigenen Wertung — und eine Rangliste, in der man selbst nicht vorkommt,
+     ist zum Vergleichen unbrauchbar. */
+  const namen = rangWer === "freunde"
+    ? Profile.friends.concat([Konto.profil.name]) : null;
+  const land = rangWer === "land" ? Konto.profil.land : null;
+
+  const a = await Konto.rangliste(rangWas, land, namen);
+  /* Eine langsame Antwort auf eine alte Auswahl darf eine neue nicht
+     überschreiben. Ohne diese Prüfung blinkt die Liste zwischen zwei
+     Ansichten, wenn schnell umgeschaltet wird. */
+  if (meine !== rangLauf) return;
+
+  if (!a){ box.innerHTML = ""; return rangHinweis(t("r_offline"), "warn"); }
+
+  const liste = a.liste || [];
+  if (!liste.length){
+    box.innerHTML = "";
+    return rangHinweis(t(rangWer === "freunde" ? "r_nofound" : "r_empty"));
+  }
+
+  const ich = Konto.profil.id;
+  box.innerHTML = liste.map(e => {
+    const land2 = e.land ? `<small>${esc(e.land)}</small>` : "";
+    return `<div class="rankrow${+e.id === ich ? " me" : ""}">` +
+           `<i>${e.rang}</i><b>${esc(e.name)}${land2}</b>` +
+           `<span>${esc(rangWert(e))}</span></div>`;
+  }).join("");
+
+  /* Der eigene Platz getrennt — aber nur, wenn er nicht ohnehin in der
+     sichtbaren Liste steht. Dort ist die eigene Zeile hervorgehoben; ein
+     zweiter Satz darunter wäre nur Wiederholung. */
+  const drin = liste.some(e => +e.id === ich);
+  rangHinweis(a.eigener && !drin ? t("r_you", a.eigener.toLocaleString(lang)) : "");
+}
+
+$("rankBtn").addEventListener("click", () => {
+  rangKnoepfe(); show("rankVeil"); rangLaden();
+});
+$("rankClose").addEventListener("click", () => show("startVeil"));
+
+/* =====================================================================
+   6f) PASSWORT VERGESSEN UND ADRESSE BESTÄTIGEN
+   Zwei Wege in denselben Bildschirm: „Passwort vergessen" fragt nach der
+   Adresse, ein Link aus der Mail setzt gleich ein neues Passwort.
+   ===================================================================== */
+
+let pwMarke = null;
+
+function pwMeldung(text, art){
+  const n = $("pwNote");
+  n.textContent = text || "";
+  n.className = "notice" + (art ? " " + art : "");
+}
+
+/* `marke` gesetzt heißt: Der Spieler kommt aus der Mail und darf gleich ein
+   neues Passwort wählen. Ohne Marke wird erst nach der Adresse gefragt. */
+function pwZeigen(marke){
+  pwMarke = marke || null;
+  $("pwAskForm").hidden = !!pwMarke;
+  $("pwSetForm").hidden = !pwMarke;
+  $("pwHead").textContent = t("p_head");
+  $("pwMail").value = ""; $("pwNew").value = "";
+  // Kein Hinweis: „Neues Passwort wählen" steht schon über dem Formular.
+  pwMeldung("");
+  show("pwVeil");
+  setTimeout(() => { try { $(pwMarke ? "pwNew" : "pwMail").focus(); } catch(_){} }, 50);
+}
+
+$("acctForgot").addEventListener("click", () => pwZeigen(null));
+$("pwClose").addEventListener("click", () => {
+  show(Konto.angemeldet() ? "startVeil" : "accountVeil");
+});
+
+$("pwAskForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (Konto.laeuft) return;
+  const email = $("pwMail").value.trim();
+  if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email))
+    return pwMeldung(t("e_email"), "warn");
+
+  Konto.laeuft = true; $("pwAsk").disabled = true;
+  pwMeldung(t("p_wait"));
+  const a = await Konto.pwVergessen(email);
+  Konto.laeuft = false; $("pwAsk").disabled = false;
+
+  if (a.fehler === "versand_aus") return pwMeldung(t("p_off"), "warn");
+  if (a.fehler) return pwMeldung(t("e_net"), "warn");
+  /* Bewusst dieselbe Auskunft, ob es die Adresse gibt oder nicht. */
+  pwMeldung(t("p_sent"), "good");
+});
+
+$("pwSetForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (Konto.laeuft || !pwMarke) return;
+  const pw = $("pwNew").value;
+  if (pw.length < 8) return pwMeldung(t("e_pwshort"), "warn");
+
+  Konto.laeuft = true; $("pwSave").disabled = true;
+  pwMeldung(t("p_wait"));
+  const a = await Konto.pwSetzen(pwMarke, pw);
+  Konto.laeuft = false; $("pwSave").disabled = false;
+  $("pwNew").value = "";
+
+  if (a.fehler === "marke_ungueltig"){ pwMarke = null; return pwMeldung(t("p_bad"), "warn"); }
+  if (a.fehler) return pwMeldung(t("e_net"), "warn");
+
+  /* Das Passwortsetzen schließt alle Sitzungen des Kontos und öffnet eine
+     neue — man ist also sofort angemeldet. */
+  pwMarke = null;
+  nachAnmeldung();
+  toast(t("p_done"));
+});
+
+/* Marke aus der Adresszeile. Sie steht im Anker (`#pw=` / `#ok=`), nicht in
+   der Abfragezeichenfolge: Ein Anker wird vom Browser nie an einen Server
+   geschickt und landet damit in keinem Zugriffsprotokoll.
+
+   Danach wird der Anker entfernt — sonst bleibt der Schlüssel zum Konto in
+   der Adresszeile und im Verlauf stehen. */
+async function markeAusAdresse(){
+  let anker = "";
+  try { anker = (location.hash || "").replace(/^#/, ""); } catch(_){ return false; }
+  if (!anker) return false;
+
+  const p = new URLSearchParams(anker);
+  const neu = p.get("pw"), ok = p.get("ok");
+  if (!neu && !ok) return false;
+
+  try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+
+  if (neu){ pwZeigen(neu); return true; }
+
+  const a = await Konto.bestaetigen(ok);
+  /* Läuft ohne Anmeldung: Wer den Link auf einem anderen Gerät öffnet, soll
+     die Adresse trotzdem bestätigen können. */
+  kontoMeldung(t(a.ok ? "p_confirmed" : "p_confirmbad"), a.ok ? "good" : "warn");
+  return false;
+}
+
+/* Ändert sich nur der Anker, lädt der Browser die Seite **nicht** neu. Wer
+   die Seite schon offen hat und dann den Link aus der Mail anklickt, sähe
+   sonst gar nichts passieren. */
+window.addEventListener("hashchange", () => { markeAusAdresse(); });
+
 /* Gemerkte Sitzung wieder aufnehmen. Steht bewusst am Dateiende: Das
    Konto-Modul wird mit `const` angelegt und ist vorher noch nicht benutzbar.
    Läuft nebenher, damit der Anmeldebildschirm sofort bedienbar ist — auch
    wenn der Server langsam antwortet oder gar nicht. Wer schon angemeldet ist,
    landet ohne Umweg im Menü. */
 (async () => {
-  if (Konto.gemerkt()){
-    kontoMeldung(t("k_wait"));
-    if (await Konto.wiederaufnehmen()){
-      if (!$("accountVeil").hidden) nachAnmeldung();
-      else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
-      return;
+  /* Zuerst anklopfen, in jedem Fall: Von dieser Antwort hängt ab, ob es
+     überhaupt ein Formular gibt und ob der Server Mails verschicken kann. */
+  const da = await Konto.anklopfen();
+
+  if (da){
+    $("acctForgot").hidden = !Konto.versand;
+    // Kommt der Spieler aus einer Mail, geht das vor allem anderen.
+    const ausMail = await markeAusAdresse();
+
+    if (Konto.gemerkt()){
+      if (!ausMail) kontoMeldung(t("k_wait"));
+      if (await Konto.wiederaufnehmen()){
+        if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
+        else if (!$("accountVeil").hidden) nachAnmeldung();
+        else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
+        return;
+      }
     }
-    if (Konto.erreichbar) { kontoMeldung(""); return; }
-  } else if (await Konto.anklopfen()){
-    kontoMeldung("");
+    if (!ausMail && !$("pwNote").textContent) kontoMeldung("");
     return;
   }
 
   /* Kein Server: Das Formular verschwindet, „Ohne Konto spielen" bleibt und
      wird zum Hauptknopf. Erklärt wird der Grund einmal, statt ihn bei jedem
      Anmeldeversuch neu zu melden. */
-  for (const id of ["acctForm", "acctSwap"]) $(id).hidden = true;
+  for (const id of ["acctForm", "acctSwap", "acctForgot"]) $(id).hidden = true;
   $("guestBtn").classList.remove("quiet");
   kontoMeldung(t("k_offline"));
 })();

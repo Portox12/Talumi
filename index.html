@@ -216,6 +216,21 @@
      border:1px solid var(--line);color:var(--paper-2);font-weight:400}
   .friend button:hover{border-color:var(--ember);color:var(--ember);background:none}
 
+  /* Ranglisten. Feste Spaltenbreiten über grid statt flex: Sonst rutschen
+     Platz und Wert je Zeile, weil die Namen unterschiedlich lang sind, und
+     die Liste liest sich nicht mehr von oben nach unten. */
+  #rankList{margin-top:12px;min-height:120px}
+  .rankrow{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:baseline;
+     padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .rankrow i{font-style:normal;color:var(--paper-2);font-variant-numeric:tabular-nums;
+     text-align:right}
+  .rankrow b{font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rankrow b small{color:var(--paper-2);font-size:11px;margin-left:6px}
+  .rankrow span{color:var(--brass);font-variant-numeric:tabular-nums}
+  /* Die eigene Zeile ist die einzige, die ein Spieler sucht. */
+  .rankrow.me{background:var(--plate);margin:0 -8px;padding:6px 8px}
+  .rankrow.me i,.rankrow.me b{color:var(--brass)}
+
   /* Clan-Anzeige im Spiel */
   #goalPlate.flash{border-color:var(--brass);animation:goalpulse 1s ease-in-out infinite}
   @keyframes goalpulse{
@@ -531,6 +546,9 @@
     </form>
     <p class="notice" id="acctNote"></p>
     <button class="quiet" id="acctSwap" data-i18n="k_new">No account yet? Create one</button>
+    <!-- Nur sichtbar, wenn der Server Mails verschicken kann. Ein Knopf, der
+         zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. -->
+    <button class="quiet" id="acctForgot" data-i18n="p_head" hidden>Forgotten password</button>
 
     <div class="two" style="margin-top:10px">
       <button class="quiet" id="googleBtn" data-i18n="k_google">Continue with Google</button>
@@ -577,7 +595,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 41 · updated 10 September 2026 ·
+      <p class="updated">Version 56 · updated 12 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
@@ -618,6 +636,7 @@
 
     <div class="two">
       <button class="quiet" id="shopBtn" data-i18n="skins">Skins</button>
+      <button class="quiet" id="rankBtn" data-i18n="r_head">Leaderboards</button>
       <button class="quiet" id="friendsBtn" data-i18n="friends">Friends</button>
       <button class="quiet" id="settingsBtn" data-i18n="settings">Settings</button>
       <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
@@ -666,6 +685,49 @@
     <div id="orePacks"></div>
     <p class="notice warn" data-i18n="orenotyet">Not active in this build.</p>
     <button class="quiet" id="oreClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- Ranglisten -->
+<div class="veil" id="rankVeil" hidden>
+  <div class="card">
+    <h1 style="font-size:34px;margin-bottom:4px" data-i18n="r_head">Leaderboards</h1>
+    <p class="sub" style="margin:0" data-i18n="r_sub">Only online rounds count.</p>
+
+    <label style="margin-top:14px" data-i18n="r_who">Who</label>
+    <div class="seg" id="rankWho"></div>
+    <label style="margin-top:12px" data-i18n="r_what">Ranked by</label>
+    <div class="seg" id="rankWhat"></div>
+
+    <div id="rankList"></div>
+    <p class="notice" id="rankNote"></p>
+    <button class="quiet" id="rankClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- Passwort vergessen und neu setzen -->
+<div class="veil" id="pwVeil" hidden>
+  <div class="card">
+    <h1 style="font-size:34px" id="pwHead" data-i18n="p_head">Forgotten password</h1>
+
+    <form id="pwAskForm" autocomplete="on">
+      <p class="sub" style="margin:0 0 8px" data-i18n="p_ask">Enter your address and we will send a link.</p>
+      <label for="pwMail" data-i18n="k_email">E-mail</label>
+      <input type="email" id="pwMail" autocomplete="email" autocapitalize="off"
+             spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
+      <button type="submit" id="pwAsk" data-i18n="p_send">Send link</button>
+    </form>
+
+    <form id="pwSetForm" autocomplete="on" hidden>
+      <p class="sub" style="margin:0 0 8px" data-i18n="p_set">Choose a new password.</p>
+      <label for="pwNew" data-i18n="p_new">New password</label>
+      <input type="password" id="pwNew" autocomplete="new-password">
+      <p class="hintline" data-i18n="k_pwhint">At least 8 characters.</p>
+      <button type="submit" id="pwSave" data-i18n="p_save">Save password</button>
+    </form>
+
+    <p class="notice" id="pwNote"></p>
+    <button class="quiet" id="pwClose" data-i18n="back">Back</button>
   </div>
 </div>
 
