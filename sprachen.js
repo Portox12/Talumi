@@ -96,13 +96,13 @@ const LANGS9 = {
 };
 for (const c in LANGS9) Object.assign(LANGS[c], LANGS9[c]);
 const LANGS10 = {
-  en:{s_theme:"Colours", s_theme_h:"Earth is the dark palette, Sand the light one.", o_earth:"Earth", o_sand:"Sand"},
-  de:{s_theme:"Farben", s_theme_h:"Erde ist die dunkle Palette, Sand die helle.", o_earth:"Erde", o_sand:"Sand"},
-  es:{s_theme:"Colores", s_theme_h:"Tierra es la paleta oscura, Arena la clara.", o_earth:"Tierra", o_sand:"Arena"},
-  pt:{s_theme:"Cores", s_theme_h:"Terra é a paleta escura, Areia a clara.", o_earth:"Terra", o_sand:"Areia"},
-  fr:{s_theme:"Couleurs", s_theme_h:"Terre est la palette sombre, Sable la claire.", o_earth:"Terre", o_sand:"Sable"},
-  tr:{s_theme:"Renkler", s_theme_h:"Toprak koyu paleti, Kum açık paleti.", o_earth:"Toprak", o_sand:"Kum"},
-  ru:{s_theme:"Цвета", s_theme_h:"«Земля» — тёмная палитра, «Песок» — светлая.", o_earth:"Земля", o_sand:"Песок"},
+  en:{s_theme:"Colours", s_theme_h:"Earth is the dark palette, Sand the light one.", o_earth:"Earth (dark)", o_sand:"Sand (light)"},
+  de:{s_theme:"Farben", s_theme_h:"Erde ist die dunkle Palette, Sand die helle.", o_earth:"Erde (dunkel)", o_sand:"Sand (hell)"},
+  es:{s_theme:"Colores", s_theme_h:"Tierra es la paleta oscura, Arena la clara.", o_earth:"Tierra (oscuro)", o_sand:"Arena (claro)"},
+  pt:{s_theme:"Cores", s_theme_h:"Terra é a paleta escura, Areia a clara.", o_earth:"Terra (escuro)", o_sand:"Areia (claro)"},
+  fr:{s_theme:"Couleurs", s_theme_h:"Terre est la palette sombre, Sable la claire.", o_earth:"Terre (sombre)", o_sand:"Sable (clair)"},
+  tr:{s_theme:"Renkler", s_theme_h:"Toprak koyu paleti, Kum açık paleti.", o_earth:"Toprak (koyu)", o_sand:"Kum (açık)"},
+  ru:{s_theme:"Цвета", s_theme_h:"«Земля» — тёмная палитра, «Песок» — светлая.", o_earth:"Земля (тёмная)", o_sand:"Песок (светлый)"},
 };
 for (const c in LANGS10) Object.assign(LANGS[c], LANGS10[c]);
 const LANGS11 = {
