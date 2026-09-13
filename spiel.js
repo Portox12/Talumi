@@ -1987,11 +1987,22 @@ function finish(timeUp){
         ? `<p class="gain">${t("levelup", Net.aufgestiegen)} <b>${esc(namen.join(", "))}</b></p>`
         : `<p class="gain">${t("levelonly", Net.aufgestiegen)}</p>`;
     }
+    /* Ehre dieser Runde. Sie steht getrennt von Ore und XP, weil sie etwas
+       anderes ist: Ore und XP bekommt man fürs Wachsen, Ehre nur fürs Jagen.
+       Auch eine Null steht da — sonst weiß man nicht, ob man nichts bekommen
+       hat oder ob die Anzeige fehlt. */
+    if (Net.ehre){
+      html += Net.ehre.dazu > 0
+        ? `<div class="tally sum"><span>${t("ehredazu")}</span>` +
+          `<span>+${Net.ehre.dazu}</span></div>` +
+          `<p class="gain">${esc(t("rang"))}: <b>${esc(t("rk" + clamp(Net.ehre.rang,0,RANG_MAX)))}</b></p>`
+        : `<p class="hintline">${esc(t("ehrekeine"))} ${esc(t("ehrewie"))}</p>`;
+    }
     $("endGains").innerHTML = html;
 
     Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
-    Net.lohn = null; Net.profil = null;
-    paintPurse(); buildGrid();
+    Net.lohn = null; Net.profil = null; Net.ehre = null;
+    paintPurse(); buildGrid(); paintRank();
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
     return;
@@ -2271,6 +2282,213 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.fillText(label, x, y);
   }
 }
+/* =====================================================================
+   RANGABZEICHEN
+
+   Dreizehn Stufen, gezeichnet als Pfade — keine Bilddateien, passend zum
+   Grundsatz „nichts von außen". Die Stufen unterscheiden sich an der **Form**
+   (Winkel, schmale Balken, breite Balken, Sterne), nicht nur an der Anzahl:
+   In Spielgröße — rund 26 × 15 Bildpunkte — ist eine Form auf einen Blick
+   lesbar, drei gezählte Striche nicht.
+
+   Die Rangnamen stehen in `sprachen.js`, hier nur die Gestaltung.
+   ===================================================================== */
+
+const RANG_STIL = [
+  {art:"winkel", n:1, farbe:"#c08f5c", rand:"#8a6440", grund:"#1c1510"},  // Kadett
+  {art:"winkel", n:2, farbe:"#c08f5c", rand:"#8a6440", grund:"#1c1510"},  // Fähnrich
+  {art:"balken", n:1, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
+  {art:"balken", n:2, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
+  {art:"balken", n:3, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
+  {art:"balken", n:1, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
+  {art:"balken", n:2, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
+  {art:"balken", n:3, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
+  {art:"stern",  n:1, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},  // Kommodore
+  {art:"stern",  n:2, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},
+  {art:"stern",  n:3, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},
+  {art:"stern",  n:4, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},  // Admiral
+  {art:"gross",  n:1, farbe:"#f1d38c", rand:"#d8a75f", grund:"#2a1f12"}   // Großadmiral
+];
+const RANG_MAX = RANG_STIL.length - 1;
+/* Seitenverhältnis der Plakette, 48 × 28 aus dem Entwurf. */
+const ABZEICHEN_V = 48/28;
+const abzeichenBreite = h => h * ABZEICHEN_V;
+
+function stern(g, x, y, r){
+  g.beginPath();
+  for (let i = 0; i < 10; i++){
+    const a = -Math.PI/2 + i * Math.PI/5;
+    const rr = i % 2 ? r * .42 : r;
+    i ? g.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr)
+      : g.moveTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr);
+  }
+  g.closePath();
+}
+
+/* Zeichnet das Abzeichen der Stufe `stufe` mit der Höhe `h`.
+   (`x`, `y`) ist die linke obere Ecke, alles in Bildschirmpunkten. */
+function abzeichen(g, x, y, stufe, h){
+  const s = RANG_STIL[clamp(Math.round(stufe), 0, RANG_MAX)];
+  const b = abzeichenBreite(h), r = h * .22;
+
+  // Plakette
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x, y, b, h, r);
+  else g.rect(x, y, b, h);
+  g.fillStyle = s.grund; g.fill();
+  g.strokeStyle = s.rand; g.lineWidth = Math.max(1, h * .06); g.stroke();
+
+  g.save();
+  g.fillStyle = s.farbe; g.strokeStyle = s.rand;
+  g.lineWidth = Math.max(.8, h * .045);
+  const mx = x + b/2, my = y + h/2;
+
+  if (s.art === "winkel"){
+    /* Winkel: die Spitze zeigt nach oben, wie ein Ärmelabzeichen. */
+    const dick = h * .15, weite = b * .30, hoch = h * .17;
+    for (let i = 0; i < s.n; i++){
+      const oy = my + (i - (s.n-1)/2) * (h * .30) + h * .04;
+      g.beginPath();
+      g.moveTo(mx - weite, oy + hoch);
+      g.lineTo(mx,         oy - hoch);
+      g.lineTo(mx + weite, oy + hoch);
+      g.lineTo(mx + weite, oy + hoch + dick);
+      g.lineTo(mx,         oy - hoch + dick);
+      g.lineTo(mx - weite, oy + hoch + dick);
+      g.closePath(); g.fill();
+    }
+  } else if (s.art === "balken"){
+    const bw = s.breit ? b * .62 : b * .52;
+    const bh = s.breit ? h * .17 : h * .09;
+    const luft = s.breit ? h * .11 : h * .13;
+    const gesamt = s.n * bh + (s.n - 1) * luft;
+    for (let i = 0; i < s.n; i++){
+      const oy = my - gesamt/2 + i * (bh + luft);
+      g.beginPath();
+      if (g.roundRect) g.roundRect(mx - bw/2, oy, bw, bh, bh * .35);
+      else g.rect(mx - bw/2, oy, bw, bh);
+      g.fill();
+      if (s.breit) g.stroke();
+    }
+  } else if (s.art === "stern"){
+    /* Bis zu vier Sterne: eine Reihe, bei vier zwei über zwei — sonst werden
+       sie in Spielgröße zu klein, um noch Sterne zu sein. */
+    const reihen = s.n === 4 ? [[0,1],[2,3]] : [[...Array(s.n).keys()]];
+    const rr = s.n === 4 ? h * .19 : h * .26;
+    reihen.forEach((reihe, ri) => {
+      const oy = my + (ri - (reihen.length-1)/2) * (rr * 2.1);
+      reihe.forEach((_, ci) => {
+        const ox = mx + (ci - (reihe.length-1)/2) * (rr * 2.2);
+        stern(g, ox, oy, rr); g.fill();
+      });
+    });
+  } else {
+    /* Großadmiral: ein großer Stern zwischen zwei Bögen — eine Form, die
+       sonst nirgends vorkommt. Es gibt ihn je Land nur einmal. */
+    stern(g, mx, my, h * .30); g.fill();
+    g.lineWidth = Math.max(1, h * .085);
+    /* Radius knapp unter der halben Plakettenhöhe: Mit dem größeren Radius
+       standen die Bögen oben und unten über den Rand hinaus. */
+    for (const seite of [-1, 1]){
+      g.beginPath();
+      g.arc(mx, my, h * .44, seite > 0 ? -1.0 : Math.PI - 1.0,
+                             seite > 0 ?  1.0 : Math.PI + 1.0);
+      g.stroke();
+    }
+  }
+  g.restore();
+}
+
+/* =====================================================================
+   NAMENSZEILE
+
+   Unter dem **größten** Körper eines Spielers steht `[Abzeichen] Level Name`
+   in fester Größe — unabhängig davon, wie groß der Kreis gerade ist. Alle
+   kleineren Teilstücke tragen weiter nur den Namen im Kreis.
+
+   Gezeichnet wird in Bildschirmpunkten und **nach** allen Körpern und
+   Pulsaren: Sonst schiebt sich eine vorbeiziehende größere Zelle über die
+   Anzeige, und in einem Gewühl ist gerade sie nicht mehr lesbar.
+   ===================================================================== */
+
+const ZEILE_H = 15;                   // Höhe des Abzeichens in Bildpunkten
+const zeilen = [];                    // je Bild neu gefüllt
+
+/* Steckt der Körper unter einem Pulsar? Dann verschwindet auch seine Zeile —
+   sonst verriete sie genau das Versteck, das der Pulsar bietet. */
+function unterPulsar(x, y, r){
+  for (const p of Game.pulsars){
+    if (Math.hypot(p.x - x, p.y - y) + r <= PULSAR_R * .98) return true;
+  }
+  return false;
+}
+
+/* Der Körper, an dem die Zeile hängt: der größte. Bei Gleichstand entscheidet
+   die Lage, nicht die Reihenfolge im Feld — sonst springt die Zeile zwischen
+   zwei gleich großen Stücken hin und her. */
+function groesstes(liste){
+  let best = null;
+  for (const c of liste){
+    if (!best) { best = c; continue; }
+    if (c.m > best.m + 1e-6) best = c;
+    else if (Math.abs(c.m - best.m) <= 1e-6 &&
+             (c.x < best.x - 1e-6 || (Math.abs(c.x - best.x) <= 1e-6 && c.y < best.y))) best = c;
+  }
+  return best;
+}
+
+function zeilenZeichnen(g, schuettelX, schuettelY){
+  if (!zeilen.length) return;
+  g.save();
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.textBaseline = "middle";
+  for (const z of zeilen){
+    const px = (z.x - cam.x) * cam.z + VW/2 + schuettelX;
+    const py = (z.y - cam.y) * cam.z + VH/2 + schuettelY;
+    const rr = z.r * cam.z;
+
+    const hatAbz = Number.isInteger(z.rang);
+    const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
+
+    g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
+    const nameB  = g.measureText(z.name).width;
+    g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
+    const stufeB = stufe ? g.measureText(stufe).width + ZEILE_H * .45 : 0;
+    const abzB   = hatAbz ? abzeichenBreite(ZEILE_H) + ZEILE_H * .32 : 0;
+    const breite = abzB + stufeB + nameB;
+    const luft   = ZEILE_H * .38;
+
+    /* Unterhalb des Körpers, mit Abstand zu Ringen und Glühen. Am unteren
+       Bildrand wandert die Zeile nach oben über den Kreis — sonst steht sie
+       außerhalb des Bildes. */
+    const unten = py + rr * 1.30 + ZEILE_H * .85;
+    const oben  = py - rr * 1.30 - ZEILE_H * .85;
+    const cy = unten + ZEILE_H > VH - 12 ? oben : unten;
+    const cx = px - breite/2;
+    if (cx + breite < -40 || cx > VW + 40 || cy < -40 || cy > VH + 40) continue;
+
+    g.beginPath();
+    const pb = breite + luft*2, ph = ZEILE_H + luft*.9;
+    if (g.roundRect) g.roundRect(cx - luft, cy - ph/2, pb, ph, ph*.28);
+    else g.rect(cx - luft, cy - ph/2, pb, ph);
+    g.fillStyle = TH().label; g.fill();
+
+    let ox = cx;
+    if (hatAbz){ abzeichen(g, ox, cy - ZEILE_H/2, z.rang, ZEILE_H);
+                 ox += abzeichenBreite(ZEILE_H) + ZEILE_H * .32; }
+    if (stufe){
+      g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
+      g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
+      g.fillText(stufe, ox, cy + .5);
+      ox += g.measureText(stufe).width + ZEILE_H * .45;
+    }
+    g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
+    g.textAlign = "left"; g.fillStyle = TH().paper || "#e8ddc8";
+    g.fillText(z.name, ox, cy + .5);
+  }
+  g.restore();
+}
+
 function hexA(hex,a){
   const n = parseInt(hex.slice(1),16);
   return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;
@@ -2322,7 +2540,11 @@ function draw(){
 
   ctx.save();
   const sh = Settings.shake ? Game.shake*9 : 0;
-  ctx.translate(VW/2 + rnd(-sh,sh), VH/2 + rnd(-sh,sh));
+  /* Der Versatz des Rüttelns wird gemerkt: Die Namenszeilen werden weiter
+     unten in Bildschirmpunkten gezeichnet und müssen dieselbe Erschütterung
+     mitmachen, sonst schwimmen sie über dem Bild. */
+  const ruettelX = rnd(-sh, sh), ruettelY = rnd(-sh, sh);
+  ctx.translate(VW/2 + ruettelX, VH/2 + ruettelY);
   ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
   ctx.strokeStyle = TH().border; ctx.lineWidth = 4;
   ctx.strokeRect(0,0,WORLD,WORLD);
@@ -2390,12 +2612,50 @@ function draw(){
   }
 
   const lead = Game.cells.reduce((p,c) => !p || c.m > p.m ? c : p, null);
+
+  /* Namenszeilen einsammeln: je Spieler eine, am größten Stück. Online
+     gehören alle Zellen mit derselben `gid` zu einem Spieler; lokal ist jeder
+     Rivale ein eigener Körper und damit seine eigene Gruppe. */
+  zeilen.length = 0;
+  const traeger = new Set();
+  if (Settings.labels !== "off"){
+    const gruppen = new Map();
+    for (const {o, mine} of all){
+      if (mine) continue;
+      if (!seen(o)) continue;
+      const schluessel = o.gid !== undefined ? "g" + o.gid : o;
+      if (!gruppen.has(schluessel)) gruppen.set(schluessel, []);
+      gruppen.get(schluessel).push(o);
+    }
+    for (const teile of gruppen.values()){
+      const c = groesstes(teile);
+      if (!c || radiusOf(c.m) * cam.z < 7) continue;
+      if (unterPulsar(c.x, c.y, radiusOf(c.m))) continue;
+      traeger.add(c);
+      zeilen.push({x:c.x, y:c.y, r:radiusOf(c.m), name:c.name,
+                   level:Number.isInteger(c.lvl) ? c.lvl : null,
+                   rang: Number.isInteger(c.rang) ? c.rang : null});
+    }
+    /* Die eigene Zeile. Level kennt der Browser immer, das Abzeichen nur mit
+       Konto — Ehre gibt es nicht ohne Konto. */
+    const meins = groesstes(Game.cells);
+    if (meins && !unterPulsar(meins.x, meins.y, radiusOf(meins.m))){
+      traeger.add(meins);
+      zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name,
+                   level:Profile.level,
+                   rang: istAngemeldet() && Number.isInteger(Konto.profil.rang)
+                         ? Konto.profil.rang : null});
+    }
+  }
+
   for (const {o,mine} of all){
     if (!mine && !seen(o)) continue;
     const pal = mine ? skin
       : o.pal ? o.pal
       : Game.teams ? teamPal(o.team) : RIVAL_PAL;
-    const label = Settings.labels === "off" ? ""
+    /* Wer eine Zeile unter sich hat, trägt keinen Namen mehr im Kreis —
+       sonst stünde er zweimal da. */
+    const label = Settings.labels === "off" || traeger.has(o) ? ""
       : (Settings.labels === "lead" && mine && o !== lead) ? "" : o.name;
     body(ctx, o.x, o.y, radiusOf(o.m), o.m, pal, mine ? 0 : o.tint, label, mine,
          mine ? skin.tier : o.tier, mine ? skin.trait : o.trait);
@@ -2442,6 +2702,10 @@ function draw(){
     ctx.lineWidth = 3.5; ctx.stroke();
   }
   ctx.restore();
+
+  /* Namenszeilen ganz zuletzt — nach Körpern, Pulsaren und Ringen. Eine
+     vorbeiziehende größere Zelle darf die Anzeige nicht verdecken. */
+  zeilenZeichnen(ctx, ruettelX, ruettelY);
 
   // Stick sichtbar machen, solange der Daumen liegt
   if (isTouch && stick.active && Game.running){
@@ -2828,6 +3092,29 @@ function paintPurse(){
     : clamp(Profile.xp/need, 0, 1))*100 + "%";
 }
 
+/* Rangtafel im Menü. Sie steht nur bei einem Konto da: Ehre gibt es
+   ausschließlich aus Onlinerunden, die der Server gerechnet hat. */
+function paintRank(){
+  const box = $("rankBox");
+  if (!box) return;
+  if (!istAngemeldet() || !Number.isInteger(Konto.profil.rang)){ box.hidden = true; return; }
+  const stufe = clamp(Konto.profil.rang, 0, RANG_MAX);
+  const ehre  = Konto.profil.ehre || 0;
+  box.hidden = false;
+  box.innerHTML =
+    `<h2>${esc(t("rang"))}</h2>` +
+    `<div class="rankline"><canvas width="96" height="56"></canvas>` +
+    `<div><b>${esc(t("rk" + stufe))}</b>` +
+    `<small>${esc(ehre.toLocaleString(lang))} ${esc(t("ehre"))}</small></div></div>` +
+    `<p class="hinweis">${esc(t("ehrewie"))}</p>`;
+  const c = box.querySelector("canvas");
+  const g = c.getContext("2d");
+  g.clearRect(0, 0, c.width, c.height);
+  /* Doppelt so groß gezeichnet wie angezeigt — auf einem Bildschirm mit
+     hoher Auflösung sieht das Abzeichen sonst weich aus. */
+  abzeichen(g, 0, 0, stufe, 56);
+}
+
 function preview(canvas, pal){
   canvas.width = 132; canvas.height = 132;
   const g = canvas.getContext("2d");
@@ -3157,6 +3444,7 @@ const KONTO_FEHLER = {
   zu_viele_versuche: "e_many",
   name_ungueltig:  "e_name",
   gesperrt:        "e_blocked",
+  land_gesperrt:   "e_land",
   netz:            "e_net"
 };
 
@@ -3211,7 +3499,7 @@ $("acctForm").addEventListener("submit", async e => {
    Knopf sein, keine Zahl, die unbemerkt hochspringt. */
 function nachAnmeldung(){
   if (Konto.profil && Konto.profil.name) $("name").value = Konto.profil.name;
-  paintPurse(); buildGrid(); buildRecords(); paintBonus();
+  paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank();
   show("startVeil");
   toast(t("k_hello", Konto.profil ? Konto.profil.name : ""));
 }
@@ -3671,6 +3959,18 @@ function landAusSprache(){
    der Bestenliste noch auf dem Bildschirm „gefressen von". */
 const mitMarke = (name, bot) => bot ? t("ai_tag") + " " + name : name;
 
+/* Was der Server über einen Mitspieler schickt, in die Form bringen, in der
+   der Client damit arbeitet. `l` (Level) und `r` (Rang) kommen nur für
+   angemeldete Konten — bei Gästen und Computergegnern fehlen sie, und dann
+   zeigt die Namenszeile nur den Namen. */
+function steckbrief(e){
+  const w = { n: mitMarke(String(e.n || "?"), e.b), s: String(e.s || "basalt") };
+  if (Number.isInteger(e.l)) w.l = e.l;
+  if (Number.isInteger(e.r)) w.r = e.r;
+  if (e.b) w.b = 1;
+  return w;
+}
+
 const NET_DELAY = 0.09;          // Sekunden Zeichenverzögerung, knapp zwei Serverschritte
 const NET_KEEP  = 1.5;           // Sekunden Schnappschüsse aufbewahren
 const jetzt = () => performance.now()/1000;
@@ -3710,12 +4010,13 @@ const Net = {
   lage:"aus",                    // aus | waehlt | verbunden | fehler
   grund:"",
   you:0, rate:20,
-  wer:new Map(),                 // Spielerkennung -> {n, s}
+  wer:new Map(),                 // Spielerkennung -> {n, s, l?, r?, b?}
   schnapp:[],                    // Schnappschüsse, ältester zuerst
   eigen:null,                    // letzter autoritativer Stand eigener Zellen
   top:[],
   tot:null,
   lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
+  ehre:null,                     // {dazu, gesamt, rang} — nur mit Konto
   letzteEingabe:0,
 
   join(info){
@@ -3764,8 +4065,7 @@ const Net = {
       this.wer.clear();
       for (const id in (m.names || {})){
         const e = m.names[id];
-        if (e && typeof e.n === "string")
-          this.wer.set(+id, {n:mitMarke(e.n, e.b), s:String(e.s || "basalt")});
+        if (e && typeof e.n === "string") this.wer.set(+id, steckbrief(e));
       }
       /* Startbonus: Der Server sagt, was er abgebucht hat. Reichte das
          Guthaben nicht, steht hier eine niedrigere Stufe als gewählt — dann
@@ -3798,6 +4098,7 @@ const Net = {
          und der Ergebnisbildschirm zeigt wie bisher „Übung, keine Belohnung". */
       this.lohn = m.lohn || null;
       this.profil = m.profil || null;
+      this.ehre = m.ehre || null;
       this.stand = m.stand || null;
       this.aufgestiegen = m.aufgestiegen || 0;
       this.neueSkins = m.neueSkins || [];
@@ -3809,8 +4110,19 @@ const Net = {
     for (const e of (m.ev || [])){
       if (!e) continue;
       if (e.t === "join" && typeof e.n === "string")
-        this.wer.set(+e.id, {n:mitMarke(e.n, e.b), s:String(e.s || "basalt")});
+        this.wer.set(+e.id, steckbrief(e));
       if (e.t === "left") this.wer.delete(+e.id);
+      /* Aufstieg mitten in der Runde. Ohne dieses Ereignis trüge ein Spieler
+         sein neues Abzeichen erst in der nächsten Runde. */
+      if (e.t === "rang" && Number.isInteger(e.r)){
+        const w = this.wer.get(+e.id);
+        if (w) w.r = e.r;
+        if (+e.id === this.you){
+          if (Konto.profil) Konto.profil.rang = e.r;
+          toast(t("rangneu", t("rk" + e.r)));
+          Sound.levelUp();
+        }
+      }
       if (e.t === "burst" && isFinite(e.x) && isFinite(e.y))
         ring(+e.x, +e.y, 120, TH().shatter);
       /* Wer uns gefressen hat, sagt nur dieses Ereignis. Der Todesbildschirm
@@ -3893,6 +4205,17 @@ const Net = {
         const y = d ? c.y + (d.y-c.y)*f : c.y;
         const mm = d ? c.m + (d.m-c.m)*f : c.m;
         rivalen.push({x, y, m:mm, name:info.n, gid:id, vx:0, vy:0, merge:0,
+                      /* Level und Rang kommen vom Server. Ein Gast hat
+                         keins von beidem.
+
+                         **Computergegner tragen kein Abzeichen** (Thomas,
+                         13.09.2026: „Gäste und Computergegner: Zeile ohne
+                         Abzeichen, nur Level und Name"). Der Server schickt
+                         ihre Rangstufe trotzdem mit — sie steuert, wie gut
+                         ein NPC spielt, und wird an anderer Stelle gebraucht.
+                         Soll sie doch im Bild stehen, ist `!info.b &&` hier
+                         die einzige Änderung. */
+                      lvl:info.l, rang: info.b ? undefined : info.r,
                       tint:0, pal:haut, tier:(haut && haut.tier) || 1,
                       trait:(haut && haut.trait) || "plain"});
       }
@@ -4193,9 +4516,9 @@ window.addEventListener("hashchange", () => { markeAusAdresse(); });
     if (Konto.gemerkt()){
       if (!ausMail) kontoMeldung(t("k_wait"));
       if (await Konto.wiederaufnehmen()){
-        if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
+        if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         else if (!$("accountVeil").hidden) nachAnmeldung();
-        else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); }
+        else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         return;
       }
     }
