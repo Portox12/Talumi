@@ -1991,6 +1991,13 @@ function finish(timeUp){
        anderes ist: Ore und XP bekommt man fürs Wachsen, Ehre nur fürs Jagen.
        Auch eine Null steht da — sonst weiß man nicht, ob man nichts bekommen
        hat oder ob die Anzeige fehlt. */
+    /* Neue Errungenschaften stehen vor der Ehresumme: Sie sind der Grund,
+       warum die Summe höher ist als die Jagd allein hergibt. */
+    if (Net.erfolge && Net.erfolge.length){
+      html += Net.erfolge.map(e =>
+        `<div class="tally"><span>${esc(t("e_neu"))}: ${esc(erfolgLabel(e.id))}</span>` +
+        `<span>+${(+e.ehre || 0).toLocaleString(lang)}</span></div>`).join("");
+    }
     if (Net.ehre){
       html += Net.ehre.dazu > 0
         ? `<div class="tally sum"><span>${t("ehredazu")}</span>` +
@@ -2001,7 +2008,14 @@ function finish(timeUp){
     $("endGains").innerHTML = html;
 
     Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
+    /* Den Wert vorher festhalten: Zwei Zeilen tiefer wird Net.rangNeu
+       zurückgesetzt, und die verzögerte Meldung las dann immer Stufe 0 —
+       jeder Aufstieg hieß „Rang erreicht: Kadett“. */
+    const erreicht = Net.rangNeu;
+    if (erreicht) setTimeout(() => toast(
+      t("rangneu", t("rk" + clamp(erreicht, 0, RANG_MAX)))), 600);
     Net.lohn = null; Net.profil = null; Net.ehre = null;
+    Net.erfolge = []; Net.rangNeu = 0;
     paintPurse(); buildGrid(); paintRank();
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
@@ -2282,6 +2296,69 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.fillText(label, x, y);
   }
 }
+/* =====================================================================
+   ERRUNGENSCHAFTEN
+
+   Dauerhafte Ziele, die einmal zählen und Ehre einbringen. Welche es gibt und
+   was sie wert sind, entscheidet der Server (`ERFOLGE` in `server.js`) — hier
+   steht nur, wie sie heißen.
+
+   **Absichtlich keine erfundenen Namen.** Eine Errungenschaft heißt hier wie
+   ihre Bedingung: „Verschling 25 Körper". Ein Name wie „Jäger III" müsste
+   erst erklärt werden, in sieben Sprachen, und sagt weniger. Deshalb acht
+   Muster mit einer Zahl statt einundzwanzig Fantasienamen.
+
+   Die Zahlen stehen doppelt — hier und im Server. `testkonto-runde.js`
+   vergleicht beide Listen bei jedem Lauf.
+   ===================================================================== */
+
+/* Kennung → [Textmuster, Zahl im Text, Ehre]. Die Ehre steht auch im Server
+   (`ERFOLGE`); `testkonto-runde.js` vergleicht beide Listen. */
+const ERFOLG_TEXT = {
+  w_geroell:  ["e_masse",     240,   50],
+  w_planetes: ["e_masse",     800,  100],
+  w_proto:    ["e_masse",    2000,  200],
+  w_welt:     ["e_masse",    5000,  400],
+  j_erster:   ["e_jagd1",       1,   25],
+  j_25:       ["e_jagd",       25,  100],
+  j_250:      ["e_jagd",      250,  400],
+  j_runde5:   ["e_jagdrunde",   5,  150],
+  j_runde12:  ["e_jagdrunde",  12,  350],
+  a_10:       ["e_runden",     10,   50],
+  a_100:      ["e_runden",    100,  200],
+  a_500:      ["e_runden",    500,  600],
+  a_fuenfmin: ["e_zeit",        5,  200],
+  t_woche:    ["e_treue",       7,  300],
+  s_10:       ["e_skins",      10,  100],
+  s_25:       ["e_skins",      25,  300],
+  s_alle:     ["e_skins",      46,  800],
+  l_10:       ["e_level",      10,  100],
+  l_25:       ["e_level",      25,  250],
+  l_50:       ["e_level",      50,  600],
+  l_100:      ["e_level",     100, 1500]
+};
+
+/* Reihenfolge im Bildschirm: dieselbe wie oben, gruppenweise. Erreichte
+   stehen nicht oben — sonst wandert die Liste bei jedem Erfolg, und man
+   findet nichts wieder. */
+const ERFOLG_REIHE = Object.keys(ERFOLG_TEXT);
+
+function erfolgLabel(id){
+  const e = ERFOLG_TEXT[id];
+  return e ? t(e[0], e[1].toLocaleString(lang)) : id;
+}
+
+/* Errungenschaften, die außerhalb einer Runde dazukommen (Tagesbonus, Kauf).
+   Kurz nach der eigentlichen Meldung, damit „Bonus abgeholt" nicht sofort
+   überschrieben wird. Nach einer Runde stehen sie im Ergebnisbildschirm. */
+function erfolgeMelden(a){
+  const neu = Array.isArray(a.erfolge) ? a.erfolge : [];
+  if (neu.length) setTimeout(() => toast(neu.map(e =>
+    t("e_neu") + ": " + erfolgLabel(e.id) + " +" + (+e.ehre || 0).toLocaleString(lang)).join(" · ")), 1800);
+  const erreicht = +a.rangNeu || 0;
+  if (erreicht) setTimeout(() => toast(t("rangneu", t("rk" + clamp(erreicht, 0, RANG_MAX)))), 3600);
+}
+
 /* =====================================================================
    RANGABZEICHEN
 
@@ -2948,7 +3025,7 @@ requestAnimationFrame(loop);
    6) SCREENS
    ===================================================================== */
 const VEILS = ["accountVeil","startVeil","shopVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","oreVeil","rankVeil","pwVeil"];
+               "friendsVeil","setVeil","oreVeil","rankVeil","pwVeil","erfVeil"];
 
 /* Ore-Pakete. Gemessene Verdienstrate: rund 5.300 Ore je Stunde. Die Pakete
    sind daran ausgerichtet und in Spielzeit umgerechnet direkt angeschrieben —
@@ -3861,6 +3938,7 @@ const Konto = {
   async bonusHolen(){
     const a = await this.ruf("/konto/bonus", {});
     if (a.status === 200){ this.uebernehmen(a); this.bonus = {offen:false, serie:a.tag};
+                           erfolgeMelden(a);
                            return { ok:true, tag:a.tag, ore:a.ore }; }
     return { fehler: a.fehler || "netz" };
   },
@@ -3889,7 +3967,7 @@ const Konto = {
      gemeint ist. Sonst könnte der Client seinen eigenen Preis nennen. */
   async kaufen(skinId){
     const a = await this.ruf("/konto/kaufen", { skin: skinId });
-    if (a.status === 200){ this.uebernehmen(a); return { ok:true }; }
+    if (a.status === 200){ this.uebernehmen(a); erfolgeMelden(a); return { ok:true }; }
     return { fehler: a.fehler || "netz" };
   },
 
@@ -4017,6 +4095,7 @@ const Net = {
   tot:null,
   lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
   ehre:null,                     // {dazu, gesamt, rang} — nur mit Konto
+  erfolge:[], rangNeu:0,         // in dieser Runde neu erreicht
   letzteEingabe:0,
 
   join(info){
@@ -4099,6 +4178,8 @@ const Net = {
       this.lohn = m.lohn || null;
       this.profil = m.profil || null;
       this.ehre = m.ehre || null;
+      this.erfolge = Array.isArray(m.erfolge) ? m.erfolge : [];
+      this.rangNeu = +m.rangNeu || 0;
       this.stand = m.stand || null;
       this.aufgestiegen = m.aufgestiegen || 0;
       this.neueSkins = m.neueSkins || [];
@@ -4393,6 +4474,28 @@ $("rankBtn").addEventListener("click", () => {
   rangKnoepfe(); show("rankVeil"); rangLaden();
 });
 $("rankClose").addEventListener("click", () => show("startVeil"));
+
+/* ---- Errungenschaften ---------------------------------------------- */
+
+function buildErfolge(){
+  const box = $("erfList");
+  if (!box) return;
+  const hat = new Set((istAngemeldet() && Konto.profil.erfolge) || []);
+  box.innerHTML = ERFOLG_REIHE.map(id => {
+    const fertig = hat.has(id);
+    return `<div class="erf${fertig ? " done" : ""}">` +
+           `<i>${fertig ? "✓" : "○"}</i>` +
+           `<span>${esc(erfolgLabel(id))}</span>` +
+           `<b>+${ERFOLG_TEXT[id][2].toLocaleString(lang)}</b></div>`;
+  }).join("");
+  $("erfNote").textContent = istAngemeldet()
+    ? t("e_stand", hat.size, ERFOLG_REIHE.length)
+    : t("e_konto");
+  $("erfNote").className = "notice" + (istAngemeldet() ? "" : " warn");
+}
+
+$("erfBtn").addEventListener("click", () => { buildErfolge(); show("erfVeil"); });
+$("erfClose").addEventListener("click", () => show("startVeil"));
 
 /* =====================================================================
    6f) PASSWORT VERGESSEN UND ADRESSE BESTÄTIGEN

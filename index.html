@@ -232,6 +232,17 @@
   /* Ranglisten. Feste Spaltenbreiten über grid statt flex: Sonst rutschen
      Platz und Wert je Zeile, weil die Namen unterschiedlich lang sind, und
      die Liste liest sich nicht mehr von oben nach unten. */
+  /* Errungenschaften. Feste Spalten, damit Haken, Text und Wert untereinander
+     stehen und die Liste von oben nach unten lesbar bleibt. */
+  #erfList{margin-top:12px;max-height:52vh;overflow:auto;padding-right:12px}
+  .erf{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:baseline;
+     padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+     color:var(--paper-2)}
+  .erf i{font-style:normal}
+  .erf b{font-weight:400;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .erf.done{color:var(--paper)}
+  .erf.done i,.erf.done b{color:var(--brass)}
+
   #rankList{margin-top:12px;min-height:120px}
   .rankrow{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:baseline;
      padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -651,6 +662,7 @@
     <div class="two">
       <button class="quiet" id="shopBtn" data-i18n="skins">Skins</button>
       <button class="quiet" id="rankBtn" data-i18n="r_head">Leaderboards</button>
+      <button class="quiet" id="erfBtn" data-i18n="e_head">Achievements</button>
       <button class="quiet" id="friendsBtn" data-i18n="friends">Friends</button>
       <button class="quiet" id="settingsBtn" data-i18n="settings">Settings</button>
       <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
@@ -699,6 +711,17 @@
     <div id="orePacks"></div>
     <p class="notice warn" data-i18n="orenotyet">Not active in this build.</p>
     <button class="quiet" id="oreClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- Errungenschaften -->
+<div class="veil" id="erfVeil" hidden>
+  <div class="card">
+    <h1 style="font-size:34px;margin-bottom:4px" data-i18n="e_head">Achievements</h1>
+    <p class="sub" style="margin:0" data-i18n="e_sub">Each counts once and adds honour.</p>
+    <div id="erfList"></div>
+    <p class="notice" id="erfNote"></p>
+    <button class="quiet" id="erfClose" data-i18n="back">Back</button>
   </div>
 </div>
 
