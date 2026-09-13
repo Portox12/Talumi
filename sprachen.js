@@ -510,3 +510,18 @@ const LANGS18 = {
   ru:{m_online_b:"Живые игроки на авторитетном сервере. Руду и опыт выдаёт сервер — учитываются только эти заходы."}
 };
 for (const c in LANGS18) Object.assign(LANGS[c], LANGS18[c]);
+
+/* Computergegner in Onlineräumen: Kürzel vor dem Namen und eine ehrliche
+   Beschreibung des Modus. Solange wenige online sind, füllt der Server mit
+   markierten Gegnern auf — das muss man vorher lesen können, nicht erst
+   nach der Runde bemerken. */
+const LANGS19 = {
+  en:{ai_tag:"NPC", m_online_b:"Real players on an authoritative server — while few are online, marked NPC opponents fill the room. Ore and XP are granted by the server."},
+  de:{ai_tag:"NPC", m_online_b:"Echte Mitspieler auf einem autoritativen Server — solange wenige online sind, füllen markierte NPC-Gegner den Raum. Ore und XP vergibt der Server."},
+  es:{ai_tag:"NPC", m_online_b:"Jugadores reales en un servidor autoritativo — mientras haya pocos conectados, rivales NPC marcados llenan la sala. El servidor otorga Ore y XP."},
+  pt:{ai_tag:"NPC", m_online_b:"Jogadores reais num servidor autoritativo — enquanto houver poucos online, adversários NPC marcados enchem a sala. O servidor concede Ore e XP."},
+  fr:{ai_tag:"NPC", m_online_b:"De vrais joueurs sur un serveur autoritatif — tant qu'il y a peu de monde, des adversaires NPC signalés remplissent la salle. Le serveur accorde minerai et XP."},
+  tr:{ai_tag:"NPC", m_online_b:"Yetkili bir sunucuda gerçek oyuncular — çevrimiçi kişi azken işaretli NPC rakipleri odayı doldurur. Cevheri ve XP'yi sunucu verir."},
+  ru:{ai_tag:"NPC", m_online_b:"Живые игроки на авторитетном сервере — пока онлайн мало, комнату заполняют отмеченные соперники-NPC. Руду и опыт выдаёт сервер."}
+};
+for (const c in LANGS19) Object.assign(LANGS[c], LANGS19[c]);

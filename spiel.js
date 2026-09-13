@@ -2608,7 +2608,7 @@ function paintBoard(gm){
        mitgeschickt wird. */
     list = Net.top.map(e => +e.id === Net.you
       ? {name:Game.name, m:+e.m, me:true}
-      : {name:String(e.n || "?"), m:+e.m});
+      : {name:mitMarke(String(e.n || "?"), e.b), m:+e.m});
     if (gm > 0 && !list.some(e => e.me)) list.push({name:Game.name, m:gm, me:true});
   } else {
     const byGid = new Map();
@@ -3666,6 +3666,11 @@ function landAusSprache(){
   return null;
 }
 
+/* Computergegner des Servers tragen ein Kürzel vor dem Namen („NPC Vesta").
+   Sie sollen nie als echte Mitspieler durchgehen — weder im Kreis noch in
+   der Bestenliste noch auf dem Bildschirm „gefressen von". */
+const mitMarke = (name, bot) => bot ? t("ai_tag") + " " + name : name;
+
 const NET_DELAY = 0.09;          // Sekunden Zeichenverzögerung, knapp zwei Serverschritte
 const NET_KEEP  = 1.5;           // Sekunden Schnappschüsse aufbewahren
 const jetzt = () => performance.now()/1000;
@@ -3759,7 +3764,8 @@ const Net = {
       this.wer.clear();
       for (const id in (m.names || {})){
         const e = m.names[id];
-        if (e && typeof e.n === "string") this.wer.set(+id, {n:e.n, s:String(e.s || "basalt")});
+        if (e && typeof e.n === "string")
+          this.wer.set(+id, {n:mitMarke(e.n, e.b), s:String(e.s || "basalt")});
       }
       /* Startbonus: Der Server sagt, was er abgebucht hat. Reichte das
          Guthaben nicht, steht hier eine niedrigere Stufe als gewählt — dann
@@ -3777,6 +3783,16 @@ const Net = {
 
     if (m.t === "dead"){
       this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0};
+      /* Der Fresser kommt mit der Todesnachricht — ein „eat"-Ereignis im
+         Zustand erreicht den Gefressenen nicht mehr. */
+      if (m.von && typeof m.von.n === "string" && !Game.killer)
+        Game.killer = {
+          name: mitMarke(m.von.n, m.von.b),
+          m: +m.von.m || 0,
+          left: Math.max(0, Game.cells.length - 1),
+          sinceSplit: Game.t - Game.lastSplit,
+          mine: Game.cells.reduce((s,c) => s+c.m, 0)
+        };
       /* Abrechnung eines angemeldeten Spielers. Sie kommt nur mit, wenn beim
          Beitritt ein gültiges Token dabei war; sonst bleiben die Felder leer
          und der Ergebnisbildschirm zeigt wie bisher „Übung, keine Belohnung". */
@@ -3793,7 +3809,7 @@ const Net = {
     for (const e of (m.ev || [])){
       if (!e) continue;
       if (e.t === "join" && typeof e.n === "string")
-        this.wer.set(+e.id, {n:e.n, s:String(e.s || "basalt")});
+        this.wer.set(+e.id, {n:mitMarke(e.n, e.b), s:String(e.s || "basalt")});
       if (e.t === "left") this.wer.delete(+e.id);
       if (e.t === "burst" && isFinite(e.x) && isFinite(e.y))
         ring(+e.x, +e.y, 120, TH().shatter);
@@ -3804,7 +3820,7 @@ const Net = {
         const w = this.wer.get(+e.von);
         const oben = (Array.isArray(m.top) ? m.top : []).find(x => x && +x.id === +e.von);
         Game.killer = {
-          name: (w && w.n) || (oben && oben.n) || "?",
+          name: (w && w.n) || (oben && mitMarke(oben.n, oben.b)) || "?",
           m: (oben && +oben.m) || 0,
           left: Math.max(0, Game.cells.length - 1),
           sinceSplit: Game.t - Game.lastSplit,
