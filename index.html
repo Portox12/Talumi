@@ -216,6 +216,19 @@
      border:1px solid var(--line);color:var(--paper-2);font-weight:400}
   .friend button:hover{border-color:var(--ember);color:var(--ember);background:none}
 
+  /* Rangtafel im Menü. Das Abzeichen wird auf eine Zeichenfläche gemalt —
+     wie im Spiel, keine Bilddatei. */
+  .rankline{display:flex;align-items:center;gap:10px;margin-top:6px}
+  .rankline canvas{flex:0 0 auto;width:48px;height:28px;image-rendering:auto}
+  .rankline b{font-family:var(--serif);font-size:17px;font-weight:600;color:var(--brass)}
+  .rankline small{display:block;color:var(--paper-2);font-size:11px}
+  /* Die Tafel setzt nowrap (für Zahlenreihen). Der Erklärsatz ist ein Satz
+     und muss umbrechen — sonst steht er über den Rand hinaus. */
+  /* `.recline` ist eine Flex-Zeile für Wert-Paare; der Erklärsatz darunter
+     ist Fließtext und braucht Umbruch — die Tafel setzt sonst nowrap. */
+  #rankBox .hinweis{display:block;white-space:normal;max-width:34ch;
+     font-size:11.5px;line-height:1.45;color:var(--paper-2);margin:8px 0 0}
+
   /* Ranglisten. Feste Spaltenbreiten über grid statt flex: Sonst rutschen
      Platz und Wert je Zeile, weil die Namen unterschiedlich lang sind, und
      die Liste liest sich nicht mehr von oben nach unten. */
@@ -631,6 +644,7 @@
     <label data-i18n="mode">Mode</label>
     <div class="modes" id="modes"></div>
 
+    <div class="plate recbox" id="rankBox" hidden></div>
     <div class="plate recbox" id="bonusBox" hidden></div>
     <div class="plate recbox" id="recBox"></div>
 
