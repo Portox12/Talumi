@@ -2,4 +2,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://portox12.github.io/Talumi/sitemap.xml
+Sitemap: https://talumi.io/sitemap.xml
