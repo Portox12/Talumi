@@ -688,7 +688,14 @@
     <p class="foot" style="margin:0 0 12px;color:var(--brass)" id="shopNext"></p>
     <div class="grid" id="grid"></div>
     <p class="notice" id="shopNote" data-i18n="shoppick">Pick a skin, or buy one you can afford.</p>
-    <button class="quiet" id="oreBtn" data-i18n="getore">Get Ore</button>
+    <div id="kaufLeiste" hidden>
+      <p class="foot" id="kaufText" style="margin:10px 0 6px;color:var(--paper)"></p>
+      <div class="two">
+        <button id="kaufOre" type="button"></button>
+        <button class="quiet" id="kaufGeld" type="button" hidden></button>
+      </div>
+      <p class="foot" id="kaufHinweis" style="margin:6px 0 0"></p>
+    </div>
     <button id="shopClose" data-i18n="done">Done</button>
   </div>
 </div>
@@ -700,17 +707,6 @@
     <div id="setList" class="setlist"></div>
     <p class="foot" data-i18n="setnote">These live in this session.</p>
     <button id="setClose" data-i18n="back">Back</button>
-  </div>
-</div>
-
-<!-- Ore kaufen -->
-<div class="veil" id="oreVeil" hidden>
-  <div class="card">
-    <h1 style="font-size:34px" data-i18n="getore">Get Ore</h1>
-    <p class="sub" data-i18n="orewhat">Buying Ore skips waiting, never the ladder.</p>
-    <div id="orePacks"></div>
-    <p class="notice warn" data-i18n="orenotyet">Not active in this build.</p>
-    <button class="quiet" id="oreClose" data-i18n="back">Back</button>
   </div>
 </div>
 

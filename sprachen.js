@@ -46,13 +46,13 @@ const LANGS4 = {
 };
 for (const c in LANGS4) Object.assign(LANGS[c], LANGS4[c]);
 const LANGS5 = {
-  en:{getore:"Get Ore", orewhat:"Buying Ore skips waiting, never the ladder. Level skins stay unbuyable, and the start bonus is caught up in about thirty seconds of play.", orenotyet:"Purchases need a server and a payment provider. Not active in this build.", orehours:"about {0} h of play", earned:"No lasting advantages for sale. Every skin can be earned by playing."},
-  de:{getore:"Ore kaufen", orewhat:"Ore zu kaufen spart Wartezeit, nie die Leiter. Level-Skins bleiben unverkäuflich, und der Startbonus ist nach rund dreißig Sekunden Spiel eingeholt.", orenotyet:"Käufe brauchen einen Server und einen Zahlungsdienstleister. In dieser Fassung nicht aktiv.", orehours:"rund {0} h Spielzeit", earned:"Keine dauerhaften Vorteile käuflich. Jeden Skin kann man sich erspielen."},
-  es:{getore:"Consigue Ore", orewhat:"Comprar Ore ahorra espera, nunca la escalera. Los skins por nivel siguen sin venderse, y el bono inicial se alcanza en unos treinta segundos de juego.", orenotyet:"Las compras necesitan un servidor y un proveedor de pagos. No activo en esta versión.", orehours:"unas {0} h de juego", earned:"Sin ventajas duraderas a la venta. Todos los skins se pueden ganar jugando."},
-  pt:{getore:"Obter Ore", orewhat:"Comprar Ore poupa espera, nunca a escada. Os skins por nível continuam fora de venda, e o bônus inicial é alcançado em cerca de trinta segundos de jogo.", orenotyet:"As compras precisam de um servidor e de um provedor de pagamento. Não ativo nesta versão.", orehours:"cerca de {0} h de jogo", earned:"Sem vantagens duradouras à venda. Todo skin pode ser conquistado jogando."},
-  fr:{getore:"Obtenir du minerai", orewhat:"Acheter du minerai fait gagner du temps, jamais l'échelle. Les skins de niveau restent invendables, et le bonus de départ est rattrapé en une trentaine de secondes.", orenotyet:"Les achats nécessitent un serveur et un prestataire de paiement. Inactif dans cette version.", orehours:"environ {0} h de jeu", earned:"Aucun avantage durable à vendre. Chaque skin peut se gagner en jouant."},
-  tr:{getore:"Cevher al", orewhat:"Cevher almak bekleyişi kısaltır, merdiveni asla. Seviye skinleri satılmaz ve başlangıç bonusu yaklaşık otuz saniyelik oyunla yakalanır.", orenotyet:"Satın alma bir sunucu ve ödeme sağlayıcı gerektirir. Bu sürümde etkin değil.", orehours:"yaklaşık {0} s oyun", earned:"Kalıcı avantaj satılmaz. Her skin oynayarak kazanılabilir."},
-  ru:{getore:"Купить руду", orewhat:"Покупка руды экономит ожидание, но не лестницу. Скины за уровень не продаются, а стартовый бонус нагоняется примерно за тридцать секунд игры.", orenotyet:"Покупки требуют сервера и платёжного провайдера. В этой версии не работают.", orehours:"около {0} ч игры", earned:"Долгих преимуществ в продаже нет. Любой скин можно заработать игрой."},
+  en:{earned:"No lasting advantages for sale. Every skin can be earned by playing."},
+  de:{earned:"Keine dauerhaften Vorteile käuflich. Jeden Skin kann man sich erspielen."},
+  es:{earned:"Sin ventajas duraderas a la venta. Todos los skins se pueden ganar jugando."},
+  pt:{earned:"Sem vantagens duradouras à venda. Todo skin pode ser conquistado jogando."},
+  fr:{earned:"Aucun avantage durable à vendre. Chaque skin peut se gagner en jouant."},
+  tr:{earned:"Kalıcı avantaj satılmaz. Her skin oynayarak kazanılabilir."},
+  ru:{earned:"Долгих преимуществ в продаже нет. Любой скин можно заработать игрой."},
 };
 for (const c in LANGS5) Object.assign(LANGS[c], LANGS5[c]);
 const LANGS6 = {
@@ -692,3 +692,81 @@ const LANGS22 = {
   ru:{e_jagd1:"Поглотите первое тело"}
 };
 for (const c in LANGS22) Object.assign(LANGS[c], LANGS22[c]);
+
+/* Oberflächen mit Geld kaufen (Schritt 67). Ore ist nicht mehr käuflich —
+   verkauft werden nur Oberflächen, die es auch für Ore gibt. Die Texte zum
+   Verkäufer und zum Abschluss auf Paddles Seite gehören zu den Rechtstexten
+   und werden vor dem Scharfschalten mit Thomas geprüft. */
+const LANGS23 = {
+  en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore", kauf_geld:"Buy for {0}",
+      kauf_paddle:"Payment happens on a Paddle page, where you complete the purchase. The seller is Paddle.com.",
+      kauf_konto:"Buying with money needs an account.",
+      kauf_warte:"Waiting for payment …",
+      kauf_warte_lang:"Waiting for Paddle to confirm. You can close Paddle's window after paying.",
+      kauf_fertig:"{0} is yours now.",
+      kauf_grenze:"Monthly limit reached: at most {0} per month. This protects against unwanted purchases.",
+      kauf_fehler:"Payment is not possible right now. Please try again later.",
+      kauf_abbruch:"No payment arrived. You can try again any time.",
+      kauf_hast:"You already own this skin."},
+  de:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Für {0} Ore kaufen", kauf_geld:"Für {0} kaufen",
+      kauf_paddle:"Bezahlt wird auf einer Seite von Paddle, dort schließt du den Kauf ab. Verkäufer ist Paddle.com.",
+      kauf_konto:"Mit Geld kaufen geht nur mit Konto.",
+      kauf_warte:"Warte auf die Zahlung …",
+      kauf_warte_lang:"Warte auf die Bestätigung von Paddle. Nach dem Bezahlen kannst du das Fenster von Paddle schließen.",
+      kauf_fertig:"{0} gehört jetzt dir.",
+      kauf_grenze:"Monatsgrenze erreicht: höchstens {0} im Monat. Das schützt vor ungewollten Käufen.",
+      kauf_fehler:"Bezahlen ist gerade nicht möglich. Versuch es später noch einmal.",
+      kauf_abbruch:"Keine Zahlung eingegangen. Du kannst es jederzeit noch einmal versuchen.",
+      kauf_hast:"Diese Oberfläche gehört dir schon."},
+  es:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore", kauf_geld:"Comprar por {0}",
+      kauf_paddle:"El pago se hace en una página de Paddle, donde completas la compra. El vendedor es Paddle.com.",
+      kauf_konto:"Comprar con dinero requiere una cuenta.",
+      kauf_warte:"Esperando el pago …",
+      kauf_warte_lang:"Esperando la confirmación de Paddle. Después de pagar puedes cerrar la ventana de Paddle.",
+      kauf_fertig:"{0} ya es tuyo.",
+      kauf_grenze:"Límite mensual alcanzado: como máximo {0} al mes. Protege contra compras no deseadas.",
+      kauf_fehler:"Ahora mismo no se puede pagar. Inténtalo más tarde.",
+      kauf_abbruch:"No ha llegado ningún pago. Puedes volver a intentarlo cuando quieras.",
+      kauf_hast:"Ya tienes este skin."},
+  pt:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore", kauf_geld:"Comprar por {0}",
+      kauf_paddle:"O pagamento é feito numa página da Paddle, onde conclui a compra. O vendedor é a Paddle.com.",
+      kauf_konto:"Comprar com dinheiro requer uma conta.",
+      kauf_warte:"A aguardar o pagamento …",
+      kauf_warte_lang:"A aguardar a confirmação da Paddle. Depois de pagar, pode fechar a janela da Paddle.",
+      kauf_fertig:"{0} agora é seu.",
+      kauf_grenze:"Limite mensal atingido: no máximo {0} por mês. Protege contra compras indesejadas.",
+      kauf_fehler:"Não é possível pagar neste momento. Tente mais tarde.",
+      kauf_abbruch:"Nenhum pagamento recebido. Pode tentar de novo quando quiser.",
+      kauf_hast:"Já tem este skin."},
+  fr:{kauf_wahl:"{0} — {1} minerai", kauf_ore:"Acheter pour {0} minerai", kauf_geld:"Acheter pour {0}",
+      kauf_paddle:"Le paiement se fait sur une page de Paddle, où vous finalisez l'achat. Le vendeur est Paddle.com.",
+      kauf_konto:"Acheter avec de l'argent nécessite un compte.",
+      kauf_warte:"En attente du paiement …",
+      kauf_warte_lang:"En attente de la confirmation de Paddle. Après le paiement, vous pouvez fermer la fenêtre de Paddle.",
+      kauf_fertig:"{0} est à vous.",
+      kauf_grenze:"Limite mensuelle atteinte : {0} par mois au maximum. Cela protège contre les achats non voulus.",
+      kauf_fehler:"Le paiement est impossible pour le moment. Réessayez plus tard.",
+      kauf_abbruch:"Aucun paiement reçu. Vous pouvez réessayer à tout moment.",
+      kauf_hast:"Vous possédez déjà ce skin."},
+  tr:{kauf_wahl:"{0} — {1} cevher", kauf_ore:"{0} cevhere satın al", kauf_geld:"{0} karşılığında satın al",
+      kauf_paddle:"Ödeme Paddle'ın bir sayfasında yapılır ve satın almayı orada tamamlarsın. Satıcı Paddle.com'dur.",
+      kauf_konto:"Parayla satın almak için hesap gerekir.",
+      kauf_warte:"Ödeme bekleniyor …",
+      kauf_warte_lang:"Paddle'ın onayı bekleniyor. Ödemeden sonra Paddle penceresini kapatabilirsin.",
+      kauf_fertig:"{0} artık senin.",
+      kauf_grenze:"Aylık sınıra ulaşıldı: ayda en fazla {0}. İstenmeyen satın almalara karşı korur.",
+      kauf_fehler:"Şu anda ödeme yapılamıyor. Lütfen daha sonra tekrar dene.",
+      kauf_abbruch:"Ödeme gelmedi. İstediğin zaman tekrar deneyebilirsin.",
+      kauf_hast:"Bu skin zaten senin."},
+  ru:{kauf_wahl:"{0} — {1} руды", kauf_ore:"Купить за {0} руды", kauf_geld:"Купить за {0}",
+      kauf_paddle:"Оплата проходит на странице Paddle, там же вы завершаете покупку. Продавец — Paddle.com.",
+      kauf_konto:"Для покупки за деньги нужна учётная запись.",
+      kauf_warte:"Ожидание оплаты …",
+      kauf_warte_lang:"Ожидание подтверждения от Paddle. После оплаты окно Paddle можно закрыть.",
+      kauf_fertig:"{0} теперь ваш.",
+      kauf_grenze:"Достигнут месячный лимит: не более {0} в месяц. Это защищает от нежелательных покупок.",
+      kauf_fehler:"Сейчас оплата невозможна. Попробуйте позже.",
+      kauf_abbruch:"Оплата не поступила. Можно попробовать снова в любое время.",
+      kauf_hast:"Этот скин у вас уже есть."}
+};
+for (const c in LANGS23) Object.assign(LANGS[c], LANGS23[c]);

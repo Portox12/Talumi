@@ -3025,21 +3025,7 @@ requestAnimationFrame(loop);
    6) SCREENS
    ===================================================================== */
 const VEILS = ["accountVeil","startVeil","shopVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","oreVeil","rankVeil","pwVeil","erfVeil"];
-
-/* Ore-Pakete. Gemessene Verdienstrate: rund 5.300 Ore je Stunde. Die Pakete
-   sind daran ausgerichtet und in Spielzeit umgerechnet direkt angeschrieben —
-   wer kauft, soll sehen, wie viel Wartezeit er spart, statt eine nackte Zahl
-   zu bekommen. Größere Pakete sind günstiger je Ore, das ist üblich und fair.
-   Zuschnitt so gewählt, dass die Beträge auf Oberflächenpreise passen und
-   möglichst wenig Restguthaben bleibt. */
-const ORE_RATE = 5300;
-const ORE_PACKS = [
-  {ore:5000,  price:"1,99 €"},
-  {ore:14000, price:"4,99 €"},
-  {ore:30000, price:"9,99 €"},
-  {ore:70000, price:"19,99 €"}
-];
+               "friendsVeil","setVeil","rankVeil","pwVeil","erfVeil"];
 
 
 const SET_UI = [
@@ -3438,6 +3424,7 @@ function note(text, kind){
 }
 async function pick(s){
   if (Profile.owned.has(s.id)){
+    kaufLeisteAus();
     skin = s; Profile.skin = s.id;
     buildGrid();
     note(t("selected", s.label), "good");
@@ -3447,9 +3434,17 @@ async function pick(s){
     return;
   }
   if (s.lv){
+    kaufLeisteAus();
     note(t("needlevel", s.label, s.lv), "warn");
     return;
   }
+  /* Nicht mehr sofort kaufen: Erst zeigen, was sie kostet — für Ore und, wo
+     es geht, für Geld. Vorher reichte ein versehentlicher Tipp, um eine
+     Million Ore auszugeben. */
+  kaufZeigen(s);
+}
+
+async function kaufMitOre(s){
   if (Profile.ore < s.ore){
     note(t("needore", s.label, s.ore.toLocaleString(lang)), "warn");
     return;
@@ -3466,7 +3461,7 @@ async function pick(s){
     Konto.laeuft = false;
     if (e.ok){
       skin = SKINS.find(x => x.id === Profile.skin) || s;
-      paintPurse(); buildGrid();
+      paintPurse(); buildGrid(); kaufLeisteAus();
       note(t("bought", s.label, s.ore.toLocaleString(lang)), "good");
     } else if (e.fehler === "zu_wenig_ore"){
       paintPurse();
@@ -3479,10 +3474,188 @@ async function pick(s){
 
   if (Profile.buy(s)){
     skin = s;
-    paintPurse(); buildGrid();
+    paintPurse(); buildGrid(); kaufLeisteAus();
     note(t("bought", s.label, s.ore.toLocaleString(lang)), "good");
   }
 }
+
+/* =====================================================================
+   OBERFLÄCHEN MIT GELD KAUFEN
+
+   Der Client weiß hier fast nichts, und das ist Absicht:
+   - Preise kommen vom Server (`/preise`), nie aus dieser Datei.
+   - Der Server legt den Vorgang bei Paddle an und nennt die Bezahlseite.
+   - Freigeschaltet wird, wenn Paddle dem Server die Zahlung meldet. Der
+     Client fragt nur nach, ob es so weit ist. Zurück auf der Seite zu sein
+     beweist nichts.
+   - Auf talumi.io läuft kein Programm von Paddle: Die Bezahlseite öffnet
+     sich in einem eigenen Fenster auf Paddles Adresse.
+   ===================================================================== */
+
+const KAUF_MERKER = "talumi.kauf";
+const KAUF_WARTEN_MS = 15 * 60 * 1000;
+
+const Kauf = {
+  preise: null,        // {kauf, skins:{id: cent}, grenze}
+  gewaehlt: null,      // Oberfläche in der Kaufleiste
+  wartet: null,        // {bestellung, skin, bis}
+  wecker: 0,
+  laeuft: false,
+
+  async preiseLaden(){
+    if (!Konto.kauf) { this.preise = null; return; }
+    const a = await Konto.ruf("/preise");
+    if (a.status === 200 && a.skins && typeof a.skins === "object")
+      this.preise = { kauf: !!a.kauf, skins: a.skins, grenze: +a.grenze || 0 };
+  },
+
+  preis(id){
+    const p = this.preise;
+    const cent = p && p.kauf ? +p.skins[id] : 0;
+    return Number.isInteger(cent) && cent > 0 ? cent : 0;
+  },
+
+  /* Die offene Zahlung über ein Neuladen hinweg merken: Blockiert der Browser
+     das Fenster, geht es im selben Tab zu Paddle und kommt danach zurück. */
+  merken(w){
+    try { w ? sessionStorage.setItem(KAUF_MERKER, JSON.stringify(w))
+            : sessionStorage.removeItem(KAUF_MERKER); } catch(_){}
+  },
+
+  warten(bestellung, skinId){
+    this.wartet = { bestellung, skin: skinId, bis: Date.now() + KAUF_WARTEN_MS };
+    this.merken(this.wartet);
+    clearInterval(this.wecker);
+    this.wecker = setInterval(() => this.pruefen(), 3000);
+    if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt);
+  },
+
+  fortsetzen(){
+    let w = null;
+    try { w = JSON.parse(sessionStorage.getItem(KAUF_MERKER) || "null"); } catch(_){}
+    if (!w || typeof w.bestellung !== "string" || !(w.bis > Date.now())){ this.merken(null); return; }
+    this.wartet = w;
+    clearInterval(this.wecker);
+    this.wecker = setInterval(() => this.pruefen(), 3000);
+    this.pruefen();
+  },
+
+  ende(){
+    clearInterval(this.wecker);
+    this.wecker = 0;
+    this.wartet = null;
+    this.merken(null);
+  },
+
+  async pruefen(){
+    const w = this.wartet;
+    if (!w || this.fragt) return;
+    if (Date.now() > w.bis){
+      this.ende();
+      if (!$("shopVeil").hidden){ note(t("kauf_abbruch"), "warn"); if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }
+      return;
+    }
+    this.fragt = true;
+    const a = await Konto.ruf("/konto/bestellung?id=" + encodeURIComponent(w.bestellung));
+    this.fragt = false;
+    if (a.status === 401 || a.status === 404){ this.ende(); return; }
+    if (a.status !== 200) return;                       // Netzstörung: weiter warten
+    if (a.zustand === "bezahlt"){
+      this.ende();
+      if (a.profil) Konto.uebernehmen(a);
+      const s = SKINS.find(x => x.id === a.artikel);
+      const name = s ? s.label : String(a.artikel || "");
+      paintPurse(); buildGrid();
+      if (!$("shopVeil").hidden){ kaufLeisteAus(); note(t("kauf_fertig", name), "good"); }
+      toast(t("kauf_fertig", name));
+    } else if (a.zustand === "erstattet"){
+      this.ende();
+    }
+  }
+};
+
+/* Wer von Paddles Fenster zurückkommt, soll nicht drei Sekunden warten. */
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Kauf.wartet) Kauf.pruefen();
+});
+
+const euro = cent => (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" });
+
+function ladenOeffnen(){
+  kaufLeisteAus();
+  paintPurse(); buildGrid(); show("shopVeil");
+  Kauf.preiseLaden().then(() => { if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); });
+}
+
+function kaufLeisteAus(){
+  Kauf.gewaehlt = null;
+  $("kaufLeiste").hidden = true;
+}
+
+function kaufZeigen(s){
+  Kauf.gewaehlt = s;
+  $("kaufLeiste").hidden = false;
+  $("kaufText").textContent = t("kauf_wahl", s.label, s.ore.toLocaleString(lang));
+
+  const ore = $("kaufOre");
+  ore.textContent = t("kauf_ore", s.ore.toLocaleString(lang));
+  ore.disabled = Profile.ore < s.ore;
+  note(ore.disabled ? t("needore", s.label, s.ore.toLocaleString(lang)) : t("shoppick"),
+       ore.disabled ? "warn" : "");
+
+  const geld = $("kaufGeld"), hinweis = $("kaufHinweis");
+  const cent = Kauf.preis(s.id);
+  const wartetHier = Kauf.wartet && Kauf.wartet.skin === s.id;
+  if (!cent){ geld.hidden = true; hinweis.textContent = ""; return; }
+  if (!istAngemeldet()){ geld.hidden = true; hinweis.textContent = t("kauf_konto"); return; }
+  geld.hidden = false;
+  geld.disabled = !!wartetHier;
+  geld.textContent = wartetHier ? t("kauf_warte") : t("kauf_geld", euro(cent));
+  hinweis.textContent = wartetHier ? t("kauf_warte_lang") : t("kauf_paddle");
+}
+
+async function kaufMitGeld(s){
+  if (Kauf.laeuft || !istAngemeldet()) return;
+  Kauf.laeuft = true;
+  /* Das Fenster jetzt öffnen, noch innerhalb des Klicks. Erst nach der
+     Serverantwort geöffnet, hält der Browser es für Werbung und blockiert es. */
+  let fenster = null;
+  try { fenster = window.open("", "_blank"); } catch(_){}
+  note(t("k_wait"));
+  const a = await Konto.ruf("/konto/bestellen", { skin: s.id });
+  Kauf.laeuft = false;
+
+  const zu = () => { if (fenster) try { fenster.close(); } catch(_){} };
+  if (a.status !== 200 || typeof a.url !== "string" || !/^https:\/\//.test(a.url)){
+    zu();
+    if (a.fehler === "schon_im_besitz"){
+      const ich = await Konto.ruf("/konto/ich");
+      if (ich.status === 200) Konto.uebernehmen(ich);
+      paintPurse(); buildGrid(); kaufLeisteAus();
+      note(t("kauf_hast"), "good");
+    } else if (a.fehler === "grenze_erreicht"){
+      note(t("kauf_grenze", euro(+a.grenze || 0)), "warn");
+    } else if (a.fehler === "zu_viele_versuche"){
+      note(t("e_many"), "warn");
+    } else {
+      if (a.fehler === "kauf_aus"){ Konto.kauf = false; Kauf.preise = null; kaufZeigen(s); }
+      note(t("kauf_fehler"), "warn");
+    }
+    return;
+  }
+
+  Kauf.warten(a.bestellung, s.id);
+  if (fenster){
+    try { fenster.opener = null; fenster.location.href = a.url; }
+    catch(_){ location.href = a.url; }
+  } else {
+    location.href = a.url;
+  }
+  note(t("kauf_warte_lang"));
+}
+
+$("kaufOre").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitOre(Kauf.gewaehlt); });
+$("kaufGeld").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitGeld(Kauf.gewaehlt); });
 
 (function buildLangPick(){
   const box = $("langPick");
@@ -3588,24 +3761,9 @@ for (const id of ["googleBtn", "facebookBtn"]){
   $(id).disabled = true;
   $(id).addEventListener("click", () => kontoMeldung(t("k_soon")));
 }
-$("shopBtn").addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
-$("endShop").addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
+$("shopBtn").addEventListener("click", ladenOeffnen);
+$("endShop").addEventListener("click", ladenOeffnen);
 $("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); });
-$("oreBtn").addEventListener("click", () => {
-  const box = $("orePacks");
-  box.innerHTML = "";
-  for (const p of ORE_PACKS){
-    const std = (p.ore/ORE_RATE).toFixed(1).replace(".", ",");
-    const row = document.createElement("div");
-    row.className = "tally";
-    row.innerHTML = `<span>${p.ore.toLocaleString(lang)} Ore` +
-      `<small style="display:block;color:var(--paper-2);font-size:11.5px">` +
-      `${t("orehours", std)}</small></span><span>${p.price}</span>`;
-    box.appendChild(row);
-  }
-  show("oreVeil");
-});
-$("oreClose").addEventListener("click", () => { buildGrid(); show("shopVeil"); });
 
 $("shopClose").addEventListener("click", () => { paintPurse(); show("startVeil"); });
 $("legalBtn").addEventListener("click", () => show("legalVeil"));
@@ -3950,6 +4108,7 @@ const Konto = {
   async anklopfen(){
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
+    this.kauf = !!a.kauf;
     return a.status === 200;
   },
 
@@ -4619,6 +4778,7 @@ window.addEventListener("hashchange", () => { markeAusAdresse(); });
     if (Konto.gemerkt()){
       if (!ausMail) kontoMeldung(t("k_wait"));
       if (await Konto.wiederaufnehmen()){
+        Kauf.fortsetzen();
         if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         else if (!$("accountVeil").hidden) nachAnmeldung();
         else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
