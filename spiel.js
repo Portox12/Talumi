@@ -41,7 +41,230 @@ if (isTouch) document.body.classList.add("touch");
 const Settings = {
   volume:0.7, shake:true, sens:62, lefty:false,
   teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
-  theme:"earth"
+  theme:"earth",
+  /* Musik getrennt von den Spielgeräuschen: Wer die Töne braucht, um Gefahr
+     zu hören, will deshalb noch lange keine Musik — und umgekehrt. */
+  music:0.55
+};
+
+/* Einstellungen überdauern das Neuladen.
+
+   Bis Schritt 71 taten sie das nicht: Lautstärke, Thema, Namensanzeige — alles
+   war nach dem Neuladen wieder auf Vorgabe. Solange nur Kleinigkeiten
+   betroffen waren, fiel es kaum auf. Mit der Musik, die standardmäßig läuft,
+   wird daraus ein echtes Ärgernis: Wer sie abschaltet, hätte sie beim nächsten
+   Besuch wieder an.
+
+   Im `localStorage`, nicht in einem Cookie — es geht um eine vom Nutzer selbst
+   gewählte Einstellung, die das Gerät nicht verlässt. Jeder Zugriff steht in
+   `try`/`catch`: In privaten Fenstern wirft der Speicher, und daran darf das
+   Spiel nicht scheitern. Gelesene Werte werden geprüft, nie blind übernommen —
+   im Speicher steht, was ein Nutzer hineinschreibt. */
+const EINST_SCHLUESSEL = "talumi.einstellungen";
+
+function einstellungenLaden(){
+  let roh = null;
+  try { roh = JSON.parse(localStorage.getItem(EINST_SCHLUESSEL) || "null"); } catch(_){ return; }
+  if (!roh || typeof roh !== "object") return;
+  for (const k of Object.keys(Settings)){
+    const v = roh[k];
+    if (v === undefined || v === null) continue;
+    if (typeof v !== typeof Settings[k]) continue;      // Art muss stimmen
+    if (typeof v === "number" && !Number.isFinite(v)) continue;
+    Settings[k] = v;
+  }
+  /* Zahlen in vernünftige Grenzen zwingen, auch wenn die Art stimmt. */
+  Settings.volume = Math.min(1, Math.max(0, Settings.volume));
+  Settings.music  = Math.min(1, Math.max(0, Settings.music));
+  Settings.sens   = Math.min(140, Math.max(20, Settings.sens));
+  Settings.hudEdge = Math.min(64, Math.max(0, Settings.hudEdge));
+  if (!THEMES[Settings.theme]) Settings.theme = "earth";
+}
+
+function einstellungenSichern(){
+  try { localStorage.setItem(EINST_SCHLUESSEL, JSON.stringify(Settings)); } catch(_){}
+}
+
+/* =====================================================================
+   EINWILLIGUNG — die einzige Tür für fremde Skripte
+   =====================================================================
+
+   Thomas hat am 14.09.2026 entschieden, Werbung und Cookies aufzunehmen „wie
+   bei Agar, auch auf talumi.io". Damit fällt die alte Regel „keine
+   Fremdbibliotheken, keine CDNs" — aber **nicht** ihr Kern: Das Urteil des
+   LG München I (3 O 17493/20) betrifft fremde Inhalte, die **ohne
+   Zustimmung** geladen werden. Mit Zustimmung ist es zulässig, ohne nicht.
+
+   Deshalb dieser Bau: `skriptLaden()` ist die **einzige** Stelle im ganzen
+   Client, die ein fremdes Skript einhängt, und sie lädt nichts, bevor für den
+   Zweck zugestimmt wurde. Wer künftig ein Werbenetz einbaut, ruft sie auf —
+   ein `<script src>` von Hand in `index.html` wäre der Fehler, gegen den das
+   hier gebaut ist.
+
+   Drei Dinge sind bewusst so und nicht anders:
+
+   1. **„Alle ablehnen" hat dasselbe Gewicht wie „Alle annehmen"** — gleiche
+      Größe, gleiche Farbe, gleiche Stelle, ein Klick. Ein Ablehnen, das
+      schwerer zu finden ist als ein Annehmen, gilt in Deutschland als
+      unwirksam; dann wäre die ganze Einwilligung nichts wert.
+   2. **Das Spiel ist ohne Entscheidung voll spielbar.** Der Kasten blockiert
+      nichts. Eine Zustimmung, die Bedingung fürs Spielen wäre, ist keine
+      freiwillige und damit keine.
+   3. **Vorgabe ist Nein.** Ohne gespeicherte Zustimmung lädt nichts Fremdes.
+      Vorangekreuzte Kästchen sind unzulässig (EuGH, Planet49).
+
+   Die Entscheidung liegt in einem **Cookie**, nicht im localStorage: Sie muss
+   auch gelten, wenn jemand über `www.` kommt, und ein Einwilligungs-Cookie
+   ist selbst „unbedingt erforderlich" — es braucht also keine Zustimmung für
+   sich. `FASSUNG` hochzählen, sobald sich die Zwecke ändern; dann wird neu
+   gefragt, was bei geänderten Zwecken auch verlangt ist.
+
+   NOCH NICHT ERLEDIGT (steht auch in CLAUDE.md):
+   - Vor dem ersten echten Werbeskript ein **Anwalt**. War Teil der
+     Entscheidung; Rechtstexte sind nicht die Arbeit einer KI.
+   - `about.html` und `index.html` behaupten heute „no cookies, no tracking".
+     Diese Sätze müssen **am selben Tag** weg, an dem das erste Werbeskript
+     live geht.
+   - Die Datenschutzerklärung braucht Abschnitte zu Werbenetz und Messung.
+   Solange nichts eingetragen ist, hat dieser Bau schlicht nichts zu tun und
+   zeigt auch keinen Kasten. */
+/* Schalter für den ganzen Bau. Auf `true` erst, wenn ein Werbenetz eingetragen
+   ist **und** die Rechtstexte stehen. Solange er `false` ist, zeigt Talumi
+   keinen Einwilligungskasten und lädt nichts Fremdes — der Stand von heute. */
+const WERBUNG_AKTIV = false;
+
+const Einwilligung = {
+  KEKS: "talumi_einwilligung",
+  FASSUNG: 1,
+  TAGE: 182,                          // ein halbes Jahr, dann neu fragen
+  ZWECKE: ["werbung", "messung"],     // „nötig" wird nie gefragt
+  stand: null,
+  wartende: [],
+  geladen: new Set(),
+
+  /* --- Cookie lesen und schreiben. Beides in try/catch: In manchen
+     Fenstern wirft der Zugriff, und daran darf das Spiel nicht scheitern. */
+  keksLesen(){
+    try {
+      const t = ("; " + document.cookie).split("; " + this.KEKS + "=")[1];
+      if (!t) return null;
+      const roh = JSON.parse(decodeURIComponent(t.split(";")[0]));
+      if (!roh || roh.f !== this.FASSUNG) return null;   // Zwecke geändert
+      return { werbung: !!roh.w, messung: !!roh.m, zeit: +roh.t || 0 };
+    } catch(_){ return null; }
+  },
+  keksSchreiben(stand){
+    try {
+      const wert = encodeURIComponent(JSON.stringify({
+        f: this.FASSUNG, w: !!stand.werbung, m: !!stand.messung, t: Date.now()
+      }));
+      const ab = new Date(Date.now() + this.TAGE*864e5).toUTCString();
+      const sicher = location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `${this.KEKS}=${wert}; Expires=${ab}; Path=/; SameSite=Lax${sicher}`;
+    } catch(_){}
+  },
+
+  erlaubt(zweck){ return !!(this.stand && this.stand[zweck]); },
+  gefragt(){ return !!this.stand; },
+
+  /* --- Die einzige Tür ------------------------------------------------
+     Lädt ein fremdes Skript, sobald (und nur wenn) für den Zweck zugestimmt
+     wurde. Wird vorher aufgerufen, wartet der Auftrag; wird abgelehnt, kommt
+     er nie zum Zug. Mehrfachaufrufe für dieselbe Adresse laden einmal. */
+  skriptLaden(zweck, url, eigenschaften){
+    return new Promise((fertig, daneben) => {
+      const tun = () => {
+        if (this.geladen.has(url)) return fertig(true);
+        this.geladen.add(url);
+        const s = document.createElement("script");
+        s.src = url; s.async = true;
+        for (const k in (eigenschaften || {})) s.setAttribute(k, eigenschaften[k]);
+        s.onload = () => fertig(true);
+        s.onerror = () => { this.geladen.delete(url); daneben(new Error("Skript nicht geladen: " + url)); };
+        document.head.appendChild(s);
+      };
+      this.beiZustimmung(zweck, tun);
+    });
+  },
+
+  /* Etwas tun, sobald für den Zweck zugestimmt ist — jetzt oder später. */
+  beiZustimmung(zweck, fn){
+    if (this.erlaubt(zweck)) { try { fn(); } catch(_){} return; }
+    if (this.gefragt()) return;                    // abgelehnt: nie ausführen
+    this.wartende.push({ zweck, fn });
+  },
+  wartendeLoesen(){
+    const offen = this.wartende;
+    this.wartende = [];
+    for (const w of offen) if (this.erlaubt(w.zweck)) { try { w.fn(); } catch(_){} }
+  },
+
+  /* --- Kasten ---------------------------------------------------------- */
+  zeigen(){
+    const bar = $("cookieBar");
+    if (!bar) return;
+    const w = $("ckWerbung"), m = $("ckMessung");
+    if (w) w.checked = this.erlaubt("werbung");     // nie vorangekreuzt, wenn nie gefragt
+    if (m) m.checked = this.erlaubt("messung");
+    $("cookieFein").hidden = true;
+    $("ckSpeichern").hidden = true;
+    $("ckFein").hidden = false;
+    bar.hidden = false;
+    this.platzMessen();
+  },
+  /* Der Kasten liegt fest am unteren Rand und läge damit über dem, was dort
+     steht — auf einem Telefon im Querformat genau über dem Startknopf.
+     Deshalb bekommt der Schleier unten genau die Höhe des Kastens als
+     zusätzlichen Rand. Gemessen und nicht geschätzt: Die Höhe hängt an der
+     Sprache, an der Schriftgröße des Geräts und daran, ob die
+     Feineinstellung offen ist. */
+  platzMessen(){
+    /* Absichtlich `getElementById` statt der Abkürzung `$`: Diese Methode
+       läuft schon beim ersten `resize()`, und das steht im Skript vor der
+       Zeile, die `$` anlegt. Mit `$` warf der ganze Client dort einen Fehler
+       und blieb schwarz — einmal passiert, nie wieder. */
+    const bar = document.getElementById("cookieBar");
+    const wurzel = document.documentElement;
+    if (!bar || bar.hidden){
+      document.body.classList.remove("keks");
+      wurzel.style.setProperty("--keks-hoehe", "0px");
+      return;
+    }
+    document.body.classList.add("keks");
+    wurzel.style.setProperty("--keks-hoehe",
+      Math.ceil(bar.getBoundingClientRect().height) + "px");
+  },
+  verbergen(){ const b = $("cookieBar"); if (b) b.hidden = true; this.platzMessen(); },
+
+  setzen(werbung, messung){
+    this.stand = { werbung: !!werbung, messung: !!messung, zeit: Date.now() };
+    this.keksSchreiben(this.stand);
+    this.verbergen();
+    this.wartendeLoesen();
+  },
+
+  /* Aus den Einstellungen erreichbar. Eine Einwilligung muss so leicht zu
+     widerrufen sein, wie sie zu erteilen war. */
+  widerrufen(){
+    this.stand = null;
+    try {
+      document.cookie = this.KEKS + "=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/";
+    } catch(_){}
+    /* Schon geladene Skripte lassen sich nicht zurückholen — ein Neuladen
+       ist der einzige ehrliche Weg, und der Kasten sagt das auch. */
+    this.zeigen();
+  },
+
+  start(){
+    this.stand = this.keksLesen();
+    const bar = $("cookieBar");
+    if (!bar) return;
+    /* Solange kein Werbenetz eingetragen ist, gibt es nichts zu erlauben —
+       dann bleibt der Kasten weg. Ein Banner ohne Zweck ist Lärm. */
+    if (!WERBUNG_AKTIV){ this.verbergen(); return; }
+    if (this.gefragt()){ this.verbergen(); this.wartendeLoesen(); return; }
+    this.zeigen();
+  }
 };
 
 function resize(){
@@ -58,6 +281,7 @@ function resize(){
   cvs.width = Math.round(VW*DPR); cvs.height = Math.round(VH*DPR);
   FIT = Math.sqrt(VW*VH) / REF_VIEW;
   checkOrientation();
+  Einwilligung.platzMessen();   // Drehen ändert die Höhe des Kastens
 }
 addEventListener("resize", resize);
 addEventListener("orientationchange", () => setTimeout(resize, 120));
@@ -665,6 +889,264 @@ const Sound = {
 };
 
 /* =====================================================================
+   2b) MUSIK — erzeugt, nicht abgespielt
+   =====================================================================
+
+   Thomas wollte den ruhigen Aufbauspiel-Ton: lange warme Flächen, sparsame
+   Arpeggien, keine Percussion, dieser einsam-staunende Klang. Übernommen ist
+   die **Machart**, nicht das Stück: Stil, Klangfarbe, Tempo und Stimmung sind
+   frei, geschützt sind Melodie, Harmoniefolge und Aufnahme eines fremden
+   Soundtracks. Deshalb gibt es hier gar keine feste Melodie — Akkorde und
+   Töne werden bei jedem Lauf neu aus einem Tonvorrat gewürfelt. Das ist
+   zugleich die ehrlichste Bauweise für Ambient: Sie wiederholt sich nie.
+
+   Kein Audiodatei-Download, keine fremde Quelle: alles entsteht im Browser
+   aus Oszillatoren und einem selbst gerechneten Hall. Das hält die Regel
+   „nichts von außen" ein und kostet null Bytes Auslieferung.
+
+   Aufbau:
+     Fläche   drei leicht verstimmte Oszillatoren durch ein langsam
+              wanderndes Tiefpassfilter — der Teppich, auf dem alles liegt
+     Bass     eine Sinuswelle zwei Oktaven tiefer, sehr langsam an und ab
+     Motiv    einzelne glockige Töne aus der Tonleiter, alle paar Sekunden,
+              mit viel Hall — das, was man als „Melodie" wahrnimmt
+     Luft     kaum hörbares gefiltertes Rauschen gegen die Sterilität
+
+   Die Akkorde wandern in 11–17 Sekunden ineinander. Schneller klingt es
+   nach Fahrstuhl, langsamer schläft es ein. */
+const Musik = {
+  an:false, bus:null, hall:null, flaeche:null, filter:null, lfo:null,
+  bass:null, luft:null, akkordZeit:0, motivZeit:0, stufe:0, leiser:1,
+
+  /* Grundtöne des Kreislaufs. Vier Stufen in einer weichen Molltonart, jede
+     mit ihrer Quinte und None — kein Terzton in der Fläche, dadurch bleibt
+     offen, ob es dur oder moll ist, und nichts drängt sich auf. */
+  GRUND: [55.00, 73.42, 82.41, 65.41],        // A1, D2, E2, C2
+  /* Tonvorrat für das Motiv: pentatonisch, also kann nichts falsch klingen,
+     egal welcher Ton auf welchen Akkord fällt. */
+  LEITER: [220.00, 246.94, 293.66, 329.63, 440.00, 493.88, 587.33, 659.25],
+
+  /* Hall ohne Datei: eine Rauschfahne, die exponentiell ausklingt. Drei
+     Sekunden Nachhall geben die Weite, die den ganzen Ton ausmacht. */
+  hallBauen(ctx){
+    const len = Math.floor(ctx.sampleRate * 3.2);
+    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let k=0;k<2;k++){
+      const d = buf.getChannelData(k);
+      for (let i=0;i<len;i++){
+        const ab = Math.pow(1 - i/len, 2.6);
+        d[i] = (Math.random()*2-1) * ab * 0.55;
+      }
+    }
+    const c = ctx.createConvolver();
+    c.buffer = buf;
+    return c;
+  },
+
+  starten(){
+    if (this.an || !Sound.ctx) return;
+    const ctx = Sound.ctx;
+    this.an = true;
+
+    this.bus = ctx.createGain();
+    this.bus.gain.value = 0;                       // fährt gleich hoch
+    this.bus.connect(ctx.destination);
+
+    this.hall = this.hallBauen(ctx);
+    const hallWeg = ctx.createGain();
+    hallWeg.gain.value = 0.85;
+    this.hall.connect(hallWeg); hallWeg.connect(this.bus);
+
+    /* Fläche: drei Oszillatoren, gegeneinander verstimmt. Die Schwebung
+       daraus ist das, was „warm" klingt — ein einzelner Oszillator wirkt
+       hart und billig. */
+    this.filter = ctx.createBiquadFilter();
+    this.filter.type = "lowpass";
+    this.filter.frequency.value = 760;
+    this.filter.Q.value = 0.7;
+    this.filter.connect(this.bus);
+    this.filter.connect(this.hall);
+
+    this.flaeche = [];
+    /* Die drei Stimmen stehen an verschiedenen Stellen im Stereobild. Alles
+       in der Mitte klingt eng und nach Rechner; auseinandergezogen entsteht
+       der weite Raum, der diese Art Musik ausmacht. */
+    for (const [halbton, laut, form, seite] of [[0, .12, "sawtooth", -0.55],
+                                                 [7, .085, "triangle", 0.55],
+                                                 [14, .045, "triangle", 0]]){
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = form;
+      o.detune.value = (Math.random()*14 - 7);
+      g.gain.value = laut;
+      o.connect(g);
+      if (ctx.createStereoPanner){
+        const pan = ctx.createStereoPanner();
+        pan.pan.value = seite;
+        g.connect(pan); pan.connect(this.filter);
+      } else g.connect(this.filter);
+      o.start();
+      this.flaeche.push({o, g, halbton});
+    }
+
+    /* Das Filter wandert langsam auf und ab. Ohne diese Bewegung steht der
+       Klang still und wird nach zwei Minuten unerträglich. */
+    this.lfo = ctx.createOscillator();
+    const lfoTiefe = ctx.createGain();
+    this.lfo.frequency.value = 0.045;              // gut zwanzig Sekunden je Runde
+    lfoTiefe.gain.value = 300;
+    this.lfo.connect(lfoTiefe); lfoTiefe.connect(this.filter.frequency);
+    this.lfo.start();
+
+    const bo = ctx.createOscillator(), bg = ctx.createGain();
+    bo.type = "sine"; bg.gain.value = 0.16;
+    bo.connect(bg); bg.connect(this.bus);
+    bo.start();
+    this.bass = {o:bo, g:bg};
+
+    /* Luft: leises Rauschen, hoch gefiltert. Man hört es nicht bewusst,
+       aber ohne fehlt etwas. */
+    const rausch = ctx.createBufferSource();
+    rausch.buffer = Sound.noise; rausch.loop = true;
+    const rf = ctx.createBiquadFilter();
+    rf.type = "bandpass"; rf.frequency.value = 1800; rf.Q.value = 0.4;
+    const rg = ctx.createGain(); rg.gain.value = 0.012;
+    rausch.connect(rf); rf.connect(rg); rg.connect(this.bus);
+    rausch.start();
+    this.luft = rausch;
+
+    this.stufe = 0;
+    this.akkordWechseln(true);
+    this.lautstaerke();
+    this.akkordZeit = ctx.currentTime + 13;
+    this.motivZeit  = ctx.currentTime + 4;
+  },
+
+  /* Nächster Akkord. Die Stufen laufen nicht stur im Kreis: Mit einem Drittel
+     Wahrscheinlichkeit wird eine übersprungen, sonst hört man nach der dritten
+     Runde die Schleife. */
+  akkordWechseln(sofort){
+    if (!this.an || !Sound.ctx) return;
+    const ctx = Sound.ctx, t = ctx.currentTime;
+    this.stufe = (this.stufe + (Math.random() < .33 ? 2 : 1)) % this.GRUND.length;
+    const grund = this.GRUND[this.stufe];
+    const zeit = sofort ? 0.6 : 7;                 // sieben Sekunden ineinander
+    for (const s of this.flaeche){
+      const f = grund * Math.pow(2, s.halbton/12) * 4;
+      s.o.frequency.setTargetAtTime(f, t, zeit/3);
+    }
+    this.bass.o.frequency.setTargetAtTime(grund, t, zeit/3);
+  },
+
+  /* Ein einzelner glockiger Ton. Kurzer Anschlag, langer Ausklang, viel Hall
+     — das ist der ganze Trick an dieser Art Musik. */
+  motiv(){
+    if (!this.an || !Sound.ctx) return;
+    const ctx = Sound.ctx, t = ctx.currentTime;
+    const f = this.LEITER[(Math.random()*this.LEITER.length)|0]
+            * (Math.random() < .3 ? 0.5 : 1);
+    const dauer = 2.6 + Math.random()*2.4;
+
+    /* Zwei Teiltöne statt einem: der Grundton trägt, die Oktave darüber gibt
+       den glockigen Anschlag und klingt schneller aus. Mit nur einer Sinuswelle
+       ging der Ton in der Fläche unter — gemessen schwankte die Lautheit über
+       vierzig Sekunden nur um das 1,4-fache, und genau diese hörbaren
+       Einzeltöne sind das, was man an dieser Musik wiedererkennt. */
+    const summe = ctx.createGain();
+    summe.gain.setValueAtTime(0, t);
+    summe.gain.linearRampToValueAtTime(0.17, t + 0.025);
+    summe.gain.exponentialRampToValueAtTime(0.0002, t + dauer);
+    if (ctx.createStereoPanner){
+      const pan = ctx.createStereoPanner();
+      pan.pan.value = Math.random()*1.1 - 0.55;
+      summe.connect(pan); pan.connect(this.bus); pan.connect(this.hall);
+    } else { summe.connect(this.bus); summe.connect(this.hall); }
+
+    for (const [mal, laut, ab] of [[1, 1, dauer], [2, 0.3, dauer*0.45]]){
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = "sine"; o.frequency.value = f*mal;
+      g.gain.setValueAtTime(laut, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + ab);
+      o.connect(g); g.connect(summe);
+      o.start(t); o.stop(t + dauer + 0.1);
+    }
+  },
+
+  /* Eine kurze aufsteigende Figur, selten. Sie gibt der Musik ab und zu eine
+     Richtung, ohne dass daraus eine Melodie mit Wiedererkennungswert wird —
+     die Töne werden jedes Mal neu gezogen. */
+  figur(){
+    if (!this.an || !Sound.ctx) return;
+    const start = (Math.random()*(this.LEITER.length-3))|0;
+    for (let i=0;i<3;i++){
+      setTimeout(() => {
+        if (!this.an || !Sound.ctx) return;
+        const ctx = Sound.ctx, t = ctx.currentTime;
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.value = this.LEITER[start+i];
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.09, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0002, t + 2.2);
+        o.connect(g); g.connect(this.bus); g.connect(this.hall);
+        o.start(t); o.stop(t + 2.4);
+      }, i*430);
+    }
+  },
+
+  /* Im Spiel leiser als im Menü: Musik, die während einer Jagd genauso laut
+     steht wie davor, verdeckt die Töne, an denen man Gefahr erkennt. */
+  ducken(imSpiel){
+    this.leiser = imSpiel ? 0.55 : 1;
+    this.lautstaerke();
+  },
+
+  lautstaerke(){
+    if (!this.bus || !Sound.ctx) return;
+    const ziel = (Settings.music || 0) * this.leiser * 0.9;
+    this.bus.gain.setTargetAtTime(ziel, Sound.ctx.currentTime, 0.8);
+  },
+
+  /* Wird aus der Spielschleife gerufen. Kein eigener Zeitgeber: Der Browser
+     drosselt Zeitgeber in verdeckten Tabs, und dann bliebe die Musik auf
+     einem Akkord stehen. */
+  takt(){
+    if (!this.an || !Sound.ctx) return;
+    const jetzt = Sound.ctx.currentTime;
+    if (jetzt >= this.akkordZeit){
+      this.akkordWechseln(false);
+      this.akkordZeit = jetzt + 11 + Math.random()*6;
+    }
+    if (jetzt >= this.motivZeit){
+      /* Meist ein einzelner Ton, ab und zu die kurze Figur. */
+      if (Math.random() < 0.22) this.figur(); else this.motiv();
+      this.motivZeit = jetzt + 3 + Math.random()*5.5;
+    }
+  },
+
+  stoppen(){
+    if (!this.an) return;
+    this.an = false;
+    const t = Sound.ctx ? Sound.ctx.currentTime : 0;
+    if (this.bus) this.bus.gain.setTargetAtTime(0, t, 0.5);
+    const weg = [...this.flaeche.map(s => s.o), this.lfo, this.bass && this.bass.o, this.luft];
+    setTimeout(() => {
+      for (const o of weg){ try { o && o.stop(); } catch(_){} }
+      try { this.bus && this.bus.disconnect(); } catch(_){}
+      this.bus = this.hall = this.filter = this.lfo = this.bass = this.luft = null;
+      this.flaeche = null;
+    }, 1600);
+  },
+
+  /* Ein- und ausschalten über die Einstellungen. */
+  nachziehen(){
+    if (Settings.music > 0){
+      Sound.unlock();
+      if (!this.an) this.starten(); else this.lautstaerke();
+    } else if (this.an) this.stoppen();
+  }
+};
+
+/* =====================================================================
    3) WORLD
    ===================================================================== */
 /* Balance, nachgerechnet statt geraten.
@@ -706,13 +1188,33 @@ const MODES = {
      Ore und XP kommen fertig vom Server (`Net.lohn`). Lokal zu rechnen hieße,
      dass sich jeder sein Guthaben selbst schreibt. */
   online: {
-    label:"Online", blurb:"Real players on an authoritative server.",
-    world:9000, debris:0, rivals:0, pulsars:0, start:24,
+    label:"Open space", blurb:"Real players on an authoritative server.",
+    /* `world` ist hier nur der Rückfallwert, falls die Begrüßung ihn nicht
+       mitbringt — maßgeblich ist `Net.world` vom Server (siehe `start()`). */
+    world:14142, debris:0, rivals:0, pulsars:0, start:24,
     teams:false, mirror:false, time:0, rewards:0, online:true
   }
 };
-let modeId = "open";
-const MODE = () => MODES[modeId];
+/* Seit Schritt 69 gibt es „Freier Raum" nur noch einmal.
+
+   Vorher standen zwei Einträge nebeneinander: „Freier Raum" (lokal, gegen
+   vierzig KI-Rivalen) und „Online" (Server). Für den Spieler war das nicht zu
+   unterscheiden und auch nicht zu erklären — beides ist alle gegen alle auf
+   der ganzen Karte. Jetzt ist „Freier Raum" **der** Onlinemodus; fehlende
+   Mitspieler füllt der Server mit Computergegnern auf.
+
+   Die lokale Fassung (`MODES.open`) bleibt als Rückfall bestehen: Ohne
+   erreichbaren Server — offline, installiert als App, Server in Wartung —
+   läuft dieselbe Runde auf dem eigenen Gerät weiter. `ersatz` merkt sich, dass
+   gerade der Rückfall läuft, ohne die Auswahl im Menü zu verstellen. Vorher
+   schrieb der Rückfall `modeId = "open"`, und danach blieb der Spieler
+   stillschweigend für immer offline. */
+let modeId = "online";
+let ersatz = false;
+/* Welcher Modus gerade wirklich läuft: im Rückfall die lokale Fassung,
+   sonst der gewählte. Die Auswahl im Menü bleibt davon unberührt. */
+const MODE_ID = () => (ersatz && MODES[modeId] && MODES[modeId].online) ? "open" : modeId;
+const MODE = () => MODES[MODE_ID()];
 
 let WORLD = 9000, DEBRIS = 4200;
 const PELLET = 3;
@@ -925,8 +1427,14 @@ seedStars();
 
 function start(name){
   const M = MODE();
+  Musik.ducken(true);
   Game.online = !!M.online;
-  WORLD = M.world; DEBRIS = M.debris;
+  /* Online bestimmt der Server die Weltgröße und schickt sie in `welcome`.
+     Sie hier aus der eigenen Tabelle zu nehmen, hieße: Ändert jemand die
+     Karte am Server, zeichnet der Client weiter die alte Grenze — sichtbar
+     als Rand, an dem nichts mehr ist, oder als Rand, über den man hinausläuft. */
+  WORLD = (M.online && Net.world) ? Net.world : M.world;
+  DEBRIS = M.debris;
   seedStars();
 
   Game.name = cleanName(name) || t("unnamed");
@@ -989,7 +1497,7 @@ function start(name){
      davon weiß — beim nächsten Neuladen wäre es wieder da. Im Onlinebetrieb
      bucht der Server ab, siehe `welcome`. */
   let startMass = M.start;
-  if (modeId === "open" && Profile.boost > 1 && !Konto.angemeldet()){
+  if (MODE_ID() === "open" && Profile.boost > 1 && !Konto.angemeldet()){
     const cost = BOOST_COST[Profile.boost];
     if (Profile.ore >= cost){
       Profile.ore -= cost;
@@ -1351,6 +1859,46 @@ function rivalSplit(r, t){
   Game.rivals.push(k);
 }
 
+/* Ein Pulsartreffer zerlegt einen Rivalen genauso wie den Spieler
+   (`shatter()`) und wie den Onlinebetrieb (`zersplittern()` in `sim.js`).
+
+   Vorher stand hier eine Sonderregel: Der Getroffene verlor 38 % Masse und
+   lief weg — er blieb ein einziger Körper. Wer einen Pulsar auf jemanden
+   schoss, sah also etwas völlig anderes als das, was ihm selbst beim
+   Hineinfliegen passiert, und die Waffe wirkte, als täte sie nichts. Die
+   Teilstücke tragen dieselbe `gid` und wachsen deshalb später von allein
+   wieder zusammen, genau wie nach einem Teilungsangriff.
+
+   Die vier Zahlen sind dieselben wie in `shatter()`; `test.js` vergleicht
+   sie bei jedem Lauf. */
+function rivalShatter(r, px, py){
+  ring(r.x, r.y, radiusOf(r.m)*2.4, TH().shatter);
+  const eigene = Game.rivals.reduce((n,x) => n + (x.gid === r.gid ? 1 : 0), 0);
+  const room = Math.min(MAX_CELLS - eigene, 96 - Game.rivals.length);
+  if (room <= 0){ r.m *= .82; return; }
+  const gesamt = r.m * .90;
+  const mutter = gesamt * .22;
+  const rest   = gesamt - mutter;
+  const minStk = Math.max(24, gesamt*.045);
+  const parts  = clamp(Math.floor(rest/minStk), 2, Math.min(room, 12));
+  const each   = rest / parts;
+
+  /* Weg vom Pulsar, sonst treiben die Stücke gleich wieder hinein. */
+  const fx = r.x-px, fy = r.y-py, fl = Math.hypot(fx, fy) || 1;
+  const flucht = () => ({x: r.x + fx/fl*900, y: r.y + fy/fl*900});
+
+  r.m = mutter; r.merge = mergeDelay(mutter); r.vx = 0; r.vy = 0;
+  r.goal = flucht(); r.retarget = 1.4;
+  for (let i=0;i<parts;i++){
+    const a = (i/parts)*6.283 + rnd(-.25,.25);
+    Game.rivals.push(Object.assign({}, r, {
+      x: r.x + Math.cos(a)*8, y: r.y + Math.sin(a)*8, m: each,
+      vx: Math.cos(a)*rnd(380, 640), vy: Math.sin(a)*rnd(380, 640),
+      merge: mergeDelay(each), goal: flucht(), retarget: 1.4
+    }));
+  }
+}
+
 /* Zielwahl der Rivalen. Die Reihenfolge ist die Entscheidung: Zone schlägt
    Überleben, Überleben schlägt Jagd, Jagd schlägt Fressen. Vorher gab es nur
    „flieh oder friss" in einem Radius von 480 — Teilungsangriffe kamen nie vor,
@@ -1706,14 +2254,15 @@ function step(dt){
       Game.pulsarBack.push(Game.t + FEAST_BACK);
       continue;
     }
-    for (const r of Game.rivals){
+    /* Länge vorher festhalten: `rivalShatter` hängt Teilstücke an dieselbe
+       Liste, und die sollen nicht im selben Schritt noch einmal zerlegt
+       werden — sonst kettet ein Treffer sich durch die eigenen Splitter. */
+    const anzahlRivalen = Game.rivals.length;
+    for (let ri=0; ri<anzahlRivalen; ri++){
+      const r = Game.rivals[ri];
       if (r.m < PULSAR_BITE) continue;
-      if (Math.hypot(p.x-r.x, p.y-r.y) < radiusOf(r.m) - PULSAR_R*.35){
-        r.m *= .62;
-        r.goal = {x: r.x*2-p.x, y: r.y*2-p.y};
-        r.retarget = 1.4;
-        ring(r.x, r.y, radiusOf(r.m)*2.2, TH().shatter);
-      }
+      if (Math.hypot(p.x-r.x, p.y-r.y) < radiusOf(r.m) - PULSAR_R*.35)
+        rivalShatter(r, p.x, p.y);
     }
   }
 
@@ -2880,6 +3429,10 @@ function draw(){
     $("clanClock").textContent = Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
   } else plate.hidden = true;
   paintStage(gm); paintBoard(gm);
+  /* Die Musik wird aus der Bildschleife getaktet, nicht aus einem eigenen
+     Zeitgeber: Browser drosseln Zeitgeber in verdeckten Tabs, und dann bliebe
+     sie auf einem Akkord stehen. */
+  Musik.takt();
   requestAnimationFrame(loop);
 }
 function paintStage(m){
@@ -3024,8 +3577,10 @@ requestAnimationFrame(loop);
 /* =====================================================================
    6) SCREENS
    ===================================================================== */
-const VEILS = ["accountVeil","startVeil","shopVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","rankVeil","pwVeil","erfVeil"];
+/* Seit Schritt 79 sind „Oberflächen" und „Errungenschaften" Reiter im
+   Startbildschirm und keine eigenen Bildschirme mehr. */
+const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
+               "friendsVeil","setVeil","rankVeil","pwVeil"];
 
 
 const SET_UI = [
@@ -3034,6 +3589,8 @@ const SET_UI = [
      der Vollaussteuerung an — das Spiel galt schlicht als tonlos. */
   {key:"volume", label:"s_sound", hint:"s_sound_h",
    opts:[["o_off",0],["o_quiet",0.35],["o_normal",0.7],["o_loud",1]]},
+  {key:"music", label:"s_music", hint:"s_music_h",
+   opts:[["o_off",0],["o_quiet",0.3],["o_normal",0.55],["o_loud",0.85]]},
   {key:"shake", label:"s_shake", hint:"s_shake_h",
    opts:[["o_on",true],["o_off",false]]},
   {key:"sens", label:"s_stick", hint:"s_stick_h",
@@ -3061,6 +3618,8 @@ function applySetting(key){
     if (Sound.bus) Sound.bus.gain.value = Settings.volume;
     if (Sound.on) Sound.unlock();
   }
+  if (key === "music") Musik.nachziehen();
+  einstellungenSichern();
   if (key === "sens") STICK_MAX = Settings.sens;
   if (key === "lefty") document.body.classList.toggle("lefty", Settings.lefty);
   if (key === "hudEdge"){
@@ -3110,6 +3669,26 @@ function buildSettings(){
     box.appendChild(wrap);
   }
 
+  /* Einwilligung ändern. Ein Widerruf muss so leicht sein wie die Zustimmung
+     war — deshalb steht er hier und nicht irgendwo im Rechtstext. Er
+     erscheint nur, wenn es überhaupt etwas zu erlauben gibt. */
+  if (WERBUNG_AKTIV){
+    const cw = document.createElement("div");
+    cw.className = "opt";
+    const ct = document.createElement("div");
+    ct.innerHTML = `<b>${t("ck_kopf")}</b><small>${
+      Einwilligung.gefragt()
+        ? t(Einwilligung.erlaubt("werbung") || Einwilligung.erlaubt("messung")
+            ? "ck_stand_ja" : "ck_stand_nein")
+        : t("ck_stand_offen")}</small>`;
+    const cb = document.createElement("button");
+    cb.type = "button"; cb.className = "quiet";
+    cb.textContent = t("ck_aendern");
+    cb.addEventListener("click", () => { show("startVeil"); Einwilligung.widerrufen(); });
+    cw.appendChild(ct); cw.appendChild(cb);
+    box.appendChild(cw);
+  }
+
   /* Konto ganz unten: Wer angemeldet ist, sieht hier, als wer — und kommt
      wieder heraus. Ohne Konto steht hier nichts; ein Abmeldeknopf für
      niemanden wäre nur Verwirrung. */
@@ -3136,23 +3715,153 @@ function buildSettings(){
   box.appendChild(wrap);
 }
 function hideAll(){ VEILS.forEach(v => $(v).hidden = true); }
+/* ---- Reiter im Konsolenfenster (Schritt 79) ------------------------
+   Vier Reiter statt vier Vollbildschirmen. Der Unterschied ist nicht nur
+   Gestaltung: Wer im Laden steht, sieht weiter seinen Stand und kommt mit
+   einem Klick zurück, statt über einen „Fertig"-Knopf. */
+let reiterJetzt = "start";
+const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat" };
+
+function reiter(name){
+  if (!REITER[name]) name = "start";
+  reiterJetzt = name;
+  for (const [k, id] of Object.entries(REITER)){
+    const pane = $(id);
+    if (pane) pane.hidden = (k !== name);
+  }
+  const leiste = $("konsReiter");
+  if (leiste) for (const b of leiste.querySelectorAll("button[data-reiter]"))
+    b.setAttribute("aria-selected", String(b.dataset.reiter === name));
+  if (name === "haut"){ paintPurse(); buildGrid();
+    Kauf.preiseLaden().then(() => { if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }); }
+  if (name === "erf") buildErfolge();
+  if (name === "stat"){ buildRecords(); paintRank(); }
+  if (name === "start") heldMalen();
+}
+
+/* Der eigene Körper in der Mitte — gezeichnet von `body()`, also von
+   derselben Funktion wie im Spiel. Ein eigenes Schaubild wäre eine zweite
+   Wahrheit: Ändert sich die Darstellung im Spiel, stimmte das Bild im Menü
+   nicht mehr. Die gezeigte Masse ist die eigene Bestmasse (mindestens so
+   viel, dass man etwas sieht) — damit wächst das Bild mit dem Fortschritt. */
+function heldMalen(){
+  const c = $("heldCanvas");
+  if (!c) return;
+  const g = c.getContext("2d");
+  const S = c.width;
+  g.clearRect(0, 0, S, S);
+  /* Die echte Bestmasse, nicht eine geschönte Untergrenze. Das Bild ist
+     damit selbst eine Fortschrittsanzeige: Wer noch nichts gespielt hat,
+     sieht ein Staubkorn und liest „hier draußen ist noch nichts kleiner als
+     du". Ein Anfänger, dem das Menü eine Stufe vorspielt, die er nicht hat,
+     lernt daraus nur, dass die Anzeige nichts bedeutet. */
+  const masse = Math.max(30, Profile.best || 0);
+  const saveT = Game.t; Game.t = 1.2;
+  try { body(g, S/2, S/2, S*0.40, masse, skin, 0, "", true); } catch(_){}
+  Game.t = saveT;
+
+  setze("heldName", istAngemeldet() ? Konto.profil.name
+        : (cleanName($("name") ? $("name").value : "") || t("k_guest")));
+  const st = stageOf(masse);
+  setze("heldStufe", t("st" + st + "h"));
+}
+
+/* „Nächste Errungenschaften": die drei, die am nächsten dran sind.
+   Erfunden ist daran nichts — die Schwellen stehen in `ERFOLG_TEXT`, der
+   Stand in `Profile.rec`, im Level und in der Zahl der Oberflächen. */
+function erfolgStand(id){
+  const R = Profile.rec, art = ERFOLG_TEXT[id][0], ziel = ERFOLG_TEXT[id][1];
+  const ist = art === "e_masse"     ? (R.mass || 0)
+            : art === "e_jagd1" ||
+              art === "e_jagd"      ? (R.kills || 0)
+            : art === "e_jagdrunde" ? (R.kills || 0)
+            : art === "e_runden"    ? (R.runs || 0)
+            : art === "e_zeit"      ? Math.floor((R.time || 0)/60)
+            : art === "e_skins"     ? Profile.owned.size
+            : art === "e_level"     ? Profile.level
+            : null;
+  return ist === null ? null : { ist, ziel };
+}
+
+function naechsteErfolgeMalen(){
+  const box = $("naechstBox");
+  if (!box) return;
+  const hat = new Set((istAngemeldet() && Konto.profil.erfolge) || []);
+  const offen = [];
+  for (const id of ERFOLG_REIHE){
+    if (hat.has(id)) continue;
+    const st = erfolgStand(id);
+    if (!st) continue;
+    offen.push({ id, ...st, anteil: Math.min(1, st.ist / st.ziel) });
+  }
+  offen.sort((a, b) => b.anteil - a.anteil);
+  const drei = offen.slice(0, 3);
+  const kopf = `<h2>${esc(t("k_next"))}<em>${hat.size}/${ERFOLG_REIHE.length}</em></h2>`;
+  if (!drei.length){ box.innerHTML = kopf + `<p class="hintline">${esc(t("allunlocked"))}</p>`; return; }
+  box.innerHTML = kopf + drei.map(e =>
+    `<div class="konsFort${e.anteil >= 1 ? " fertig" : ""}">` +
+    `<span>${esc(erfolgLabel(e.id))}</span>` +
+    `<span class="bar"><i style="width:${Math.round(e.anteil*100)}%"></i></span>` +
+    `<b>${Math.round(e.anteil*100)} %</b></div>`).join("");
+}
+
+/* Freundekasten im Startbildschirm. Bewusst **ohne** Onlineanzeige: Die gibt
+   es noch nicht (`friendspending`), und ein grauer Punkt, der „offline"
+   behauptet, wäre eine Angabe, die das Spiel gar nicht hat. */
+function freundBoxMalen(){
+  const box = $("freundBox");
+  if (!box) return;
+  const kopf = `<h2>${esc(t("friends"))}<em><button type="button" id="freundMehr">` +
+               `${esc(t("k_manage"))}</button></em></h2>`;
+  const liste = Profile.friends.slice(0, 4);
+  box.innerHTML = kopf + (liste.length
+    ? liste.map(n => `<div class="konsFr"><span>${esc(n)}</span></div>`).join("") +
+      (Profile.friends.length > liste.length
+        ? `<div class="konsFr"><small>+${Profile.friends.length - liste.length}</small></div>` : "")
+    : `<p class="hintline">${esc(t("nofriends"))}</p>`);
+  const b = $("freundMehr");
+  if (b) b.addEventListener("click", () => { buildFriends(); friendNote(""); show("friendsVeil"); });
+}
+
 function show(id){
   hideAll(); $(id).hidden = false;
-  if (id === "startVeil"){ buildStrip(); buildBoost(); buildRecords(); }
+  if (id === "startVeil"){
+    buildStrip(); buildBoost(); buildRecords(); onlineZeigen();
+    naechsteErfolgeMalen(); freundBoxMalen(); heldMalen();
+    bestenlisteZeigen().catch(() => {});
+  }
+  /* Im Menü darf die Musik vorn stehen, im Spiel nicht: Dort verdeckt sie
+     sonst die Töne, an denen man Gefahr erkennt. */
+  Musik.ducken(false);
 }
+
+/* Zahlenleiste im Reiter und die drei Werte unter dem Körper.
+   Seit Schritt 79 gibt es die Werte nur noch **einmal** im Bild. Vorher
+   standen dieselben vier Zahlen zweimal in der Seite (Startbildschirm und
+   Laden), und jede Änderung musste an zwei Stellen gepflegt werden. */
+function setze(id, text){ const el = $(id); if (el) el.textContent = text; }
 
 function paintPurse(){
   const need = Profile.xpNeeded(Profile.level);
-  for (const [lv,xp,ore,best] of [["lvNum","xpText","oreNum","bestNum"],
-                                  ["lvNum2","xpText2","oreNum2","bestNum2"]]){
-    $(lv).textContent = Profile.level;
-    $(xp).textContent = Profile.level >= MAX_LEVEL
-      ? t("maxlevel") : Profile.xp.toLocaleString(lang) + " / " + need.toLocaleString(lang);
-    $(ore).textContent = Profile.ore.toLocaleString(lang);
-    $(best).textContent = Profile.best.toLocaleString(lang);
-  }
-  $("xpBar").style.width = (Profile.level >= MAX_LEVEL ? 1
+  setze("lvNum", Profile.level);
+  setze("xpText", Profile.level >= MAX_LEVEL
+    ? t("maxlevel") : Profile.xp.toLocaleString(lang) + " / " + need.toLocaleString(lang));
+  setze("oreNum", Profile.ore.toLocaleString(lang));
+  setze("bestNum", Profile.best.toLocaleString(lang));
+  setze("runNum", (Profile.rec.runs || 0).toLocaleString(lang));
+  setze("hautNum", Profile.owned.size + " / " + SKINS.length);
+  const bar = $("xpBar");
+  if (bar) bar.style.width = (Profile.level >= MAX_LEVEL ? 1
     : clamp(Profile.xp/need, 0, 1))*100 + "%";
+
+  /* Ehre gibt es ausschließlich aus Onlinerunden, die der Server gerechnet
+     hat. Ohne Konto steht dort keine Null, sondern nichts. */
+  const zeile = $("ehreZeile");
+  if (zeile){
+    const hat = istAngemeldet() && Number.isFinite(+Konto.profil.ehre);
+    zeile.hidden = !hat;
+    if (hat) setze("ehreNum", (+Konto.profil.ehre).toLocaleString(lang));
+  }
 }
 
 /* Rangtafel im Menü. Sie steht nur bei einem Konto da: Ehre gibt es
@@ -3200,11 +3909,81 @@ function nextUnlock(){
 /* Nur was freigespielt ist. Gesperrte Oberflächen gehören in den Shop,
    nicht in die Schnellwahl — sonst ist die Leiste bei 42 Einträgen unbrauchbar. */
 /* --- Modi --------------------------------------------------------- */
+/* Wie viele Menschen gerade spielen, unter dem Startknopf.
+
+   Ohne erreichbaren Server bleibt die Zeile **leer** statt „0 online" zu
+   behaupten: Null Spieler und kein Server sind zwei verschiedene Aussagen, und
+   die erste schreckt ab, obwohl sie gar nicht stimmt. NPCs zählen nicht mit —
+   `/health` trennt sie, und eine Zahl, die Computergegner mitzählt, wäre
+   genau die Art Angabe, die das Spiel anderen vorwirft. */
+function onlineZeigen(){
+  const el = $("onlineText");
+  if (!el) return;
+  const n = Konto.online;
+  if (n === null || n === undefined){ el.hidden = true; el.textContent = ""; return; }
+  el.hidden = false;
+  /* Bei null niemanden zu nennen wäre evasiv, „0 Spieler" abschreckend.
+     „Sei der Erste" sagt dasselbe und stimmt. */
+  el.textContent = n === 0 ? t("online0") : n === 1 ? t("online1") : t("onlinen", n);
+}
+
+/* Regelmäßig nachfragen, aber nur solange der Startbildschirm zu sehen ist —
+   im Spiel läuft die Verbindung ohnehin, und eine Abfrage alle halbe Minute
+   aus jedem offenen Tab wäre eine Last ohne Gegenwert. */
+setInterval(() => {
+  const v = $("startVeil");
+  if (!v || v.hidden) return;
+  if (document.hidden) return;
+  Konto.anklopfen().catch(() => {});
+}, 30000);
+
+/* Bestenliste auf dem Startbildschirm — die besten acht nach Spitzenmasse.
+
+   Sie stand bisher nur hinter dem Knopf „Ranglisten". Damit war das, was das
+   Spiel seit Schritt 65 ausmacht, auf dem Startbildschirm unsichtbar, und
+   unter dem Startknopf blieb ein leeres Feld. Agar zeigt genau das an genau
+   dieser Stelle.
+
+   Höchstens einmal je Minute geholt: Die Liste ändert sich langsam, und jeder
+   Besuch des Menüs eine Abfrage wäre Last ohne Gegenwert. */
+let bestenCache = { zeit: 0, html: "" };
+async function bestenlisteZeigen(){
+  const box = $("boardBox"), liste = $("boardList");
+  if (!box || !liste) return;
+  if (Konto.online === null || Konto.online === undefined){ box.hidden = true; return; }
+
+  if (bestenCache.html && Date.now() - bestenCache.zeit < 60000){
+    liste.innerHTML = bestenCache.html; box.hidden = false; return;
+  }
+  const a = await Konto.rangliste("best", null, null);
+  const zeilen = (a && a.liste) ? a.liste.slice(0, 8) : [];
+  if (!zeilen.length){ box.hidden = true; return; }
+
+  const ich = Konto.profil ? Konto.profil.id : -1;
+  bestenCache = {
+    zeit: Date.now(),
+    html: zeilen.map(e => {
+      const land = e.land ? `<small>${esc(e.land)}</small>` : "";
+      const wert = Math.round(+e.wert || +e.best || 0).toLocaleString(lang);
+      return `<div class="rankrow${+e.id === ich ? " me" : ""}">` +
+             `<i>${e.rang}</i><b>${esc(e.name)}${land}</b><span>${wert}</span></div>`;
+    }).join("")
+  };
+  liste.innerHTML = bestenCache.html;
+  box.hidden = false;
+}
+
+/* Reihenfolge im Menü. „Freier Raum" steht oben, weil es der Modus ist, für
+   den die Leute kommen. `open` fehlt bewusst: Das ist seit Schritt 69 nur noch
+   der lokale Rückfall desselben Eintrags, kein eigener Modus mehr. */
+const MODE_LISTE = ["online", "royale", "clan", "friendly"];
+
 function buildModes(){
   const box = $("modes");
   box.innerHTML = "";
-  for (const id of Object.keys(MODES)){
+  for (const id of MODE_LISTE){
     const M = MODES[id];
+    if (!M) continue;
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-pressed", String(modeId === id));
@@ -3269,8 +4048,14 @@ const BONUS_ANZEIGE = [50, 75, 100, 150, 200, 300, 500];
 function paintBonus(){
   const box = $("bonusBox");
   if (!box) return;
-  if (!Konto.angemeldet() || !Konto.bonus){ box.hidden = true; return; }
+  if (!Konto.angemeldet() || !Konto.bonus){
+    box.hidden = true; document.body.classList.remove("bonusoffen"); return;
+  }
   box.hidden = false;
+
+  /* Steht ein Bonus zum Abholen bereit, rückt der Kasten auf schmalen
+     Schirmen nach oben (`body.bonusoffen`, siehe Stilblatt). */
+  document.body.classList.toggle("bonusoffen", !!Konto.bonus.offen);
 
   const serie = Konto.bonus.serie || 0;
   const naechster = Konto.bonus.offen ? Math.min(7, serie + 1) : serie;
@@ -3336,8 +4121,13 @@ function istAngemeldet(){
   try { return Konto.angemeldet(); } catch(_){ return false; }
 }
 
+/* Startbonus nur im freien Raum. Die gespiegelten Arenen sind ausdrücklich
+   als faire Karten gebaut — ein Startvorteil dort wäre ein Widerspruch.
+   Seit der Zusammenlegung ist das genau ein Modus, für Gäste wie für Konten:
+   Angemeldet bucht der Server beim Beitritt ab, im lokalen Rückfall der
+   Client. */
 function boostErlaubt(){
-  return istAngemeldet() ? modeId === "online" : modeId === "open";
+  return modeId === "online";
 }
 
 function buildBoost(){
@@ -3384,12 +4174,23 @@ function buildStrip(){
     b.appendChild(nm);
     b.addEventListener("click", () => { skin = s; buildStrip(); });
     strip.appendChild(b);
-    if (skin.id === s.id) setTimeout(() => b.scrollIntoView({block:"nearest", inline:"center"}), 0);
+    /* Nur den Streifen selbst schieben, nicht die Seite. `scrollIntoView`
+       scrollt jeden Vorfahren mit — auf einem Telefon landete man dadurch
+       mitten im Fenster statt oben, ohne je gescrollt zu haben. */
+    if (skin.id === s.id) setTimeout(() => {
+      strip.scrollLeft = b.offsetLeft - (strip.clientWidth - b.offsetWidth)/2;
+    }, 0);
   }
   const more = document.createElement("button");
   more.type = "button";
-  more.innerHTML = `<span class="more">${t("skincount", Profile.owned.size, SKINS.length)}<br>${t("allskins")}</span>`;
-  more.addEventListener("click", () => { paintPurse(); buildGrid(); show("shopVeil"); });
+  /* Die Klasse gehört auf die Schaltfläche, nicht auf den Text darin: Das
+     Stilblatt gibt `.strip .more` die Breite 76, `.strip button` nur 60 — und
+     die Schaltfläche schneidet mit `overflow:hidden` ab. Stand die Klasse auf
+     dem inneren `span`, ragte der Text aus seiner eigenen Schaltfläche heraus
+     und wurde abgeschnitten: sichtbar als „all skin:" statt „all skins". */
+  more.className = "more";
+  more.innerHTML = `<span>${t("skincount", Profile.owned.size, SKINS.length)}<br>${t("allskins")}</span>`;
+  more.addEventListener("click", () => reiter("haut"));
   strip.appendChild(more);
 }
 
@@ -3552,7 +4353,7 @@ const Kauf = {
     if (!w || this.fragt) return;
     if (Date.now() > w.bis){
       this.ende();
-      if (!$("shopVeil").hidden){ note(t("kauf_abbruch"), "warn"); if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }
+      if (ladenOffen()){ note(t("kauf_abbruch"), "warn"); if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }
       return;
     }
     this.fragt = true;
@@ -3566,7 +4367,7 @@ const Kauf = {
       const s = SKINS.find(x => x.id === a.artikel);
       const name = s ? s.label : String(a.artikel || "");
       paintPurse(); buildGrid();
-      if (!$("shopVeil").hidden){ kaufLeisteAus(); note(t("kauf_fertig", name), "good"); }
+      if (ladenOffen()){ kaufLeisteAus(); note(t("kauf_fertig", name), "good"); }
       toast(t("kauf_fertig", name));
     } else if (a.zustand === "erstattet"){
       this.ende();
@@ -3581,10 +4382,16 @@ document.addEventListener("visibilitychange", () => {
 
 const euro = cent => (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" });
 
+/* Sieht der Spieler den Laden gerade? Früher war das „ist der Bildschirm
+   sichtbar", jetzt „ist der Reiter vorn und der Startbildschirm offen". */
+function ladenOffen(){
+  return !$("startVeil").hidden && reiterJetzt === "haut";
+}
+
 function ladenOeffnen(){
   kaufLeisteAus();
-  paintPurse(); buildGrid(); show("shopVeil");
-  Kauf.preiseLaden().then(() => { if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); });
+  if ($("startVeil").hidden) show("startVeil");
+  reiter("haut");
 }
 
 function kaufLeisteAus(){
@@ -3761,11 +4568,13 @@ for (const id of ["googleBtn", "facebookBtn"]){
   $(id).disabled = true;
   $(id).addEventListener("click", () => kontoMeldung(t("k_soon")));
 }
-$("shopBtn").addEventListener("click", ladenOeffnen);
 $("endShop").addEventListener("click", ladenOeffnen);
-$("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); });
+$("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); reiter("start"); });
 
-$("shopClose").addEventListener("click", () => { paintPurse(); show("startVeil"); });
+/* Die Reiterleiste. Ein Klick wechselt den Inhalt des Fensters — niemand
+   verlässt dabei den Startbildschirm, und es gibt nichts zu schließen. */
+for (const b of document.querySelectorAll("#konsReiter button[data-reiter]"))
+  b.addEventListener("click", () => reiter(b.dataset.reiter));
 $("legalBtn").addEventListener("click", () => show("legalVeil"));
 $("legalBtn2").addEventListener("click", () => show("legalVeil"));
 $("legalClose").addEventListener("click", () =>
@@ -3854,7 +4663,9 @@ function verbindenDannStarten(name){
     if (Net.lage === "fehler" || jetzt() > frist){
       Net.leave();
       fertig();
-      modeId = "open"; buildModes();     // zurück auf den lokalen Modus
+      /* Rückfall auf die lokale Fassung desselben Modus. Die Auswahl im Menü
+         bleibt stehen: Beim nächsten Start wird wieder der Server versucht. */
+      ersatz = true;
       start(name);
       toast(t("net_fail"));
       return;
@@ -3866,13 +4677,56 @@ function verbindenDannStarten(name){
 startBtn.addEventListener("click", () => {
   Sound.unlock();                       // Nutzergeste: erst hier darf Ton starten
   const name = $("name").value.trim().slice(0,14);
+  /* Jede Runde beginnt mit dem Versuch, online zu spielen. Erst wenn das
+     scheitert, setzt `verbindenDannStarten` den Rückfall. */
+  ersatz = false;
   if (MODES[modeId] && MODES[modeId].online) verbindenDannStarten(name);
   else start(name);
 });
 $("settingsBtn").addEventListener("click", () => { buildSettings(); show("setVeil"); });
 $("setClose").addEventListener("click", () => show("startVeil"));
+/* Browser lassen Ton erst nach einer Nutzergeste zu. Bisher geschah das erst
+   beim Klick auf „Starten" — dann wäre die Musik im Menü nie zu hören
+   gewesen, obwohl sie genau dort hingehört. Deshalb einmalig auf die erste
+   beliebige Geste hören. */
+(function ersteGeste(){
+  const wecken = () => {
+    document.removeEventListener("pointerdown", wecken);
+    document.removeEventListener("keydown", wecken);
+    try { Sound.unlock(); Musik.nachziehen(); } catch(_){}
+  };
+  document.addEventListener("pointerdown", wecken, {once:false});
+  document.addEventListener("keydown", wecken, {once:false});
+})();
+
+/* Gespeicherte Einstellungen gelten, bevor irgendetwas gezeichnet wird —
+   sonst blitzt kurz das falsche Thema auf. */
+einstellungenLaden();
+
+/* Bedienung des Einwilligungskastens. */
+(function einwilligungVerdrahten(){
+  const k = (id, fn) => { const b = $(id); if (b) b.addEventListener("click", fn); };
+  k("ckJa",   () => Einwilligung.setzen(true, true));
+  k("ckNein", () => Einwilligung.setzen(false, false));
+  k("ckFein", () => {
+    $("cookieFein").hidden = false;
+    $("ckSpeichern").hidden = false;
+    $("ckFein").hidden = true;
+    Einwilligung.platzMessen();   // die Feineinstellung macht den Kasten höher
+  });
+  k("ckSpeichern", () => Einwilligung.setzen(
+    $("ckWerbung") && $("ckWerbung").checked,
+    $("ckMessung") && $("ckMessung").checked));
+})();
+
+/* Vor allem anderen: Ohne gespeicherte Zustimmung darf nichts Fremdes laden. */
+Einwilligung.start();
+
 lang = pickLang();
 applyTheme();
+STICK_MAX = Settings.sens;
+document.body.classList.toggle("lefty", Settings.lefty);
+Sound.on = Settings.volume > 0;
 applyLang();
 paintIntegrity(); paintPurse();
 kontoFormZeichnen();
@@ -4109,6 +4963,12 @@ const Konto = {
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
     this.kauf = !!a.kauf;
+    /* Zahl der Menschen im Betrieb — nur Menschen, `/health` zählt NPCs
+       getrennt. Sie auf dem Startbildschirm zu zeigen ist das einzige
+       Zeichen dort, dass gerade jemand spielt. */
+    this.online = a.status === 200 ? Math.max(0, Number(a.spieler) || 0) : null;
+    onlineZeigen();
+    if (a.status === 200) bestenlisteZeigen().catch(() => {});
     return a.status === 200;
   },
 
@@ -4250,6 +5110,13 @@ const Net = {
   wer:new Map(),                 // Spielerkennung -> {n, s, l?, r?, b?}
   schnapp:[],                    // Schnappschüsse, ältester zuerst
   eigen:null,                    // letzter autoritativer Stand eigener Zellen
+  /* Trümmer kommen als Unterschied (`dn` neu/geändert, `dw` weg) und liegen
+     hier als Nummer → [x, y, Farbton]. Sie stehen bewusst außerhalb der
+     Schnappschüsse: Sie bewegen sich nicht, also gibt es nichts zu glätten.
+     `debNeu` merkt sich, ob seit dem letzten Bild etwas anders ist — dann
+     baut der Client die Zeichenliste neu, sonst behält er sie. */
+  deb:new Map(), debNeu:true,
+  world:0,                       // Weltgröße, kommt mit „welcome" vom Server
   top:[],
   tot:null,
   lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
@@ -4261,6 +5128,7 @@ const Net = {
     this.leave();
     this.lage = "waehlt"; this.grund = "";
     this.schnapp = []; this.wer.clear(); this.eigen = null;
+    this.deb.clear(); this.debNeu = true;
     this.top = []; this.tot = null; this.you = 0; this.seq = 0;
     const url = serverUrl();
     try { this.socket = new WebSocket(url); }
@@ -4299,6 +5167,8 @@ const Net = {
     if (m.t === "welcome"){
       this.you = +m.you || 0;
       this.rate = +m.tick || 20;
+      /* Weltgröße vom Server. `start()` liest sie gleich aus. */
+      this.world = Math.max(1000, Math.min(40000, +m.world || 9000));
       this.connected = true; this.lage = "verbunden";
       this.wer.clear();
       for (const id in (m.names || {})){
@@ -4388,12 +5258,26 @@ const Net = {
       let g = gruppen.get(id); if (!g) gruppen.set(id, g = []);
       g.push({x:+c[1], y:+c[2], m:+c[3]});
     }
-    this.top = Array.isArray(m.top) ? m.top : [];
+    /* Die Bestenliste kommt nur in jedem vierten Takt. Fehlt sie, gilt die
+       letzte weiter — sie hier zu leeren ließe die Anzeige flackern. */
+    if (Array.isArray(m.top)) this.top = m.top;
     if (gruppen.has(this.you)) this.eigen = gruppen.get(this.you);
+
+    /* Trümmer nachführen: erst entfernen, dann setzen. */
+    if (Array.isArray(m.dw) && m.dw.length){
+      for (const i of m.dw) this.deb.delete(+i);
+      this.debNeu = true;
+    }
+    if (Array.isArray(m.dn) && m.dn.length){
+      for (const e of m.dn){
+        if (!e || e.length < 4) continue;
+        this.deb.set(+e[0], [+e[1], +e[2], +e[3]]);
+      }
+      this.debNeu = true;
+    }
 
     this.schnapp.push({
       at: jetzt(), gruppen,
-      deb: Array.isArray(m.deb) ? m.deb : [],
       pul: Array.isArray(m.pul) ? m.pul : [],
       wurf: Array.isArray(m.shed) ? m.shed : [],
       safe: +m.safe || 0
@@ -4466,12 +5350,17 @@ const Net = {
        Zwischenwerte direkt übernehmen. Der Farbton kommt vom Server, die
        Sättigung aus dem Thema: so bleibt die Streuung erhalten, ohne dass
        im hellen Thema bunte Punkte auf Sand liegen. */
-    const d = TH().dust;
-    const sat = (d.s[0]+d.s[1])/2, lig = (d.l[0]+d.l[1])/2;
-    Game.debris = a.deb.map(e => ({
-      x:e[0], y:e[1], m:1, r:3.4,
-      c:`hsl(${d.h[0] + (((+e[2]||0)%360)/360)*(d.h[1]-d.h[0])} ${sat}% ${lig}%)`
-    }));
+    if (this.debNeu || this.debThema !== Settings.theme){
+      const d = TH().dust;
+      const sat = (d.s[0]+d.s[1])/2, lig = (d.l[0]+d.l[1])/2;
+      const liste = [];
+      for (const e of this.deb.values())
+        liste.push({ x:e[0], y:e[1], m:1, r:3.4,
+          c:`hsl(${d.h[0] + ((e[2]%360)/360)*(d.h[1]-d.h[0])} ${sat}% ${lig}%)` });
+      Game.debris = liste;
+      this.debNeu = false;
+      this.debThema = Settings.theme;
+    }
     Game.pulsars = a.pul.map(e => ({
       x:e[0], y:e[1], vx:0, vy:0, fed:+e[2]||0,
       spin:((e[0]*0.7 + e[1]*0.3) % 6.28)      // aus der Lage, damit er nicht flackert
@@ -4653,8 +5542,6 @@ function buildErfolge(){
   $("erfNote").className = "notice" + (istAngemeldet() ? "" : " warn");
 }
 
-$("erfBtn").addEventListener("click", () => { buildErfolge(); show("erfVeil"); });
-$("erfClose").addEventListener("click", () => show("startVeil"));
 
 /* =====================================================================
    6f) PASSWORT VERGESSEN UND ADRESSE BESTÄTIGEN

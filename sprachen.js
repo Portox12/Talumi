@@ -66,13 +66,13 @@ const LANGS6 = {
 };
 for (const c in LANGS6) Object.assign(LANGS[c], LANGS6[c]);
 const LANGS7 = {
-  en:{st0h:"Sweep up debris. Nothing out here is smaller than you yet.", st1h:"Craters now. You can take anything loose and slow.", st2h:"Your core is melting. Heat shows through the cracks.", st3h:"An atmosphere is holding. Pulsars will shatter you now.", st4h:"Rings and moons. Everything left is worth eating.", i_ok:"Input looks human.", i_auto:"Automated browser detected.", i_synth:"Events not produced by a device.", i_speed:"Cursor speed is unnaturally even.", i_straight:"Path is too straight to be a hand.", i_timing:"Input timing is machine-regular.", i_aim:"Targeting is too precise.", i_fast:"Actions arriving too fast.", i_pass:"Check passed.", p_split:"Split", p_shed:"Shed", rotate:"Turn your device sideways. Talumi plays in landscape.", setnote:"These live in this session. Once accounts exist they follow you to every device."},
-  de:{st0h:"Sammle Trümmer ein. Hier draußen ist noch nichts kleiner als du.", st1h:"Jetzt mit Kratern. Alles Lose und Langsame kannst du nehmen.", st2h:"Dein Kern schmilzt. Die Glut zeigt sich in den Rissen.", st3h:"Eine Atmosphäre hält. Pulsare zerreißen dich jetzt.", st4h:"Ringe und Monde. Alles Verbliebene lohnt sich zu fressen.", i_ok:"Eingaben wirken menschlich.", i_auto:"Automatisierter Browser erkannt.", i_synth:"Eingaben stammen nicht vom Gerät.", i_speed:"Zeigertempo ist unnatürlich gleichmäßig.", i_straight:"Die Bahn ist zu gerade für eine Hand.", i_timing:"Der Eingabetakt ist maschinell regelmäßig.", i_aim:"Die Zielwahl ist zu genau.", i_fast:"Aktionen kommen zu schnell.", i_pass:"Prüfung bestanden.", p_split:"Teilen", p_shed:"Abwerfen", rotate:"Dreh dein Gerät quer. Talumi läuft im Querformat.", setnote:"Diese gelten für diese Sitzung. Sobald es Konten gibt, folgen sie dir auf jedes Gerät."},
-  es:{st0h:"Recoge escombros. Aquí fuera nada es más pequeño que tú todavía.", st1h:"Ahora con cráteres. Puedes con todo lo suelto y lento.", st2h:"Tu núcleo se funde. El calor asoma por las grietas.", st3h:"Se sostiene una atmósfera. Ahora los púlsares te destrozan.", st4h:"Anillos y lunas. Todo lo que queda vale la pena comérselo.", i_ok:"Las entradas parecen humanas.", i_auto:"Navegador automatizado detectado.", i_synth:"Eventos no producidos por un dispositivo.", i_speed:"La velocidad del cursor es antinaturalmente uniforme.", i_straight:"El trazo es demasiado recto para una mano.", i_timing:"El ritmo de entrada es de máquina.", i_aim:"La puntería es demasiado precisa.", i_fast:"Las acciones llegan demasiado rápido.", i_pass:"Comprobación superada.", p_split:"Dividir", p_shed:"Soltar", rotate:"Gira el dispositivo. Talumi se juega en horizontal.", setnote:"Valen para esta sesión. Cuando haya cuentas, te seguirán a todos los dispositivos."},
-  pt:{st0h:"Recolha destroços. Aqui fora nada é menor que você ainda.", st1h:"Agora com crateras. Você dá conta de tudo que é solto e lento.", st2h:"Seu núcleo está derretendo. O calor aparece nas fendas.", st3h:"Uma atmosfera se mantém. Agora os pulsares te despedaçam.", st4h:"Anéis e luas. Tudo o que resta vale a pena comer.", i_ok:"As entradas parecem humanas.", i_auto:"Navegador automatizado detectado.", i_synth:"Eventos não vindos de um dispositivo.", i_speed:"A velocidade do cursor é uniforme demais.", i_straight:"O traço é reto demais para uma mão.", i_timing:"O ritmo das entradas é de máquina.", i_aim:"A mira é precisa demais.", i_fast:"As ações chegam rápido demais.", i_pass:"Verificação aprovada.", p_split:"Dividir", p_shed:"Soltar", rotate:"Vire o aparelho. Talumi roda na horizontal.", setnote:"Valem para esta sessão. Quando houver contas, seguem você em todo aparelho."},
-  fr:{st0h:"Ramassez des débris. Rien ici n'est encore plus petit que vous.", st1h:"Des cratères, désormais. Tout ce qui est isolé et lent est à vous.", st2h:"Votre noyau fond. La chaleur perce par les fissures.", st3h:"Une atmosphère tient. Les pulsars vous déchirent désormais.", st4h:"Anneaux et lunes. Tout ce qui reste vaut d'être avalé.", i_ok:"Les entrées semblent humaines.", i_auto:"Navigateur automatisé détecté.", i_synth:"Événements non produits par un appareil.", i_speed:"La vitesse du curseur est anormalement régulière.", i_straight:"Le tracé est trop droit pour une main.", i_timing:"Le rythme des entrées est celui d'une machine.", i_aim:"La visée est trop précise.", i_fast:"Les actions arrivent trop vite.", i_pass:"Vérification réussie.", p_split:"Diviser", p_shed:"Éjecter", rotate:"Tournez votre appareil. Talumi se joue en paysage.", setnote:"Valables pour cette session. Dès qu'il y aura des comptes, ils vous suivront partout."},
-  tr:{st0h:"Enkaz topla. Burada henüz senden küçük bir şey yok.", st1h:"Artık kraterlisin. Başıboş ve yavaş olan her şeyi alabilirsin.", st2h:"Çekirdeğin eriyor. Isı çatlaklardan görünüyor.", st3h:"Bir atmosfer tutunuyor. Artık pulsarlar seni parçalar.", st4h:"Halkalar ve uydular. Kalan her şey yemeye değer.", i_ok:"Girişler insana benziyor.", i_auto:"Otomatik tarayıcı tespit edildi.", i_synth:"Girdiler bir cihazdan gelmiyor.", i_speed:"İmleç hızı doğal olmayan biçimde düzgün.", i_straight:"Yol bir el için fazla düz.", i_timing:"Giriş ritmi makine düzeninde.", i_aim:"Nişan alma fazla isabetli.", i_fast:"Eylemler çok hızlı geliyor.", i_pass:"Kontrol geçildi.", p_split:"Böl", p_shed:"At", rotate:"Cihazını yan çevir. Talumi yatay oynanır.", setnote:"Bu oturum için geçerli. Hesaplar geldiğinde her cihazda seninle olacak."},
-  ru:{st0h:"Собирайте обломки. Здесь пока нет никого меньше вас.", st1h:"Теперь с кратерами. Всё рыхлое и медленное — ваше.", st2h:"Ядро плавится. Жар пробивается сквозь трещины.", st3h:"Атмосфера держится. Пульсары теперь вас разорвут.", st4h:"Кольца и луны. Всё, что осталось, стоит съесть.", i_ok:"Ввод выглядит человеческим.", i_auto:"Обнаружен автоматический браузер.", i_synth:"События созданы не устройством.", i_speed:"Скорость курсора неестественно ровная.", i_straight:"Траектория слишком прямая для руки.", i_timing:"Ритм ввода машинно ровный.", i_aim:"Прицеливание слишком точное.", i_fast:"Действия поступают слишком часто.", i_pass:"Проверка пройдена.", p_split:"Делить", p_shed:"Сбросить", rotate:"Поверните устройство. Talumi играется горизонтально.", setnote:"Действуют в этой сессии. Когда появятся аккаунты, настройки будут следовать за вами."},
+  en:{st0h:"Sweep up debris. Nothing out here is smaller than you yet.", st1h:"Craters now. You can take anything loose and slow.", st2h:"Your core is melting. Heat shows through the cracks.", st3h:"An atmosphere is holding. Pulsars will shatter you now.", st4h:"Rings and moons. Everything left is worth eating.", i_ok:"Input looks human.", i_auto:"Automated browser detected.", i_synth:"Events not produced by a device.", i_speed:"Cursor speed is unnaturally even.", i_straight:"Path is too straight to be a hand.", i_timing:"Input timing is machine-regular.", i_aim:"Targeting is too precise.", i_fast:"Actions arriving too fast.", i_pass:"Check passed.", p_split:"Split", p_shed:"Shed", rotate:"Turn your device sideways. Talumi plays in landscape.", setnote:"These live in this session. Once accounts exist they follow you to every device.", k_start:"Overview", k_stat:"Stats", k_next:"Next achievements", k_manage:"manage", k_guest:"Guest"},
+  de:{st0h:"Sammle Trümmer ein. Hier draußen ist noch nichts kleiner als du.", st1h:"Jetzt mit Kratern. Alles Lose und Langsame kannst du nehmen.", st2h:"Dein Kern schmilzt. Die Glut zeigt sich in den Rissen.", st3h:"Eine Atmosphäre hält. Pulsare zerreißen dich jetzt.", st4h:"Ringe und Monde. Alles Verbliebene lohnt sich zu fressen.", i_ok:"Eingaben wirken menschlich.", i_auto:"Automatisierter Browser erkannt.", i_synth:"Eingaben stammen nicht vom Gerät.", i_speed:"Zeigertempo ist unnatürlich gleichmäßig.", i_straight:"Die Bahn ist zu gerade für eine Hand.", i_timing:"Der Eingabetakt ist maschinell regelmäßig.", i_aim:"Die Zielwahl ist zu genau.", i_fast:"Aktionen kommen zu schnell.", i_pass:"Prüfung bestanden.", p_split:"Teilen", p_shed:"Abwerfen", rotate:"Dreh dein Gerät quer. Talumi läuft im Querformat.", setnote:"Diese gelten für diese Sitzung. Sobald es Konten gibt, folgen sie dir auf jedes Gerät.", k_start:"Übersicht", k_stat:"Statistik", k_next:"Nächste Errungenschaften", k_manage:"verwalten", k_guest:"Gast"},
+  es:{st0h:"Recoge escombros. Aquí fuera nada es más pequeño que tú todavía.", st1h:"Ahora con cráteres. Puedes con todo lo suelto y lento.", st2h:"Tu núcleo se funde. El calor asoma por las grietas.", st3h:"Se sostiene una atmósfera. Ahora los púlsares te destrozan.", st4h:"Anillos y lunas. Todo lo que queda vale la pena comérselo.", i_ok:"Las entradas parecen humanas.", i_auto:"Navegador automatizado detectado.", i_synth:"Eventos no producidos por un dispositivo.", i_speed:"La velocidad del cursor es antinaturalmente uniforme.", i_straight:"El trazo es demasiado recto para una mano.", i_timing:"El ritmo de entrada es de máquina.", i_aim:"La puntería es demasiado precisa.", i_fast:"Las acciones llegan demasiado rápido.", i_pass:"Comprobación superada.", p_split:"Dividir", p_shed:"Soltar", rotate:"Gira el dispositivo. Talumi se juega en horizontal.", setnote:"Valen para esta sesión. Cuando haya cuentas, te seguirán a todos los dispositivos.", k_start:"Resumen", k_stat:"Estadísticas", k_next:"Próximos logros", k_manage:"gestionar", k_guest:"Invitado"},
+  pt:{st0h:"Recolha destroços. Aqui fora nada é menor que você ainda.", st1h:"Agora com crateras. Você dá conta de tudo que é solto e lento.", st2h:"Seu núcleo está derretendo. O calor aparece nas fendas.", st3h:"Uma atmosfera se mantém. Agora os pulsares te despedaçam.", st4h:"Anéis e luas. Tudo o que resta vale a pena comer.", i_ok:"As entradas parecem humanas.", i_auto:"Navegador automatizado detectado.", i_synth:"Eventos não vindos de um dispositivo.", i_speed:"A velocidade do cursor é uniforme demais.", i_straight:"O traço é reto demais para uma mão.", i_timing:"O ritmo das entradas é de máquina.", i_aim:"A mira é precisa demais.", i_fast:"As ações chegam rápido demais.", i_pass:"Verificação aprovada.", p_split:"Dividir", p_shed:"Soltar", rotate:"Vire o aparelho. Talumi roda na horizontal.", setnote:"Valem para esta sessão. Quando houver contas, seguem você em todo aparelho.", k_start:"Visão geral", k_stat:"Estatísticas", k_next:"Próximas conquistas", k_manage:"gerenciar", k_guest:"Convidado"},
+  fr:{st0h:"Ramassez des débris. Rien ici n'est encore plus petit que vous.", st1h:"Des cratères, désormais. Tout ce qui est isolé et lent est à vous.", st2h:"Votre noyau fond. La chaleur perce par les fissures.", st3h:"Une atmosphère tient. Les pulsars vous déchirent désormais.", st4h:"Anneaux et lunes. Tout ce qui reste vaut d'être avalé.", i_ok:"Les entrées semblent humaines.", i_auto:"Navigateur automatisé détecté.", i_synth:"Événements non produits par un appareil.", i_speed:"La vitesse du curseur est anormalement régulière.", i_straight:"Le tracé est trop droit pour une main.", i_timing:"Le rythme des entrées est celui d'une machine.", i_aim:"La visée est trop précise.", i_fast:"Les actions arrivent trop vite.", i_pass:"Vérification réussie.", p_split:"Diviser", p_shed:"Éjecter", rotate:"Tournez votre appareil. Talumi se joue en paysage.", setnote:"Valables pour cette session. Dès qu'il y aura des comptes, ils vous suivront partout.", k_start:"Aperçu", k_stat:"Statistiques", k_next:"Prochains hauts faits", k_manage:"gérer", k_guest:"Invité"},
+  tr:{st0h:"Enkaz topla. Burada henüz senden küçük bir şey yok.", st1h:"Artık kraterlisin. Başıboş ve yavaş olan her şeyi alabilirsin.", st2h:"Çekirdeğin eriyor. Isı çatlaklardan görünüyor.", st3h:"Bir atmosfer tutunuyor. Artık pulsarlar seni parçalar.", st4h:"Halkalar ve uydular. Kalan her şey yemeye değer.", i_ok:"Girişler insana benziyor.", i_auto:"Otomatik tarayıcı tespit edildi.", i_synth:"Girdiler bir cihazdan gelmiyor.", i_speed:"İmleç hızı doğal olmayan biçimde düzgün.", i_straight:"Yol bir el için fazla düz.", i_timing:"Giriş ritmi makine düzeninde.", i_aim:"Nişan alma fazla isabetli.", i_fast:"Eylemler çok hızlı geliyor.", i_pass:"Kontrol geçildi.", p_split:"Böl", p_shed:"At", rotate:"Cihazını yan çevir. Talumi yatay oynanır.", setnote:"Bu oturum için geçerli. Hesaplar geldiğinde her cihazda seninle olacak.", k_start:"Genel bakış", k_stat:"İstatistik", k_next:"Sıradaki başarımlar", k_manage:"yönet", k_guest:"Misafir"},
+  ru:{st0h:"Собирайте обломки. Здесь пока нет никого меньше вас.", st1h:"Теперь с кратерами. Всё рыхлое и медленное — ваше.", st2h:"Ядро плавится. Жар пробивается сквозь трещины.", st3h:"Атмосфера держится. Пульсары теперь вас разорвут.", st4h:"Кольца и луны. Всё, что осталось, стоит съесть.", i_ok:"Ввод выглядит человеческим.", i_auto:"Обнаружен автоматический браузер.", i_synth:"События созданы не устройством.", i_speed:"Скорость курсора неестественно ровная.", i_straight:"Траектория слишком прямая для руки.", i_timing:"Ритм ввода машинно ровный.", i_aim:"Прицеливание слишком точное.", i_fast:"Действия поступают слишком часто.", i_pass:"Проверка пройдена.", p_split:"Делить", p_shed:"Сбросить", rotate:"Поверните устройство. Talumi играется горизонтально.", setnote:"Действуют в этой сессии. Когда появятся аккаунты, настройки будут следовать за вами.", k_start:"Обзор", k_stat:"Статистика", k_next:"Следующие достижения", k_manage:"изменить", k_guest:"Гость"},
 };
 for (const c in LANGS7) Object.assign(LANGS[c], LANGS7[c]);
 const LANGS8 = {
@@ -770,3 +770,150 @@ const LANGS23 = {
       kauf_hast:"Этот скин у вас уже есть."}
 };
 for (const c in LANGS23) Object.assign(LANGS[c], LANGS23[c]);
+
+/* Schritt 69 — „Freier Raum" und „Online" sind ein Modus geworden.
+
+   Vorher standen beide nebeneinander im Menü und waren für Spieler nicht zu
+   unterscheiden: Beides ist alle gegen alle auf der ganzen Karte. Jetzt ist
+   „Freier Raum" der Onlinemodus; fehlende Mitspieler füllt der Server mit
+   Computergegnern auf, und ohne erreichbaren Server läuft dieselbe Runde auf
+   dem eigenen Gerät weiter. Der Beschreibungstext sagt beides, weil beides
+   eintreten kann und der Spieler sonst nicht versteht, warum einmal „NPC"
+   vor den Namen steht und einmal nicht. */
+const LANGS24 = {
+  en:{m_online:"Open space", m_online_b:"Everyone on one field. Real players first — while fewer are online, computer rivals marked NPC fill the room. Without a connection the round runs on your device."},
+  de:{m_online:"Freier Raum", m_online_b:"Alle auf einem Feld. Zuerst echte Mitspieler — solange weniger online sind, füllen Computergegner mit „NPC“ im Namen den Raum auf. Ohne Verbindung läuft die Runde auf deinem Gerät."},
+  es:{m_online:"Espacio abierto", m_online_b:"Todos en un campo. Primero jugadores reales — mientras haya menos conectados, rivales de la máquina marcados NPC llenan la sala. Sin conexión la ronda corre en tu dispositivo."},
+  pt:{m_online:"Espaço aberto", m_online_b:"Todos num campo. Jogadores reais primeiro — enquanto houver menos online, rivais do computador marcados NPC enchem a sala. Sem ligação a ronda corre no teu aparelho."},
+  fr:{m_online:"Espace libre", m_online_b:"Tous sur un même terrain. De vrais joueurs d'abord — tant qu'il y en a moins, des rivaux informatiques marqués NPC complètent la salle. Sans connexion, la manche tourne sur votre appareil."},
+  tr:{m_online:"Açık uzay", m_online_b:"Herkes tek alanda. Önce gerçek oyuncular — daha az kişi çevrimiçiyken NPC işaretli bilgisayar rakipleri odayı doldurur. Bağlantı yoksa tur cihazında çalışır."},
+  ru:{m_online:"Открытый космос", m_online_b:"Все на одном поле. Сначала живые игроки — пока их меньше, комнату заполняют компьютерные соперники с пометкой NPC. Без соединения раунд идёт на вашем устройстве."}
+};
+for (const c in LANGS24) Object.assign(LANGS[c], LANGS24[c]);
+
+/* Schritt 70 — kürzere Texte für den Startbildschirm.
+
+   `boostnote` nannte seit der Zusammenlegung noch „Freier Raum und Online" —
+   zwei Modi, die es nicht mehr getrennt gibt. `m_online_b` war vier Zeilen
+   lang und machte die Moduskacheln unterschiedlich hoch; die Erklärung, was
+   NPCs sind und was ohne Verbindung passiert, steht ohnehin auf `about.html`
+   und im Spiel selbst am Namen jedes Gegners. */
+const LANGS25 = {
+  en:{boostnote:"Open space only. Bigger also means slower and easier to spot. Paid with Ore you earned.",
+      m_online_b:"Everyone on one field. Real players, topped up with NPCs. Runs offline too."},
+  de:{boostnote:"Nur im freien Raum. Größer heißt auch langsamer und auffälliger. Bezahlt mit erspieltem Ore.",
+      m_online_b:"Alle auf einem Feld. Echte Mitspieler, mit NPCs aufgefüllt. Geht auch offline."},
+  es:{boostnote:"Solo en espacio abierto. Más grande también es más lento y más visible. Se paga con Ore ganado.",
+      m_online_b:"Todos en un campo. Jugadores reales, completado con NPC. También sin conexión."},
+  pt:{boostnote:"Só no espaço aberto. Maior também é mais lento e mais visível. Pago com Ore conquistado.",
+      m_online_b:"Todos num campo. Jogadores reais, completado com NPC. Funciona offline."},
+  fr:{boostnote:"Uniquement en espace libre. Plus gros veut dire plus lent et plus visible. Payé en minerai gagné.",
+      m_online_b:"Tous sur un terrain. De vrais joueurs, complétés par des NPC. Marche hors ligne."},
+  tr:{boostnote:"Yalnızca açık uzayda. Daha büyük olmak daha yavaş ve daha görünür demek. Kazanılan cevherle ödenir.",
+      m_online_b:"Herkes tek alanda. Gerçek oyuncular, NPC ile tamamlanır. Çevrimdışı da çalışır."},
+  ru:{boostnote:"Только в открытом космосе. Крупнее — значит медленнее и заметнее. Оплата заработанной рудой.",
+      m_online_b:"Все на одном поле. Живые игроки, дополненные NPC. Работает и без сети."}
+};
+for (const c in LANGS25) Object.assign(LANGS[c], LANGS25[c]);
+
+/* Schritt 70 — Zahl der Spieler unter dem Startknopf. */
+const LANGS26 = {
+  en:{online1:"1 player in orbit right now", onlinen:"{0} players in orbit right now"},
+  de:{online1:"1 Spieler gerade im Orbit",   onlinen:"{0} Spieler gerade im Orbit"},
+  es:{online1:"1 jugador en órbita ahora",   onlinen:"{0} jugadores en órbita ahora"},
+  pt:{online1:"1 jogador em órbita agora",   onlinen:"{0} jogadores em órbita agora"},
+  fr:{online1:"1 joueur en orbite",          onlinen:"{0} joueurs en orbite"},
+  tr:{online1:"Şu anda yörüngede 1 oyuncu",  onlinen:"Şu anda yörüngede {0} oyuncu"},
+  ru:{online1:"Сейчас на орбите 1 игрок",    onlinen:"Сейчас на орбите {0} игроков"}
+};
+for (const c in LANGS26) Object.assign(LANGS[c], LANGS26[c]);
+
+const LANGS27 = {
+  en:{online0:"Nobody in orbit yet — be the first"},
+  de:{online0:"Noch niemand im Orbit — sei der Erste"},
+  es:{online0:"Nadie en órbita todavía — sé el primero"},
+  pt:{online0:"Ainda ninguém em órbita — sê o primeiro"},
+  fr:{online0:"Personne en orbite — soyez le premier"},
+  tr:{online0:"Yörüngede henüz kimse yok — ilk sen ol"},
+  ru:{online0:"На орбите пока никого — будьте первым"}
+};
+for (const c in LANGS27) Object.assign(LANGS[c], LANGS27[c]);
+
+/* Schritt 71 — Musik. Eigene Zeile in den Einstellungen, getrennt von den
+   Spielgeräuschen. */
+const LANGS28 = {
+  en:{s_music:"Music", s_music_h:"Calm background music, generated in the game. Separate from the game sounds."},
+  de:{s_music:"Musik", s_music_h:"Ruhige Hintergrundmusik, im Spiel erzeugt. Getrennt von den Spielgeräuschen."},
+  es:{s_music:"Música", s_music_h:"Música de fondo tranquila, generada en el juego. Aparte de los efectos."},
+  pt:{s_music:"Música", s_music_h:"Música de fundo calma, gerada no jogo. Separada dos efeitos."},
+  fr:{s_music:"Musique", s_music_h:"Musique d'ambiance calme, générée dans le jeu. Séparée des effets."},
+  tr:{s_music:"Müzik", s_music_h:"Oyunda üretilen sakin arka plan müziği. Oyun seslerinden ayrı."},
+  ru:{s_music:"Музыка", s_music_h:"Спокойная фоновая музыка, создаётся в игре. Отдельно от звуков."}
+};
+for (const c in LANGS28) Object.assign(LANGS[c], LANGS28[c]);
+
+/* Schritt 74 — Einwilligung für Werbung und Reichweitenmessung.
+
+   Der Text sagt, was Sache ist, und beschönigt nichts: Für das Spiel selbst
+   braucht Talumi keine Cookies, für Werbung schon. „Alle ablehnen" steht
+   gleichberechtigt neben „Alle annehmen" — anders wäre die Einwilligung nach
+   deutschem Recht unwirksam. */
+const LANGS29 = {
+  en:{ck_kopf:"Cookies", ck_mehr:"Privacy policy",
+      ck_text:"Talumi needs no cookies for the game itself. For advertising and audience measurement it does. You decide, and you can change your mind at any time under Settings.",
+      ck_ja:"Accept all", ck_nein:"Reject all", ck_fein:"Choose", ck_speichern:"Save choice",
+      ck_noetig:"Necessary", ck_noetig_h:"Keeps you signed in and remembers your settings. Always on, and never used for anything else.",
+      ck_werbung:"Advertising", ck_werbung_h:"Lets a third party show ads between rounds. Never during a round.",
+      ck_messung:"Audience measurement", ck_messung_h:"Counts how many people play and roughly where they come from.",
+      ck_aendern:"Change", ck_stand_ja:"You have allowed some of it.",
+      ck_stand_nein:"You have refused everything optional.", ck_stand_offen:"Not decided yet."},
+  de:{ck_kopf:"Cookies", ck_mehr:"Datenschutzerklärung",
+      ck_text:"Für das Spiel selbst braucht Talumi keine Cookies. Für Werbung und Reichweitenmessung schon. Du entscheidest, und du kannst es jederzeit in den Einstellungen ändern.",
+      ck_ja:"Alle annehmen", ck_nein:"Alle ablehnen", ck_fein:"Auswählen", ck_speichern:"Auswahl speichern",
+      ck_noetig:"Notwendig", ck_noetig_h:"Hält dich angemeldet und merkt sich deine Einstellungen. Immer an, und für nichts anderes benutzt.",
+      ck_werbung:"Werbung", ck_werbung_h:"Erlaubt einem fremden Anbieter, zwischen den Runden Werbung zu zeigen. Nie während einer Runde.",
+      ck_messung:"Reichweitenmessung", ck_messung_h:"Zählt, wie viele Leute spielen und ungefähr woher sie kommen.",
+      ck_aendern:"Ändern", ck_stand_ja:"Du hast etwas davon erlaubt.",
+      ck_stand_nein:"Du hast alles Freiwillige abgelehnt.", ck_stand_offen:"Noch nicht entschieden."},
+  es:{ck_kopf:"Cookies", ck_mehr:"Política de privacidad",
+      ck_text:"Talumi no necesita cookies para el juego en sí. Para la publicidad y la medición, sí. Tú decides, y puedes cambiarlo cuando quieras en Ajustes.",
+      ck_ja:"Aceptar todo", ck_nein:"Rechazar todo", ck_fein:"Elegir", ck_speichern:"Guardar elección",
+      ck_noetig:"Necesarias", ck_noetig_h:"Mantiene tu sesión y recuerda tus ajustes. Siempre activas.",
+      ck_werbung:"Publicidad", ck_werbung_h:"Permite que un tercero muestre anuncios entre rondas. Nunca durante una ronda.",
+      ck_messung:"Medición de audiencia", ck_messung_h:"Cuenta cuánta gente juega y aproximadamente de dónde viene.",
+      ck_aendern:"Cambiar", ck_stand_ja:"Has permitido parte de ello.",
+      ck_stand_nein:"Has rechazado todo lo opcional.", ck_stand_offen:"Aún sin decidir."},
+  pt:{ck_kopf:"Cookies", ck_mehr:"Política de privacidade",
+      ck_text:"O Talumi não precisa de cookies para o jogo em si. Para publicidade e medição, precisa. Tu decides, e podes mudar quando quiseres nos Ajustes.",
+      ck_ja:"Aceitar tudo", ck_nein:"Rejeitar tudo", ck_fein:"Escolher", ck_speichern:"Guardar escolha",
+      ck_noetig:"Necessários", ck_noetig_h:"Mantém-te ligado e guarda os teus ajustes. Sempre ativos.",
+      ck_werbung:"Publicidade", ck_werbung_h:"Permite que terceiros mostrem anúncios entre rondas. Nunca durante uma ronda.",
+      ck_messung:"Medição de audiência", ck_messung_h:"Conta quantas pessoas jogam e mais ou menos de onde vêm.",
+      ck_aendern:"Mudar", ck_stand_ja:"Permitiste parte disso.",
+      ck_stand_nein:"Rejeitaste tudo o que é opcional.", ck_stand_offen:"Ainda não decidiste."},
+  fr:{ck_kopf:"Cookies", ck_mehr:"Politique de confidentialité",
+      ck_text:"Talumi n'a pas besoin de cookies pour le jeu lui-même. Pour la publicité et la mesure d'audience, si. C'est vous qui décidez, et vous pouvez changer d'avis à tout moment dans les Réglages.",
+      ck_ja:"Tout accepter", ck_nein:"Tout refuser", ck_fein:"Choisir", ck_speichern:"Enregistrer",
+      ck_noetig:"Nécessaires", ck_noetig_h:"Vous garde connecté et retient vos réglages. Toujours actifs.",
+      ck_werbung:"Publicité", ck_werbung_h:"Permet à un tiers d'afficher des publicités entre les manches. Jamais pendant une manche.",
+      ck_messung:"Mesure d'audience", ck_messung_h:"Compte combien de personnes jouent et d'où elles viennent à peu près.",
+      ck_aendern:"Modifier", ck_stand_ja:"Vous en avez autorisé une partie.",
+      ck_stand_nein:"Vous avez refusé tout l'optionnel.", ck_stand_offen:"Pas encore décidé."},
+  tr:{ck_kopf:"Çerezler", ck_mehr:"Gizlilik politikası",
+      ck_text:"Talumi oyunun kendisi için çereze ihtiyaç duymaz. Reklam ve ölçüm için duyar. Karar senin, ve istediğin zaman Ayarlar'dan değiştirebilirsin.",
+      ck_ja:"Tümünü kabul et", ck_nein:"Tümünü reddet", ck_fein:"Seç", ck_speichern:"Seçimi kaydet",
+      ck_noetig:"Gerekli", ck_noetig_h:"Oturumunu açık tutar ve ayarlarını hatırlar. Her zaman açık.",
+      ck_werbung:"Reklam", ck_werbung_h:"Üçüncü tarafın turlar arasında reklam göstermesine izin verir. Tur sırasında asla.",
+      ck_messung:"Kitle ölçümü", ck_messung_h:"Kaç kişinin oynadığını ve kabaca nereden geldiğini sayar.",
+      ck_aendern:"Değiştir", ck_stand_ja:"Bir kısmına izin verdin.",
+      ck_stand_nein:"İsteğe bağlı olan her şeyi reddettin.", ck_stand_offen:"Henüz karar vermedin."},
+  ru:{ck_kopf:"Cookie", ck_mehr:"Политика конфиденциальности",
+      ck_text:"Для самой игры Talumi не нужны cookie. Для рекламы и подсчёта аудитории — нужны. Решаете вы, и в любой момент можно изменить решение в настройках.",
+      ck_ja:"Принять всё", ck_nein:"Отклонить всё", ck_fein:"Выбрать", ck_speichern:"Сохранить выбор",
+      ck_noetig:"Необходимые", ck_noetig_h:"Держат вас в аккаунте и помнят настройки. Всегда включены.",
+      ck_werbung:"Реклама", ck_werbung_h:"Позволяет стороннему сервису показывать рекламу между раундами. Никогда во время раунда.",
+      ck_messung:"Подсчёт аудитории", ck_messung_h:"Считает, сколько людей играет и примерно откуда.",
+      ck_aendern:"Изменить", ck_stand_ja:"Вы разрешили часть.",
+      ck_stand_nein:"Вы отклонили всё необязательное.", ck_stand_offen:"Ещё не решено."}
+};
+for (const c in LANGS29) Object.assign(LANGS[c], LANGS29[c]);
