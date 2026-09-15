@@ -1317,7 +1317,13 @@
      Reiterstreifen und der Streifen unter dem Startknopf. Zusammen sind das
      26 Punkte — auf einem 390 Punkte hohen Schirm ein Achtel des Fensters. */
   @media (max-height:470px){
-    .konsW span:not(.ore){display:none}
+    /* Level und Ehre bleiben stehen — sie kosten in der Reiterzeile keine
+       zusätzliche Höhe (sie ist ohnehin 44 px hoch) und passen auf jeder
+       gängigen Handybreite ohne zu überlaufen, gemessen von 667 bis 932 px.
+       Nur die XP-Leiste wird schmaler, damit für lange Übersetzungen wie
+       Türkisch oder Russisch Luft bleibt. */
+    .konsW{gap:10px}
+    .konsW .xpbar{width:52px}
     .konsKopf{top:10px;height:44px}
     .konsFenster{top:62px;bottom:70px;grid-template-rows:44px 1fr}
     .konsReiter{height:44px}
@@ -1395,6 +1401,23 @@
        Zahlenleiste darunter. */
     .konsReiter{padding-right:8px}
     .konsW{padding-right:0}
+
+    /* Dieselbe Falle einen Stock höher: Die Kopfzeile ist ein schiebbarer
+       Streifen (Regel weiter oben, „Aus zwei Gruppen wird ein Streifen").
+       Ohne Rand lag ihr letzter Knopf "Rechtliches" bei 640 Punkten Breite
+       35 Punkte unter dem Startknopf — auf Deutsch, mit sichtbarem
+       Installieren-Symbol, gemessen bis auf den Punkt. Thomas hat das am
+       15.09.2026 gemeldet: "Der Start Button überdeckt den rechtliches
+       Button".
+
+       190 Punkte reservieren mehr, als der Startknopf in jeder geprüften
+       Sprache braucht (höchstens 113 px) plus dem Installieren-Symbol und
+       reichlich Luft — der Streifen wird dafür etwas eher schiebbar, das
+       ist der Preis. Der Rand verschiebt nichts von selbst — die Knöpfe
+       layouten von links beginnend weiter genauso —, er sorgt nur dafür,
+       dass der letzte Knopf lieber ins Scrollen gerät, als unter den
+       Startknopf zu geraten. */
+    .konsKopf{padding-right:190px}
   }
   /* Schmal: Die Spielerzahl passt neben Reitern und Knopf nicht mehr. Sie
      steht auf dem Anmeldebildschirm ohnehin schon. */
@@ -1762,7 +1785,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 77 · updated 15 September 2026 ·
+      <p class="updated">Version 78 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
