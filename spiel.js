@@ -1579,7 +1579,14 @@ function split(){
      Zellenzahl verbindlich. Lokal zu teilen und gleich darauf vom
      Serverstand überschrieben zu werden, flackert nur. */
   if (Game.online){
-    Net.send(split);
+    /* `"split"` als Text, nicht die Funktion `split`: `Net.send` steckt das
+       Argument in `JSON.stringify`, und eine Funktion fällt dort ersatzlos
+       heraus — gesendet wurde `{"seq":42}` statt `{"kind":"split","seq":42}`.
+       Der Server prüft `typeof m.kind !== "string"` und verwarf die Nachricht
+       stillschweigend. Teilen und Abwerfen haben online deshalb **nie**
+       funktioniert, seit der Client an den Server angebunden wurde
+       (Commit a79fc7c). Gemeldet hat es Thomas am 15.09.2026. */
+    Net.send("split");
     if (Game.cells.some(c => c.m >= 36)){ Game.lastSplit = Game.t; Sound.split(); }
     return;
   }
@@ -1614,7 +1621,8 @@ function split(){
 const SHED_COST = m => clamp(m*0.035, 8, 260);
 
 function shed(){
-  if (Game.online){ Net.send(shed); Sound.shedS(); return; }
+  /* Wie beim Teilen: `"shed"` als Text, nicht die Funktion `shed`. */
+  if (Game.online){ Net.send("shed"); Sound.shedS(); return; }
   const [dx,dy] = aim();
   let fired = false;
   for (const c of Game.cells){
@@ -4485,8 +4493,20 @@ function buildBoost(){
   for (const f of [1,2,3]){
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = f === 1 ? t("boostoff")
-      : "×" + f + "  " + BOOST_COST[f].toLocaleString(lang) + " Ore";
+    /* Zwei Zeilen im Knopf statt einer langen: Faktor oben, Preis darunter.
+       In einer 215 Punkte breiten Spalte brachen die drei Knöpfe sonst auf
+       zwei Reihen um — gemessen 93 Punkte Höhe statt 44, und genau die
+       fehlten auf einem Telefon im Querformat. Gelesen wird dasselbe, es
+       steht nur übereinander. */
+    if (f === 1){
+      b.textContent = t("boostoff");
+    } else {
+      const oben = document.createElement("b");
+      oben.textContent = "×" + f;
+      const unten = document.createElement("small");
+      unten.textContent = BOOST_COST[f].toLocaleString(lang) + " Ore";
+      b.append(oben, unten);
+    }
     b.setAttribute("aria-pressed", String(Profile.boost === f));
     b.disabled = !erlaubt && f > 1;
     b.addEventListener("click", () => { Profile.boost = f; buildBoost(); });

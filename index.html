@@ -238,6 +238,13 @@
   .opt small{display:block;color:var(--paper-2);font-size:11px;margin-top:2px;line-height:1.35}
   .seg{display:flex;gap:5px;flex:0 0 auto;flex-wrap:wrap}
   #langPick{margin-top:2px}
+  /* Der Startbonus: Faktor und Preis übereinander. Auf breiten Schirmen
+     stehen beide in einer Zeile nebeneinander, auf schmalen untereinander —
+     der Knopf bleibt dadurch in jeder Breite eine Zeile hoch. */
+  #boostPick button{line-height:1.15}
+  #boostPick button b{font-weight:600}
+  #boostPick button small{font-size:10.5px;opacity:.85;margin-left:5px}
+  #boostPick button[aria-pressed=true] small{opacity:1}
   .seg button{margin:0;width:auto;padding:6px 10px;font-size:12px;font-weight:400;
      background:var(--plate);border:1px solid var(--line);color:var(--paper-2)}
   .seg button[aria-pressed=true]{border-color:var(--brass);color:var(--brass);background:var(--plate)}
@@ -646,8 +653,9 @@
   #guestBtn.quiet{color:var(--paper);border-color:var(--line-hell)}
   #accountVeil .hintline{margin-top:9px}
 
-  .anmFuss{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
-       max-width:1120px;margin:0 auto;gap:8px 16px;padding:16px 26px 0;font-size:12px}
+  .anmFuss{grid-column:1 / -1;display:flex;align-items:center;justify-content:center;
+       flex-wrap:wrap;gap:8px 16px;padding:14px 28px 20px;font-size:12px;
+       border-top:1px solid var(--line)}
   .anmFuss a{color:var(--paper-2);text-decoration:none;border-bottom:1px solid var(--line)}
   .anmFuss a:hover{color:var(--brass);border-color:var(--brass)}
   /* Auf Tippgeräten braucht auch ein Textlink eine Fläche, die der Daumen
@@ -694,8 +702,20 @@
     .anmKlein{margin-top:7px}
     #guestBtn{margin-top:8px}
     #accountVeil .hintline{margin-top:6px;font-size:11px}
-    .anmFuss{padding:12px 14px 0}
-    .anmText{padding:18px 14px 30px}
+    /* Unter die linke Spalte: Die hat hier Luft, die rechte nicht. */
+    .anmFuss{grid-column:1;grid-row:2;border-top:0;padding:0 16px 14px;
+         justify-content:flex-start;gap:6px 12px;font-size:11.5px}
+    .anmFenster{align-items:stretch}
+    .anmLinks{grid-column:1;grid-row:1}
+    .anmRechts{grid-column:2;grid-row:1 / span 2}
+    /* Der Fließtext für Trefferlisten verschwindet **nur im Querformat auf
+       einem flachen Schirm** — also genau dort, wo das Spiel gespielt wird
+       und wo er 770 Punkte Scrollweg kostet (gemessen auf 844 × 390).
+
+       Für Suchmaschinen ändert das nichts: Googles Bot sieht die Seite
+       hochkant (412 × 732), und bei 732 Punkten Höhe greift diese Regel
+       nicht. Der Text steht dort vollständig da, wie bisher. */
+    .anmText{display:none}
     /* Sieben ausgeschriebene Sprachnamen kosten hier eine ganze Zeile Höhe.
        Gemessen auf 844 × 390: Mit vollen Namen lag „Als Gast spielen" 30
        Punkte unter dem Bildrand, mit Kürzeln steht er im Bild. */
@@ -714,11 +734,23 @@
   @media (max-height:470px){
     #accountVeil .hintline:not(#acctPwHint){display:none}
   }
+  /* Die letzten Punkte, damit auch 740 × 360 und 667 × 375 ohne Scrollen
+     auskommen. Geholt wird an den Abständen, nicht an den Tippflächen —
+     die bleiben bei 44 Punkten. Gemessen: zusammen 23 Punkte. */
+  @media (max-height:470px){
+    .anmFenster{margin-top:6px}
+    .anmSp{padding:10px 14px}
+    #accountVeil form label + input{margin-bottom:4px}
+    #acctGo{margin-top:3px}
+    .anmKlein{margin-top:5px}
+    #guestBtn{margin-top:5px}
+    .anmFuss{padding-bottom:10px}
+  }
   @media (max-height:420px){
     .anmPunkte{display:none}
     #accountVeil .sub{margin-bottom:4px}
-    .anmFenster{margin-top:8px}
-    .anmSp{padding:12px 14px}
+    .anmFenster{margin-top:6px}
+    .anmSp{padding:8px 14px}
   }
   /* Schmal und hoch (Telefon hochkant — das Spiel verlangt Querformat, aber
      die Anmeldung erscheint kurz, bevor der Drehhinweis greift). */
@@ -884,6 +916,9 @@
   /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen untereinander
      brauchen in dieser Spalte über zweihundert Punkte Höhe, und man liest
      ohnehin nur die des Modus, für den man sich gerade entscheidet. */
+  /* Die beiden Gruppen in der rechten Spalte geben ihren Inhalt auf breiten
+     Schirmen einfach durch — dort ändert sich nichts gegenüber Schritt 82. */
+  .rGrp{display:contents}
   .konsSp.r .modes span{display:none}
   .konsSp.r .modes button[aria-pressed=true] span{display:block}
 
@@ -914,7 +949,8 @@
     .konsMarke{margin-right:6px}
     .konsMarke b{font-size:13px;letter-spacing:.2em}
     .konsNav{height:38px;padding:0 12px;font-size:12.5px}
-    .konsFenster{left:14px;right:14px;top:66px;bottom:88px;border-radius:14px}
+    .konsFenster{left:14px;right:14px;top:66px;bottom:88px;border-radius:14px;
+         grid-template-rows:48px 1fr}
     /* Der Startknopf verlässt die Kopfzeile und liegt unten, wo der Daumen
        ist. Dort ist er auch dann erreichbar, wenn das Fenster scrollt. */
     .konsStart{position:fixed;left:14px;right:14px;bottom:14px;z-index:6;gap:3px}
@@ -996,7 +1032,7 @@
      schmalen Leiste ganz oben, weil ein Bonus, den niemand sieht, niemanden
      zurückholt.
      Breiter als 680 Punkte, weil zwei Spalten darunter zu schmal werden. */
-  @media (max-height:640px) and (min-width:680px){
+  @media (max-height:640px) and (min-width:640px){
     .konsPane.drei{display:grid;overflow:auto;
          grid-template-columns:minmax(0,1fr) minmax(0,300px);
          grid-auto-rows:min-content;align-content:start}
@@ -1015,10 +1051,57 @@
          border-radius:0;border-left:0;border-right:0;border-bottom:0;
          padding:12px 0 0;background:none}
     #startVeil #controls{grid-column:1 / -1;grid-row:5;margin:10px 14px 14px}
+    /* Thomas' Vorgabe vom 15.09.2026: „alles so kompakt, dass es auf einen
+       Handybildschirm passt". Gemessen kostete der Reiter „Übersicht" auf
+       844 × 390 genau 570 Punkte in einem 196 Punkte hohen Fenster — man
+       scrollte durch fast drei Fensterhöhen.
+
+       Was hier wegfällt, ist nichts, was es nicht anderswo gäbe:
+       Errungenschaften sind ein eigener Reiter, Freunde ein eigener Knopf
+       in der Kopfzeile, und der Steuerungshinweis ist ein Satz, den man
+       einmal liest. Übrig bleibt, was man **vor dem Start** braucht: der
+       eigene Körper, die Wahl der Runde, der Bonus. */
+    #startVeil #naechstBox,
+    #startVeil #freundBox,
+    #startVeil #controls{display:none}
+    /* Drei Spalten: Körper | Spielart | Name und Startbonus. Untereinander
+       brauchte die rechte Spalte allein 309 Punkte — nebeneinander sind es
+       zweimal rund 130, und damit passt der ganze Reiter in ein Fenster von
+       196 Punkten. Das ist Thomas' Vorgabe vom 15.09.2026: kein Scrollen
+       auf dem Telefon. */
+    /* Die Spielart-Spalte ist breiter als die für Name und Startbonus:
+       „Freundschaftsspiel" ist das längste Wort der Oberfläche und lief
+       sonst über den Rand in die Nachbarspalte. Gemessen, nicht geschätzt —
+       auf Türkisch und Russisch sind die Namen noch länger. */
+    /* Die Spalte für die Spielart ist nach dem **längsten** Namen bemessen,
+       nicht nach dem englischen: „Товарищеский матч“ braucht 113 Punkte,
+       „Freundschaftsspiel“ 99, „Friendly match“ nur 79. Eine Anordnung, die
+       auf Englisch aufgeht, geht auf Russisch nicht auf — das ist hier der
+       Regelfall, nicht der Einzelfall. Gemessen, nicht geschätzt. */
+    .konsPane.drei{grid-template-columns:minmax(0,1fr) minmax(0,300px) minmax(0,190px)}
     .konsSp.m{grid-column:1;grid-row:2;order:0;
          border:0;border-right:1px solid var(--line);
          justify-content:flex-start;gap:8px}
-    .konsSp.r{grid-column:2;grid-row:2;order:0;gap:8px}
+    /* Die Spalte selbst verschwindet als Kasten; ihre beiden Gruppen werden
+       eigene Felder des Rasters. */
+    .konsSp.r{display:contents}
+    .rGrp{display:flex;flex-direction:column;gap:4px;padding:8px 12px;min-width:0}
+    /* Beschriftungen tragen hier nur einen Zeilenabstand von 1,2 — bei 11 px
+       Schrift sind das 13 statt 16 Punkte. Kleiner als 11 px wird nichts:
+       Das ist die Grenze, unter der auf einem Telefon nichts mehr lesbar
+       ist. */
+    .rGrp > label{line-height:1.2;font-size:11px}
+    .rGrp:first-of-type{grid-column:2;grid-row:2;border-right:1px solid var(--line)}
+    .rGrp:last-of-type{grid-column:3;grid-row:2}
+    .rGrp > label{margin:0}
+    /* Faktor über den Preis statt daneben: So bleibt der Knopf eine Zeile
+       hoch, auch wenn die Spalte nur 215 Punkte breit ist. */
+    #boostPick button{display:flex;flex-direction:column;align-items:center;
+         gap:0;padding:4px 8px;min-height:44px;justify-content:center}
+    #boostPick button small{margin-left:0;font-size:10px}
+    /* Die Bestenliste hat einen eigenen Knopf in der Kopfzeile, die
+       Vorprüfung meldet sich ohnehin nur, wenn etwas nicht stimmt. */
+    #startVeil #boardBox,#startVeil #powText{display:none}
     .konsSp{padding:12px 14px}
 
     /* Der Körper wird kleiner, bleibt aber der größte Gegenstand im Bild —
@@ -1066,7 +1149,7 @@
      Höhe gezählt: Der Körper schrumpft weiter, und die Zeile mit Bestmasse,
      Runden und Designs tritt zurück — sie steht vollständig im Reiter
      „Statistik". */
-  @media (max-height:470px) and (min-width:680px){
+  @media (max-height:470px) and (min-width:640px){
     #startVeil #heldCanvas{width:118px;height:118px}
     .konsName b{font-size:17px}
     /* Bestmasse, Runden und Designs stehen vollständig im Reiter
@@ -1083,20 +1166,40 @@
        und „Modus allein füllt das Fenster“. */
     .konsSp.r .modes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
     .konsSp.r .modes button{min-height:44px;display:flex;align-items:center;
-         padding:0 10px}
-    .konsSp.r .modes b{font-size:12.5px;line-height:1.2}
+         padding:0 8px;overflow:hidden}
+    /* Der Name der Spielart darf umbrechen, aber nie über die Kachel
+       hinauslaufen. */
+    /* 11 px ist die Untergrenze für Lesbarkeit auf einem Telefon und
+       zugleich die Größe, bei der „Freundschaftsspiel" — das längste Wort
+       der Oberfläche — in eine Zeile passt. Ein Wortbruch mitten im Wort
+       („Freundschaftssp/iel") sähe nach Fehler aus. */
+    .konsSp.r .modes b{font-size:11px;line-height:1.15;white-space:nowrap;
+         overflow:hidden;text-overflow:ellipsis}
   }
   /* Sehr flach: Die Bonusleiste wird auf das reduziert, was man anfassen
      kann. Die sieben Perlen zeigen den Stand einer Serie — eine Auskunft,
      die den Knopf nicht ersetzt und hier 24 Punkte Höhe kostet, die dem
      eigenen Körper fehlen. Der Stand steht im Knopf („Tag 3 abholen“). */
-  @media (max-height:470px) and (min-width:680px){
-    body.bonusoffen #startVeil #bonusBox{padding:6px 10px;margin:8px 14px 0}
+  @media (max-height:470px) and (min-width:640px){
+    body.bonusoffen #startVeil #bonusBox{padding:2px 10px;margin:6px 14px 0}
     body.bonusoffen #startVeil #bonusBox .beads{display:none}
-    body.bonusoffen #startVeil #bonusBox button{flex:1 1 auto;min-height:44px}
+    body.bonusoffen #startVeil #bonusBox button{flex:1 1 auto;min-height:44px;padding:0 12px}
   }
-  @media (max-height:400px) and (min-width:680px){
-    #startVeil #heldCanvas{width:96px;height:96px}
+  /* Unter 400 Punkten Höhe (iPhone SE quer ist 375) bestimmt der Körper die
+     Zeilenhöhe. 78 statt 96 Punkte sind die letzten 18, die zwischen
+     „passt" und „scrollt" liegen — erkennbar bleibt er. */
+  @media (max-height:400px) and (min-width:640px){
+    #startVeil #heldCanvas{width:78px;height:78px}
+    .konsSp.m{gap:5px}
+    body.bonusoffen #startVeil #bonusBox{margin-top:4px}
+  }
+  /* Noch flacher als ein iPhone SE im Querformat (375). Solche Geräte sind
+     selten, aber die Anordnung soll auch dort stehen statt zu scrollen. */
+  @media (max-height:370px) and (min-width:640px){
+    #startVeil #heldCanvas{width:62px;height:62px}
+    body.bonusoffen #startVeil #bonusBox{margin-top:2px;padding:0 10px}
+    .rGrp{padding:5px 12px;gap:3px}
+    .konsSp.m{padding:8px 12px}
   }
   /* ---- Flache Schirme: die übrigen Fenster (Schritt 88) ---------------
      Einstellungen, Ranglisten, Freunde, Passwort und Rechtliches sind
@@ -1153,7 +1256,7 @@
   @media (max-height:470px){
     .konsW span:not(.ore){display:none}
     .konsKopf{top:10px;height:44px}
-    .konsFenster{top:62px;bottom:76px}
+    .konsFenster{top:62px;bottom:70px;grid-template-rows:44px 1fr}
     .konsReiter{height:44px}
     .konsReiter button{height:44px}
     .konsStart{bottom:9px}
@@ -1454,13 +1557,15 @@
       <button class="quiet gast" id="guestBtn" data-i18n="play">Play as guest</button>
       <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
     </div>
-  </div>
-
-  <div class="anmFuss">
-    <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
-    <a href="impressum.html">Impressum</a>
-    <a href="datenschutz.html">Datenschutz</a>
-    <a href="about.html" data-i18n="a_more">More about the game</a>
+    <!-- Rechtliches. Steht **im** Fenster: Als eigener Streifen darunter
+         kostete es auf einem flachen Schirm 56 Punkte Höhe, und die fehlten
+         beim Formular. Auf breiten Schirmen sieht es aus wie vorher. -->
+    <div class="anmFuss">
+      <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
+      <a href="impressum.html">Impressum</a>
+      <a href="datenschutz.html">Datenschutz</a>
+      <a href="about.html" data-i18n="a_more">More about the game</a>
+    </div>
   </div>
 
   <div class="anmText">
@@ -1514,7 +1619,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 73 · updated 15 September 2026 ·
+      <p class="updated">Version 74 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
@@ -1595,9 +1700,16 @@
       </div>
 
       <div class="konsSp r">
+        <!-- Zwei Gruppen. Auf einem flachen Schirm stehen sie nebeneinander
+             (siehe .rGrp im Stilblatt) — untereinander brauchen sie 309
+             Punkte, das Fenster hat dort 196. Auf breiten Schirmen ändert
+             sich nichts: Die Gruppen fließen wie bisher untereinander. -->
+        <div class="rGrp">
         <label data-i18n="mode">Mode</label>
         <div class="modes" id="modes"></div>
+        </div>
 
+        <div class="rGrp">
         <label for="name" data-i18n="designation">Name</label>
         <input type="text" id="name" maxlength="14" placeholder="Unnamed body" data-i18n-ph="unnamed"
                autocomplete="off" autocapitalize="off" spellcheck="false">
@@ -1607,13 +1719,14 @@
         <div class="seg" id="boostPick"></div>
         <p class="hintline" id="boostNote" data-i18n="boostnote">Open space only.</p>
 
-        <!-- Bestenliste direkt auf dem Startbildschirm. Ohne erreichbaren
-             Server bleibt der Kasten verborgen. -->
-        <div class="plate recbox" id="boardBox" hidden>
-          <h2 data-i18n="r_head">Leaderboards</h2>
-          <div id="boardList"></div>
+          <!-- Bestenliste direkt auf dem Startbildschirm. Ohne erreichbaren
+               Server bleibt der Kasten verborgen. -->
+          <div class="plate recbox" id="boardBox" hidden>
+            <h2 data-i18n="r_head">Leaderboards</h2>
+            <div id="boardList"></div>
+          </div>
+          <div class="pow" id="powText" data-i18n="powrun">Running the entry check …</div>
         </div>
-        <div class="pow" id="powText" data-i18n="powrun">Running the entry check …</div>
       </div>
     </div>
 
