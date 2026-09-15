@@ -243,7 +243,9 @@
      der Knopf bleibt dadurch in jeder Breite eine Zeile hoch. */
   #boostPick button{line-height:1.15}
   #boostPick button b{font-weight:600}
-  #boostPick button small{font-size:10.5px;opacity:.85;margin-left:5px}
+  /* 11 px ist die Untergrenze; darunter ist auf einem Telefon nichts mehr
+     zu lesen, und der Handy-Prüfstand schlägt zu Recht an. */
+  #boostPick button small{font-size:11px;opacity:.85;margin-left:5px}
   #boostPick button[aria-pressed=true] small{opacity:1}
   .seg button{margin:0;width:auto;padding:6px 10px;font-size:12px;font-weight:400;
      background:var(--plate);border:1px solid var(--line);color:var(--paper-2)}
@@ -951,11 +953,12 @@
     .konsNav{height:38px;padding:0 12px;font-size:12.5px}
     .konsFenster{left:14px;right:14px;top:66px;bottom:88px;border-radius:14px;
          grid-template-rows:48px 1fr}
-    /* Der Startknopf verlässt die Kopfzeile und liegt unten, wo der Daumen
-       ist. Dort ist er auch dann erreichbar, wenn das Fenster scrollt. */
-    .konsStart{position:fixed;left:14px;right:14px;bottom:14px;z-index:6;gap:3px}
-    #startBtn{width:100%;height:56px;padding:0;font-size:20px}
-    .konsStart .pow{font-size:11.5px}
+    /* Der Startknopf: Im **Querformat** sitzt er kompakt in der Kopfzeile
+       (Block „Der Startknopf im Querformat" weiter unten). In einem
+       **schmalen, aber hohen** Fenster gibt es dort keinen Platz — dort
+       bleibt er unten, wo der Daumen ist und wo Höhe reichlich vorhanden
+       ist. Ohne diese Unterscheidung ragte er bei 420 × 900 sechzehn
+       Punkte über den oberen Bildrand hinaus. */
     /* Auf schmalen Schirmen kein Raster mehr, sondern schlicht untereinander.
        Als Raster bekamen die drei Spalten dort gleich hohe Zeilen (gemessen:
        62/64/62 px in einem 188 px hohen Fenster) und ihr Inhalt lief
@@ -1078,7 +1081,7 @@
        „Freundschaftsspiel“ 99, „Friendly match“ nur 79. Eine Anordnung, die
        auf Englisch aufgeht, geht auf Russisch nicht auf — das ist hier der
        Regelfall, nicht der Einzelfall. Gemessen, nicht geschätzt. */
-    .konsPane.drei{grid-template-columns:minmax(0,1fr) minmax(0,300px) minmax(0,190px)}
+    .konsPane.drei{grid-template-columns:minmax(0,1fr) minmax(0,290px) minmax(0,225px)}
     .konsSp.m{grid-column:1;grid-row:2;order:0;
          border:0;border-right:1px solid var(--line);
          justify-content:flex-start;gap:8px}
@@ -1098,7 +1101,7 @@
        hoch, auch wenn die Spalte nur 215 Punkte breit ist. */
     #boostPick button{display:flex;flex-direction:column;align-items:center;
          gap:0;padding:4px 8px;min-height:44px;justify-content:center}
-    #boostPick button small{margin-left:0;font-size:10px}
+    #boostPick button small{margin-left:0;font-size:11px}
     /* Die Bestenliste hat einen eigenen Knopf in der Kopfzeile, die
        Vorprüfung meldet sich ohnehin nur, wenn etwas nicht stimmt. */
     #startVeil #boardBox,#startVeil #powText{display:none}
@@ -1109,12 +1112,12 @@
     /* Zwei Kennungen, weil weiter unten noch ein Block mit `#heldCanvas`
        steht: Bei gleichem Gewicht gewinnt der spätere, und dann war der
        Körper wieder 168 Punkte groß in einem 188 Punkte hohen Fenster. */
-    #startVeil #heldCanvas{width:140px;height:140px}
+    #startVeil #heldCanvas{width:168px;height:168px}
     .konsName b{font-size:19px;line-height:1.05}
     .konsName span{font-size:11px}
     .konsWerte{gap:16px}
     .konsWerte b{font-size:16px}
-    .konsWerte span{font-size:10.5px}
+    .konsWerte span{font-size:11px}
     /* Die Design-Schnellwahl hat einen eigenen Reiter. Hier kostet sie
        80 Punkte Höhe für etwas, das zwei Fingerbreit weiter oben steht. */
     .konsSp.m .strip{display:none}
@@ -1150,31 +1153,39 @@
      Runden und Designs tritt zurück — sie steht vollständig im Reiter
      „Statistik". */
   @media (max-height:470px) and (min-width:640px){
-    #startVeil #heldCanvas{width:118px;height:118px}
+    #startVeil #heldCanvas{width:104px;height:104px}
     .konsName b{font-size:17px}
-    /* Bestmasse, Runden und Designs stehen vollständig im Reiter
-       „Statistik". Hier kosten sie 30 Punkte Höhe für eine Wiederholung. */
-    .konsWerte{display:none}
-    .konsSp{padding:10px 12px}
+    /* Seit der Startknopf in die Kopfzeile gewandert ist (Schritt 90), sind
+       68 Punkte frei — Bestmasse, Runden und Designs passen wieder ins Bild. */
+    .konsWerte{gap:14px}
+    .konsWerte b{font-size:15px}
+    .konsWerte span{font-size:11px}
     /* Auch beim gewählten Modus: Wer vier Zeilen Beschreibung liest, sieht
-       den Startbonus nicht mehr. Der Name des Modus genügt. */
+       den Startbonus nicht mehr. Der Name der Spielart genügt. */
     .konsSp.r .modes span,
     .konsSp.r .modes button[aria-pressed=true] span{display:none}
-    /* Ohne Beschreibung sind die vier Modi nur noch Namen — als Zweierraster
-       kosten sie 93 Punkte Höhe statt 191 untereinander. Gemessen auf
-       844 × 390: Das ist der Unterschied zwischen „Modus und Name im Bild“
-       und „Modus allein füllt das Fenster“. */
+    /* Ohne Beschreibung sind die vier Spielarten nur noch Namen — als
+       Zweierraster kosten sie 93 Punkte Höhe statt 212 untereinander.
+       **Diese Regel stand versehentlich erst ab 400 Punkten Höhe**; bei 402
+       griff sie nicht, und genau daran scrollte der Reiter um 19 Punkte. */
     .konsSp.r .modes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
     .konsSp.r .modes button{min-height:44px;display:flex;align-items:center;
          padding:0 8px;overflow:hidden}
-    /* Der Name der Spielart darf umbrechen, aber nie über die Kachel
-       hinauslaufen. */
     /* 11 px ist die Untergrenze für Lesbarkeit auf einem Telefon und
        zugleich die Größe, bei der „Freundschaftsspiel" — das längste Wort
-       der Oberfläche — in eine Zeile passt. Ein Wortbruch mitten im Wort
-       („Freundschaftssp/iel") sähe nach Fehler aus. */
+       der Oberfläche — in eine Zeile passt. */
     .konsSp.r .modes b{font-size:11px;line-height:1.15;white-space:nowrap;
          overflow:hidden;text-overflow:ellipsis}
+  }
+  @media (max-height:420px) and (min-width:640px){
+    #startVeil #heldCanvas{width:104px;height:104px}
+    /* Bestmasse, Runden und Designs kosten mit Abstand 48 Punkte. Ab hier
+       reicht es nicht mehr für beides, und der Körper ist wichtiger — die
+       drei Zahlen stehen vollständig im Reiter „Statistik". */
+    .konsWerte{display:none}
+  }
+  @media (max-height:400px) and (min-width:640px){
+    .konsSp{padding:10px 12px}
   }
   /* Sehr flach: Die Bonusleiste wird auf das reduziert, was man anfassen
      kann. Die sieben Perlen zeigen den Stand einer Serie — eine Auskunft,
@@ -1189,14 +1200,14 @@
      Zeilenhöhe. 78 statt 96 Punkte sind die letzten 18, die zwischen
      „passt" und „scrollt" liegen — erkennbar bleibt er. */
   @media (max-height:400px) and (min-width:640px){
-    #startVeil #heldCanvas{width:78px;height:78px}
+    #startVeil #heldCanvas{width:126px;height:126px}
     .konsSp.m{gap:5px}
     body.bonusoffen #startVeil #bonusBox{margin-top:4px}
   }
   /* Noch flacher als ein iPhone SE im Querformat (375). Solche Geräte sind
      selten, aber die Anordnung soll auch dort stehen statt zu scrollen. */
   @media (max-height:370px) and (min-width:640px){
-    #startVeil #heldCanvas{width:62px;height:62px}
+    #startVeil #heldCanvas{width:92px;height:92px}
     body.bonusoffen #startVeil #bonusBox{margin-top:2px;padding:0 10px}
     .rGrp{padding:5px 12px;gap:3px}
     .konsSp.m{padding:8px 12px}
@@ -1259,11 +1270,89 @@
     .konsFenster{top:62px;bottom:70px;grid-template-rows:44px 1fr}
     .konsReiter{height:44px}
     .konsReiter button{height:44px}
-    .konsStart{bottom:9px}
-    #startBtn{height:50px;font-size:18px}
+
     #heldCanvas{width:168px;height:168px}
     /* Der Satz unter dem Namen steht im Spiel ohnehin über der Stufe. */
     #heldStufe{display:none}
+  }
+
+
+  /* Schmal, aber hoch: ein aufrechtes Fenster am Rechner oder ein Telefon
+     kurz vor dem Drehhinweis. Dort ist Höhe reichlich da und Breite knapp —
+     der Startknopf gehört an den unteren Rand, nicht in die Kopfzeile.
+     Gemessen bei 420 × 900: In der Kopfzeile ragte er 16 Punkte über den
+     oberen Bildrand hinaus und 13 über den rechten. */
+  @media (max-width:900px) and (min-height:641px){
+    .konsStart{position:fixed;left:14px;right:14px;bottom:14px;top:auto;
+         z-index:6;flex-direction:column;gap:3px;height:auto;padding:0}
+    #startBtn{width:100%;height:56px;padding:0;font-size:20px}
+    .konsStart .pow{font-size:11.5px}
+    body.keks .konsStart{bottom:calc(14px + var(--keks-hoehe, 0px))}
+  }
+  /* Dasselbe für sehr schmale flache Fenster: Dort stehen die drei Spalten
+     ohnehin untereinander, und die Kopfzeile ist schon voll. */
+  @media (max-height:640px) and (max-width:639px){
+    .konsStart{position:fixed;left:14px;right:14px;bottom:14px;top:auto;
+         z-index:6;flex-direction:column;gap:3px;height:auto;padding:0}
+    #startBtn{width:100%;height:52px;padding:0;font-size:18px}
+  }
+
+  /* ---- Der Startknopf im Querformat (Schritt 90) ---------------------
+     Thomas am 15.09.2026: „der startknopf nimmt ein Viertel des
+     Bildschirms ein und geht über die gesamte Breite am Handy."
+
+     Gemessen stimmte das fast auf den Punkt: 50 Punkte hoher Knopf über
+     96 % der Breite, mit Spielerzahl und Rand zusammen **68 Punkte** —
+     auf einem 360 Punkte hohen Schirm 19 % der Höhe, für einen einzigen
+     Knopf, der sich nie ändert. Und genau diese 68 Punkte fehlten oben:
+     Der Reiter „Übersicht" scrollte dadurch je nach Gerät um 23 bis 48
+     Punkte.
+
+     Nachgelesen (Google Playables, Android- und iOS-Leitfäden): Ein
+     Primärknopf gehört auf 40–56 Punkte Höhe, nicht über die ganze
+     Breite; und ein Menü, das scrollt, gilt als Fehler, nicht als
+     Kompromiss.
+
+     Neu: Der Knopf sitzt **rechts in der Reiterzeile** — kompakt, immer
+     sichtbar, nie von etwas verdeckt, und im Querformat da, wo der rechte
+     Daumen ohnehin liegt. Der ganze untere Streifen entfällt, das Fenster
+     reicht bis unten. Gewonnen: 68 Punkte, also mehr als die 48, die
+     gefehlt haben.
+
+     Er bleibt der **einzige grüne Punkt** der Oberfläche — die Regel aus
+     Schritt 79 gilt unverändert. */
+  @media (max-height:640px) and (min-width:640px){
+    .konsStart{position:absolute;top:0;right:0;bottom:auto;left:auto;
+         z-index:7;flex-direction:row;align-items:center;gap:10px;
+         height:44px;padding:0 14px 0 0}
+    #startBtn{width:auto;height:36px;padding:0 22px;font-size:15px;
+         letter-spacing:.06em;border-radius:10px;
+         box-shadow:0 0 0 1px rgba(141,245,189,.4),
+                    0 4px 14px rgba(61,220,132,.3),
+                    inset 0 1px 0 rgba(255,255,255,.45)}
+    /* Auf Tippgeräten die geforderten 44 Punkte — die Fläche wächst nach
+       oben und unten, der Knopf sieht dadurch nicht klobiger aus. */
+    body.touch #startBtn{height:44px}
+    /* Die Spielerzahl steht links neben dem Knopf statt darunter. Bei sehr
+       wenig Breite tritt sie zurück: Sie ist eine Auskunft, kein Knopf. */
+    .konsStart .pow{margin:0;font-size:11.5px;white-space:nowrap;
+         color:var(--paper-2)}
+    /* Das Fenster reicht jetzt bis unten — der Streifen darunter ist weg. */
+    .konsFenster{bottom:14px}
+    /* Die Reiterzeile muss dem Knopf Platz machen, sonst liegt die
+       Zahlenleiste darunter. */
+    .konsReiter{padding-right:8px}
+    .konsW{padding-right:0}
+  }
+  /* Schmal: Die Spielerzahl passt neben Reitern und Knopf nicht mehr. Sie
+     steht auf dem Anmeldebildschirm ohnehin schon. */
+  @media (max-height:640px) and (max-width:820px){
+    .konsStart .pow{display:none}
+  }
+  @media (max-height:470px) and (min-width:640px){
+    .konsStart{height:44px;padding-right:12px}
+    #startBtn{padding:0 18px;font-size:14px}
+    .konsFenster{bottom:12px}
   }
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -1346,8 +1435,10 @@
      bleiben, und ein Startknopf, der darüberliegt, macht die Einwilligung
      unwirksam. */
   body.keks .konsStart{bottom:calc(14px + var(--keks-hoehe, 0px))}
-  @media (max-height:470px){
-    body.keks .konsStart{bottom:calc(9px + var(--keks-hoehe, 0px))}
+  /* Im Querformat sitzt der Knopf in der Reiterzeile und ist vom
+     Einwilligungskasten gar nicht berührt. */
+  @media (max-height:640px) and (min-width:640px){
+    body.keks .konsStart{bottom:auto}
   }
 
 </style>
@@ -1619,7 +1710,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 74 · updated 15 September 2026 ·
+      <p class="updated">Version 75 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
