@@ -44,7 +44,7 @@ const Settings = {
   theme:"earth",
   /* Musik getrennt von den Spielgeräuschen: Wer die Töne braucht, um Gefahr
      zu hören, will deshalb noch lange keine Musik — und umgekehrt. */
-  music:0.55
+  music:0
 };
 
 /* Einstellungen überdauern das Neuladen.
@@ -132,6 +132,20 @@ function einstellungenSichern(){
    ist **und** die Rechtstexte stehen. Solange er `false` ist, zeigt Talumi
    keinen Einwilligungskasten und lädt nichts Fremdes — der Stand von heute. */
 const WERBUNG_AKTIV = false;
+
+/* Musik ist gebaut, aber abgeschaltet (Schritt 87).
+   Thomas hat drei Eigenbau-Fassungen gehört und verworfen, danach sechs
+   fertige Stücke ausgewählt und dann entschieden: Musik ganz aus dem Spiel,
+   aber aufgehoben. Dieser Schalter ist die ganze Entscheidung.
+
+   Auf "true" gestellt braucht es zusätzlich die sechs Dateien
+   musik-*.ogg und musik-*.mp3 neben index.html. Sie liegen im Arbeitsordner,
+   aber bewusst nicht im öffentlichen Repo — 24 MB, die niemand hört, solange
+   dieser Schalter aus ist. Woher sie stammen, steht in MUSIK-QUELLEN.md.
+
+   Die Spielgeräusche sind davon nicht betroffen. Der Warnton ist ein
+   Spielhinweis, kein Schmuck. */
+const MUSIK_AKTIV = false;
 
 const Einwilligung = {
   KEKS: "talumi_einwilligung",
@@ -625,75 +639,75 @@ const BOOST_COST = {1:0, 2:400, 3:1100};
 
 
 
-/* 42 Oberflächen. Alle erspielbar: 21 über Level, 21 über Ore.
+/* 46 Designs. Alle erspielbar: 21 über Level, 25 über Ore.
    Die Ore-Skins tragen die ersten Stunden, die Level-Skins die lange Strecke.
    Antimatter sitzt auf Level 100 — dem Ende der Leiter. */
 const SKINS = [
-  {id:"basalt",     label:"Basalt",       rock:"#6d7688", dark:"#454e5f", hot:"#ff7a45", air:"#7fb0e8", lv:1},
-  {id:"regolith",   label:"Regolith",     rock:"#8a8578", dark:"#55524a", hot:"#ffb86b", air:"#cfc6ae", lv:2},
-  {id:"iron",       label:"Iron",         rock:"#8d6a55", dark:"#5a4132", hot:"#ffb03a", air:"#e0a37a", lv:3},
-  {id:"copper",     label:"Copper",       rock:"#b07a4a", dark:"#6e472a", hot:"#ffc36b", air:"#e8b98a", ore:500},
-  {id:"ice",        label:"Ice",          rock:"#9fc4d8", dark:"#65899f", hot:"#8fe3ff", air:"#cfeaff", lv:5},
-  {id:"jade",       label:"Jade",         rock:"#5f9c82", dark:"#365c4d", hot:"#7fffc4", air:"#a9e7cf", ore:800},
-  {id:"ash",        label:"Ash",          rock:"#7a7a80", dark:"#494950", hot:"#ff5f3a", air:"#b9b9c4", lv:7},
-  {id:"ember",      label:"Ember",        rock:"#a4503c", dark:"#5f2a1e", hot:"#ff9b2f", air:"#ff9a72", ore:1200},
-  {id:"cobalt",     label:"Cobalt",       rock:"#4d68b5", dark:"#2b3c72", hot:"#6fa8ff", air:"#93b4ff", lv:9},
-  {id:"sulfur",     label:"Sulfur",       rock:"#c2b24a", dark:"#75692a", hot:"#fff06b", air:"#ecd97f", ore:1600},
-  {id:"obsidian",   label:"Obsidian",     rock:"#3a3d4a", dark:"#1e2029", hot:"#c05cff", air:"#7d6ea8", lv:12},
-  {id:"quartz",     label:"Rose Quartz",  rock:"#c98d9c", dark:"#7d5460", hot:"#ff9ec4", air:"#f2c3d1", ore:2400},
-  {id:"verdant",    label:"Verdant",      rock:"#6f9a45", dark:"#3f5b26", hot:"#c8ff5c", air:"#b7e08a", lv:15},
-  {id:"tungsten",   label:"Tungsten",     rock:"#7f8794", dark:"#4a5058", hot:"#dfe9f5", air:"#b6c2d0", ore:3200},
-  {id:"mercury",    label:"Mercury",      rock:"#a9b3bd", dark:"#5f686f", hot:"#e8f4ff", air:"#dbe6ef", lv:20},
-  {id:"malachite",  label:"Malachite",    rock:"#3f8f6a", dark:"#20553d", hot:"#6bffb0", air:"#8fdcb6", ore:4400},
-  {id:"amber",      label:"Amber",        rock:"#c98f2e", dark:"#7a5212", hot:"#ffd166", air:"#f0c27a", ore:6000},
-  {id:"nebula",     label:"Nebula",       rock:"#7a5aa8", dark:"#432f63", hot:"#ff6bd6", air:"#c39bff", lv:25},
-  {id:"cinnabar",   label:"Cinnabar",     rock:"#a83f3a", dark:"#61201d", hot:"#ff6b4a", air:"#e08b7a", ore:8400},
-  {id:"glacier",    label:"Glacier",      rock:"#7fb3c9", dark:"#48748a", hot:"#b8f0ff", air:"#dff3ff", lv:30},
-  {id:"rust",       label:"Rust",         rock:"#9c5a33", dark:"#5c3218", hot:"#ff8f3a", air:"#d99a6a", ore:11600},
-  {id:"indigo",     label:"Indigo",       rock:"#4a4a9c", dark:"#28285e", hot:"#8f8fff", air:"#a3a3e8", ore:16000},
-  {id:"aurora",     label:"Aurora",       rock:"#3f8f8a", dark:"#1f5450", hot:"#5cffb0", air:"#8ef0d8", lv:36},
-  {id:"saffron",    label:"Saffron",      rock:"#cf9236", dark:"#7d5417", hot:"#ffd98f", air:"#f2cd8a", ore:22000},
-  {id:"pearl",      label:"Pearl",        rock:"#d6cec0", dark:"#8a8377", hot:"#fff6e8", air:"#f0e8da", ore:30000},
-  {id:"onyx",       label:"Onyx",         rock:"#2f313b", dark:"#17181e", hot:"#8f9bff", air:"#5a6180", lv:42},
-  {id:"peridot",    label:"Peridot",      rock:"#8fae3a", dark:"#556a1c", hot:"#d8ff6b", air:"#c2dc8a", ore:42000},
-  {id:"magnetite",  label:"Magnetite",    rock:"#4a4f5c", dark:"#262a33", hot:"#ff5c8f", air:"#8a93a8", ore:58000},
-  {id:"solaris",    label:"Solaris",      rock:"#d19a3a", dark:"#8a5c14", hot:"#fff3a0", air:"#ffd884", lv:50},
-  {id:"corona",     label:"Corona",       rock:"#d4643a", dark:"#7d2f16", hot:"#ffb06b", air:"#ffb08f", ore:80000},
-  {id:"titan",      label:"Titan",        rock:"#8a94a8", dark:"#4c5464", hot:"#cfe8ff", air:"#b3c4d8", lv:58},
-  {id:"halide",     label:"Halide",       rock:"#6ba8b5", dark:"#376a75", hot:"#a0ffee", air:"#b8e8f0", ore:110000},
-  {id:"bismuth",    label:"Bismuth",      rock:"#8f6bb5", dark:"#4e3670", hot:"#ff9bd6", air:"#d0a8e8", ore:150000},
-  {id:"crimson",    label:"Crimson Dust", rock:"#a83a55", dark:"#5f1a2b", hot:"#ff5c7a", air:"#e08a9c", lv:66},
-  {id:"zircon",     label:"Zircon",       rock:"#7f9bd6", dark:"#43578a", hot:"#c4dcff", air:"#c2d4f0", ore:210000},
-  {id:"plasma",     label:"Plasma",       rock:"#b53a8f", dark:"#69184f", hot:"#ff6bff", air:"#ff9be8", lv:74},
-  {id:"horizon",    label:"Event Horizon",rock:"#2a2f4a", dark:"#141728", hot:"#6b8fff", air:"#4a5c9c", ore:290000},
-  {id:"quasar",     label:"Quasar",       rock:"#d6b03a", dark:"#7d6414", hot:"#fffcb0", air:"#ffe89b", lv:82},
-  {id:"primordial", label:"Primordial",   rock:"#6b5a3a", dark:"#3a3020", hot:"#ffd98f", air:"#c4b08a", ore:400000},
-  {id:"singularity",label:"Singularity",  rock:"#1e2030", dark:"#0d0e16", hot:"#a05cff", air:"#5c4a8a", lv:90},
-  {id:"void",       label:"Void",         rock:"#2a2c38", dark:"#14151d", hot:"#5c7bff", air:"#4c5a8a", lv:95},
-  {id:"antimatter", label:"Antimatter",   rock:"#5b2f5e", dark:"#2c1430", hot:"#ff2fb0", air:"#ff8ce0", lv:100},
+  {id:"basalt",     mat:"fels",     label:"Basalt",       rock:"#6d7688", dark:"#454e5f", hot:"#ff7a45", air:"#7fb0e8", lv:1},
+  {id:"regolith",   mat:"staub",   label:"Regolith",     rock:"#8a8578", dark:"#55524a", hot:"#ffb86b", air:"#cfc6ae", lv:2},
+  {id:"iron",       mat:"metall",       label:"Iron",         rock:"#8d6a55", dark:"#5a4132", hot:"#ffb03a", air:"#e0a37a", lv:3},
+  {id:"copper",     mat:"metall",     label:"Copper",       rock:"#b07a4a", dark:"#6e472a", hot:"#ffc36b", air:"#e8b98a", ore:500},
+  {id:"ice",        mat:"eis",        label:"Ice",          rock:"#9fc4d8", dark:"#65899f", hot:"#8fe3ff", air:"#cfeaff", lv:5},
+  {id:"jade",       mat:"kristall",       label:"Jade",         rock:"#5f9c82", dark:"#365c4d", hot:"#7fffc4", air:"#a9e7cf", ore:800},
+  {id:"ash",        mat:"staub",        label:"Ash",          rock:"#7a7a80", dark:"#494950", hot:"#ff5f3a", air:"#b9b9c4", lv:7},
+  {id:"ember",      mat:"glut",      label:"Ember",        rock:"#a4503c", dark:"#5f2a1e", hot:"#ff9b2f", air:"#ff9a72", ore:1200},
+  {id:"cobalt",     mat:"metall",     label:"Cobalt",       rock:"#4d68b5", dark:"#2b3c72", hot:"#6fa8ff", air:"#93b4ff", lv:9},
+  {id:"sulfur",     mat:"fels",     label:"Sulfur",       rock:"#c2b24a", dark:"#75692a", hot:"#fff06b", air:"#ecd97f", ore:1600},
+  {id:"obsidian",   mat:"glas",   label:"Obsidian",     rock:"#33364a", dark:"#16171f", hot:"#c05cff", air:"#c9b4f0", lv:12},
+  {id:"quartz",     mat:"kristall",     label:"Rose Quartz",  rock:"#c98d9c", dark:"#7d5460", hot:"#ff9ec4", air:"#f2c3d1", ore:2400},
+  {id:"verdant",    mat:"fels",    label:"Verdant",      rock:"#6f9a45", dark:"#3f5b26", hot:"#c8ff5c", air:"#b7e08a", lv:15},
+  {id:"tungsten",   mat:"metall",   label:"Tungsten",     rock:"#7f8794", dark:"#4a5058", hot:"#dfe9f5", air:"#b6c2d0", ore:3200},
+  {id:"mercury",    mat:"metall",    label:"Mercury",      rock:"#a9b3bd", dark:"#5f686f", hot:"#e8f4ff", air:"#dbe6ef", lv:20},
+  {id:"malachite",  mat:"kristall",  label:"Malachite",    rock:"#3f8f6a", dark:"#20553d", hot:"#6bffb0", air:"#8fdcb6", ore:4400},
+  {id:"amber",      mat:"glas",      label:"Amber",        rock:"#c98f2e", dark:"#7a5212", hot:"#ffd166", air:"#f0c27a", ore:6000},
+  {id:"nebula",     mat:"gas",     label:"Nebula",       rock:"#7a5aa8", dark:"#432f63", hot:"#ff6bd6", air:"#c39bff", lv:25},
+  {id:"cinnabar",   mat:"fels",   label:"Cinnabar",     rock:"#a83f3a", dark:"#61201d", hot:"#ff6b4a", air:"#e08b7a", ore:8400},
+  {id:"glacier",    mat:"eis",    label:"Glacier",      rock:"#7fb3c9", dark:"#48748a", hot:"#b8f0ff", air:"#dff3ff", lv:30},
+  {id:"rust",       mat:"fels",       label:"Rust",         rock:"#9c5a33", dark:"#5c3218", hot:"#ff8f3a", air:"#d99a6a", ore:11600},
+  {id:"indigo",     mat:"kristall",     label:"Indigo",       rock:"#4a4a9c", dark:"#28285e", hot:"#8f8fff", air:"#a3a3e8", ore:16000},
+  {id:"aurora",     mat:"gas",     label:"Aurora",       rock:"#3f8f8a", dark:"#1f5450", hot:"#5cffb0", air:"#8ef0d8", lv:36},
+  {id:"saffron",    mat:"staub",    label:"Saffron",      rock:"#cf9236", dark:"#7d5417", hot:"#ffd98f", air:"#f2cd8a", ore:22000},
+  {id:"pearl",      mat:"perle",      label:"Pearl",        rock:"#d6cec0", dark:"#8a8377", hot:"#fff6e8", air:"#f0e8da", ore:30000},
+  {id:"onyx",       mat:"glas",       label:"Onyx",         rock:"#2b2d3a", dark:"#131419", hot:"#9fabff", air:"#c2c9ea", lv:42},
+  {id:"peridot",    mat:"kristall",    label:"Peridot",      rock:"#8fae3a", dark:"#556a1c", hot:"#d8ff6b", air:"#c2dc8a", ore:42000},
+  {id:"magnetite",  mat:"metall",  label:"Magnetite",    rock:"#4a4f5c", dark:"#262a33", hot:"#ff5c8f", air:"#8a93a8", ore:58000},
+  {id:"solaris",    mat:"glut",    label:"Solaris",      rock:"#d19a3a", dark:"#8a5c14", hot:"#fff3a0", air:"#ffd884", lv:50},
+  {id:"corona",     mat:"glut",     label:"Corona",       rock:"#d4643a", dark:"#7d2f16", hot:"#ffb06b", air:"#ffb08f", ore:80000},
+  {id:"titan",      mat:"metall",      label:"Titan",        rock:"#8a94a8", dark:"#4c5464", hot:"#cfe8ff", air:"#b3c4d8", lv:58},
+  {id:"halide",     mat:"kristall",     label:"Halide",       rock:"#6ba8b5", dark:"#376a75", hot:"#a0ffee", air:"#b8e8f0", ore:110000},
+  {id:"bismuth",    mat:"perle",    label:"Bismuth",      rock:"#8f6bb5", dark:"#4e3670", hot:"#ff9bd6", air:"#d0a8e8", ore:150000},
+  {id:"crimson",    mat:"staub",    label:"Crimson Dust", rock:"#a83a55", dark:"#5f1a2b", hot:"#ff5c7a", air:"#e08a9c", lv:66},
+  {id:"zircon",     mat:"kristall",     label:"Zircon",       rock:"#7f9bd6", dark:"#43578a", hot:"#c4dcff", air:"#c2d4f0", ore:210000},
+  {id:"plasma",     mat:"energie",     label:"Plasma",       rock:"#b53a8f", dark:"#69184f", hot:"#ff6bff", air:"#ff9be8", lv:74},
+  {id:"horizon",    mat:"schlund", label:"Event Horizon",rock:"#1a1e30", dark:"#0a0c16", hot:"#6b8fff", air:"#bcd0ff", ore:290000, wucht:.80},
+  {id:"quasar",     mat:"glut",     label:"Quasar",       rock:"#d6b03a", dark:"#7d6414", hot:"#fffcb0", air:"#ffe89b", lv:82},
+  {id:"primordial", mat:"fels", label:"Primordial",   rock:"#8a7142", dark:"#332816", hot:"#ffce5c", air:"#f0dba6", ore:400000},
+  {id:"singularity",mat:"schlund",label:"Umbra",     rock:"#1a1c2a", dark:"#0a0b12", hot:"#8f5cff", air:"#b49bff", lv:90, wucht:.58},
+  {id:"void",       mat:"schlund",    label:"Void",         rock:"#1b1d28", dark:"#0a0b10", hot:"#7fa8ff", air:"#dceaff", lv:95, wucht:1},
+  {id:"antimatter", mat:"energie", label:"Antimatter",   rock:"#5b2f5e", dark:"#2c1430", hot:"#ff2fb0", air:"#ff8ce0", lv:100},
 
   /* Stufe VI. Vier Stück, sehr teuer, mit Effekten, die keine andere
-     Oberfläche hat. Bewusst nur über Ore — keine Levelbindung, damit sie
+     Design hat. Bewusst nur über Ore — keine Levelbindung, damit sie
      unabhängig von der Leiter ein eigenes Ziel bilden.
      Regel wie überall: Der massive Kreis und der scharfe Rand bleiben exakt
      auf dem echten Radius. Alles Zusätzliche liegt durchscheinend darüber,
      sonst täuscht ein teurer Skin über die Reichweite. */
-  {id:"eventide",  label:"Eventide",   rock:"#4a3f6b", dark:"#221c38", hot:"#b58cff", air:"#d6c2ff",
+  {id:"eventide",  mat:"gas",  label:"Eventide",   rock:"#4a3f6b", dark:"#221c38", hot:"#b58cff", air:"#d6c2ff",
    ore:800000,  special:"trail"},
-  {id:"halo",      label:"Halo",       rock:"#c9b76a", dark:"#6e5a1f", hot:"#fff2b0", air:"#ffe58a",
+  {id:"halo",      mat:"perle",      label:"Halo",       rock:"#c9b76a", dark:"#6e5a1f", hot:"#fff2b0", air:"#ffe58a",
    ore:1100000, special:"halo"},
-  {id:"singular",  label:"Singularity",rock:"#141622", dark:"#05060b", hot:"#8fb4ff", air:"#5c74b8",
+  {id:"singular",  mat:"schlund",  label:"Singularity",rock:"#0f1119", dark:"#03040a", hot:"#a8c8ff", air:"#eaf2ff", wucht:1,
    ore:1500000, special:"warp"},
-  {id:"prism",     label:"Prism",      rock:"#8f8fa8", dark:"#3f3f52", hot:"#ffffff", air:"#e8e8f5",
+  {id:"prism",     mat:"kristall",     label:"Prism",      rock:"#8f8fa8", dark:"#3f3f52", hot:"#ffffff", air:"#e8e8f5",
    ore:2000000, special:"prism"}
 ];
 
 /* Stufenprämien: erreichte Spitzenmasse zahlt sprunghaft, nicht nur linear.
    Damit lohnt sich das Weiterwachsen statt frühem Sterben und Neustarten. */
 /* Auf ein Drittel gesenkt (10.09.2026). Vorher brachte eine gute Runde rund
-   2.000 Ore und die teuerste Oberfläche war in zwanzig Stunden erreicht — zu
+   2.000 Ore und die teuerste Design war in zwanzig Stunden erreicht — zu
    billig für eine Währung, die auch den Startbonus kauft. Jetzt rund 700 je
-   guter Runde, etwa 3.300 pro Stunde, teuerste Oberfläche rund sechzig Stunden. */
+   guter Runde, etwa 3.300 pro Stunde, teuerste Design rund sechzig Stunden. */
 const STAGE_BONUS = [0, 4, 14, 50, 170];
 
 /* Namen müssen tippbar sein, sonst kann niemand einen Freund suchen.
@@ -744,8 +758,8 @@ const Profile = {
   /* Zwei getrennte Währungen, und die Trennung ist die ganze Zusage:
      ORE wird ausschließlich erspielt und kauft alles, was das Spiel berührt —
      derzeit den Startbonus.
-     LUMI ist die bezahlte Währung und kauft ausschließlich Oberflächen, und
-     zwar nur die, die es ohnehin für Ore gibt. Level-Oberflächen bleiben
+     LUMI ist die bezahlte Währung und kauft ausschließlich Designs, und
+     zwar nur die, die es ohnehin für Ore gibt. Level-Designs bleiben
      unverkäuflich, sonst wäre die 2000-Stunden-Leiter käuflich und damit
      wertlos. Wer zahlt, überspringt Wartezeit — nie einen Spielvorteil. */
   boost:1,
@@ -915,232 +929,136 @@ const Sound = {
    Die Akkorde wandern in 11–17 Sekunden ineinander. Schneller klingt es
    nach Fahrstuhl, langsamer schläft es ein. */
 const Musik = {
-  an:false, bus:null, hall:null, flaeche:null, filter:null, lfo:null,
-  bass:null, luft:null, akkordZeit:0, motivZeit:0, stufe:0, leiser:1,
+  an:false, el:null, nr:-1, leiser:1, imSpiel:false, liste:null,
+  ziel:0, blendeZeit:0,
 
-  /* Grundtöne des Kreislaufs. Vier Stufen in einer weichen Molltonart, jede
-     mit ihrer Quinte und None — kein Terzton in der Fläche, dadurch bleibt
-     offen, ob es dur oder moll ist, und nichts drängt sich auf. */
-  GRUND: [55.00, 73.42, 82.41, 65.41],        // A1, D2, E2, C2
-  /* Tonvorrat für das Motiv: pentatonisch, also kann nichts falsch klingen,
-     egal welcher Ton auf welchen Akkord fällt. */
-  LEITER: [220.00, 246.94, 293.66, 329.63, 440.00, 493.88, 587.33, 659.25],
+  /* =====================================================================
+     Der Soundtrack. Sechs fertig eingespielte Stücke, alle gemeinfrei (CC0).
 
-  /* Hall ohne Datei: eine Rauschfahne, die exponentiell ausklingt. Drei
-     Sekunden Nachhall geben die Weite, die den ganzen Ton ausmacht. */
-  hallBauen(ctx){
-    const len = Math.floor(ctx.sampleRate * 3.2);
-    const buf = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let k=0;k<2;k++){
-      const d = buf.getChannelData(k);
-      for (let i=0;i<len;i++){
-        const ab = Math.pow(1 - i/len, 2.6);
-        d[i] = (Math.random()*2-1) * ab * 0.55;
-      }
-    }
-    const c = ctx.createConvolver();
-    c.buffer = buf;
-    return c;
+     Vorher entstand die Musik im Browser aus Oszillatoren. Das war rechtlich
+     unangreifbar und klang trotzdem nicht gut — drei Umbauten lang. Fertige
+     Musik von Menschen klingt wie Musik; das ist kein Umweg, sondern der
+     kürzere Weg zum Ziel.
+
+     **Gemeinfrei heißt gemeinfrei:** CC0 verlangt keine Namensnennung und
+     erlaubt jede kommerzielle Nutzung ohne Bedingung. Woher jedes Stück
+     stammt, steht in `MUSIK-QUELLEN.md` — nicht weil es verlangt wäre,
+     sondern damit es im Zweifel belegbar ist.
+
+     Die Dateien liegen auf der eigenen Adresse, nicht bei einem fremden
+     Anbieter. Deshalb bleibt es dabei: kein fremdes Skript, keine fremde
+     Verbindung, kein Einwilligungsbanner.
+     ===================================================================== */
+
+  /* Drei Ogg und drei MP3. Welche gespielt werden können, entscheidet der
+     Browser selbst (`canPlayType`) — Safari kann Ogg Vorbis lange nicht oder
+     nur eingeschränkt, und ein Stück, das dort still bliebe, gehört gar nicht
+     erst in die Liste. */
+  STUECKE: [
+    { datei:"musik-outthere.ogg",  typ:"audio/ogg; codecs=vorbis" },
+    { datei:"musik-deadship.ogg",  typ:"audio/ogg; codecs=vorbis" },
+    { datei:"musik-star.ogg",      typ:"audio/ogg; codecs=vorbis" },
+    { datei:"musik-caller.mp3",    typ:"audio/mpeg" },
+    { datei:"musik-monoliths.mp3", typ:"audio/mpeg" },
+    { datei:"musik-booya.mp3",     typ:"audio/mpeg" }
+  ],
+
+  /* Was dieser Browser abspielen kann. `canPlayType` antwortet "probably",
+     "maybe" oder "" — nur das leere Ergebnis ist ein sicheres Nein. */
+  spielbar(){
+    if (this.liste) return this.liste;
+    const pruef = document.createElement("audio");
+    this.liste = this.STUECKE.filter(s => {
+      try { return pruef.canPlayType(s.typ) !== ""; } catch(_){ return false; }
+    });
+    if (!this.liste.length) this.liste = this.STUECKE.filter(s => s.typ === "audio/mpeg");
+    return this.liste;
   },
 
   starten(){
-    if (this.an || !Sound.ctx) return;
-    const ctx = Sound.ctx;
+    if (this.an || !MUSIK_AKTIV) return;
+    const liste = this.spielbar();
+    if (!liste.length) return;
     this.an = true;
 
-    this.bus = ctx.createGain();
-    this.bus.gain.value = 0;                       // fährt gleich hoch
-    this.bus.connect(ctx.destination);
-
-    this.hall = this.hallBauen(ctx);
-    const hallWeg = ctx.createGain();
-    hallWeg.gain.value = 0.85;
-    this.hall.connect(hallWeg); hallWeg.connect(this.bus);
-
-    /* Fläche: drei Oszillatoren, gegeneinander verstimmt. Die Schwebung
-       daraus ist das, was „warm" klingt — ein einzelner Oszillator wirkt
-       hart und billig. */
-    this.filter = ctx.createBiquadFilter();
-    this.filter.type = "lowpass";
-    this.filter.frequency.value = 760;
-    this.filter.Q.value = 0.7;
-    this.filter.connect(this.bus);
-    this.filter.connect(this.hall);
-
-    this.flaeche = [];
-    /* Die drei Stimmen stehen an verschiedenen Stellen im Stereobild. Alles
-       in der Mitte klingt eng und nach Rechner; auseinandergezogen entsteht
-       der weite Raum, der diese Art Musik ausmacht. */
-    for (const [halbton, laut, form, seite] of [[0, .12, "sawtooth", -0.55],
-                                                 [7, .085, "triangle", 0.55],
-                                                 [14, .045, "triangle", 0]]){
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = form;
-      o.detune.value = (Math.random()*14 - 7);
-      g.gain.value = laut;
-      o.connect(g);
-      if (ctx.createStereoPanner){
-        const pan = ctx.createStereoPanner();
-        pan.pan.value = seite;
-        g.connect(pan); pan.connect(this.filter);
-      } else g.connect(this.filter);
-      o.start();
-      this.flaeche.push({o, g, halbton});
+    if (!this.el){
+      this.el = new Audio();
+      /* Nichts laden, solange niemand Musik hören will. Ohne diese Zeile holt
+         der Browser die erste Datei schon beim Aufbau der Seite — vier
+         Megabyte, die die meisten Besucher nie hören. */
+      this.el.preload = "none";
+      this.el.loop = false;
+      this.el.addEventListener("ended", () => this.weiter());
+      /* Fehlt eine Datei oder mag der Browser sie doch nicht, zum nächsten
+         Stück weitergehen statt still zu bleiben. */
+      this.el.addEventListener("error", () => { if (this.an) this.weiter(); });
     }
 
-    /* Das Filter wandert langsam auf und ab. Ohne diese Bewegung steht der
-       Klang still und wird nach zwei Minuten unerträglich. */
-    this.lfo = ctx.createOscillator();
-    const lfoTiefe = ctx.createGain();
-    this.lfo.frequency.value = 0.045;              // gut zwanzig Sekunden je Runde
-    lfoTiefe.gain.value = 300;
-    this.lfo.connect(lfoTiefe); lfoTiefe.connect(this.filter.frequency);
-    this.lfo.start();
-
-    const bo = ctx.createOscillator(), bg = ctx.createGain();
-    bo.type = "sine"; bg.gain.value = 0.16;
-    bo.connect(bg); bg.connect(this.bus);
-    bo.start();
-    this.bass = {o:bo, g:bg};
-
-    /* Luft: leises Rauschen, hoch gefiltert. Man hört es nicht bewusst,
-       aber ohne fehlt etwas. */
-    const rausch = ctx.createBufferSource();
-    rausch.buffer = Sound.noise; rausch.loop = true;
-    const rf = ctx.createBiquadFilter();
-    rf.type = "bandpass"; rf.frequency.value = 1800; rf.Q.value = 0.4;
-    const rg = ctx.createGain(); rg.gain.value = 0.012;
-    rausch.connect(rf); rf.connect(rg); rg.connect(this.bus);
-    rausch.start();
-    this.luft = rausch;
-
-    this.stufe = 0;
-    this.akkordWechseln(true);
-    this.lautstaerke();
-    this.akkordZeit = ctx.currentTime + 13;
-    this.motivZeit  = ctx.currentTime + 4;
+    /* Nicht immer mit demselben Stück beginnen. */
+    this.nr = Math.floor(Math.random() * liste.length) - 1;
+    this.weiter();
   },
 
-  /* Nächster Akkord. Die Stufen laufen nicht stur im Kreis: Mit einem Drittel
-     Wahrscheinlichkeit wird eine übersprungen, sonst hört man nach der dritten
-     Runde die Schleife. */
-  akkordWechseln(sofort){
-    if (!this.an || !Sound.ctx) return;
-    const ctx = Sound.ctx, t = ctx.currentTime;
-    this.stufe = (this.stufe + (Math.random() < .33 ? 2 : 1)) % this.GRUND.length;
-    const grund = this.GRUND[this.stufe];
-    const zeit = sofort ? 0.6 : 7;                 // sieben Sekunden ineinander
-    for (const s of this.flaeche){
-      const f = grund * Math.pow(2, s.halbton/12) * 4;
-      s.o.frequency.setTargetAtTime(f, t, zeit/3);
-    }
-    this.bass.o.frequency.setTargetAtTime(grund, t, zeit/3);
+  weiter(){
+    if (!this.an || !this.el) return;
+    const liste = this.spielbar();
+    this.nr = (this.nr + 1) % liste.length;
+    this.el.src = liste[this.nr].datei;
+    this.el.currentTime = 0;
+    this.el.volume = 0;                       // fährt in blende() hoch
+    this.ziel = this.lautWert();
+    this.blendeZeit = 0;
+    const versuch = this.el.play();
+    /* Ohne Nutzergeste lehnt der Browser das Abspielen ab. Das ist kein
+       Fehler, sondern die Regel — die Musik startet dann beim ersten Tippen. */
+    if (versuch && versuch.catch) versuch.catch(() => {});
   },
 
-  /* Ein einzelner glockiger Ton. Kurzer Anschlag, langer Ausklang, viel Hall
-     — das ist der ganze Trick an dieser Art Musik. */
-  motiv(){
-    if (!this.an || !Sound.ctx) return;
-    const ctx = Sound.ctx, t = ctx.currentTime;
-    const f = this.LEITER[(Math.random()*this.LEITER.length)|0]
-            * (Math.random() < .3 ? 0.5 : 1);
-    const dauer = 2.6 + Math.random()*2.4;
-
-    /* Zwei Teiltöne statt einem: der Grundton trägt, die Oktave darüber gibt
-       den glockigen Anschlag und klingt schneller aus. Mit nur einer Sinuswelle
-       ging der Ton in der Fläche unter — gemessen schwankte die Lautheit über
-       vierzig Sekunden nur um das 1,4-fache, und genau diese hörbaren
-       Einzeltöne sind das, was man an dieser Musik wiedererkennt. */
-    const summe = ctx.createGain();
-    summe.gain.setValueAtTime(0, t);
-    summe.gain.linearRampToValueAtTime(0.17, t + 0.025);
-    summe.gain.exponentialRampToValueAtTime(0.0002, t + dauer);
-    if (ctx.createStereoPanner){
-      const pan = ctx.createStereoPanner();
-      pan.pan.value = Math.random()*1.1 - 0.55;
-      summe.connect(pan); pan.connect(this.bus); pan.connect(this.hall);
-    } else { summe.connect(this.bus); summe.connect(this.hall); }
-
-    for (const [mal, laut, ab] of [[1, 1, dauer], [2, 0.3, dauer*0.45]]){
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.type = "sine"; o.frequency.value = f*mal;
-      g.gain.setValueAtTime(laut, t);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + ab);
-      o.connect(g); g.connect(summe);
-      o.start(t); o.stop(t + dauer + 0.1);
-    }
+  lautWert(){
+    return Math.max(0, Math.min(1, (Settings.music || 0) * this.leiser));
   },
 
-  /* Eine kurze aufsteigende Figur, selten. Sie gibt der Musik ab und zu eine
-     Richtung, ohne dass daraus eine Melodie mit Wiedererkennungswert wird —
-     die Töne werden jedes Mal neu gezogen. */
-  figur(){
-    if (!this.an || !Sound.ctx) return;
-    const start = (Math.random()*(this.LEITER.length-3))|0;
-    for (let i=0;i<3;i++){
-      setTimeout(() => {
-        if (!this.an || !Sound.ctx) return;
-        const ctx = Sound.ctx, t = ctx.currentTime;
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = "sine";
-        o.frequency.value = this.LEITER[start+i];
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.09, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0002, t + 2.2);
-        o.connect(g); g.connect(this.bus); g.connect(this.hall);
-        o.start(t); o.stop(t + 2.4);
-      }, i*430);
-    }
-  },
-
-  /* Im Spiel leiser als im Menü: Musik, die während einer Jagd genauso laut
-     steht wie davor, verdeckt die Töne, an denen man Gefahr erkennt. */
+  /* Im Spiel leiser: Musik, die während einer Jagd genauso laut steht wie im
+     Menü, verdeckt die Töne, an denen man Gefahr erkennt. */
   ducken(imSpiel){
-    this.leiser = imSpiel ? 0.55 : 1;
+    this.imSpiel = !!imSpiel;
+    this.leiser = imSpiel ? 0.5 : 1;
     this.lautstaerke();
   },
 
   lautstaerke(){
-    if (!this.bus || !Sound.ctx) return;
-    const ziel = (Settings.music || 0) * this.leiser * 0.9;
-    this.bus.gain.setTargetAtTime(ziel, Sound.ctx.currentTime, 0.8);
+    this.ziel = this.lautWert();
+    if (this.el && !this.an) this.el.volume = this.ziel;
   },
 
-  /* Wird aus der Spielschleife gerufen. Kein eigener Zeitgeber: Der Browser
-     drosselt Zeitgeber in verdeckten Tabs, und dann bliebe die Musik auf
-     einem Akkord stehen. */
+  /* Wird aus der Bildschleife gerufen und blendet die Lautstärke weich nach.
+     Ein harter Sprung beim Rundenstart hört sich nach Fehler an.
+
+     Kein eigener Zeitgeber: Browser drosseln Zeitgeber in verdeckten Tabs. */
   takt(){
-    if (!this.an || !Sound.ctx) return;
-    const jetzt = Sound.ctx.currentTime;
-    if (jetzt >= this.akkordZeit){
-      this.akkordWechseln(false);
-      this.akkordZeit = jetzt + 11 + Math.random()*6;
-    }
-    if (jetzt >= this.motivZeit){
-      /* Meist ein einzelner Ton, ab und zu die kurze Figur. */
-      if (Math.random() < 0.22) this.figur(); else this.motiv();
-      this.motivZeit = jetzt + 3 + Math.random()*5.5;
-    }
+    if (!this.an || !this.el) return;
+    const jetzt = (typeof performance !== "undefined" ? performance.now() : Date.now());
+    if (!this.blendeZeit){ this.blendeZeit = jetzt; return; }
+    const dt = Math.min(0.1, (jetzt - this.blendeZeit) / 1000);
+    this.blendeZeit = jetzt;
+    const ist = this.el.volume;
+    if (Math.abs(this.ziel - ist) < 0.005){ this.el.volume = this.ziel; return; }
+    /* Exponentiell, rund eine Sekunde bis zum Ziel. */
+    this.el.volume = Math.max(0, Math.min(1, ist + (this.ziel - ist) * (1 - Math.exp(-3.2*dt))));
   },
 
   stoppen(){
-    if (!this.an) return;
     this.an = false;
-    const t = Sound.ctx ? Sound.ctx.currentTime : 0;
-    if (this.bus) this.bus.gain.setTargetAtTime(0, t, 0.5);
-    const weg = [...this.flaeche.map(s => s.o), this.lfo, this.bass && this.bass.o, this.luft];
-    setTimeout(() => {
-      for (const o of weg){ try { o && o.stop(); } catch(_){} }
-      try { this.bus && this.bus.disconnect(); } catch(_){}
-      this.bus = this.hall = this.filter = this.lfo = this.bass = this.luft = null;
-      this.flaeche = null;
-    }, 1600);
+    if (!this.el) return;
+    try { this.el.pause(); } catch(_){}
+    /* Quelle leeren, sonst lädt der Browser im Hintergrund weiter. */
+    try { this.el.removeAttribute("src"); this.el.load(); } catch(_){}
   },
 
   /* Ein- und ausschalten über die Einstellungen. */
   nachziehen(){
-    if (Settings.music > 0){
-      Sound.unlock();
+    if (!MUSIK_AKTIV){ if (this.an) this.stoppen(); return; }
+    if ((Settings.music || 0) > 0){
       if (!this.an) this.starten(); else this.lautstaerke();
     } else if (this.an) this.stoppen();
   }
@@ -2272,7 +2190,7 @@ function step(dt){
     if (jetzt > peak){ addXpLive((jetzt-peak)*0.6); peak = jetzt; }
   }
 
-  // Schweifpunkte sammeln, nur für die Oberfläche, die ihn trägt
+  // Schweifpunkte sammeln, nur für das Design, das ihn trägt
   if (skin.trait === "trail"){
     for (const c of Game.cells){
       if (!c.trail) c.trail = [];
@@ -2611,19 +2529,447 @@ function finish(timeUp){
    ===================================================================== */
 const cam = {x:WORLD/2, y:WORLD/2, z:1};
 
+/* =====================================================================
+   DESIGNS — wie ein Körper gezeichnet wird
+
+   Drei Regeln, die nicht verhandelbar sind:
+
+   1. **Der massive Kreis und der scharfe Rand liegen exakt auf r.** Ein
+      Design darf nie über die echte Reichweite täuschen. Alles Weitere
+      liegt durchscheinend darüber oder ganz außerhalb.
+
+   2. **Eine Lichtquelle für alles, links oben.** Vorher hatte jedes
+      Merkmal seine eigene Richtung — der Verlauf kam von links oben, die
+      Glutstriche lagen kreuz und quer, die Krater waren flache Scheiben
+      ohne Schatten. Genau daran erkennt man Amateurarbeit: Es sieht nicht
+      wie eine Kugel aus, sondern wie ein Kreis mit Aufklebern.
+
+   3. **Jedes Design würfelt sein eigenes Muster — aber immer dasselbe.**
+      Vorher trugen alle 46 dieselben vierzehn Punkte an denselben Stellen
+      und dieselben vier Striche; nur die Farbe wechselte. Deshalb waren
+      Basalt, Regolith, Iron und Copper nicht auseinanderzuhalten. Jetzt
+      bestimmt die Kennung den Wurf, also sieht jedes Design anders aus und
+      sieht in jeder Sitzung wieder genauso aus.
+
+   Dazu Materialarten statt einer Einheitskugel: Fels bekommt Krater mit
+   beleuchtetem Wall, Eis zersprungene Platten, Metall ein Glanzband, Glut
+   ein verzweigtes Spaltennetz, Kristall Facetten, Glas einen harten
+   Lichtpunkt, Gas wandernde Bänder, Perle ein Schillern. Welche Art ein
+   Design hat, steht als `mat` in `SKINS`.
+   ===================================================================== */
+
+/* Richtung, aus der alles beleuchtet wird. Einmal hier, nirgends sonst. */
+const LICHT = Math.atan2(-.46, -.42);
+const LX = Math.cos(LICHT), LY = Math.sin(LICHT);
+
+/* Farbe aufhellen oder abdunkeln. Nimmt „#a1b2c3" und „rgb(1,2,3)" an,
+   weil `shade()` das zweite zurückgibt. */
+function mischen(farbe, f){
+  let r, gr, b;
+  if (farbe[0] === "#"){
+    const n = parseInt(farbe.slice(1),16);
+    r = n>>16&255; gr = n>>8&255; b = n&255;
+  } else {
+    const p = farbe.match(/-?\d+/g);
+    r = +p[0]; gr = +p[1]; b = +p[2];
+  }
+  const z = f > 0 ? 255 : 0, k = Math.abs(f);
+  return `rgb(${r+(z-r)*k|0},${gr+(z-gr)*k|0},${b+(z-b)*k|0})`;
+}
+
+/* Deterministischer Würfel. Gleiche Kennung → gleiches Muster, in jeder
+   Sitzung, auf jedem Gerät, bei jedem Spieler. Ohne das würfelt der Körper
+   bei jedem Bild neu und flackert. */
+function saat(text){
+  let h = 2166136261;
+  for (let i=0;i<text.length;i++){ h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function wuerfel(z){
+  return function(){
+    z = z + 0x6D2B79F5 | 0;
+    let t = Math.imul(z ^ z >>> 15, 1 | z);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+/* Einmal je Design gewürfelt und behalten. Nicht am Farbobjekt gemerkt,
+   sondern hier: Die Rivalenfarben sind ein Proxy, an dem Merken nicht
+   funktioniert — es würde bei jedem Bild neu würfeln. */
+const MERKMALE = new Map();
+function merkmale(pal){
+  const schl = pal.id || pal.rock || "rival";
+  let M = MERKMALE.get(schl);
+  if (M) return M;
+
+  const w = wuerfel(saat(schl));
+  const art = pal.mat || "fels";
+  M = {art, krater:[], spalten:[], platten:[], facetten:[], baender:[], flecken:[]};
+
+  if (art === "fels" || art === "staub"){
+    /* Krater. Wurzel aus dem Zufall, damit sie sich nicht in der Mitte
+       drängen — gleichverteilt auf der Fläche, nicht auf dem Radius. */
+    const n = art === "fels" ? 8 : 5;
+    for (let i=0;i<n;i++)
+      M.krater.push({a: w()*6.2832, d: Math.sqrt(w())*.80,
+                     gr: (art === "fels" ? .09+w()*.15 : .13+w()*.22),
+                     tief: .5 + w()*.5});
+  }
+
+  if (art === "glut" || art === "energie"){
+    /* Verzweigtes Spaltennetz. Der alte Code zog gerade Striche von der
+       Mitte nach außen — das sah aus wie hingeworfene Streichhölzer.
+       Ein Riss läuft in Wahrheit unregelmäßig und gabelt sich. */
+    const wurzeln = 3 + (w()*3|0);
+    for (let i=0;i<wurzeln;i++){
+      let a = w()*6.2832, d = .06 + w()*.10;
+      const weg = [[Math.cos(a)*d, Math.sin(a)*d]];
+      for (let k=0;k<7;k++){
+        a += (w()-.5)*.95; d += .09 + w()*.11;
+        if (d > .98) break;
+        weg.push([Math.cos(a)*d, Math.sin(a)*d]);
+      }
+      if (weg.length > 1) M.spalten.push(weg);
+      if (weg.length > 3 && w() < .75){
+        const ab = weg[2];
+        let b = Math.atan2(ab[1], ab[0]) + (w()-.5)*1.7, e = Math.hypot(ab[0], ab[1]);
+        const ast = [ab];
+        for (let k=0;k<4;k++){
+          b += (w()-.5)*.85; e += .10 + w()*.10;
+          if (e > .98) break;
+          ast.push([Math.cos(b)*e, Math.sin(b)*e]);
+        }
+        if (ast.length > 1) M.spalten.push(ast);
+      }
+    }
+  }
+
+  if (art === "eis"){
+    /* Bruchlinien: Sehnen quer über die Scheibe, nicht Speichen aus der
+       Mitte. So zerfällt die Fläche in Platten wie echtes Packeis. */
+    for (let i=0;i<7;i++){
+      const a = w()*6.2832, versatz = (w()-.5)*1.3;
+      M.platten.push({a, versatz, dicke: .5 + w()*.8});
+    }
+  }
+
+  if (art === "kristall"){
+    /* Facetten als Keile um die Mitte, jede mit eigener Helligkeit.
+       Zusammen ergeben sie einen geschliffenen Stein. */
+    let a = w()*6.2832;
+    while (a < 6.2832 + LICHT){
+      const breite = .5 + w()*.65;
+      M.facetten.push({von:a, bis:a+breite, tiefe:.55 + w()*.45, hell:w()});
+      a += breite;
+    }
+  }
+
+  if (art === "gas" || art === "perle"){
+    /* Bänder in wechselnder Höhe und Dicke, dazu ein Wirbel. */
+    let y = -.86;
+    while (y < .86){
+      const h = .07 + w()*.15;
+      M.baender.push({y: y+h/2, h, kraft: .18 + w()*.35, tempo: .12 + w()*.5});
+      y += h + .02 + w()*.07;
+    }
+    M.flecken.push({a: w()*6.2832, d: .30 + w()*.34, gr: .14 + w()*.12});
+  }
+
+  if (art === "metall"){
+    /* Wenige lange Kratzer quer zum Licht — das ist es, was eine
+       geschliffene Metallfläche ausmacht. */
+    for (let i=0;i<6;i++)
+      M.flecken.push({q: (w()-.5)*1.7, laenge: .5 + w()*.5, hell: .06 + w()*.12});
+  }
+
+  MERKMALE.set(schl, M);
+  return M;
+}
+
+/* --- Die Materialarten ------------------------------------------------
+   Alles hier wird im Kreis beschnitten aufgerufen; keine Funktion muss
+   sich um den Rand kümmern. */
+function flaeche(g, x, y, r, pal, M, zeit){
+  const A = M.art;
+
+  if (A === "fels" || A === "staub"){
+    for (const k of M.krater){
+      const kx = x + Math.cos(k.a)*r*k.d, ky = y + Math.sin(k.a)*r*k.d;
+      const kr = r*k.gr;
+      if (A === "staub"){
+        // Staub: weiche Flecken, kaum Kante
+        const fg = g.createRadialGradient(kx, ky, 0, kx, ky, kr*1.6);
+        fg.addColorStop(0, hexA(pal.dark, .30*k.tief));
+        fg.addColorStop(1, hexA(pal.dark, 0));
+        g.fillStyle = fg;
+        g.beginPath(); g.arc(kx, ky, kr*1.6, 0, 7); g.fill();
+        continue;
+      }
+      // Fels: Becken dunkel, Wall auf der Lichtseite hell — erst das
+      // macht aus einer Scheibe ein Loch.
+      g.beginPath(); g.arc(kx, ky, kr, 0, 7);
+      g.fillStyle = hexA(pal.dark, .42*k.tief); g.fill();
+      g.beginPath();
+      g.arc(kx, ky, kr*.98, LICHT-1.5, LICHT+1.5);
+      g.strokeStyle = hexA(pal.air, .26*k.tief);
+      g.lineWidth = Math.max(.8, kr*.22); g.stroke();
+      g.beginPath();
+      g.arc(kx, ky, kr*.72, LICHT+1.5, LICHT+4.6);
+      g.strokeStyle = hexA(pal.air, .13*k.tief);
+      g.lineWidth = Math.max(.6, kr*.16); g.stroke();
+    }
+    return;
+  }
+
+  if (A === "eis"){
+    g.strokeStyle = hexA(pal.dark, .40);
+    for (const p of M.platten){
+      const nx = Math.cos(p.a), ny = Math.sin(p.a);
+      const mx = x + nx*r*p.versatz, my = y + ny*r*p.versatz;
+      const s = Math.sqrt(Math.max(0, 1 - p.versatz*p.versatz))*r;
+      g.lineWidth = Math.max(.8, r*.012*p.dicke);
+      g.beginPath();
+      g.moveTo(mx - ny*s, my + nx*s);
+      g.lineTo(mx + ny*s, my - nx*s);
+      g.stroke();
+    }
+    // Harter Glanzpunkt: Eis spiegelt, Fels nicht.
+    const gx = x + LX*r*.46, gy = y + LY*r*.46;
+    const gg = g.createRadialGradient(gx, gy, 0, gx, gy, r*.42);
+    gg.addColorStop(0, hexA(pal.hot, .55));
+    gg.addColorStop(1, hexA(pal.hot, 0));
+    g.fillStyle = gg;
+    g.beginPath(); g.arc(gx, gy, r*.42, 0, 7); g.fill();
+    return;
+  }
+
+  if (A === "metall"){
+    /* Glanzband quer zur Lichtrichtung. Ein geschliffenes Metall hat
+       keinen runden Lichtpunkt, sondern einen gezogenen Streifen. */
+    g.save();
+    g.translate(x, y); g.rotate(LICHT + 1.5708);
+    /* Der Kern des Glanzes ist Weiß, nicht die Glutfarbe. Mit `hot` bekam
+       Magnetite einen rosa Balken quer über eine graue Kugel — die Glutfarbe
+       ist für Risse gedacht, nicht für Reflexionen. */
+    const bg = g.createLinearGradient(0, -r, 0, r);
+    bg.addColorStop(0,   hexA(pal.air, 0));
+    bg.addColorStop(.30, hexA(pal.air, .16));
+    bg.addColorStop(.43, "rgba(255,255,255,.34)");
+    bg.addColorStop(.49, "rgba(255,255,255,.52)");
+    bg.addColorStop(.56, hexA(pal.air, .26));
+    bg.addColorStop(.72, hexA(pal.air, .06));
+    bg.addColorStop(1,   hexA(pal.air, 0));
+    g.fillStyle = bg;
+    g.fillRect(-r, -r, r*2, r*2);
+    g.strokeStyle = hexA(pal.air, .16);
+    for (const s of M.flecken){
+      g.lineWidth = Math.max(.6, r*.012);
+      g.globalAlpha = s.hell*3;
+      g.beginPath();
+      g.moveTo(-r*s.laenge, r*s.q);
+      g.lineTo( r*s.laenge, r*s.q + r*.06);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    g.restore();
+    return;
+  }
+
+  if (A === "glut" || A === "energie"){
+    /* Dunkle Kruste, dann das glühende Netz. Zwei Durchgänge: erst breit
+       und schwach (der Schein im Gestein), dann schmal und hell (die
+       Spalte selbst). */
+    g.beginPath(); g.arc(x, y, r, 0, 7);
+    g.fillStyle = hexA(pal.dark, A === "glut" ? .46 : .30); g.fill();
+
+    const puls = .78 + .22*Math.sin(zeit*1.7);
+    for (let durch=0; durch<2; durch++){
+      g.strokeStyle = durch
+        ? hexA(pal.hot, .92*puls)
+        : hexA(pal.hot, .20*puls);
+      g.lineWidth = Math.max(durch ? 1 : 2, r*(durch ? .022 : .085));
+      g.lineCap = "round"; g.lineJoin = "round";
+      for (const weg of M.spalten){
+        g.beginPath();
+        g.moveTo(x + weg[0][0]*r, y + weg[0][1]*r);
+        for (let i=1;i<weg.length;i++) g.lineTo(x + weg[i][0]*r, y + weg[i][1]*r);
+        g.stroke();
+      }
+    }
+    g.lineCap = "butt"; g.lineJoin = "miter";
+
+    if (A === "energie"){
+      const kg = g.createRadialGradient(x, y, 0, x, y, r*.7);
+      kg.addColorStop(0, hexA(pal.hot, .55*puls));
+      kg.addColorStop(1, hexA(pal.hot, 0));
+      g.fillStyle = kg;
+      g.beginPath(); g.arc(x, y, r*.7, 0, 7); g.fill();
+    }
+    return;
+  }
+
+  if (A === "kristall"){
+    /* Facetten: Keile, deren Helligkeit davon abhängt, wie sehr sie zum
+       Licht zeigen. Das ergibt einen Schliff statt einer Kugel. */
+    /* Facetten müssen hart gegeneinander stehen, sonst sieht man sie nicht
+       und der Stein bleibt eine Kugel. Die Kante zwischen zwei Flächen ist
+       das, was einen Schliff ausmacht — sie ist hier absichtlich sichtbar. */
+    for (const f of M.facetten){
+      const mitte = (f.von + f.bis)/2;
+      const zumLicht = Math.cos(mitte - LICHT);
+      g.beginPath();
+      g.moveTo(x, y);
+      g.arc(x, y, r*1.02, f.von, f.bis);
+      g.closePath();
+      g.fillStyle = zumLicht > 0
+        ? `rgba(255,255,255,${(.05 + zumLicht*.30 + f.hell*.10).toFixed(3)})`
+        : hexA(pal.dark, .16 + (-zumLicht)*.34 + f.hell*.10);
+      g.fill();
+      g.strokeStyle = hexA(pal.air, .22);
+      g.lineWidth = Math.max(.7, r*.012); g.stroke();
+    }
+    /* Innerer Schliff: eine zweite, versetzte Lage kleiner Facetten. Erst
+       damit wirkt es geschliffen statt facettiert angemalt. */
+    for (const f of M.facetten){
+      const mitte = (f.von + f.bis)/2 + .4;
+      const zumLicht = Math.cos(mitte - LICHT);
+      g.beginPath();
+      g.moveTo(x, y);
+      g.arc(x, y, r*f.tiefe*.62, f.von+.4, f.bis+.4);
+      g.closePath();
+      g.fillStyle = zumLicht > 0
+        ? `rgba(255,255,255,${(.04 + zumLicht*.16).toFixed(3)})`
+        : hexA(pal.dark, .10);
+      g.fill();
+    }
+    // Kern: der Stein hat ein Inneres, das Licht führt
+    const kg = g.createRadialGradient(x, y, 0, x, y, r*.50);
+    kg.addColorStop(0, hexA(pal.hot, .42));
+    kg.addColorStop(1, hexA(pal.hot, 0));
+    g.fillStyle = kg;
+    g.beginPath(); g.arc(x, y, r*.50, 0, 7); g.fill();
+    return;
+  }
+
+  if (A === "glas"){
+    /* Fast schwarz, dafür ein harter Lichtpunkt und ein Lichtsaum auf
+       der Schattenseite — so liest man poliertes Glas. */
+    /* Nur leicht abdunkeln. Mit .50 fiel Obsidian zu einem schwarzen Loch
+       zusammen, in dem nichts mehr zu erkennen war — poliertes Glas ist
+       dunkel, aber es spiegelt, und genau das muss man sehen. */
+    g.beginPath(); g.arc(x, y, r, 0, 7);
+    g.fillStyle = hexA(pal.dark, .26); g.fill();
+    const gx = x + LX*r*.44, gy = y + LY*r*.44;
+    g.save();
+    g.translate(gx, gy); g.rotate(LICHT);
+    g.scale(1, .46);
+    const gg = g.createRadialGradient(0, 0, 0, 0, 0, r*.34);
+    gg.addColorStop(0,   "rgba(255,255,255,1)");
+    gg.addColorStop(.18, "rgba(255,255,255,.72)");
+    gg.addColorStop(.42, hexA(pal.hot, .40));
+    gg.addColorStop(1,   hexA(pal.hot, 0));
+    g.fillStyle = gg;
+    g.beginPath(); g.arc(0, 0, r*.34, 0, 7); g.fill();
+    g.restore();
+    // Zweites, schwächeres Spiegelbild — Glas hat mehr als einen Glanzpunkt
+    const sx = x - LX*r*.30, sy = y - LY*r*.52;
+    const sg = g.createRadialGradient(sx, sy, 0, sx, sy, r*.40);
+    sg.addColorStop(0, hexA(pal.air, .26));
+    sg.addColorStop(1, hexA(pal.air, 0));
+    g.fillStyle = sg;
+    g.beginPath(); g.arc(sx, sy, r*.40, 0, 7); g.fill();
+    // Lichtsaum auf der Schattenseite: das Kennzeichen einer glatten Kugel
+    g.beginPath();
+    g.arc(x, y, r*.93, LICHT+1.80, LICHT+4.50);
+    g.strokeStyle = hexA(pal.air, .62);
+    g.lineWidth = Math.max(1, r*.062); g.stroke();
+    return;
+  }
+
+  if (A === "schlund"){
+    /* Ein Loch, das trotzdem Eindruck macht.
+
+       Das Problem, das diese Art löst: Die dunklen Glasdesigns auf Level 90
+       und 95 standen zwischen Plasma, Quasar und Antimatter wie zwei blasse
+       Flecken — obwohl sie weiter oben auf der Leiter stehen. Eine Leiter,
+       die nach oben hin schwächer aussieht, taugt nichts.
+
+       Dunkel heißt aber nicht blass. Ein Schwarzes Loch wirkt durch den
+       **Gegensatz**: pechschwarzer Kern, und genau am Rand der scharfe
+       Lichtring aus dem Licht, das dort gerade noch entlangläuft. Die
+       Wucht steuert `wucht` am Design — so ist Level 95 stärker als 90,
+       ohne dass beide gleich aussehen. */
+    const W = pal.wucht || 1;
+
+    g.beginPath(); g.arc(x, y, r, 0, 7);
+    g.fillStyle = "rgba(2,3,8,.90)"; g.fill();
+
+    // Lichtring genau auf dem Rand — er liegt auf r, täuscht also nichts vor
+    const rg = g.createRadialGradient(x, y, r*.55, x, y, r);
+    rg.addColorStop(0,   hexA(pal.hot, 0));
+    rg.addColorStop(.72, hexA(pal.hot, .06*W));
+    rg.addColorStop(.90, hexA(pal.hot, .46*W));
+    rg.addColorStop(.98, hexA(pal.hot, .92*W));
+    rg.addColorStop(1,   hexA(pal.air, .70*W));
+    g.fillStyle = rg;
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+
+    /* Lichtbeugung: kurze Bögen in wechselnder Höhe, die langsam wandern.
+       Echte Verzerrung wäre zu teuer, der Eindruck genügt. */
+    const n = Math.round(6 + 5*W);
+    for (let i=0;i<n;i++){
+      const a = i*(6.2832/n) + zeit*.10;
+      const rr = r*(.80 + (i%3)*.055);
+      g.beginPath();
+      g.arc(x, y, rr, a, a + .30 + (i%4)*.05);
+      g.strokeStyle = hexA(pal.hot, (.10 + (i%3)*.10)*W);
+      g.lineWidth = Math.max(1, r*.028); g.stroke();
+    }
+    return;
+  }
+
+  if (A === "gas" || A === "perle"){
+    /* Bänder, die langsam wandern. Gekrümmt gezeichnet, nicht als gerade
+       Ellipsen — eine Kugel hat keine geraden Streifen. */
+    for (const b of M.baender){
+      const yy = y + b.y*r;
+      const versatz = Math.sin(zeit*b.tempo + b.y*4)*r*.05;
+      const hoch = Math.max(1, b.h*r);
+      const hue = A === "perle"
+        ? `hsla(${(zeit*22 + b.y*150 + 300) % 360} 70% 72% / ${b.kraft*.75})`
+        : hexA(b.y < 0 ? pal.air : pal.dark, b.kraft);
+      g.fillStyle = hue;
+      g.beginPath();
+      g.ellipse(x + versatz, yy, r*1.06, hoch, 0, 0, 7);
+      g.fill();
+    }
+    for (const f of M.flecken){
+      const fx = x + Math.cos(f.a)*r*f.d, fy = y + Math.sin(f.a)*r*f.d*.6;
+      const fg = g.createRadialGradient(fx, fy, 0, fx, fy, r*f.gr*1.8);
+      fg.addColorStop(0, hexA(pal.hot, .40));
+      fg.addColorStop(1, hexA(pal.hot, 0));
+      g.fillStyle = fg;
+      g.save(); g.translate(fx, fy); g.scale(1.5, 1);
+      g.beginPath(); g.arc(0, 0, r*f.gr*1.8, 0, 7); g.fill();
+      g.restore();
+    }
+    return;
+  }
+}
+
 function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   const st = stageOf(m);
   const T = tier || pal.tier || 1;
   const F = trait || pal.trait || "plain";
+  const M = merkmale(pal);
   const rock = shade(pal.rock, tint||0), dark = shade(pal.dark, tint||0);
   const fancy = !Settings.lowPower;
+  const fein  = fancy && r > 11;      // Feinheiten erst, wenn man sie sähe
 
-  /* Rangstufe sichtbar machen. Größe sagt nur, wer gerade satt ist — nicht,
-     wer etwas kann. Ab Stufe IV glüht der Körper nach außen, Stufe V pulsiert.
-     Der massive Kreis und der scharfe Rand bleiben exakt auf r, damit die
-     Größe ablesbar bleibt und niemand über seine echte Reichweite täuscht. */
-  /* Ab Stufe III ein dezentes Glühen, ab IV kräftiger, ab V pulsierend.
-     Vorher begann der Effekt erst bei IV und die halbe Leiter sah gleich aus. */
+  /* ---- 1. Außenraum: Rang, Lufthülle, Ringe --------------------------
+     Alles außerhalb von r. Der Rang muss sichtbar sein: Größe sagt nur,
+     wer gerade satt ist — nicht, wer etwas kann. */
   if (T >= 3 && fancy && r > 8){
     const puls = T >= 6 ? .30 + .14*Math.sin(Game.t*2.2 + x*.01)
                : T >= 5 ? .26 + .12*Math.sin(Game.t*3 + x*.01)
@@ -2653,63 +2999,78 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.restore();
   }
 
+  /* ---- 2. Die Grundkugel ---------------------------------------------
+     Der Verlauf sitzt auf der Lichtseite, nicht in der Mitte. */
   g.beginPath(); g.arc(x,y,r,0,7);
   if (Settings.lowPower){
     g.fillStyle = rock;
   } else {
-    const grad = g.createRadialGradient(x-r*.35, y-r*.4, r*.15, x, y, r);
-    grad.addColorStop(0, rock); grad.addColorStop(1, dark);
+    const grad = g.createRadialGradient(x+LX*r*.50, y+LY*r*.50, r*.04, x, y, r*1.06);
+    grad.addColorStop(0,   mischen(rock, .26));
+    grad.addColorStop(.48, rock);
+    grad.addColorStop(1,   dark);
     g.fillStyle = grad;
   }
   g.fill();
 
-  /* Oberflächenmerkmal. Innerhalb des Kreises beschnitten, damit nichts
-     über den Rand läuft und die Silhouette rund bleibt. */
-  if (r > 10){
+  /* ---- 3. Die Materialoberfläche ------------------------------------- */
+  if (fein){
     g.save();
     g.beginPath(); g.arc(x,y,r,0,7); g.clip();
-
-    if (F === "speckle"){
-      for (let i=0;i<14;i++){
-        const a = i*2.399, d = r*(.15 + ((i*11)%9)/11);
-        g.beginPath();
-        g.arc(x+Math.cos(a)*d, y+Math.sin(a)*d, Math.max(1, r*.035), 0, 7);
-        g.fillStyle = hexA(pal.air,.22); g.fill();
-      }
-    } else if (F === "bands"){
-      for (let i=-1;i<=1;i++){
-        g.beginPath();
-        g.ellipse(x, y + i*r*.44, r, r*.15, 0, 0, 7);
-        g.fillStyle = hexA(pal.dark,.42); g.fill();
-      }
-    } else if (F === "cracks"){
-      g.strokeStyle = hexA(pal.hot,.7);
-      g.lineWidth = Math.max(1, r*.045);
-      for (let i=0;i<7;i++){
-        const a = i*.9 + 1;
-        g.beginPath(); g.moveTo(x,y);
-        g.lineTo(x+Math.cos(a)*r*.55, y+Math.sin(a)*r*.55);
-        g.lineTo(x+Math.cos(a+.4)*r, y+Math.sin(a+.4)*r);
-        g.stroke();
-      }
-    } else if (F === "spikes" || F === "shards"){
-      g.beginPath();
-      for (let i=0;i<18;i++){
-        const a = i/18*6.2832, rr = r*(i%2 ? .74 : 1.02);
-        i ? g.lineTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr)
-          : g.moveTo(x+Math.cos(a)*rr, y+Math.sin(a)*rr);
-      }
-      g.closePath();
-      g.fillStyle = hexA(pal.hot,.26); g.fill();
-    }
+    flaeche(g, x, y, r, pal, M, Game.t);
     g.restore();
   }
 
-  /* ---- Stufe VI -------------------------------------------------------
-     Alles hier liegt außerhalb oder durchscheinend über dem Körper. Der
-     massive Kreis und der Rand bleiben unangetastet. */
+  /* ---- 4. Terminator: die abgewandte Seite ---------------------------
+     Der eine Handgriff, der am meisten bringt. Ohne ihn bleibt jeder
+     Körper eine flache Scheibe, egal wie fein die Oberfläche ist. */
+  if (fancy && r > 9){
+    /* Wie dunkel die Schattenseite wird, hängt vom Material ab. Glas und
+       Kristall spiegeln ihre Umgebung und fallen nie ins Schwarze; Staub
+       schluckt Licht und wird am dunkelsten. Mit einem festen Wert für
+       alle fielen Obsidian, Onyx und Void zu Löchern im Bild zusammen. */
+    const kraft = M.art === "schlund"                        ? .14
+                : M.art === "glas" || M.art === "kristall" ? .34
+                : M.art === "energie" || M.art === "glut"  ? .46
+                : M.art === "metall"                        ? .58
+                : .66;
+    g.save();
+    g.beginPath(); g.arc(x,y,r,0,7); g.clip();
+    const tx = x + LX*r*.60, ty = y + LY*r*.60;
+    const tg = g.createRadialGradient(tx, ty, r*.20, tx, ty, r*1.95);
+    tg.addColorStop(0,   "rgba(0,0,0,0)");
+    tg.addColorStop(.42, `rgba(0,0,0,${(kraft*.09).toFixed(3)})`);
+    tg.addColorStop(.74, `rgba(0,0,0,${(kraft*.45).toFixed(3)})`);
+    tg.addColorStop(1,   `rgba(0,0,0,${kraft.toFixed(3)})`);
+    g.fillStyle = tg;
+    g.fillRect(x-r, y-r, r*2, r*2);
+    g.restore();
+  }
 
-  // Halo: zweiter, gegenläufiger Ring weit außen, dazu wanderndes Licht
+  /* ---- 5. Randlicht auf der Lichtseite -------------------------------- */
+  if (fancy && r > 9){
+    g.beginPath();
+    g.arc(x, y, r*.96, LICHT-1.30, LICHT+1.30);
+    g.strokeStyle = hexA(pal.air, .30 + Math.min(T,5)*.028);
+    g.lineWidth = Math.max(1, r*.06);
+    g.stroke();
+  }
+
+  /* ---- 6. Lufthülle als Saum auf der Schattenseite --------------------
+     Ab Protoplanet hält eine Atmosphäre — die sieht man am Rand, wo das
+     Licht sie streifend trifft, nicht als Kreis um alles. */
+  if (st >= 3 && fancy && r > 9){
+    g.beginPath();
+    g.arc(x, y, r*.99, LICHT+1.05, LICHT+5.23);
+    g.strokeStyle = hexA(pal.air, .34);
+    g.lineWidth = Math.max(1, r*.05);
+    g.stroke();
+  }
+
+  /* ---- 7. Stufe VI: was kein anderes Design hat -----------------------
+     Alles außerhalb oder durchscheinend darüber. Der Kreis bleibt. */
+
+  // Halo: gegenläufiger Ring weit außen, dazu ein wanderndes Licht
   if (F === "halo" && fancy && r > 10){
     g.save(); g.translate(x, y); g.rotate(-Game.t*.22);
     g.beginPath();
@@ -2723,22 +3084,10 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
       g.fillStyle = hexA(pal.hot, .75); g.fill();
     }
     g.restore();
-    // wanderndes Band auf der Oberfläche
-    g.save();
-    g.beginPath(); g.arc(x, y, r, 0, 7); g.clip();
-    const bx = x + Math.cos(Game.t*.9)*r*.55;
-    const by = y + Math.sin(Game.t*.9)*r*.55;
-    const bg = g.createRadialGradient(bx, by, 0, bx, by, r*.8);
-    bg.addColorStop(0, hexA(pal.hot, .45));
-    bg.addColorStop(1, hexA(pal.hot, 0));
-    g.fillStyle = bg;
-    g.beginPath(); g.arc(bx, by, r*.8, 0, 7); g.fill();
-    g.restore();
   }
 
   /* Singularity: Lichtbeugung am Rand. Echte Verzerrung wäre zu teuer —
-     stattdessen tangentiale Bögen in wechselnder Höhe, die den Eindruck
-     eines Einsteinrings erzeugen, plus ein dunkler Kern. */
+     tangentiale Bögen in wechselnder Höhe erzeugen den Einsteinring. */
   if (F === "warp" && fancy && r > 10){
     for (let i=0;i<14;i++){
       const a = i*.4488 + Game.t*.12;
@@ -2749,29 +3098,25 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
       g.strokeStyle = hexA(pal.hot, .10 + (i%3)*.10);
       g.lineWidth = Math.max(1, r*.035); g.stroke();
     }
-    g.beginPath(); g.arc(x, y, r*.55, 0, 7);
-    g.fillStyle = "rgba(3,4,9,.72)"; g.fill();
+    if (M.art !== "schlund"){
+      g.beginPath(); g.arc(x, y, r*.55, 0, 7);
+      g.fillStyle = "rgba(3,4,9,.72)"; g.fill();
+    }
   }
 
-  // Prism: die Glutrisse wandern durch das Farbspektrum
-  if (F === "prism" && r > 10){
+  // Prism: ein Lichtsaum, der durch das Spektrum wandert
+  if (F === "prism" && fancy && r > 10){
+    const hue = (Game.t*40) % 360;
     g.save();
     g.beginPath(); g.arc(x, y, r, 0, 7); g.clip();
-    for (let i=0;i<6;i++){
-      const hue = (Game.t*40 + i*60) % 360;
-      const a = i*1.047 + .4;
-      g.strokeStyle = `hsla(${hue} 95% 68% / .85)`;
-      g.lineWidth = Math.max(2, r*.055);
-      g.beginPath();
-      g.moveTo(x + Math.cos(a)*r*.10, y + Math.sin(a)*r*.10);
-      g.lineTo(x + Math.cos(a+.30)*r*.62, y + Math.sin(a+.30)*r*.62);
-      g.lineTo(x + Math.cos(a+.62)*r, y + Math.sin(a+.62)*r);
-      g.stroke();
-    }
+    const pg = g.createLinearGradient(x-r, y-r, x+r, y+r);
+    for (let i=0;i<=5;i++)
+      pg.addColorStop(i/5, `hsla(${(hue + i*62) % 360} 92% 66% / .30)`);
+    g.fillStyle = pg;
+    g.fillRect(x-r, y-r, r*2, r*2);
     g.restore();
-    const hue = (Game.t*40) % 360;
-    g.beginPath(); g.arc(x, y, r*1.06, 0, 7);
-    g.strokeStyle = `hsla(${hue} 95% 70% / .35)`;
+    g.beginPath(); g.arc(x, y, r*1.05, 0, 7);
+    g.strokeStyle = `hsla(${hue} 95% 70% / .38)`;
     g.lineWidth = Math.max(1.5, r*.04); g.stroke();
   }
 
@@ -2787,8 +3132,7 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
       g.stroke();
     }
   }
-  // Splittergürtel der höchsten Stufe: zwei gegenläufige Bahnen, die äußere
-  // schwächer — das erzeugt Tiefe, ohne die Silhouette zu verwischen.
+  // Splittergürtel: zwei gegenläufige Bahnen, die äußere schwächer
   if (F === "shards" && fancy && r > 10){
     for (let i=0;i<9;i++){
       const a = Game.t*.5 + i*.698, d = r*1.3;
@@ -2803,27 +3147,6 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
       g.fillStyle = hexA(pal.air,.45); g.fill();
     }
   }
-
-  if (st >= 1 && r > 12){
-    const n = Math.min(9, 3+st*2);
-    for (let i=0;i<n;i++){
-      const a = i*2.399 + ((m|0)%6);
-      const rr = r*(.2 + ((i*7%5)/12));
-      g.beginPath(); g.arc(x+Math.cos(a)*r*.5, y+Math.sin(a)*r*.5, rr*.32, 0, 7);
-      g.fillStyle = hexA(pal.dark,.55); g.fill();
-    }
-  }
-  if (st >= 2 && r > 14 && F !== "cracks"){
-    g.strokeStyle = hexA(pal.hot,.55);
-    g.lineWidth = Math.max(1, r*.05);
-    for (let i=0;i<4;i++){
-      const a = i*1.9 + m*.01;
-      g.beginPath();
-      g.moveTo(x+Math.cos(a)*r*.15, y+Math.sin(a)*r*.15);
-      g.lineTo(x+Math.cos(a+.5)*r*.72, y+Math.sin(a+.5)*r*.72);
-      g.stroke();
-    }
-  }
   if (st >= 4){
     for (let i=0;i<3;i++){
       const a = Game.t*(.35+i*.14) + i*2.1, d = r*(1.75+i*.22);
@@ -2833,7 +3156,7 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     }
   }
 
-  // Rand: heller und kräftiger mit dem Rang
+  /* ---- 8. Rand: heller und kräftiger mit dem Rang --------------------- */
   g.beginPath(); g.arc(x,y,r,0,7);
   g.strokeStyle = mine ? hexA(pal.air,.55) : hexA(pal.air, .10 + T*.085);
   g.lineWidth = Math.max(1, r*(.035 + T*.008)); g.stroke();
@@ -3569,6 +3892,16 @@ function wacheFps(dt){
 let last = performance.now();
 function loop(t){
   const dt = Math.min(.05, (t-last)/1000); last = t;
+  /* Vor der ersten Runde und zwischen zwei Runden zeichnet der Menühimmel
+     (Schritt 88). Ohne ihn lag hinter Anmeldung und Konsole eine schwarze
+     Fläche — das war der Grund, warum beide wie eine Seite aussahen und
+     nicht wie ein Spiel. `MenueHimmel` steht am Dateiende und ist beim
+     ersten Bild längst angelegt; die Prüfung fängt nur den Fall ab, dass
+     das Laden vorher abbricht. */
+  if (typeof MenueHimmel !== "undefined" && MenueHimmel.vielleichtZeichnen(t)){
+    requestAnimationFrame(loop);
+    return;
+  }
   if (Game.running && !Integrity.locked && !portrait && !paused){ step(dt); wacheFps(dt); }
   draw();
 }
@@ -3577,7 +3910,7 @@ requestAnimationFrame(loop);
 /* =====================================================================
    6) SCREENS
    ===================================================================== */
-/* Seit Schritt 79 sind „Oberflächen" und „Errungenschaften" Reiter im
+/* Seit Schritt 79 sind „Designs" und „Errungenschaften" Reiter im
    Startbildschirm und keine eigenen Bildschirme mehr. */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
                "friendsVeil","setVeil","rankVeil","pwVeil"];
@@ -3641,8 +3974,12 @@ function buildSettings(){
   box.innerHTML = "";
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
+    if (row.key === "music" && !MUSIK_AKTIV) continue;
     const wrap = document.createElement("div");
     wrap.className = "opt";
+    /* Damit ein Pruefstand nach einer Zeile fragen kann, ohne sie an ihrer
+       uebersetzten Beschriftung zu suchen — die aendert sich mit der Sprache. */
+    wrap.dataset.key = row.key;
     const text = document.createElement("div");
     text.innerHTML = `<b>${t(row.label)}</b>` +
       (row.hint ? `<small>${t(row.hint)}</small>` : "");
@@ -3768,7 +4105,7 @@ function heldMalen(){
 
 /* „Nächste Errungenschaften": die drei, die am nächsten dran sind.
    Erfunden ist daran nichts — die Schwellen stehen in `ERFOLG_TEXT`, der
-   Stand in `Profile.rec`, im Level und in der Zahl der Oberflächen. */
+   Stand in `Profile.rec`, im Level und in der Zahl der Designs. */
 function erfolgStand(id){
   const R = Profile.rec, art = ERFOLG_TEXT[id][0], ziel = ERFOLG_TEXT[id][1];
   const ist = art === "e_masse"     ? (R.mass || 0)
@@ -3906,7 +4243,7 @@ function nextUnlock(){
   return bits.length ? t("nextup") + " " + bits.join(" · ") : t("allunlocked");
 }
 
-/* Nur was freigespielt ist. Gesperrte Oberflächen gehören in den Shop,
+/* Nur was freigespielt ist. Gesperrte Designs gehören in den Shop,
    nicht in die Schnellwahl — sonst ist die Leiste bei 42 Einträgen unbrauchbar. */
 /* --- Modi --------------------------------------------------------- */
 /* Wie viele Menschen gerade spielen, unter dem Startknopf.
@@ -3917,14 +4254,20 @@ function nextUnlock(){
    `/health` trennt sie, und eine Zahl, die Computergegner mitzählt, wäre
    genau die Art Angabe, die das Spiel anderen vorwirft. */
 function onlineZeigen(){
-  const el = $("onlineText");
-  if (!el) return;
   const n = Konto.online;
-  if (n === null || n === undefined){ el.hidden = true; el.textContent = ""; return; }
-  el.hidden = false;
-  /* Bei null niemanden zu nennen wäre evasiv, „0 Spieler" abschreckend.
-     „Sei der Erste" sagt dasselbe und stimmt. */
-  el.textContent = n === 0 ? t("online0") : n === 1 ? t("online1") : t("onlinen", n);
+  /* Dieselbe Zahl an zwei Stellen: unter dem Startknopf und auf dem
+     Anmeldebildschirm. Sie ist dort das einzige Zeichen, dass hinter dieser
+     Seite gerade jemand spielt — und genau das entscheidet, ob ein Besucher
+     es überhaupt versucht. */
+  for (const id of ["onlineText", "anmOnline"]){
+    const el = $(id);
+    if (!el) continue;
+    if (n === null || n === undefined){ el.hidden = true; el.textContent = ""; continue; }
+    el.hidden = false;
+    /* Bei null niemanden zu nennen wäre evasiv, „0 Spieler" abschreckend.
+       „Sei der Erste" sagt dasselbe und stimmt. */
+    el.textContent = n === 0 ? t("online0") : n === 1 ? t("online1") : t("onlinen", n);
+  }
 }
 
 /* Regelmäßig nachfragen, aber nur solange der Startbildschirm zu sehen ist —
@@ -4298,7 +4641,7 @@ const KAUF_WARTEN_MS = 15 * 60 * 1000;
 
 const Kauf = {
   preise: null,        // {kauf, skins:{id: cent}, grenze}
-  gewaehlt: null,      // Oberfläche in der Kaufleiste
+  gewaehlt: null,      // Design in der Kaufleiste
   wartet: null,        // {bestellung, skin, bis}
   wecker: 0,
   laeuft: false,
@@ -4471,7 +4814,19 @@ $("kaufGeld").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitGeld(K
     box.innerHTML = "";
     for (const code of Object.keys(LANGNAMES)){
       const b = document.createElement("button");
-      b.type = "button"; b.textContent = LANGNAMES[code];
+      b.type = "button";
+      /* Beide Formen stehen im Knopf: der volle Name und das Kürzel. Welche
+         zu sehen ist, entscheidet die Bildschirmhöhe — auf einem Telefon im
+         Querformat kosteten sieben ausgeschriebene Sprachnamen eine ganze
+         Zeile Höhe, und die fehlte unten beim Knopf „Als Gast spielen".
+         Ausgeblendet wird nur die Anzeige; vorgelesen wird immer der volle
+         Name (`aria-label`). */
+      const voll = document.createElement("span");
+      voll.className = "voll"; voll.textContent = LANGNAMES[code];
+      const kurz = document.createElement("span");
+      kurz.className = "kurz"; kurz.textContent = code.toUpperCase();
+      b.append(voll, kurz);
+      b.setAttribute("aria-label", LANGNAMES[code]);
       b.setAttribute("aria-pressed", String(code === lang));
       b.addEventListener("click", () => { lang = code; applyLang(); draw(); });
       box.appendChild(b);
@@ -4561,12 +4916,45 @@ function nachAnmeldung(){
   toast(t("k_hello", Konto.profil ? Konto.profil.name : ""));
 }
 
-/* Google und Facebook folgen, sobald die Anwendungen dort eingetragen sind.
-   Bis dahin bleiben die Knöpfe abgeschaltet und sagen auch, warum — ein
-   Knopf, der nichts tut, ist schlimmer als keiner. */
-for (const id of ["googleBtn", "facebookBtn"]){
-  $(id).disabled = true;
-  $(id).addEventListener("click", () => kontoMeldung(t("k_soon")));
+/* Anmeldung über Google und Facebook (Schritt 88).
+
+   Kein fremdes Skript: Der Knopf schickt den Browser an **unseren** Server,
+   der leitet zum Anbieter weiter und nimmt den Rückweg entgegen. Vor dem
+   Klick geht damit an Google und Meta gar nichts — auch keine IP-Adresse.
+   Der ganze Ablauf steht in `oauth.js` auf dem Server.
+
+   Welche Knöpfe überhaupt erscheinen, sagt `/health`. Ist bei einem Anbieter
+   nichts eingerichtet, bleibt sein Knopf weg statt abgeschaltet dazustehen. */
+const FREMD_KNOPF = { google: "googleBtn", facebook: "facebookBtn" };
+
+function fremdKnoepfeZeigen(){
+  const liste = Array.isArray(Konto.oauth) ? Konto.oauth : [];
+  let eins = false;
+  for (const a in FREMD_KNOPF){
+    const el = $(FREMD_KNOPF[a]);
+    if (!el) continue;
+    const an = liste.includes(a);
+    el.hidden = !an;
+    if (an) eins = true;
+  }
+  const streifen = $("anmFremd");
+  if (streifen) streifen.hidden = !eins;
+}
+
+function fremdAnmelden(anbieter){
+  /* Die eigene Adresse geht als Ziel mit — der Server prüft sie gegen seine
+     Herkunftsliste und leitet nur dorthin zurück. Anker und Abfrage bleiben
+     weg, sonst käme eine halbe Adresse zurück. */
+  const ziel = location.origin + location.pathname;
+  const u = kontoBasis() + "/konto/oauth/" + anbieter +
+            "?ziel=" + encodeURIComponent(ziel) + "&sprache=" + encodeURIComponent(lang);
+  kontoMeldung(t("k_wait"));
+  location.href = u;
+}
+
+for (const a in FREMD_KNOPF){
+  const el = $(FREMD_KNOPF[a]);
+  if (el) el.addEventListener("click", () => fremdAnmelden(a));
 }
 $("endShop").addEventListener("click", ladenOeffnen);
 $("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); reiter("start"); });
@@ -4845,6 +5233,9 @@ const Konto = {
      Ohne Versand wird „Passwort vergessen" nicht angeboten — ein Knopf, der
      zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. */
   versand:false,
+  /* Welche Fremdanmeldungen der Server anbietet (aus `/health`). Leer heißt:
+     kein Knopf für Google oder Facebook. */
+  oauth:[],
   laeuft:false,
 
   merken(token){
@@ -4887,7 +5278,7 @@ const Konto = {
   },
 
   /* Übernimmt, was der Server geschickt hat, in die Anzeige. Der Besitz an
-     Oberflächen kommt ebenfalls von dort: Was nicht in der Liste steht, ist
+     Designs kommt ebenfalls von dort: Was nicht in der Liste steht, ist
      nicht freigeschaltet — auch wenn der Browser etwas anderes meint. */
   uebernehmen(antwort){
     if (!antwort || !antwort.profil) return;
@@ -4902,7 +5293,7 @@ const Konto = {
     Profile.best  = p.best;
     Profile.rec   = Object.assign({mass:0, kills:0, time:0, royale:0, clan:0, runs:0}, p.rec);
     /* Alles bis zum erreichten Level plus alles Gekaufte. Der Server trägt
-       Level-Oberflächen beim Aufstieg zwar selbst ein, aber die Ableitung aus
+       Level-Designs beim Aufstieg zwar selbst ein, aber die Ableitung aus
        dem Level ist die verlässlichere: Sie stimmt auch dann, wenn ein
        Aufstieg vor dieser Fassung passiert ist. */
     Profile.owned = new Set([
@@ -4967,12 +5358,16 @@ const Konto = {
        getrennt. Sie auf dem Startbildschirm zu zeigen ist das einzige
        Zeichen dort, dass gerade jemand spielt. */
     this.online = a.status === 200 ? Math.max(0, Number(a.spieler) || 0) : null;
+    /* Welche Fremdanmeldungen der Server anbietet. Ist keine eingerichtet,
+       bleibt der ganze Streifen weg. */
+    this.oauth = Array.isArray(a.oauth) ? a.oauth : [];
+    fremdKnoepfeZeigen();
     onlineZeigen();
     if (a.status === 200) bestenlisteZeigen().catch(() => {});
     return a.status === 200;
   },
 
-  /* Was der Spieler selbst ändern darf: Name, Land, Oberfläche. Ohne diesen
+  /* Was der Spieler selbst ändern darf: Name, Land, Design. Ohne diesen
      Aufruf wäre die Wahl nur eine Anzeige — nach dem Neuladen käme wieder,
      was auf dem Server steht. */
   async einstellen(felder){
@@ -4982,7 +5377,7 @@ const Konto = {
     return { fehler: a.fehler || "netz" };
   },
 
-  /* Oberfläche kaufen. Den Preis kennt der Server; hier geht nur mit, welche
+  /* Design kaufen. Den Preis kennt der Server; hier geht nur mit, welche
      gemeint ist. Sonst könnte der Client seinen eigenen Preis nennen. */
   async kaufen(skinId){
     const a = await this.ruf("/konto/kaufen", { skin: skinId });
@@ -5135,7 +5530,7 @@ const Net = {
     catch(e){ this.lage = "fehler"; this.grund = String(e && e.message || e); return; }
     this.socket.onopen = () => {
       /* Ist ein Sitzungstoken da, geht es mit. Der Server nimmt dann Name und
-         Oberfläche aus dem Profil statt aus dieser Nachricht — und nur dann
+         Design aus dem Profil statt aus dieser Nachricht — und nur dann
          wird die Runde einem Konto gutgeschrieben. */
       try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin,
                                              bonus: info.bonus || 1,
@@ -5629,9 +6024,34 @@ async function markeAusAdresse(){
 
   const p = new URLSearchParams(anker);
   const neu = p.get("pw"), ok = p.get("ok");
-  if (!neu && !ok) return false;
+  /* Rückweg von Google oder Facebook: Das fertige Sitzungstoken steht im
+     Anker, nie in der Abfragezeichenfolge — ein Anker wird vom Browser nicht
+     mitgeschickt und steht deshalb in keinem Serverprotokoll. */
+  const tok = p.get("tok"), fremdFehler = p.get("oauth");
+  if (!neu && !ok && !tok && !fremdFehler) return false;
 
   try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+
+  if (tok){
+    Konto.merken(tok);
+    if (await Konto.wiederaufnehmen()){
+      Kauf.fortsetzen();
+      nachAnmeldung();
+      return true;
+    }
+    Konto.merken(null);
+    kontoMeldung(t("k_fremd_fehler"), "warn");
+    return true;
+  }
+  if (fremdFehler){
+    /* „abgebrochen" heißt, der Spieler hat beim Anbieter selbst abgebrochen.
+       Das ist kein Fehler und braucht keine rote Meldung — aber eine, die
+       noch von einem vorigen Versuch steht, muss weg. Sonst steht über einem
+       leeren Formular eine Warnung, die zu nichts mehr gehört. */
+    if (fremdFehler === "abgebrochen") kontoMeldung("");
+    else kontoMeldung(t("k_fremd_fehler"), "warn");
+    return true;
+  }
 
   if (neu){ pwZeigen(neu); return true; }
 
@@ -5679,7 +6099,177 @@ window.addEventListener("hashchange", () => { markeAusAdresse(); });
   /* Kein Server: Das Formular verschwindet, „Ohne Konto spielen" bleibt und
      wird zum Hauptknopf. Erklärt wird der Grund einmal, statt ihn bei jedem
      Anmeldeversuch neu zu melden. */
-  for (const id of ["acctForm", "acctSwap", "acctForgot"]) $(id).hidden = true;
+  for (const id of ["acctForm", "acctSwap", "acctForgot", "anmFremd"])
+    { const el = $(id); if (el) el.hidden = true; }
   $("guestBtn").classList.remove("quiet");
   kontoMeldung(t("k_offline"));
 })();
+
+/* =====================================================================
+   Sternenhimmel hinter den Menüs (Schritt 88)
+
+   Vor dem ersten Start lief die Zeichenschleife gar nicht — die Fläche
+   hinter Anmeldung und Konsole war deshalb schwarz, und beide sahen aus wie
+   eine Seite, nicht wie ein Spiel. Genau das war Thomas' Einwand am
+   14.09.2026: „das Startmenü vor Login sieht noch richtig altmodisch aus".
+
+   Was hier gezeichnet wird, ist absichtlich wenig: ein driftendes Sternenfeld
+   und ein paar sehr dunkle Körper weit hinten. Kein Spielfeld, keine Trümmer,
+   keine Bewegung, die vom Menü ablenkt.
+
+   Vier Regeln, damit das niemandem den Akku kostet:
+     - Sie läuft **nur**, solange ein Menü offen und kein Spiel im Gang ist.
+     - Sie hält an, sobald der Tab verdeckt ist (`document.hidden`).
+     - Sie zeichnet höchstens 30 Bilder je Sekunde, nicht 60.
+     - `lowPower` und „Bewegung reduzieren" halbieren noch einmal bzw. legen
+       das Feld still — dann steht es einfach, statt zu driften.
+   ===================================================================== */
+const MenueHimmel = {
+  punkte: null, koerper: null, breite: 0, hoehe: 0, laeuft: false,
+  zuletzt: 0, zeit: 0,
+
+  /* Erst bauen, wenn die Größe feststeht — und neu bauen, wenn sie sich
+     ändert. Ein Feld, das für 1920 Punkte gewürfelt wurde, ist auf einem
+     Telefon zu dicht und andersherum zu leer. */
+  aufbauen(){
+    const w = VW || innerWidth || 1, h = VH || innerHeight || 1;
+    if (this.punkte && Math.abs(w - this.breite) < 40 && Math.abs(h - this.hoehe) < 40) return;
+    this.breite = w; this.hoehe = h; this.fertig = false;
+    /* Gemessen, nicht geschätzt: Bei 13.000 kamen auf einem 1280er Schirm
+       71 Sterne heraus — zu wenige, um als Feld gelesen zu werden. */
+    const dichte = Settings.lowPower ? 11000 : 5200;
+    const zahl = Math.min(560, Math.round(w * h / dichte));
+    const z = () => Math.random();
+    this.punkte = Array.from({length: zahl}, () => ({
+      x: z() * w, y: z() * h,
+      r: z() * 1.35 + .4,
+      /* Kräftiger als im Spielfeld: Dort liegt das ganze Bild voller Körper,
+         hier ist der Himmel das einzige, was den Bildschirm trägt. */
+      a: z() * .62 + .2,
+      /* Drei Ebenen: Je heller und größer ein Stern, desto schneller zieht
+         er — daraus entsteht Tiefe ohne ein zweites Bild. */
+      v: (z() * .5 + .12) * 6,
+      f: z() * 6.28,
+    }));
+    /* Drei bis fünf dunkle Körper weit hinten. Sie sind fast unsichtbar und
+       geben dem Bild trotzdem einen Maßstab. */
+    this.koerper = Array.from({length: Settings.lowPower ? 2 : 4}, (_, i) => ({
+      x: z() * w, y: z() * h,
+      r: (z() * .13 + .07) * Math.min(w, h),
+      a: z() * .05 + .025,
+      vx: (z() - .5) * 2.2, vy: (z() - .5) * 1.4,
+      ton: z(),
+    }));
+  },
+
+  /* Ist gerade ein Menü zu sehen, hinter dem es nichts zu sehen gibt?
+
+     `endVeil` steht bewusst **nicht** in der Liste: Dahinter liegt das
+     eingefrorene Spielfeld mit dem eigenen Körper und dem, was ihn gefressen
+     hat. Das durch ein Sternenfeld zu ersetzen hieße, dem Spieler die
+     Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
+     dort läuft die Eingabeprüfung auf der Fläche. */
+  MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
+           "setVeil","rankVeil","pwVeil"],
+  sichtbar(){
+    if (Game.running) return false;
+    if (document.hidden) return false;
+    const ende = document.getElementById("endVeil");
+    if (ende && !ende.hidden) return false;
+    for (const id of this.MENUES){
+      const el = document.getElementById(id);
+      if (el && !el.hidden) return true;
+    }
+    return false;
+  },
+
+  /* Ein Körper als fertiges Bild. Wird einmal je Körper gebaut. */
+  stempeln(k){
+    const d = Math.max(2, Math.ceil(k.r * 2));
+    const c = document.createElement("canvas");
+    c.width = d; c.height = d;
+    const g2 = c.getContext("2d");
+    const g = g2.createRadialGradient(k.r * .7, k.r * .7, k.r * .1, k.r, k.r, k.r);
+    g.addColorStop(0, `rgba(${Math.round(120 + k.ton * 60)},${Math.round(110 + k.ton * 40)},${Math.round(150 - k.ton * 30)},${k.a})`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    g2.fillStyle = g;
+    g2.beginPath(); g2.arc(k.r, k.r, k.r, 0, 7); g2.fill();
+    return c;
+  },
+
+  bild(jetzt){
+    const ruhig = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dt = this.zuletzt ? Math.min(.1, (jetzt - this.zuletzt) / 1000) : 0;
+    this.zuletzt = jetzt;
+    if (!ruhig) this.zeit += dt;
+
+    this.aufbauen();
+    const th = TH();
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.fillStyle = th.ink;
+    ctx.fillRect(0, 0, VW, VH);
+
+    /* Die dunklen Körper zuerst — sie liegen hinter allem.
+
+       Jeder wird **einmal** auf eine eigene kleine Fläche gemalt und danach
+       nur noch kopiert. Vier große Radialverläufe bei jedem Bild neu zu
+       erzeugen kostete gemessen bis zu 21 ms; kopiert sind es Bruchteile
+       davon. Ein Verlauf hängt nur an Größe und Farbton, nicht an der
+       Stelle — er muss also nie neu entstehen. */
+    ctx.save();
+    for (const k of this.koerper){
+      if (!k.stempel) k.stempel = this.stempeln(k);
+      const x = (k.x + k.vx * this.zeit) % (VW + k.r * 2) - k.r;
+      const y = (k.y + k.vy * this.zeit) % (VH + k.r * 2) - k.r;
+      ctx.drawImage(k.stempel, x - k.r, y - k.r);
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = th.star;
+    for (const s of this.punkte){
+      /* Waagerechtes Driften mit Umbruch am Rand — billiger als eine echte
+         Kamera und für einen Hintergrund völlig ausreichend. */
+      let x = s.x - s.v * this.zeit;
+      x = ((x % (VW + 8)) + VW + 8) % (VW + 8) - 4;
+      /* Ein sanftes Atmen statt Blinken: Blinkende Sterne ziehen den Blick
+         vom Menü weg, und darum geht es hier gerade nicht. */
+      ctx.globalAlpha = ruhig ? s.a : s.a * (.72 + .28 * Math.sin(this.zeit * .7 + s.f));
+      ctx.beginPath(); ctx.arc(x, s.y, s.r, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  },
+
+  /* Kein eigener Taktgeber: `draw()` laeuft ohnehin bei jedem Bild und
+     zeichnet auf dieselbe Flaeche. Zwei Schleifen auf einer Zeichenflaeche
+     waeren ein Flackern — deshalb ruft `draw()` diesen Himmel auf, solange
+     keine Runde laeuft. */
+  letztesBild: 0,
+  vielleichtZeichnen(jetzt){
+    if (!this.sichtbar()){ this.zuletzt = 0; this.fertig = false; return false; }
+
+    /* „Bewegung reduzieren": Dann wird der Himmel **einmal** gemalt und
+       bleibt stehen. Das ist nicht nur die richtige Antwort auf die
+       Einstellung, es ist auch die billigste: keine Bildfolge, keine Last.
+       Auch jeder Prüfstand, der ein Bildschirmfoto braucht, setzt sie —
+       ein Bild von einer Fläche, die sich dauernd ändert, lässt sich nicht
+       zuverlässig aufnehmen. */
+    const ruhig = matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (ruhig){
+      if (this.fertig) return true;
+      this.fertig = true;
+      try { this.bild(jetzt); } catch(_){}
+      return true;
+    }
+
+    /* Zwölf Bilder je Sekunde, bei sparsamer Einstellung acht. Die Sterne
+       ziehen so langsam, dass mehr niemand sieht — gemessen kostet jedes
+       Bild rund 1,4 ms, und das ist Last, die ein Hintergrund nicht
+       verdient. Bei 60 Bildern wäre es das Fünffache. */
+    const abstand = Settings.lowPower ? 125 : 83;
+    if (this.letztesBild && jetzt - this.letztesBild < abstand) return true;
+    this.letztesBild = jetzt;
+    try { this.bild(jetzt); } catch(_){}
+    return true;
+  },
+};

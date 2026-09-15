@@ -6,11 +6,28 @@
 <meta name="theme-color" content="#070b16">
 <title>Datenschutzerklärung — Talumi</title>
 <meta name="robots" content="index, follow">
+<link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <style>
+  /* Dieselbe Schrift wie im Spiel (Lora, SIL OFL 1.1, Lizenz in OFL.txt),
+     von talumi.io selbst ausgeliefert — nichts wird von Google geladen.
+     Bis Schritt 88 stand hier die Systemschrift: Wer im Spiel auf
+     „Impressum" klickte, landete auf einer Seite in einer anderen Schrift. */
+  @font-face{
+    font-family:"Talumi Serif";
+    src:url("lora-latein.woff") format("woff");
+    font-weight:400 700; font-style:normal; font-display:swap;
+    unicode-range:U+0000-024F, U+2010-205E, U+20AC, U+2122, U+2212, U+00D7, U+00B7;
+  }
+  @font-face{
+    font-family:"Talumi Serif";
+    src:url("lora-kyrillisch.woff") format("woff");
+    font-weight:400 700; font-style:normal; font-display:swap;
+    unicode-range:U+0400-04FF;
+  }
   :root{--ink:#070b16;--plate:#141d31;--line:#243149;--brass:#d8b25f;
         --paper:#dfe8f5;--paper-2:#8494ad;--rost:#b4593a;--keim:#7ca34a;
-        --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+        --serif:"Talumi Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
         --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif}
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);

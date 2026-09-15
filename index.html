@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Talumi">
 <!-- Titel: Hauptbegriff vorn, unter 60 Zeichen. Er entscheidet in der
      Trefferliste und bei KI-Antworten über den Klick. -->
-<meta name="description" content="Talumi is a free browser io game: start as dust, eat debris and rivals, grow into a world with rings. Online rounds, four modes, 46 earned skins, no ads, no lasting advantages for sale.">
+<meta name="description" content="Talumi is a free browser io game: start as dust, eat debris and rivals, grow into a world with rings. Online rounds, four modes, 46 earned designs, no ads, no lasting advantages for sale.">
 <link rel="canonical" href="https://talumi.io/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Talumi — free io game, dust to planet">
@@ -125,10 +125,27 @@
   /* Vorher feste 460 px — auf einem Handy im Querformat blieb ein Drittel
      der Breite ungenutzt. Jetzt so breit wie verfügbar, gedeckelt für große
      Bildschirme, damit Zeilen lesbar kurz bleiben. */
-  .card{width:100%;max-width:min(760px, 100%)}
+  /* Seit Schritt 88 tragen Anmeldung und Konsole ein Glasfenster mit 18 px
+     Rundung. Die übrigen Fenster — Einstellungen, Ranglisten, Freunde,
+     Passwort, Rechtliches und der Todesbildschirm — sahen daneben aus wie
+     aus einem anderen Spiel: eckige Kästen, kein Rahmen, kein eigener Grund.
+     Sie bekommen dieselbe Form. Was sie **nicht** bekommen, ist ein
+     Weichzeichner: Dahinter läuft der Sternenhimmel, und der müsste dann bei
+     jedem Bild neu weichgezeichnet werden. */
+  .card{width:100%;max-width:min(760px, 100%);
+     border-radius:18px;border:1px solid var(--line-hell);
+     background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+     box-shadow:0 36px 100px rgba(0,0,0,.55);padding:26px 28px}
+  /* Der Todesbildschirm und die Anmeldung bringen ihr eigenes Fenster mit. */
+  #endVeil .card{padding:24px 26px}
+  .card h1{margin-top:0}
+  .card input[type=text],.card input[type=email],.card input[type=password]{
+     border-radius:10px;background:var(--block)}
+  .card button{border-radius:11px}
+  .card button.quiet{border-radius:10px}
 
   /* Zweispaltig, sobald Platz da ist. Auf einem Handy im Querformat füllt das
-     die Breite, die vorher leer blieb, und man sieht Modus, Name, Skin und
+     die Breite, die vorher leer blieb, und man sieht Modus, Name, Design und
      Bestwerte ohne zu scrollen. */
   .card.wide{max-width:min(1000px, 100%)}
   .card.wide .col{min-width:0}
@@ -325,7 +342,7 @@
   .clanline.them{color:var(--them)}
   .clock{font-family:var(--serif);font-size:22px;color:var(--brass);margin-top:2px}
 
-  /* Schnellwahl der freigeschalteten Oberflächen im Startbildschirm */
+  /* Schnellwahl der freigeschalteten Designs im Startbildschirm */
   .strip{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:5px;
      scrollbar-width:thin;scrollbar-color:var(--line) transparent}
   .strip::-webkit-scrollbar{height:5px}
@@ -423,7 +440,7 @@
      scrollte. Flache Schirme brauchen mehr Breite, nicht weniger. */
   @media (max-height:520px){
     .veil{padding:14px;align-items:start}
-    .card{max-width:min(940px, 100%)}
+    .card{max-width:min(940px, 100%);padding:16px 18px;border-radius:14px}
     h1{font-size:clamp(30px,7vh,44px)}
     .sub{font-size:14px;margin:8px 0 12px}
     button{padding:10px;font-size:14px;margin-top:8px}
@@ -475,7 +492,7 @@
     .purse{margin-bottom:6px;padding-bottom:5px}
     .purse .lv small,.purse .ore small{font-size:11px}
     .recbox{margin-top:9px}
-    /* Die Kachel trägt den Namen der Oberfläche. Bei 42 px Breite und 11 px
+    /* Die Kachel trägt den Namen des Designs. Bei 42 px Breite und 11 px
        Schrift blieb davon „Bas…" übrig — ein Name, den man nicht lesen kann,
        ist kein Name. 52 px kosten auf einem Telefon nichts: Der Streifen
        lässt sich ohnehin seitlich schieben. */
@@ -498,7 +515,7 @@
   body.touch .seg button{min-width:44px}
   body.touch input[type=text],body.touch input[type=email],
   body.touch input[type=password]{min-height:44px}
-  /* Die Skin-Kacheln stehen in einem Streifen, den man seitlich schiebt —
+  /* Die Design-Kacheln stehen in einem Streifen, den man seitlich schiebt —
      `min-width` statt `width`, damit die 60 px auf großen Schirmen bleiben. */
   body.touch .strip button{min-width:44px}
 
@@ -512,6 +529,231 @@
     .card .col > label{margin-top:6px!important}
   }
 
+  /* =====================================================================
+     ANMELDUNG — der erste Bildschirm (Schritt 88)
+     Gebaut wie die Konsole dahinter, damit beide eine Familie sind: dunkles
+     Glas, 18 px Rundung, Messing als Akzent, eine Kopfzeile mit dem
+     Markenzeichen. Vorher standen hier eckige Kästen auf braunem Grund —
+     das war der Eindruck, den ein neuer Besucher als erstes bekam.
+
+     Zwei Dinge sind hier Regel:
+       - **Kein Grün.** Der Startknopf ist der einzige grüne Punkt der
+         Oberfläche, und von hier startet keine Runde.
+       - **Der Fließtext für Suchmaschinen bleibt sichtbar**, tritt aber
+         unter das Fenster zurück. Er ist für Trefferlisten da, nicht für
+         den ersten Blick.
+     ===================================================================== */
+  /* Durchscheinend, damit das Sternenfeld dahinter zu sehen ist. Es wird
+     von `MenueHimmel` in `spiel.js` auf dieselbe Zeichenfläche gemalt, auf
+     der später das Spiel läuft — und ist der Grund, warum dieser Bildschirm
+     nach einem Spiel aussieht und nicht nach einem Formular. Die Werte sind
+     gemessen, nicht geschätzt: Bei 90 % Deckung war von den Sternen nichts
+     mehr übrig. */
+  /* `backdrop-filter` ist hier ausdrücklich aus (`.veil` setzt blur(2px)).
+     Solange hinter dem Schleier eine unbewegte schwarze Fläche lag, kostete
+     der Weichzeichner nichts — er wurde einmal gerechnet und gemerkt. Seit
+     der Sternenhimmel dahinter läuft, müsste er **bei jedem Bild** über die
+     ganze Fensterfläche neu gerechnet werden. Gemessen hat das den
+     Bildaufbau so belastet, dass der Prüfstand nicht einmal mehr ein
+     Bildschirmfoto bekam; auf einem älteren Telefon wäre es ein zäher
+     Startbildschirm. Und sichtbar war der Weichzeichner ohnehin nicht:
+     Sterne sollen scharf sein. */
+  #accountVeil{padding:0;display:block;overflow:auto;backdrop-filter:none;
+       background:radial-gradient(1500px 1000px at 50% 34%,
+                  color-mix(in srgb, var(--ink) 16%, transparent),
+                  color-mix(in srgb, var(--ink) 78%, transparent) 62%,
+                  color-mix(in srgb, var(--ink) 93%, transparent) 100%);
+       background-attachment:fixed}
+  /* Muss sein, und zwar mit derselben Kennung: `.veil[hidden]{display:none}`
+     wiegt weniger als eine Regel mit `#` davor, und ohne diese Zeile blieb
+     der Anmeldebildschirm hinter der Konsole stehen — die Sprachknöpfe
+     schienen durch die Kopfzeile. Beim Startbildschirm steht dieselbe Zeile
+     seit Schritt 79 aus genau demselben Grund. */
+  #accountVeil[hidden]{display:none}
+
+  .anmKopf{display:flex;align-items:center;justify-content:space-between;gap:16px;
+       max-width:1120px;margin:0 auto;padding:20px 26px 0;min-height:46px}
+  .anmSprache{display:flex;align-items:center;gap:10px;min-width:0;justify-content:flex-end}
+  .anmSprLabel{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+       color:var(--paper-2);flex:0 0 auto}
+  .anmSprache .seg{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
+       scrollbar-width:none;padding:2px 0}
+  .anmSprache .seg::-webkit-scrollbar{display:none}
+  .anmSprache .seg button{flex:0 0 auto;border-radius:9px;height:34px;padding:0 12px}
+  .anmSprache .seg button .kurz{display:none}
+
+  /* Gedeckelt und mittig: Auf einem 1920er Schirm lief das Fenster sonst
+     über die ganze Breite, und zwischen Überschrift und Formular stand ein
+     halber Meter Leere. Die Konsole darf breit sein — sie hat drei Spalten
+     voller Inhalt —, dieser Bildschirm hat zwei. */
+  .anmFenster{max-width:1120px;margin:18px auto 0;border-radius:18px;border:1px solid var(--line-hell);
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+       box-shadow:0 36px 100px rgba(0,0,0,.55);
+       display:grid;grid-template-columns:1.05fr .95fr;overflow:hidden}
+  .anmSp{padding:26px 28px;min-width:0}
+  .anmLinks{display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .anmRechts{border-left:1px solid var(--line)}
+  #accountVeil h1{font-size:clamp(36px,6.4vw,58px);line-height:.9;margin:0 0 4px;
+       border:0;padding:0}
+  #accountVeil .sub{font-size:16px;line-height:1.55;margin:10px 0 16px;max-width:34ch;
+       color:var(--paper)}
+  .anmPunkte{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+  .anmPunkte li{position:relative;padding-left:20px;font-size:13px;line-height:1.5;
+       color:var(--paper-2)}
+  .anmPunkte li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;
+       border-radius:50%;background:var(--brass);box-shadow:0 0 9px var(--brass)}
+  #anmOnline{margin-top:14px;color:var(--brass)}
+  #anmOnline[hidden]{display:none}
+
+  #accountVeil label{margin-bottom:5px}
+  #accountVeil form label + input{margin-bottom:11px}
+  #accountVeil input[type=text],#accountVeil input[type=email],
+  #accountVeil input[type=password]{border-radius:10px;padding:11px 13px;
+       background:var(--block);border:1px solid var(--line)}
+  #accountVeil input:focus{border-color:var(--brass)}
+  #acctGo{border-radius:11px;margin-top:6px;padding:12px}
+  #accountVeil button.quiet{border-radius:10px}
+  #accountVeil .notice{min-height:0;margin:9px 0 0}
+  #accountVeil .notice:empty{display:none}
+
+  /* Zwei Nebenknöpfe nebeneinander statt untereinander: Sie gehören
+     zusammen („ich habe kein Konto" / „ich weiß mein Wort nicht mehr") und
+     kosten gestapelt zwei Zeilen Höhe, die auf flachen Schirmen fehlen. */
+  .anmKlein{display:flex;gap:8px;margin-top:10px}
+  .anmKlein button{margin:0;flex:1 1 0;min-width:0}
+  .anmKlein button[hidden]{display:none}
+
+  .anmOder{display:flex;align-items:center;gap:12px;margin:14px 0 10px;
+       color:var(--paper-2);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
+  .anmOder::before,.anmOder::after{content:"";flex:1;height:1px;background:var(--line)}
+  #anmFremd[hidden]{display:none}
+  /* Die beiden Markenknöpfe tragen das echte Zeichen des Anbieters. Es liegt
+     als Pfad in der Seite — nichts wird von Google oder Meta geladen, und
+     damit geht auch keine Adresse dorthin, bevor jemand geklickt hat. */
+  button.marke{display:flex;align-items:center;justify-content:center;gap:9px;
+       margin:0;padding:10px 12px;font-size:12.5px;line-height:1.2;text-align:left}
+  button.marke[hidden]{display:none}
+  button.marke svg{width:17px;height:17px;flex:0 0 auto}
+  button.facebook svg path{fill:#1877F2}
+  .anmRechts .two{gap:9px}
+
+  #guestBtn{margin-top:12px;padding:11px;font-size:14px}
+  /* Solange er Nebenknopf ist, darf er heller sein als die anderen ruhigen
+     Knöpfe — er ist der zweite Weg ins Spiel. Fällt `quiet` weg (kein
+     Server erreichbar), gilt wieder die Grundregel für Hauptknöpfe:
+     dunkle Schrift auf Messing. Eine helle Schrift stand dort vorher
+     unlesbar auf hellem Grund. */
+  #guestBtn.quiet{color:var(--paper);border-color:var(--line-hell)}
+  #accountVeil .hintline{margin-top:9px}
+
+  .anmFuss{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+       max-width:1120px;margin:0 auto;gap:8px 16px;padding:16px 26px 0;font-size:12px}
+  .anmFuss a{color:var(--paper-2);text-decoration:none;border-bottom:1px solid var(--line)}
+  .anmFuss a:hover{color:var(--brass);border-color:var(--brass)}
+  /* Auf Tippgeräten braucht auch ein Textlink eine Fläche, die der Daumen
+     trifft — Apple verlangt 44 pt, Google 48 dp, und Impressum und
+     Datenschutz sind genau die Links, die eine Store-Prüfung anfasst.
+     Gemessen waren es 17 Punkte Höhe. Die Fläche wächst nach oben und unten,
+     die Zeile bleibt dadurch optisch gleich. */
+  body.touch .anmFuss a{display:inline-flex;align-items:center;min-height:44px;
+       padding:0 4px}
+  body.touch .anmFuss{gap:4px 12px}
+  .anmFuss button{margin:0;width:auto;padding:7px 14px}
+
+  /* Der Fließtext für Trefferlisten. Sichtbar, aber zurückgenommen: Wer
+     spielen will, hat oben alles; wer liest, findet ihn hier. */
+  .anmText{max-width:960px;margin:0 auto;padding:26px 26px 40px}
+  .anmText .about{margin-top:0;border-top:1px solid var(--line);padding-top:22px}
+
+  /* Zwei Spalten haben ihre Grenze, wo eine Zeile zu kurz zum Lesen wird. */
+  @media (max-width:820px){
+    .anmFenster{grid-template-columns:1fr}
+    .anmRechts{border-left:0;border-top:1px solid var(--line)}
+    .anmLinks{padding-bottom:6px}
+    #accountVeil .sub{margin-bottom:12px}
+  }
+
+  /* Flache Querformat-Schirme (Telefon). Höhe ist hier das Knappste, was es
+     gibt: Die Kopfzeile schrumpft, die Ränder werden schmal, und die beiden
+     Spalten bleiben **nebeneinander** — gestapelt läge „Als Gast spielen"
+     unter dem Bildrand, und genau das war der alte Zustand. */
+  @media (max-height:560px){
+    .anmKopf{padding:10px 14px 0;min-height:0}
+    .konsMarke b{font-size:13px;letter-spacing:.2em}
+    .anmSprLabel{display:none}
+    .anmFenster{margin:10px 14px 0;max-width:none;border-radius:14px;grid-template-columns:.92fr 1.08fr}
+    .anmSp{padding:14px 16px}
+    #accountVeil h1{font-size:clamp(26px,5.4vh,38px)}
+    #accountVeil .sub{font-size:13px;line-height:1.45;margin:6px 0 10px;max-width:30ch}
+    .anmPunkte{gap:4px}
+    .anmPunkte li{font-size:11.5px;padding-left:17px}
+    .anmPunkte li::before{width:6px;height:6px}
+    #accountVeil label{margin-bottom:3px;font-size:11px}
+    #accountVeil form label + input{margin-bottom:7px}
+    .anmOder{margin:9px 0 7px}
+    .anmKlein{margin-top:7px}
+    #guestBtn{margin-top:8px}
+    #accountVeil .hintline{margin-top:6px;font-size:11px}
+    .anmFuss{padding:12px 14px 0}
+    .anmText{padding:18px 14px 30px}
+    /* Sieben ausgeschriebene Sprachnamen kosten hier eine ganze Zeile Höhe.
+       Gemessen auf 844 × 390: Mit vollen Namen lag „Als Gast spielen" 30
+       Punkte unter dem Bildrand, mit Kürzeln steht er im Bild. */
+    .anmSprache .seg button .voll{display:none}
+    .anmSprache .seg button .kurz{display:inline;letter-spacing:.06em}
+    .anmSprache .seg button{padding:0 10px;height:auto;min-height:44px}
+    .anmSprache .seg{gap:4px}
+  }
+  /* Sehr flach (667×375 und kleiner): Auch die Aufzählung tritt zurück.
+     Was bleibt, ist der Name, ein Satz und das Formular. */
+  /* Unter 470 Punkten Höhe geht die Erklärung zum Konto weg. Sie ist die
+     einzige Stelle hier, die nichts tut — der Knopf darunter erklärt sich
+     selbst, und die drei Punkte links sagen, worum es geht. Der Gewinn sind
+     39 Punkte, und die entscheiden darüber, ob „Als Gast spielen" ohne
+     Scrollen erreichbar ist. */
+  @media (max-height:470px){
+    #accountVeil .hintline:not(#acctPwHint){display:none}
+  }
+  @media (max-height:420px){
+    .anmPunkte{display:none}
+    #accountVeil .sub{margin-bottom:4px}
+    .anmFenster{margin-top:8px}
+    .anmSp{padding:12px 14px}
+  }
+  /* Schmal und hoch (Telefon hochkant — das Spiel verlangt Querformat, aber
+     die Anmeldung erscheint kurz, bevor der Drehhinweis greift). */
+  @media (max-width:520px){
+    /* Schmal: Die Sprachwahl bricht um, statt seitlich zu scrollen. Sieben
+       Kürzel brauchen zwei Zeilen à 44 Punkten — ein schiebbarer Streifen
+       wäre hier eine versteckte Bedienung, und die Hälfte der Sprachen läge
+       außerhalb des Bildes, ohne dass man das sieht. */
+    .anmKopf{flex-wrap:wrap;padding:14px 14px 0}
+    .anmSprache{flex:1 1 100%;justify-content:flex-start}
+    .anmSprache .seg{flex-wrap:wrap;overflow:visible}
+    .anmSprache .seg button .voll{display:none}
+    .anmSprache .seg button .kurz{display:inline;letter-spacing:.06em}
+    /* Sieben Kürzel à 12 Punkten Polsterung brauchen 378 Punkte Breite und
+       brechen auf 360 in zwei Zeilen um — 44 Punkte Höhe, die unten beim
+       Gastknopf fehlen. Mit 8 Punkten passen sie in eine Zeile. */
+    .anmSprache .seg button{min-height:44px;height:auto;padding:0 8px;flex:0 0 auto;
+         font-size:11.5px}
+    .anmSprLabel{display:none}
+    .anmKopf{padding:14px 14px 0}
+    /* Gemessen auf 360 × 780: Auf Russisch endete „Als Gast spielen" bei 816
+       statt 780 — die Aufzählung ist dort 131 Punkte hoch statt 73 auf
+       Englisch. Enger gesetzt sind es 85. Eine Anordnung, die auf Englisch
+       aufgeht, geht auf Russisch nicht auf; das ist hier der Regelfall, nicht
+       der Einzelfall. */
+    #accountVeil .sub{font-size:14px;line-height:1.45;margin:8px 0 12px}
+    .anmPunkte{gap:3px}
+    .anmPunkte li{font-size:11.5px;line-height:1.4;padding-left:17px}
+    .anmPunkte li::before{width:6px;height:6px}
+    .anmFenster{margin:12px 14px 0;max-width:none}
+    .anmSp{padding:18px 16px}
+    .anmFuss{gap:8px 12px;font-size:11.5px}
+    .anmRechts .two{flex-direction:column}
+    .anmText{padding:20px 14px 30px}
+  }
 
   /* =====================================================================
      KONSOLE — Startbildschirm ab Schritt 79
@@ -526,7 +768,15 @@
        - Alles auf einen Bildschirm, kein Scrollen.
      Nicht übernommen: abgeschrägtes Blech, acht Rahmenstile, 9-px-Schrift.
      ===================================================================== */
-  #startVeil{padding:0;display:block;overflow:hidden}
+  /* Wie bei der Anmeldung: Der Sternenhimmel dahinter bleibt sichtbar.
+     Das Fenster selbst bringt seinen eigenen, kräftigeren Grund mit, die
+     Lesbarkeit hängt also nicht an dieser Ebene. */
+  #startVeil{padding:0;display:block;overflow:hidden;backdrop-filter:none;
+       background:radial-gradient(1500px 1000px at 50% 40%,
+                  color-mix(in srgb, var(--ink) 14%, transparent),
+                  color-mix(in srgb, var(--ink) 72%, transparent) 64%,
+                  color-mix(in srgb, var(--ink) 90%, transparent) 100%);
+       background-attachment:fixed}
   #startVeil[hidden]{display:none}
 
   /* --- Kopfzeile --------------------------------------------------- */
@@ -556,10 +806,16 @@
   .konsStart .pow{margin:0;font-size:12.5px}
 
   /* --- Fenster ------------------------------------------------------ */
-  .konsFenster{position:absolute;left:26px;right:26px;top:98px;bottom:22px;z-index:3;
+  /* 112 statt 98: Unter dem Startknopf steht die Spielerzahl, und die lag
+     genau auf der Oberkante des Fensters — zwei Ebenen, die einander
+     überschneiden, sehen aus wie ein Fehler und waren auch einer. */
+  .konsFenster{position:absolute;left:26px;right:26px;top:112px;bottom:22px;z-index:3;
        border-radius:18px;border:1px solid var(--line-hell);
+       /* Kein `backdrop-filter`: Der eigene Grund deckt zu 93 Prozent, der
+          Weichzeichner war also unsichtbar — kostete aber, seit hinter dem
+          Fenster der Sternenhimmel läuft, bei jedem einzelnen Bild. */
        background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
-       backdrop-filter:blur(18px);box-shadow:0 36px 100px rgba(0,0,0,.55);
+       box-shadow:0 36px 100px rgba(0,0,0,.55);
        display:grid;grid-template-rows:54px 1fr;overflow:hidden}
   .konsReiter{display:flex;align-items:center;gap:2px;padding:0 14px;
        border-bottom:1px solid var(--line);min-width:0}
@@ -631,7 +887,7 @@
   .konsSp.r .modes span{display:none}
   .konsSp.r .modes button[aria-pressed=true] span{display:block}
 
-  /* --- Oberflächen, Errungenschaften, Statistik ---------------------- */
+  /* --- Designs, Errungenschaften, Statistik ---------------------- */
   .konsPane.eine{padding:20px 22px}
   .konsPane.eine .grid{max-height:none}
   .konsKopfzeile{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
@@ -642,7 +898,19 @@
 
   /* --- Flache Schirme: ein Fenster, eine Spalte, Knopf unten --------- */
   @media (max-height:640px), (max-width:900px){
-    .konsKopf{top:12px;left:14px;right:14px;height:46px}
+    /* Sobald der Startknopf die Kopfzeile verlässt, ist die Mitte des
+       Dreierrasters leer — und die beiden äußeren Gruppen bekommen je die
+       Hälfte der Breite, egal wie viel sie brauchen. Bei 740 Punkten lagen
+       „Ranglisten“ und „Einstellungen“ deshalb übereinander. Aus zwei
+       Gruppen wird hier **ein** Streifen, der sich seitlich schieben lässt:
+       Er teilt den Platz nach Bedarf statt nach Hälften. */
+    .konsKopf{top:12px;left:14px;right:14px;height:46px;
+         display:flex;align-items:center;gap:8px;
+         overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+    .konsKopf::-webkit-scrollbar{display:none}
+    .konsG{flex:0 0 auto}
+    .konsG.r{justify-content:flex-start}
+    .konsNav{flex:0 0 auto}
     .konsMarke{margin-right:6px}
     .konsMarke b{font-size:13px;letter-spacing:.2em}
     .konsNav{height:38px;padding:0 12px;font-size:12.5px}
@@ -706,18 +974,193 @@
     .konsReiter button{padding:0 10px;font-size:12.5px;flex:0 0 auto}
     /* Die Zahlenleiste passt neben vier Reitern nicht mehr und wurde
        abgeschnitten. Sie verschwindet hier ganz: Ore steht im Reiter
-       „Oberflächen", wo man es ausgibt, Level und Fortschritt unter
+       „Designs", wo man es ausgibt, Level und Fortschritt unter
        „Statistik". Eine halb sichtbare Zahl ist schlechter als keine. */
     .konsW{display:none}
   }
 
-  /* Sehr flach: die Zahlenleiste im Reiter wird zur Zahl, die zählt. */
+
+  /* ---- Flach UND breit: das Telefon im Querformat (Schritt 88) -------
+     Die Regel darüber stapelt alles untereinander. Auf einem hohen, schmalen
+     Fenster ist das richtig; auf einem Telefon im Querformat ist es falsch,
+     und zwar sichtbar: Bei 844 × 390 füllte der Tagesbonus allein den halben
+     Bildschirm, der eigene Körper und die Wahl der Spielart lagen unter dem
+     Rand, und der Startknopf schnitt die Errungenschaften mitten durch.
+     Gemessen, nicht geschätzt — das Bild dazu liegt bei.
+
+     Hier liegen deshalb **zwei** Spalten nebeneinander: links der eigene
+     Körper, rechts die Wahl der Runde. Beides zusammen ist alles, was man
+     vor dem Start braucht. Bonus, Errungenschaften und Freunde rücken in
+     eine dritte Reihe darunter — erreichbar durch Scrollen, aber nicht mehr
+     im Weg. Ausnahme bleibt der abholbereite Bonus: Der wird zu einer
+     schmalen Leiste ganz oben, weil ein Bonus, den niemand sieht, niemanden
+     zurückholt.
+     Breiter als 680 Punkte, weil zwei Spalten darunter zu schmal werden. */
+  @media (max-height:640px) and (min-width:680px){
+    .konsPane.drei{display:grid;overflow:auto;
+         grid-template-columns:minmax(0,1fr) minmax(0,300px);
+         grid-auto-rows:min-content;align-content:start}
+    /* `display:contents` löst die linke Spalte als Kasten auf: Ihre vier
+       Blöcke werden selbst zu Feldern des Rasters und lassen sich einzeln
+       einsortieren. Nur so kommt der **Bonus** nach oben, ohne die
+       Errungenschaften und die Freundesliste mitzunehmen — ein erster
+       Versuch schob die ganze Spalte hoch, und damit stand wieder alles im
+       Bild außer dem, worauf es ankommt. */
+    .konsSp.l{display:contents}
+    #startVeil #bonusBox{grid-column:1 / -1;grid-row:1;margin:12px 14px 0}
+    #startVeil #naechstBox{grid-column:1 / -1;grid-row:3;margin:12px 14px 0;
+         border-top:1px solid var(--line);border-radius:0;border-left:0;
+         border-right:0;border-bottom:0;padding:12px 0 0;background:none}
+    #startVeil #freundBox{grid-column:1 / -1;grid-row:4;margin:10px 14px 0;
+         border-radius:0;border-left:0;border-right:0;border-bottom:0;
+         padding:12px 0 0;background:none}
+    #startVeil #controls{grid-column:1 / -1;grid-row:5;margin:10px 14px 14px}
+    .konsSp.m{grid-column:1;grid-row:2;order:0;
+         border:0;border-right:1px solid var(--line);
+         justify-content:flex-start;gap:8px}
+    .konsSp.r{grid-column:2;grid-row:2;order:0;gap:8px}
+    .konsSp{padding:12px 14px}
+
+    /* Der Körper wird kleiner, bleibt aber der größte Gegenstand im Bild —
+       er ist die Fortschrittsanzeige und darf das auch bleiben. */
+    /* Zwei Kennungen, weil weiter unten noch ein Block mit `#heldCanvas`
+       steht: Bei gleichem Gewicht gewinnt der spätere, und dann war der
+       Körper wieder 168 Punkte groß in einem 188 Punkte hohen Fenster. */
+    #startVeil #heldCanvas{width:140px;height:140px}
+    .konsName b{font-size:19px;line-height:1.05}
+    .konsName span{font-size:11px}
+    .konsWerte{gap:16px}
+    .konsWerte b{font-size:16px}
+    .konsWerte span{font-size:10.5px}
+    /* Die Design-Schnellwahl hat einen eigenen Reiter. Hier kostet sie
+       80 Punkte Höhe für etwas, das zwei Fingerbreit weiter oben steht. */
+    .konsSp.m .strip{display:none}
+
+    .konsSp.r > label{font-size:11px;margin:0}
+    /* Untereinander, nicht als Raster: In einer 300 Punkte breiten Spalte
+       sind zwei Kacheln je 145 breit, und der Beschreibungstext des
+       gewählten Modus bricht dort auf fünf Zeilen um. Untereinander sind es
+       vier Zeilen à 34 Punkten — insgesamt weniger als das Raster. */
+    .konsSp.r .modes{display:flex;flex-direction:column;gap:5px}
+    .konsSp.r .modes button{padding:7px 10px}
+    .konsSp.r .modes b{font-size:13.5px}
+    .konsSp.r .hintline{font-size:11px;margin-top:3px}
+    /* Die Bestenliste steht im eigenen Reiter „Ranglisten" in der Kopfzeile.
+       In dieser Spalte schiebt sie Name und Startbonus aus dem Bild. */
+    .konsSp.r #boardBox{display:none}
+    .konsSp.r #powText{font-size:11px;margin-top:4px}
+
+    /* Der Bonus als Leiste: Überschrift, Perlenreihe und Knopf in einer
+       Zeile statt in drei. Voll ausgeschrieben kostete er 150 Punkte Höhe —
+       hier sind es 44, und der Knopf bleibt mit dem Daumen zu treffen. */
+    body.bonusoffen #startVeil #bonusBox{display:flex;align-items:center;gap:12px;
+         padding:8px 12px}
+    body.bonusoffen #bonusBox h2{margin:0;flex:0 0 auto;white-space:nowrap}
+    body.bonusoffen #bonusBox .beads{margin:0;flex:1 1 auto;min-width:0}
+    body.bonusoffen #bonusBox button{margin:0;width:auto;flex:0 0 auto;
+         padding:0 14px;min-height:40px;white-space:nowrap}
+    body.touch.bonusoffen #bonusBox button{min-height:44px}
+  }
+
+  /* Sehr flach und breit (667 × 375 und Verwandte). Hier ist jeder Punkt
+     Höhe gezählt: Der Körper schrumpft weiter, und die Zeile mit Bestmasse,
+     Runden und Designs tritt zurück — sie steht vollständig im Reiter
+     „Statistik". */
+  @media (max-height:470px) and (min-width:680px){
+    #startVeil #heldCanvas{width:118px;height:118px}
+    .konsName b{font-size:17px}
+    /* Bestmasse, Runden und Designs stehen vollständig im Reiter
+       „Statistik". Hier kosten sie 30 Punkte Höhe für eine Wiederholung. */
+    .konsWerte{display:none}
+    .konsSp{padding:10px 12px}
+    /* Auch beim gewählten Modus: Wer vier Zeilen Beschreibung liest, sieht
+       den Startbonus nicht mehr. Der Name des Modus genügt. */
+    .konsSp.r .modes span,
+    .konsSp.r .modes button[aria-pressed=true] span{display:none}
+    /* Ohne Beschreibung sind die vier Modi nur noch Namen — als Zweierraster
+       kosten sie 93 Punkte Höhe statt 191 untereinander. Gemessen auf
+       844 × 390: Das ist der Unterschied zwischen „Modus und Name im Bild“
+       und „Modus allein füllt das Fenster“. */
+    .konsSp.r .modes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+    .konsSp.r .modes button{min-height:44px;display:flex;align-items:center;
+         padding:0 10px}
+    .konsSp.r .modes b{font-size:12.5px;line-height:1.2}
+  }
+  /* Sehr flach: Die Bonusleiste wird auf das reduziert, was man anfassen
+     kann. Die sieben Perlen zeigen den Stand einer Serie — eine Auskunft,
+     die den Knopf nicht ersetzt und hier 24 Punkte Höhe kostet, die dem
+     eigenen Körper fehlen. Der Stand steht im Knopf („Tag 3 abholen“). */
+  @media (max-height:470px) and (min-width:680px){
+    body.bonusoffen #startVeil #bonusBox{padding:6px 10px;margin:8px 14px 0}
+    body.bonusoffen #startVeil #bonusBox .beads{display:none}
+    body.bonusoffen #startVeil #bonusBox button{flex:1 1 auto;min-height:44px}
+  }
+  @media (max-height:400px) and (min-width:680px){
+    #startVeil #heldCanvas{width:96px;height:96px}
+  }
+  /* ---- Flache Schirme: die übrigen Fenster (Schritt 88) ---------------
+     Einstellungen, Ranglisten, Freunde, Passwort und Rechtliches sind
+     Karten mit Überschrift, Inhalt und einem Knopf unten. Auf 390 Punkten
+     Höhe nahm allein die Überschrift 48 Punkte, und der Knopf „Zurück" lag
+     unter dem Bildrand — man kam aus dem Fenster nur mit Scrollen heraus.
+     Gemessen, nicht geschätzt.
+
+     Der Weg: Die Überschrift schrumpft, der Erklärsatz tritt zurück, und
+     die **Liste** scrollt in sich statt die ganze Karte — so bleibt der
+     Knopf immer sichtbar. Dieselbe Regel, die der Startbildschirm seit
+     Schritt 79 befolgt. */
+  @media (max-height:560px){
+    .card h1{font-size:26px!important;margin-bottom:4px!important;line-height:1.05}
+    .card .sub{font-size:13px!important;line-height:1.4;margin:4px 0 8px!important;
+         max-width:none}
+    .card > label{margin-top:8px!important;font-size:11px}
+    .card > button{margin-top:10px}
+    /* Der Inhalt jeder Karte scrollt in sich, der Knopf bleibt stehen. */
+    .setlist{max-height:calc(100vh - 176px)}
+    #rankList{max-height:calc(100vh - 286px);overflow:auto;margin-top:8px;min-height:0}
+    #friendList{max-height:calc(100vh - 250px);overflow:auto}
+    .legal{max-height:calc(100vh - 168px)}
+    #rankVeil .notice,#friendsVeil .notice{min-height:0;margin-top:6px;font-size:11.5px}
+    /* „Wer" und „Gewertet nach" nebeneinander: zwei Zeilen Beschriftung und
+       zwei Reihen Knöpfe kosteten 130 Punkte, nebeneinander sind es 65. */
+      .rangWahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+    .rangWahl > label{margin:0 0 4px!important}
+  }
+
+  /* ---- Flache Schirme: Die Reiter zeigen, wonach man sie aufgemacht hat
+     Auf 844 × 390 nahm im Reiter „Designs" der Erklärabsatz vier Fünftel der
+     Höhe ein; von den Kacheln war die Oberkante zu sehen. Denselben Absatz
+     liest man einmal, die Kacheln sieht man bei jedem Aufruf. Er tritt
+     deshalb zurück — nicht gelöscht, nur auf flachen Schirmen ausgeblendet,
+     wo Höhe das Knappste ist, was es gibt. */
+  @media (max-height:560px){
+    .konsPane.eine{padding:12px 14px}
+    .konsKopfzeile{margin-bottom:8px;gap:8px}
+    .konsKopfzeile h2{font-size:16px}
+    /* Nur der Erklärsatz geht weg — die Zahl „1 von 46 im Besitz" bleibt.
+       Sie ist die einzige Auskunft in dieser Zeile, die sich ändert. */
+    .konsKopfzeile p > span{display:none}
+    .konsKopfzeile p{font-size:12px}
+    #shopNext{margin:0 0 8px!important;font-size:11.5px}
+    #paneHaut .notice,#paneErf .notice{min-height:0;margin-top:8px;font-size:11.5px}
+    #erfList{margin-top:8px}
+  }
+
+  /* Sehr flach: die Zahlenleiste im Reiter wird zur Zahl, die zählt.
+     Und jeder Punkt Höhe, der nicht Inhalt ist, wird geholt: Kopfzeile,
+     Reiterstreifen und der Streifen unter dem Startknopf. Zusammen sind das
+     26 Punkte — auf einem 390 Punkte hohen Schirm ein Achtel des Fensters. */
   @media (max-height:470px){
     .konsW span:not(.ore){display:none}
-    .konsFenster{bottom:80px}
-    .konsStart{bottom:10px}
+    .konsKopf{top:10px;height:44px}
+    .konsFenster{top:62px;bottom:76px}
+    .konsReiter{height:44px}
+    .konsReiter button{height:44px}
+    .konsStart{bottom:9px}
     #startBtn{height:50px;font-size:18px}
     #heldCanvas{width:168px;height:168px}
+    /* Der Satz unter dem Namen steht im Spiel ohnehin über der Stufe. */
+    #heldStufe{display:none}
   }
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -791,6 +1234,18 @@
      Startknopf, gemessen in `mobil.js`. Jetzt liegt nichts mehr darunter:
      Was nicht mehr hineinpasst, wird scrollbar statt verdeckt. */
   body.keks .veil{bottom:var(--keks-hoehe, 0px)}
+  /* Der Startknopf ist auf flachen Schirmen **nicht** Teil des Schleiers,
+     sondern liegt fest am unteren Bildrand (`position:fixed`). Den Schleier
+     zu kürzen half ihm deshalb nichts — er blieb unter dem Kasten liegen.
+     Gemessen auf 844 × 390: Der Knopf endete bei 363, der Kasten begann bei
+     287. Er muss um dieselbe Höhe mit nach oben.
+     Wichtig für den Sonderfall Einwilligung: „Alle ablehnen“ muss erreichbar
+     bleiben, und ein Startknopf, der darüberliegt, macht die Einwilligung
+     unwirksam. */
+  body.keks .konsStart{bottom:calc(14px + var(--keks-hoehe, 0px))}
+  @media (max-height:470px){
+    body.keks .konsStart{bottom:calc(9px + var(--keks-hoehe, 0px))}
+  }
 
 </style>
 <script type="application/ld+json">
@@ -915,52 +1370,100 @@
   </div>
 </div>
 
-<!-- Konto -->
+<!-- =====================================================================
+     Anmeldung (neu gefasst, Schritt 88)
+     Dieselbe Bauart wie die Konsole dahinter: eine schlanke Kopfzeile, ein
+     Glasfenster mit abgerundeten Ecken, darin zwei Spalten. Vorher war das
+     hier eine flache Seite mit eckigen Kästen — sie sah aus wie ein
+     Formular, nicht wie der Eingang zu einem Spiel, und war damit das
+     erste, was ein neuer Besucher zu sehen bekam.
+     Grün kommt hier **nicht** vor: Der Startknopf ist der einzige grüne
+     Punkt der Oberfläche, und von hier startet noch keine Runde.
+     ===================================================================== -->
 <div class="veil" id="accountVeil">
-  <div class="card wide">
-    <div class="col">
-    <h1>Talumi</h1>
-    <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow debris, swallow rivals, and pull
-      yourself into a world with rings and moons of your own.</p>
-    <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
-    <p class="foot" style="margin-top:10px">
-      <a href="impressum.html" style="color:var(--brass)">Impressum</a> ·
-      <a href="datenschutz.html" style="color:var(--brass)">Datenschutz</a>
-    </p>
-    <label style="margin-top:16px" data-i18n="language">Language</label>
-    <div class="seg" id="langPick"></div>
+
+  <div class="anmKopf">
+    <div class="konsMarke"><i></i><b>Talumi</b></div>
+    <div class="anmSprache">
+      <span class="anmSprLabel" data-i18n="language">Language</span>
+      <div class="seg" id="langPick"></div>
+    </div>
+  </div>
+
+  <div class="anmFenster">
+    <div class="anmSp anmLinks">
+      <h1>Talumi</h1>
+      <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow debris, swallow rivals, and pull
+        yourself into a world with rings and moons of your own.</p>
+      <ul class="anmPunkte">
+        <li data-i18n="a_pt1">Free, in the browser, no download.</li>
+        <li data-i18n="a_pt2">Nothing on sale gives a lasting advantage.</li>
+        <li data-i18n="a_pt3">46 designs, thirteen ranks, four modes.</li>
+      </ul>
+      <p class="pow" id="anmOnline" hidden></p>
     </div>
 
-    <div class="col">
-    <form id="acctForm" autocomplete="on">
-      <label for="acctMail" data-i18n="k_email">E-mail</label>
-      <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
-             spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
-      <label for="acctPw" style="margin-top:12px" data-i18n="k_pw">Password</label>
-      <input type="password" id="acctPw" autocomplete="current-password">
-      <p class="hintline" id="acctPwHint" data-i18n="k_pwhint" hidden>At least 8 characters.</p>
-      <div id="acctNameRow" hidden>
-        <label for="acctName" style="margin-top:12px" data-i18n="designation">Name</label>
-        <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
-               autocapitalize="off" spellcheck="false" placeholder="Unnamed body"
-               data-i18n-ph="unnamed">
+    <div class="anmSp anmRechts">
+      <form id="acctForm" autocomplete="on">
+        <label for="acctMail" data-i18n="k_email">E-mail</label>
+        <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
+               spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
+        <label for="acctPw" data-i18n="k_pw">Password</label>
+        <input type="password" id="acctPw" autocomplete="current-password">
+        <p class="hintline" id="acctPwHint" data-i18n="k_pwhint" hidden>At least 8 characters.</p>
+        <div id="acctNameRow" hidden>
+          <label for="acctName" data-i18n="designation">Name</label>
+          <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
+                 autocapitalize="off" spellcheck="false" placeholder="Unnamed body"
+                 data-i18n-ph="unnamed">
+        </div>
+        <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
+      </form>
+      <p class="notice" id="acctNote"></p>
+      <div class="anmKlein">
+        <button class="quiet" id="acctSwap" data-i18n="k_new">No account yet? Create one</button>
+        <!-- Nur sichtbar, wenn der Server Mails verschicken kann. Ein Knopf, der
+             zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. -->
+        <button class="quiet" id="acctForgot" data-i18n="p_head" hidden>Forgotten password</button>
       </div>
-      <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
-    </form>
-    <p class="notice" id="acctNote"></p>
-    <button class="quiet" id="acctSwap" data-i18n="k_new">No account yet? Create one</button>
-    <!-- Nur sichtbar, wenn der Server Mails verschicken kann. Ein Knopf, der
-         zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. -->
-    <button class="quiet" id="acctForgot" data-i18n="p_head" hidden>Forgotten password</button>
 
-    <div class="two" style="margin-top:10px">
-      <button class="quiet" id="googleBtn" data-i18n="k_google">Continue with Google</button>
-      <button class="quiet" id="facebookBtn" data-i18n="k_facebook">Continue with Facebook</button>
-    </div>
+      <!-- Google und Facebook. Der Streifen bleibt versteckt, solange der
+           Server keinen der beiden Wege anbietet — ein Knopf, der nichts tun
+           kann, ist schlechter als keiner. -->
+      <div id="anmFremd" hidden>
+        <div class="anmOder"><span data-i18n="k_or">or</span></div>
+        <div class="two">
+          <button class="quiet marke google" id="googleBtn" hidden>
+            <svg viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+              <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+              <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
+              <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
+              <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58C13.46.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
+            </svg>
+            <span data-i18n="k_google">Continue with Google</span>
+          </button>
+          <button class="quiet marke facebook" id="facebookBtn" hidden>
+            <svg viewBox="0 0 18 18" aria-hidden="true" focusable="false">
+              <path fill="#1877F2" d="M18 9a9 9 0 1 0-10.4 8.9v-6.3H5.3V9h2.3V7c0-2.3 1.36-3.56 3.45-3.56 1 0 2.05.18 2.05.18v2.25h-1.16c-1.14 0-1.5.71-1.5 1.44V9h2.55l-.4 2.6h-2.15v6.3A9 9 0 0 0 18 9z"/>
+            </svg>
+            <span data-i18n="k_facebook">Continue with Facebook</span>
+          </button>
+        </div>
+      </div>
 
-    <button class="quiet" id="guestBtn" data-i18n="play">Play as guest</button>
-    <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
+      <button class="quiet gast" id="guestBtn" data-i18n="play">Play as guest</button>
+      <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
     </div>
+  </div>
+
+  <div class="anmFuss">
+    <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutz</a>
+    <a href="about.html" data-i18n="a_more">More about the game</a>
+  </div>
+
+  <div class="anmText">
 
     <!-- Sichtbarer, gegliederter Text. Studien 2026 zeigen: KI-Systeme
          ziehen ihre Antworten aus sichtbarem HTML, nicht aus versteckten
@@ -997,7 +1500,7 @@
 
       <h2>Accounts, honour and ranks</h2>
       <p>An account is free and needed only for online play; with one, your level,
-        Ore and skins live on the server instead of the browser, so they survive a
+        Ore and designs live on the server instead of the browser, so they survive a
         cleared cache. <strong>Honour</strong> is paid only for swallowing another
         account in an online round — never for a computer-controlled rival, and the
         same opponent counts once a day — which is why it cannot be bought or sat
@@ -1006,12 +1509,12 @@
 
       <h2>What it does not do</h2>
       <p>No advertising interrupts a round, and nothing sold ever affects play.
-        All 46 skins can be earned — 21 by level, 25 with Ore you win by playing — and
-        the tier of a skin is visible on the body itself, so you can tell
+        All 46 designs can be earned — 21 by level, 25 with Ore you win by playing — and
+        the tier of a design is visible on the body itself, so you can tell
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 70 · updated 14 September 2026 ·
+      <p class="updated">Version 73 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
@@ -1021,7 +1524,7 @@
 <!-- =====================================================================
      Startbildschirm („Konsole", Schritt 79)
      Eine Kopfzeile, ein Fenster mit vier Reitern. Die Reiter zeigen, was es
-     wirklich gibt: Start, Oberflächen, Errungenschaften, Statistik. Früher
+     wirklich gibt: Start, Designs, Errungenschaften, Statistik. Früher
      war jeder davon ein eigener Vollbildschirm hinter einem Knopf — sechs
      Knöpfe nebeneinander, von denen keiner wichtiger aussah als der andere.
      ===================================================================== -->
@@ -1051,7 +1554,7 @@
       <button type="button" data-reiter="start" role="tab" aria-selected="true"
               data-i18n="k_start">Start</button>
       <button type="button" data-reiter="haut" role="tab" aria-selected="false"
-              data-i18n="skins">Skins</button>
+              data-i18n="skins">Designs</button>
       <button type="button" data-reiter="erf" role="tab" aria-selected="false"
               data-i18n="e_head">Achievements</button>
       <button type="button" data-reiter="stat" role="tab" aria-selected="false"
@@ -1073,20 +1576,20 @@
         <div class="konsBlock" id="naechstBox"></div>
         <div class="konsBlock" id="freundBox"></div>
         <p class="foot" id="controls" style="margin:0"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
-          No lasting advantages for sale. Every skin can be earned by playing.</p>
+          No lasting advantages for sale. Every design can be earned by playing.</p>
       </div>
 
       <div class="konsSp m">
         <div class="konsName"><b id="heldName">—</b><span id="heldStufe"></span></div>
         <!-- Der eigene Körper, gezeichnet von `body()` — derselben Funktion,
              die ihn im Spiel zeichnet. Kein Schaubild, sondern das, was man
-             gleich steuert, mit der eigenen Oberfläche und der eigenen
+             gleich steuert, mit der eigenen Design und der eigenen
              Bestmasse. -->
         <canvas id="heldCanvas" width="660" height="660"></canvas>
         <div class="konsWerte">
           <div><b id="bestNum">0</b><span data-i18n="bestmass">best mass</span></div>
           <div><b id="runNum">0</b><span data-i18n="rec_runs">rounds</span></div>
-          <div><b id="hautNum">0</b><span data-i18n="skins">Skins</span></div>
+          <div><b id="hautNum">0</b><span data-i18n="skins">Designs</span></div>
         </div>
         <div class="strip" id="strip"></div>
       </div>
@@ -1114,17 +1617,17 @@
       </div>
     </div>
 
-    <!-- ---------- Reiter: Oberflächen ---------- -->
+    <!-- ---------- Reiter: Designs ---------- -->
     <div class="konsPane eine" id="paneHaut" hidden>
       <div class="konsKopfzeile">
-        <h2 data-i18n="skins">Skins</h2>
+        <h2 data-i18n="skins">Designs</h2>
         <p><b id="shopCount">0 of 46 owned</b> ·
           <span data-i18n="shopintro">21 unlock by level, 25 by Ore.</span>
-          <span data-i18n="shoprank">Rank I to VI changes the skin itself.</span></p>
+          <span data-i18n="shoprank">Rank I to VI changes the design itself.</span></p>
       </div>
       <p class="foot" style="margin:0 0 10px;color:var(--brass)" id="shopNext"></p>
       <div class="grid" id="grid"></div>
-      <p class="notice" id="shopNote" data-i18n="shoppick">Pick a skin, or buy one you can afford.</p>
+      <p class="notice" id="shopNote" data-i18n="shoppick">Pick a design, or buy one you can afford.</p>
       <div id="kaufLeiste" hidden>
         <p class="foot" id="kaufText" style="margin:10px 0 6px;color:var(--paper)"></p>
         <div class="two">
@@ -1172,10 +1675,17 @@
     <h1 style="font-size:34px;margin-bottom:4px" data-i18n="r_head">Leaderboards</h1>
     <p class="sub" style="margin:0" data-i18n="r_sub">Only online rounds count.</p>
 
-    <label style="margin-top:14px" data-i18n="r_who">Who</label>
-    <div class="seg" id="rankWho"></div>
-    <label style="margin-top:12px" data-i18n="r_what">Ranked by</label>
-    <div class="seg" id="rankWhat"></div>
+    <!-- Zwei Filter, auf flachen Schirmen nebeneinander (siehe .rangWahl). -->
+    <div class="rangWahl">
+      <div>
+        <label style="margin-top:14px" data-i18n="r_who">Who</label>
+        <div class="seg" id="rankWho"></div>
+      </div>
+      <div>
+        <label style="margin-top:12px" data-i18n="r_what">Ranked by</label>
+        <div class="seg" id="rankWhat"></div>
+      </div>
+    </div>
 
     <div id="rankList"></div>
     <p class="notice" id="rankNote"></p>
@@ -1256,7 +1766,7 @@
       <button id="again" data-i18n="again">Play again</button>
       <p class="hintline" style="text-align:center" data-i18n="enterstarts">Enter or space starts the next run</p>
       <div class="two">
-        <button class="quiet" id="endShop" data-i18n="skins">Skins</button>
+        <button class="quiet" id="endShop" data-i18n="skins">Designs</button>
         <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
       </div>
     </div>

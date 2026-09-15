@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v70";
+const VERSION = "v73";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -24,6 +24,12 @@ const ASSETS = [
   "./lora-latein.woff",
   "./lora-kyrillisch.woff"
 ];
+
+/* Die Musikdateien stehen bewusst NICHT in dieser Liste. Zusammen sind sie
+   24 MB; sie beim Installieren vorzuladen hieße, jedem Besucher 24 MB
+   aufzubürden, bevor er einen Ton gehört hat. Sie werden geladen, wenn sie
+   gebraucht werden, und landen im gewöhnlichen Zwischenspeicher des
+   Browsers. */
 
 /* Jede Datei einzeln ablegen, Fehler je Datei abfangen.
    addAll() ist alles-oder-nichts: Fehlt eine einzige Datei auf dem Server,
