@@ -90,11 +90,29 @@
   .hud[hidden]{display:none}
 
   /* Rechte Spalte darf nie bis zu den Daumentasten reichen. Läuft sie über,
-     wird unten abgeschnitten — die wichtigste Tafel steht oben. */
+     wird unten abgeschnitten — die wichtigste Tafel steht oben.
+
+     **Die Grenze muss sich auf den Bildschirm beziehen, nicht auf „100 %".**
+     `.hud` ist ein Raster mit `align-content:start`: Seine Zeile ist nur so
+     hoch wie ihr Inhalt, und `max-height:100%` löste sich damit auf genau
+     diese Inhaltshöhe auf — ein Zirkelschluss. Gemessen auf einem Telefon im
+     Querformat war die Spalte dadurch **99 Punkte hoch statt 306**, und die
+     Rangliste zeichnete zehn Plätze, von denen drei bis vier zu sehen waren.
+     Thomas hat das am 15.09.2026 gemeldet: „Rangliste ist nach dem ersten
+     Platz abgeschnitten."
+
+     `dvh` statt `vh`, weil die Adress- und Werkzeugleiste eines Browsers
+     sonst nicht abgezogen wird — und genau im Browser spielt er. */
   .side{display:flex;flex-direction:column;align-items:flex-end;gap:9px;
-        max-height:100%;overflow:hidden}
+        max-height:calc(100vh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        overflow:hidden}
   .side .plate{margin-top:0}
-  body.touch .side{max-height:calc(100% - var(--pad-room, 104px))}
+  body.touch .side{
+        max-height:calc(100vh - 20px - var(--pad-room, 104px)
+                        - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        max-height:calc(100dvh - 20px - var(--pad-room, 104px)
+                        - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
   .mass{font-family:var(--serif);font-size:36px;line-height:.9;color:var(--brass)}
   .mass small{display:block;font-family:var(--sans);font-size:11px;color:var(--paper-2);margin-top:7px}
   .stage{margin-top:14px;max-width:260px}
@@ -914,6 +932,14 @@
      gewachsen ist nur, was man antippen kann. */
   body.touch .konsBlock h2 em button{min-height:44px;padding:0 10px;margin:-15px -10px}
   #startVeil .plate.recbox{background:var(--block);border-radius:12px;margin:0;min-width:0}
+  /* Wie viele Plätze der Startbildschirm zeigt, hängt daran, wie viel Platz
+     die rechte Spalte hat. Fünf sind es im Entwurf und auf einem normalen
+     Bildschirm; auf einem flacheren werden es vier oder drei, statt dass die
+     Liste unten abgeschnitten wird. Wer alle sehen will, öffnet
+     „Ranglisten" in der Kopfzeile. Gemessen: Bei 1280 × 720 war von fünf
+     Zeilen genau eine zu sehen. */
+  @media (max-height:820px){ #boardList .rankrow:nth-child(n+5){display:none} }
+  @media (max-height:745px){ #boardList .rankrow:nth-child(n+4){display:none} }
 
   /* Fortschrittszeile: dieselbe Form für Errungenschaften und alles andere,
      was einen Balken braucht. */
@@ -1736,7 +1762,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 76 · updated 15 September 2026 ·
+      <p class="updated">Version 77 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>

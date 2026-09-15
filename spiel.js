@@ -3799,29 +3799,6 @@ const esc = s => String(s).replace(/[<>&"]/g, c => ({"<":"&lt;",">":"&gt;","&":"
 const PAD_ROOM = 104;
 document.documentElement.style.setProperty("--pad-room", PAD_ROOM + "px");
 
-let boardMax = 6, boardNext = 0;
-function boardRoom(){
-  const now = performance.now();
-  if (now < boardNext) return boardMax;
-  boardNext = now + 500;
-  const plate = $("board") && $("board").parentElement;
-  const side = plate && plate.parentElement;
-  if (!plate || !side) return boardMax;
-  /* Gemessen wird von der Oberkante der Ranglistentafel bis zur Unterkante
-     dessen, was die Spalte einnehmen darf. Die aktuelle Höhe der Spalte taugt
-     dafür nicht: Sie hängt an der Zeilenzahl, die hier gerade bestimmt werden
-     soll — die Rangliste könnte dann nie wieder wachsen.
-     Die Grenze ist der Innenbereich der Anzeige, auf Touchgeräten abzüglich
-     des Streifens für die Daumentasten (PAD_ROOM, dieselbe Zahl wie im CSS). */
-  const hud = side.parentElement;
-  const unten = hud.getBoundingClientRect().bottom
-    - (parseFloat(getComputedStyle(hud).paddingBottom) || 0)
-    - (isTouch ? PAD_ROOM : 0);
-  const frei = unten - plate.getBoundingClientRect().top - 42;  // 42: Überschrift, Rahmen
-  boardMax = clamp(Math.floor(frei / 19), 3, 10);
-  return boardMax;
-}
-
 function paintBoard(gm){
   let list;
   if (Game.online){
@@ -3846,14 +3823,23 @@ function paintBoard(gm){
   }
   list.sort((a,b) => b.m-a.m);
 
-  const max = boardRoom();
+  /* **Fünf Plätze und der eigene.** Thomas' Vorgabe vom 15.09.2026: „Die
+     ersten 5 Plätze reichen und der eigene Platz."
 
-  /* Der eigene Eintrag steht immer im Bild, auch wenn er weit hinten liegt —
-     sonst sieht man ausgerechnet die eigene Platzierung nicht. */
+     Vorher rechnete `boardRoom()` aus, wie viele Zeilen in die Spalte
+     passen — bis zu zehn. Das hatte zwei Nachteile: Die Liste wuchs und
+     schrumpfte beim Spielen, je nachdem was sonst gerade in der Spalte
+     stand, und sie war die höchste Tafel im Bild, obwohl sie nicht die
+     wichtigste ist. Fünf ist eine Zahl, die man auf einen Blick erfasst.
+
+     Der eigene Eintrag kommt dazu, wenn er nicht unter den ersten fünf ist —
+     sonst sähe man ausgerechnet die eigene Platzierung nicht. Er ersetzt
+     dabei niemanden: Es werden dann sechs Zeilen, und die sechste ist die
+     eigene. */
+  const BOARD_PLAETZE = 5;
   const meIdx = list.findIndex(e => e.me);
-  const zeigen = list.slice(0, max).map((e,i) => ({e, rang:i+1}));
-  if (meIdx >= max){
-    zeigen.pop();
+  const zeigen = list.slice(0, BOARD_PLAETZE).map((e,i) => ({e, rang:i+1}));
+  if (meIdx >= BOARD_PLAETZE){
     zeigen.push({e:list[meIdx], rang:meIdx+1});
   }
   $("board").innerHTML = zeigen.map(({e,rang}) =>
@@ -4298,6 +4284,11 @@ setInterval(() => {
    Höchstens einmal je Minute geholt: Die Liste ändert sich langsam, und jeder
    Besuch des Menüs eine Abfrage wäre Last ohne Gegenwert. */
 let bestenCache = { zeit: 0, html: "" };
+/* Wie viele Plätze auf dem Startbildschirm stehen. Fünf — so steht es im
+   Entwurf, und mehr passt in der rechten Spalte nicht, ohne dass die Liste
+   unten abgeschnitten wird. Wer alle sehen will, öffnet „Ranglisten". */
+const BESTEN_ZEILEN = 5;
+
 async function bestenlisteZeigen(){
   const box = $("boardBox"), liste = $("boardList");
   if (!box || !liste) return;
@@ -4307,7 +4298,7 @@ async function bestenlisteZeigen(){
     liste.innerHTML = bestenCache.html; box.hidden = false; return;
   }
   const a = await Konto.rangliste("best", null, null);
-  const zeilen = (a && a.liste) ? a.liste.slice(0, 8) : [];
+  const zeilen = (a && a.liste) ? a.liste.slice(0, BESTEN_ZEILEN) : [];
   if (!zeilen.length){ box.hidden = true; return; }
 
   const ich = Konto.profil ? Konto.profil.id : -1;
@@ -4512,11 +4503,17 @@ function buildBoost(){
     b.addEventListener("click", () => { Profile.boost = f; buildBoost(); });
     box.appendChild(b);
   }
-  $("boostNote").textContent =
+  const notiz = $("boostNote");
+  notiz.textContent =
     erlaubt                ? t("boostnote")
     : istAngemeldet()      ? t("practiceacct")
     : modeId === "online"  ? t("boostacct")
                            : t("boostonly");
+  /* Sichtbar nur, wenn er etwas erklärt: Entweder wirkt der Bonus hier
+     nicht — dann muss man wissen, warum — oder es ist einer gewählt, und
+     dann gehört der Hinweis dazu, was er kostet. Bei „Aus" und erlaubtem
+     Bonus schweigt er; genau so steht es im Entwurf. */
+  notiz.hidden = erlaubt && Profile.boost === 1;
 }
 
 function buildStrip(){
@@ -4997,6 +4994,11 @@ addEventListener("keydown", e => {
 
 /* Eingaben sofort säubern, damit niemand einen untippbaren Namen wählt */
 function guardName(input, note){
+  /* Die Regel steht erst da, wenn sie jemanden betrifft. Vorher ist sie ein
+     Absatz, der jedem im Weg steht, der sie schon kennt — im Startbildschirm
+     hat sie die Bestenliste aus dem Bild geschoben. */
+  const hinweis = $(note);
+  if (hinweis && note === "nameNote") hinweis.hidden = true;
   input.addEventListener("input", () => {
     const before = input.value, after = cleanName(before);
     if (after !== before){
