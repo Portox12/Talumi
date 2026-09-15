@@ -122,9 +122,9 @@ function einstellungenSichern(){
    NOCH NICHT ERLEDIGT (steht auch in CLAUDE.md):
    - Vor dem ersten echten Werbeskript ein **Anwalt**. War Teil der
      Entscheidung; Rechtstexte sind nicht die Arbeit einer KI.
-   - `about.html` und `index.html` behaupten heute „no cookies, no tracking".
-     Diese Sätze müssen **am selben Tag** weg, an dem das erste Werbeskript
-     live geht.
+   - Die Sätze „no ads / no cookies / no tracking" sind seit Schritt 95 auf
+     Thomas' Anweisung aus allen Texten entfernt (index.html, about.html,
+     datenschutz.html, sprachen.js `fair1`).
    - Die Datenschutzerklärung braucht Abschnitte zu Werbenetz und Messung.
    Solange nichts eingetragen ist, hat dieser Bau schlicht nichts zu tun und
    zeigt auch keinen Kasten. */
@@ -330,59 +330,162 @@ const $ = id => document.getElementById(id);
    zwischen zwei Unterbrechungen. Werbung nach jedem Tod ist im Genre der
    häufigste Beschwerdegrund — das darf hier technisch nicht passieren
    können. */
+/* Welches Portal? (Schritt 95)
+   1. `<meta name="talumi-portal" content="poki|crazygames">` — setzt
+      `portal-paket.js` beim Bauen des Pakets für das jeweilige Portal.
+   2. Rückfall über den Hostnamen, falls ein Portal die Dateien anders
+      ausliefert als erwartet.
+   Auf talumi.io ergibt beides "" — dort lädt **nichts** Fremdes.
+
+   Warum das SDK hier ohne `Einwilligung.skriptLaden()` geladen wird: Auf dem
+   Portal ist das Portal selbst Anbieter der Seite. Poki und CrazyGames holen
+   die Einwilligung ihrer Besucher selbst ein und schreiben vor, dass ihr SDK
+   geladen wird; ein zweiter Einwilligungskasten des Spiels ist dort sogar
+   unerwünscht. Auf der eigenen Adresse gilt der Einwilligungs-Gate
+   unverändert. */
+const PORTAL_NAME = (() => {
+  try {
+    const m = document.querySelector('meta[name="talumi-portal"]');
+    const c = m && String(m.getAttribute("content") || "").toLowerCase();
+    if (c === "poki" || c === "crazygames") return c;
+    const h = location.hostname;
+    if (/(^|\.)poki-gdn\.com$|(^|\.)poki\.com$|(^|\.)poki\.io$/.test(h)) return "poki";
+    if (/(^|\.)crazygames\.[a-z.]+$|(^|\.)1001juegos\.com$/.test(h)) return "crazygames";
+  } catch(_){}
+  return "";
+})();
+
 const Portal = {
-  ready:false, lastBreak:0, deaths:0, sinceAd:0,
+  name: PORTAL_NAME,
+  sdk: null,            // bereit, sobald das SDK initialisiert ist
+  ready:false, lastBreak:0, deaths:0, sinceAd:0, imSpiel:false,
   started: performance.now()/1000,
 
   /* Werberegeln als Code, nicht als Vorsatz.
      Vier Bedingungen müssen ALLE erfüllt sein, bevor eine Unterbrechung kommt:
 
-     MIN_DEATHS   mindestens vier Tode seit der letzten Werbung
-     MIN_BREAK    mindestens drei Minuten seit der letzten Werbung
-     GRACE_DEATHS die ersten drei Tode bleiben frei
-     GRACE_TIME   die ersten fünf Minuten einer Sitzung bleiben frei
+     MIN_DEATHS   Tode seit der letzten Werbung
+     MIN_BREAK    Sekunden seit der letzten Werbung
+     GRACE_DEATHS die ersten Tode einer Sitzung bleiben frei
+     GRACE_TIME   die ersten Sekunden einer Sitzung bleiben frei
 
-     Warum nicht nur die Todeszählung: Vier Tode können in vierzig Sekunden
-     passieren — Spawn-Tod, früher Royale-Ausstieg, missglückte Teilung. Die
-     Werbung träfe dann genau den frustrierten Anfänger. Warum die Schonfrist:
-     Wer neu ist, hat sich noch nicht für das Spiel entschieden; eine
-     Unterbrechung in den ersten Minuten kostet ihn ganz.
+     Unterbrechungen kommen ausschließlich zwischen zwei Runden, nie im Spiel.
 
-     Unterbrechungen kommen ausschließlich zwischen zwei Runden, nie im Spiel. */
-  MIN_BREAK:180, MIN_DEATHS:4, GRACE_DEATHS:3, GRACE_TIME:300,
+     Schritt 95: Thomas will Geld verdienen, Bewertungen sollen trotzdem gut
+     bleiben. Die Werte sind deshalb gelockert, liegen aber weiter klar unter
+     Agar.io (dort fast jeder Tod): höchstens alle drei Minuten, frühestens
+     nach drei Minuten und zwei Toden, dann jeder zweite Tod. CrazyGames
+     erzwingt die drei Minuten ohnehin selbst (`adCooldown`). */
+  MIN_BREAK:180, MIN_DEATHS:2, GRACE_DEATHS:2, GRACE_TIME:180,
 
-  loadingStart(){ /* SDK: loadingStart */ },
-  loadingStop(){ this.ready = true; /* SDK: loadingStop */ },
-  gameplayStart(){ /* SDK: gameplayStart */ },
-  gameplayStop(){ /* SDK: gameplayStop */ },
+  /* --- SDK laden --------------------------------------------------------
+     Scheitert irgendetwas (Werbeblocker, Netz), läuft das Spiel ohne
+     Portalfunktionen weiter — nie ein schwarzer Bildschirm. */
+  init(){
+    if (!this.name || this._init) return;
+    this._init = true;
+    try { document.documentElement.classList.add("portal", "portal-" + this.name); } catch(_){}
+    const url = this.name === "poki"
+      ? "https://game-cdn.poki.com/scripts/v2/poki-sdk.js"
+      : "https://sdk.crazygames.com/crazygames-sdk-v3.js";
+    const s = document.createElement("script");
+    s.src = url; s.async = true;
+    s.onload = async () => {
+      try {
+        if (this.name === "poki"){
+          await window.PokiSDK.init().catch(() => {});
+          this.sdk = window.PokiSDK;
+        } else {
+          const C = window.CrazyGames && window.CrazyGames.SDK;
+          await C.init();
+          if (C.environment === "disabled") return;
+          this.sdk = C;
+        }
+        if (this.ready) this._loadingStop();
+        else this._loadingStart();
+        if (this.imSpiel) this._gameplayStart();
+      } catch(_){ this.sdk = null; }
+    };
+    s.onerror = () => { this.sdk = null; };
+    document.head.appendChild(s);
+  },
+
+  _ruf(fn){ if (!this.sdk) return; try { fn(this.sdk); } catch(_){} },
+  _loadingStart(){ this._ruf(S => { if (this.name === "crazygames") S.game.loadingStart(); }); },
+  _loadingStop(){ this._ruf(S => this.name === "poki" ? S.gameLoadingFinished() : S.game.loadingStop()); },
+  _gameplayStart(){ this._ruf(S => this.name === "poki" ? S.gameplayStart() : S.game.gameplayStart()); },
+  _gameplayStop(){ this._ruf(S => this.name === "poki" ? S.gameplayStop() : S.game.gameplayStop()); },
+
+  loadingStart(){ this.init(); this._loadingStart(); },
+  loadingStop(){ this.ready = true; this._loadingStop(); },
+  gameplayStart(){ if (this.imSpiel) return; this.imSpiel = true; this._gameplayStart(); },
+  gameplayStop(){ if (!this.imSpiel) return; this.imSpiel = false; this._gameplayStop(); },
 
   countDeath(){ this.deaths++; this.sinceAd++; },
 
   mayBreak(){
-    if (!this.ready) return false;
+    if (!this.ready || !this.sdk) return false;
     const now = performance.now()/1000;
-    if (this.deaths <= this.GRACE_DEATHS) return false;
+    if (this.deaths < this.GRACE_DEATHS) return false;
     if (now - this.started < this.GRACE_TIME) return false;
     if (this.sinceAd < this.MIN_DEATHS) return false;
     if (now - this.lastBreak < this.MIN_BREAK) return false;
     return true;
   },
 
-  /* Ruft weiter, egal ob Werbung lief — der Spieler wartet nie auf eine
-     fehlgeschlagene Anzeige. */
+  /* Ton weg, solange eine Anzeige läuft — Vorgabe beider Portale. */
+  stumm(an){
+    try {
+      if (!Sound.ctx) return;
+      if (an) Sound.ctx.suspend(); else Sound.ctx.resume();
+    } catch(_){}
+  },
+
+  /* Eine Anzeige zeigen und danach genau einmal weiter. Startet die Anzeige
+     nicht binnen fünf Sekunden, geht es ohne sie weiter: Der Spieler wartet
+     nie auf ein Werbenetz, das nicht antwortet. Ist sie einmal gestartet,
+     meldet das SDK ihr Ende verlässlich selbst. */
+  _anzeige(art, fertig){
+    let erledigt = false, gestartet = false;
+    const ende = ok => { if (erledigt) return; erledigt = true; this.stumm(false); fertig(!!ok); };
+    const start = () => { gestartet = true; this.stumm(true); };
+    setTimeout(() => { if (!gestartet) ende(false); }, 5000);
+    try {
+      if (this.name === "poki"){
+        const p = art === "rewarded"
+          ? this.sdk.rewardedBreak({ size:"medium", onStart: start })
+          : this.sdk.commercialBreak(start);
+        Promise.resolve(p).then(ok => ende(art === "rewarded" ? ok : true), () => ende(false));
+      } else {
+        this.sdk.ad.requestAd(art === "rewarded" ? "rewarded" : "midgame", {
+          adStarted: start,
+          adFinished: () => ende(true),
+          adError: () => ende(false)
+        });
+      }
+    } catch(_){ ende(false); }
+  },
+
+  /* Ruft weiter, egal ob Werbung lief. */
   breakBefore(next){
     if (!this.mayBreak()) return next();
     this.lastBreak = performance.now()/1000;
     this.sinceAd = 0;
     this.gameplayStop();
-    // SDK: commercialBreak(next) — bis dahin direkt weiter
-    next();
+    this._anzeige("midgame", () => next());
   },
 
-  /* Freiwillige Belohnungswerbung. Bleibt ohne SDK unsichtbar, damit im Spiel
-     kein Knopf steht, der nichts tut. */
-  rewardAvailable(){ return false; },
-  offerReward(onDone){ onDone(false); }
+  /* Freiwillige Belohnungswerbung. Ohne SDK unsichtbar, damit kein Knopf
+     steht, der nichts tut. Belohnt wird **nur** bei `ok` — Portalvorgabe. */
+  rewardAvailable(){ return !!this.sdk; },
+  offerReward(onDone){
+    if (!this.sdk) return onDone(false);
+    /* Eine Belohnungsanzeige zählt als Unterbrechung: Direkt danach soll
+       nicht auch noch eine Pflichtanzeige kommen. */
+    this.lastBreak = performance.now()/1000;
+    this.sinceAd = 0;
+    this._anzeige("rewarded", onDone);
+  }
 };
 
 /* =====================================================================
@@ -798,6 +901,123 @@ const Profile = {
   }
 };
 let skin = SKINS[0];
+
+/* =====================================================================
+   GASTFORTSCHRITT — bleibt im Browser (Schritt 95)
+
+   Bis Schritt 94 war der Fortschritt ohne Konto nach jedem Neuladen weg, und
+   Onlinerunden zahlten Gästen gar nichts: Der Todesbildschirm meldete
+   „Freundschaftsspiel — nur Übung", obwohl der Gast im Freien Raum gespielt
+   hatte. Auf Spieleportalen spielt praktisch **jeder** als Gast (eine
+   Google-Anmeldung funktioniert dort im eingebetteten Fenster gar nicht) —
+   ohne gespeicherten Fortschritt hätte dort niemand einen Grund
+   wiederzukommen.
+
+   Was hier liegt, ist **Anzeige für den Gast selbst**, nicht Wahrheit für
+   den Server. Wer es im Browser umschreibt, betrügt nur sich: Ranglisten,
+   Ehre, Käufe und alles Kontogebundene hängen weiter ausschließlich am
+   Server, und `einstellen()` übernimmt nie Level, XP oder Ore aus dem Client.
+   Deshalb wird Gastfortschritt beim Anlegen eines Kontos auch **nicht**
+   übernommen.
+
+   Solange ein Sitzungstoken existiert, wird nichts geschrieben — sonst
+   überschriebe der Kontostand den Gaststand. Nach dem Abmelden ist der
+   Gaststand wieder da. */
+const Gast = {
+  KEY: "talumi.gast",
+  V: 1,
+  laden(){
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch(_){ return; }
+    if (!r || r.v !== this.V) return;
+    const zahl = (x, max) => Math.max(0, Math.min(max, Math.floor(+x || 0)));
+    Profile.level = Math.max(1, zahl(r.level, MAX_LEVEL));
+    Profile.xp    = zahl(r.xp, 1e9);
+    Profile.ore   = zahl(r.ore, 1e9);
+    Profile.best  = zahl(r.best, 1e9);
+    Profile.hintRuns = zahl(r.hintRuns, 99);
+    if (r.rec && typeof r.rec === "object")
+      for (const k in Profile.rec) Profile.rec[k] = zahl(r.rec[k], 1e9);
+    const bekannt = new Set(SKINS.map(x => x.id));
+    Profile.owned = new Set([
+      ...SKINS.filter(x => x.lv && x.lv <= Profile.level).map(x => x.id),
+      ...(Array.isArray(r.owned) ? r.owned.filter(id => bekannt.has(id)) : [])
+    ]);
+    if (Array.isArray(r.friends))
+      Profile.friends = r.friends.map(f => cleanName(String(f)).trim())
+        .filter(Boolean).slice(0, 50);
+    const gew = SKINS.find(x => x.id === r.skin);
+    if (gew && Profile.owned.has(gew.id)){ Profile.skin = gew.id; skin = gew; }
+    if (typeof r.name === "string") this.name = cleanName(r.name).trim().slice(0, NAME_MAX);
+    if (r.bonus && typeof r.bonus === "object")
+      this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)) };
+  },
+
+  /* Name des Gastes (Schritt 95). Vorher war ein getippter Name nach dem
+     Neuladen weg, und wer keinen tippte, hieß „Namenloser Körper" — auf
+     einem Portal hießen dann halbe Ranglisten so. Jetzt bekommt ein Gast
+     beim ersten Besuch einen Namen, den er im Menü ändern kann. Die Wörter
+     überschneiden sich nicht mit den Namen der Computergegner. */
+  name: "",
+  NAMENSWORTE: ["Nova","Comet","Meteor","Nebula","Photon","Zenith","Aurora",
+                "Astro","Cosmo","Stardust","Lumen","Vortex","Solar","Lunar"],
+  /* Tagesreihe für Gäste (Schritt 96) — dieselbe Staffel wie am Server
+     (`BONUS_ANZEIGE`), gezählt in Kalendertagen der Ortszeit. */
+  bonus: { tag: 0, serie: 0 },
+  heute(){ return Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); },
+  bonusStand(){
+    const h = this.heute(), b = this.bonus;
+    return { offen: b.tag !== h,
+             serie: (b.tag === h || b.tag === h - 1) ? b.serie : 0 };
+  },
+  bonusHolen(){
+    const h = this.heute(), b = this.bonus;
+    if (b.tag === h) return { fehler: "schon_abgeholt" };
+    const serie = b.tag === h - 1 ? Math.min(7, b.serie + 1) : 1;
+    const ore = BONUS_ANZEIGE[serie - 1] || 0;
+    this.bonus = { tag: h, serie };
+    Profile.ore += ore;
+    this.sichern();
+    return { ok: true, tag: serie, ore };
+  },
+  nameVorschlag(){
+    const w = this.NAMENSWORTE[(Math.random() * this.NAMENSWORTE.length) | 0];
+    return (w + " " + (10 + ((Math.random() * 990) | 0))).slice(0, NAME_MAX);
+  },
+  nameEinsetzen(){
+    try {
+      const feld = document.getElementById("name");
+      if (!feld || feld.value.trim()) return;
+      if (!this.name) this.name = this.nameVorschlag();
+      feld.value = this.name;
+    } catch(_){}
+  },
+  sichern(){
+    try {
+      /* Freunde gehören immer dem Browser, auch mit Konto — also werden sie
+         auch dann fortgeschrieben, der Rest nur ohne Sitzung. */
+      const alt = JSON.parse(localStorage.getItem(this.KEY) || "null");
+      const mitKonto = typeof Konto !== "undefined" && !!Konto.token;
+      const d = (mitKonto && alt && alt.v === this.V) ? alt : {
+        v: this.V, level: Profile.level, xp: Math.floor(Profile.xp),
+        ore: Math.floor(Profile.ore), best: Math.floor(Profile.best),
+        hintRuns: Profile.hintRuns, rec: Profile.rec,
+        owned: [...Profile.owned], skin: Profile.skin
+      };
+      if (!mitKonto){
+        const feld = document.getElementById("name");
+        const n = feld ? cleanName(feld.value).trim() : "";
+        if (n) this.name = n;
+        if (this.name) d.name = this.name;
+        d.bonus = this.bonus;
+      }
+      if (mitKonto && !(alt && alt.v === this.V)) return;
+      d.friends = Profile.friends.slice(0, 50);
+      localStorage.setItem(this.KEY, JSON.stringify(d));
+    } catch(_){}
+  }
+};
+Gast.laden();
 
 /* =====================================================================
    2b) SOUND
@@ -1419,6 +1639,7 @@ function start(name){
     const cost = BOOST_COST[Profile.boost];
     if (Profile.ore >= cost){
       Profile.ore -= cost;
+      Gast.sichern();
       startMass = M.start * Profile.boost;
     } else {
       Profile.boost = 1;
@@ -1975,6 +2196,36 @@ function checkGoals(){
   }
 }
 
+/* Funken, Ringe, Levelanzeige und Erschütterung altern lassen (Schritt 98).
+   Stand bis v78 nur in `step()` — und das läuft **nur offline**. Online
+   ersetzt `Net.schritt()` den Schritt, also alterte dort nichts: Jeder Ring
+   aus einem Zersplittern-Ereignis blieb für immer als gelber Kreis auf der
+   Karte, und jeder Funke wurde bis zum Rundenende in jedem Bild gezeichnet.
+   Nach ein paar Minuten waren das Tausende — das Spiel ruckelte, bis man sich
+   kaum noch bewegte. */
+function effekteAltern(dt){
+  // Funken bewegen
+  for (let i=Game.sparks.length-1;i>=0;i--){
+    const s = Game.sparks[i];
+    s.x += s.vx*dt; s.y += s.vy*dt;
+    s.vx *= Math.exp(-3.2*dt); s.vy *= Math.exp(-3.2*dt);
+    s.life -= dt;
+    if (s.life <= 0) Game.sparks.splice(i,1);
+  }
+  if (Game.levelFx){
+    Game.levelFx.life -= dt;
+    if (Game.levelFx.life <= 0) Game.levelFx = null;
+  }
+
+  // Ringe und Erschütterung abklingen lassen
+  for (let i=Game.rings.length-1;i>=0;i--){
+    const g = Game.rings[i];
+    g.life -= dt*1.9; g.r += (g.max-g.r)*Math.min(1, dt*6);
+    if (g.life <= 0) Game.rings.splice(i,1);
+  }
+  Game.shake = Math.max(0, Game.shake - dt*2.4);
+}
+
 function step(dt){
   if (Game.online){ Net.schritt(dt); return; }
   Game.t += dt;
@@ -2210,26 +2461,7 @@ function step(dt){
     }
   }
 
-  // Funken bewegen
-  for (let i=Game.sparks.length-1;i>=0;i--){
-    const s = Game.sparks[i];
-    s.x += s.vx*dt; s.y += s.vy*dt;
-    s.vx *= Math.exp(-3.2*dt); s.vy *= Math.exp(-3.2*dt);
-    s.life -= dt;
-    if (s.life <= 0) Game.sparks.splice(i,1);
-  }
-  if (Game.levelFx){
-    Game.levelFx.life -= dt;
-    if (Game.levelFx.life <= 0) Game.levelFx = null;
-  }
-
-  // Ringe und Erschütterung abklingen lassen
-  for (let i=Game.rings.length-1;i>=0;i--){
-    const g = Game.rings[i];
-    g.life -= dt*1.9; g.r += (g.max-g.r)*Math.min(1, dt*6);
-    if (g.life <= 0) Game.rings.splice(i,1);
-  }
-  Game.shake = Math.max(0, Game.shake - dt*2.4);
+  effekteAltern(dt);
 
   const feeders = [...Game.cells, ...Game.rivals];
   for (const f of feeders){
@@ -2362,7 +2594,7 @@ function finish(timeUp){
      simulierten Werten — nie aus Zahlen, die der Client mitschickt. */
   /* XP wurde bereits während der Runde vergeben (addXpLive). Hier nur noch
      anzeigen, was zusammengekommen ist — sonst zählte es doppelt. */
-  const xpGain = Math.round(Game.xpRun);
+  let xpGain = Math.round(Game.xpRun);
 
   /* Ore setzt sich aus vier Teilen zusammen, damit sichtbar wird, wofür
      bezahlt wird — und damit hohe Spitzenmasse der stärkste Hebel ist. */
@@ -2390,7 +2622,13 @@ function finish(timeUp){
      fühlt sich beim Spielen wie ein Fehler an. Bestwerte gehören zum Konto
      und werden aus demselben Grund nicht lokal fortgeschrieben. */
   const aufKonto = Konto.angemeldet();
-  const paid = MODE().rewards > 0 && !aufKonto;
+  /* Gast im Onlinemodus (Schritt 95): Der Server zahlt nur Konten. Die
+     Zahlen dieser Runde (Spitzenmasse, Abschüsse) hat aber er gerechnet und
+     geschickt — daraus bekommt der Gast dieselbe Abrechnung wie offline,
+     gutgeschrieben im Browser. Vorher stand hier „Freundschaftsspiel — nur
+     Übung", obwohl im Freien Raum gespielt wurde. */
+  const gastOnline = !!MODE().online && !aufKonto;
+  const paid = (MODE().rewards > 0 || gastOnline) && !aufKonto;
 
   if (!aufKonto){
     const R = Profile.rec;
@@ -2401,11 +2639,22 @@ function finish(timeUp){
     if (Game.won && Game.royale) R.royale++;
     if (Game.won && Game.teams)  R.clan++;
   }
+  let unlocked = Game.unlockedRun;
   if (paid){
     Profile.ore += oreGain;
     if (beat) Profile.best = Math.round(peak);
+    /* Online vergibt der Client unterwegs kein XP (er simuliert das Fressen
+       nicht selbst). Also am Ende nach derselben Formel wie der Server:
+       `xp: Math.round(peak * 0.6)` in `belohnung()`. */
+    if (gastOnline && xpGain === 0){
+      const dazu = Math.round(peak * 0.6);
+      const neu = Profile.addXp(dazu);
+      Game.xpRun = dazu;
+      if (neu.length){ skin = neu[neu.length-1]; Profile.skin = skin.id; }
+      unlocked = unlocked.concat(neu);
+    }
   }
-  const unlocked = Game.unlockedRun;
+  Gast.sichern();
 
   const total = Math.max(1, Game.killer ? Game.killer.mine : peak);
   const k = Game.killer;
@@ -2480,6 +2729,8 @@ function finish(timeUp){
           `<p class="gain">${esc(t("rang"))}: <b>${esc(t("rk" + clamp(Net.ehre.rang,0,RANG_MAX)))}</b></p>`
         : `<p class="hintline">${esc(t("ehrekeine"))} ${esc(t("ehrewie"))}</p>`;
     }
+    $("endZiel").innerHTML = naechstesZiel();
+    $("endRw").innerHTML = "";
     $("endGains").innerHTML = html;
 
     Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
@@ -2503,6 +2754,7 @@ function finish(timeUp){
        liest, sucht den Fehler bei sich. */
     $("endGains").innerHTML = `<p class="hintline">${
       MODE().rewards > 0 ? t("practiceacct") : t("practice")}</p>`;
+    $("endZiel").innerHTML = ""; $("endRw").innerHTML = "";
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
     return;
@@ -2521,11 +2773,39 @@ function finish(timeUp){
   html += rows.filter(r => r[1] > 0)
     .map(r => `<div class="tally"><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("");
   html += `<div class="tally sum"><span>${t("oreearned")}</span><span>+${oreGain}</span></div>`;
-  html += `<p class="gain">+<b>${xpGain}</b> XP</p>`;
+  html += `<p class="gain">+<b>${Math.round(Game.xpRun)}</b> XP</p>`;
   if (unlocked.length)
     html += `<p class="gain">${t("levelup", Profile.level)} <b>` +
             unlocked.map(s => s.label).join(", ") + `</b></p>`;
+  /* Freiwillige Belohnungsanzeige (nur auf Portalen, nur Gäste — deren Ore
+     liegt ohnehin im Browser). Einmal pro Runde, deutlich als freiwillig
+     gekennzeichnet, belohnt nur bei vollständig gesehener Anzeige. */
+  $("endZiel").innerHTML = naechstesZiel();
+  const doppelt = oreGain > 0 && Portal.rewardAvailable();
+  /* Der Knopf steht bei den Aktionen unter „Nochmal", nicht in der
+     Abrechnung: Die scrollt auf Handys, und ganz unten sah ihn niemand. */
+  $("endRw").innerHTML = doppelt
+    ? `<button type="button" id="rwBtn" class="quiet" style="margin-top:6px">${esc(t("rw_double", oreGain))}</button>` +
+      `<p class="hintline" id="rwNote" style="text-align:center">${esc(t("rw_optional"))}</p>`
+    : "";
   $("endGains").innerHTML = html;
+  if (doppelt){
+    const knopf = $("rwBtn"), notiz = $("rwNote");
+    knopf.addEventListener("click", () => {
+      knopf.disabled = true;
+      Portal.offerReward(ok => {
+        if (ok){
+          Profile.ore += oreGain;
+          Gast.sichern();
+          paintPurse(); buildGrid();
+          notiz.textContent = t("rw_done", oreGain);
+        } else {
+          notiz.textContent = t("rw_none");
+        }
+        knopf.remove();
+      });
+    });
+  }
 
   paintPurse(); buildGrid();
   hideAll(); $("endVeil").hidden = false;
@@ -3442,6 +3722,21 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
     g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
     g.textAlign = "left"; g.fillStyle = TH().paper || "#e8ddc8";
     g.fillText(z.name, ox, cy + .5);
+
+    /* Titel in Gold über dem Namen (Schritt 97). Leicht leuchtend, damit er
+       auch auf hellen Designs und im Gewimmel lesbar bleibt. */
+    if (z.titel){
+      const tt = t("titel_name").toUpperCase();
+      g.font = `700 ${ZEILE_H - 2}px Georgia, serif`;
+      g.textAlign = "center";
+      const ty = cy - ph/2 - ZEILE_H * .62;
+      g.lineWidth = 3; g.strokeStyle = "rgba(20,12,0,.75)";
+      g.strokeText(tt, px, ty);
+      g.shadowColor = "rgba(255,200,80,.8)"; g.shadowBlur = 8;
+      g.fillStyle = "#f2c14e";
+      g.fillText(tt, px, ty);
+      g.shadowBlur = 0;
+    }
   }
   g.restore();
 }
@@ -3590,6 +3885,7 @@ function draw(){
       if (unterPulsar(c.x, c.y, radiusOf(c.m))) continue;
       traeger.add(c);
       zeilen.push({x:c.x, y:c.y, r:radiusOf(c.m), name:c.name,
+                   titel: Game.online && Net.kt > 0 && c.gid === Net.kt,
                    level:Number.isInteger(c.lvl) ? c.lvl : null,
                    rang: Number.isInteger(c.rang) ? c.rang : null});
     }
@@ -3599,6 +3895,7 @@ function draw(){
     if (meins && !unterPulsar(meins.x, meins.y, radiusOf(meins.m))){
       traeger.add(meins);
       zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name,
+                   titel: Game.online && Net.kt > 0 && Net.kt === Net.you,
                    level:Profile.level,
                    rang: istAngemeldet() && Number.isInteger(Konto.profil.rang)
                          ? Konto.profil.rang : null});
@@ -3809,9 +4106,9 @@ function paintBoard(gm){
        Platzziffer ist dann eine Untergrenze, weil der eigene Rang nicht
        mitgeschickt wird. */
     list = Net.top.map(e => +e.id === Net.you
-      ? {name:Game.name, m:+e.m, me:true}
-      : {name:mitMarke(String(e.n || "?"), e.b), m:+e.m});
-    if (gm > 0 && !list.some(e => e.me)) list.push({name:Game.name, m:gm, me:true});
+      ? {name:Game.name, m:+e.m, me:true, titel: +e.id === Net.kt}
+      : {name:mitMarke(String(e.n || "?"), e.b), m:+e.m, titel: +e.id === Net.kt});
+    if (gm > 0 && !list.some(e => e.me)) list.push({name:Game.name, m:gm, me:true, titel: Net.kt === Net.you});
   } else {
     const byGid = new Map();
     for (const r of Game.rivals){
@@ -3842,10 +4139,16 @@ function paintBoard(gm){
   if (meIdx >= BOARD_PLAETZE){
     zeigen.push({e:list[meIdx], rang:meIdx+1});
   }
+  let titelZeile = "";
+  if (Game.online && Net.kt > 0 && !zeigen.some(z => z.e.titel)){
+    const w = Net.kt === Net.you ? {n: Game.name} : Net.wer.get(Net.kt);
+    titelZeile = `<div class="row"><span><b style="color:#f2c14e">♛</b> ${esc((w && w.n) || "?")}</span>` +
+                 `<span>${dauerText(Net.kts)}</span></div>`;
+  }
   $("board").innerHTML = zeigen.map(({e,rang}) =>
-    `<div class="row${e.me?" me":""}"><span>${rang}. ${esc(e.name)}</span>` +
+    `<div class="row${e.me?" me":""}"><span>${rang}. ${e.titel ? '<b style="color:#f2c14e">♛</b> ' : ""}${esc(e.name)}</span>` +
     `<span>${Math.round(e.m)}</span></div>`
-  ).join("");
+  ).join("") + titelZeile;
 }
 
 /* =====================================================================
@@ -4023,7 +4326,25 @@ function buildSettings(){
   /* Konto ganz unten: Wer angemeldet ist, sieht hier, als wer — und kommt
      wieder heraus. Ohne Konto steht hier nichts; ein Abmeldeknopf für
      niemanden wäre nur Verwirrung. */
-  if (!Konto.angemeldet()) return;
+  if (!Konto.angemeldet()){
+    /* Schritt 95: Ein Gast kam bisher nur über Neuladen zur Anmeldung. Wer
+       nach ein paar Runden Lust auf ein Konto bekommt, ist genau der Spieler,
+       den man halten will — also hier ein Weg dorthin. Nur, wenn der Server
+       überhaupt erreichbar ist. */
+    if (Konto.erreichbar !== true) return;
+    const gw = document.createElement("div");
+    gw.className = "opt";
+    const gt = document.createElement("div");
+    gt.innerHTML = `<b>${esc(t("k_guest"))}</b><small>${esc(t("k_why"))}</small>`;
+    const gb = document.createElement("button");
+    gb.type = "button"; gb.className = "quiet";
+    gb.style.cssText = "margin:0;width:auto;padding:6px 12px";
+    gb.textContent = t("k_signin");
+    gb.addEventListener("click", () => { kontoMeldung(""); show("accountVeil"); });
+    gw.appendChild(gt); gw.appendChild(gb);
+    box.appendChild(gw);
+    return;
+  }
   const wrap = document.createElement("div");
   wrap.className = "opt";
   const text = document.createElement("div");
@@ -4157,7 +4478,7 @@ function freundBoxMalen(){
 function show(id){
   hideAll(); $(id).hidden = false;
   if (id === "startVeil"){
-    buildStrip(); buildBoost(); buildRecords(); onlineZeigen();
+    buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen();
     bestenlisteZeigen().catch(() => {});
   }
@@ -4226,6 +4547,22 @@ function preview(canvas, pal){
   body(g, 66, 62, 36, 3000, pal, 0, "", true);
   Game.t = saveT;
 }
+/* Schritt 96: Auf dem Ergebnisbildschirm steht, wie weit es bis zum
+   nächsten Level ist und was dort wartet. „Noch eine Runde" braucht ein
+   sichtbares Ziel, das nahe genug ist, um es heute zu schaffen. Die Zahlen
+   sind dieselben wie oben im Menü (Profile, beim Konto vom Server). */
+function naechstesZiel(){
+  if (Profile.level >= MAX_LEVEL) return "";
+  const noetig = Profile.xpNeeded(Profile.level);
+  const anteil = clamp(Profile.xp / noetig, 0, 1);
+  const design = SKINS.find(s => s.lv === Profile.level + 1);
+  const text = t("e_ziel", Math.max(0, Math.ceil(noetig - Profile.xp)).toLocaleString(lang),
+                 Profile.level + 1) + (design ? `: <b>${esc(design.label)}</b>` : "");
+  return `<div style="margin:10px 0 2px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden">` +
+         `<i style="display:block;height:100%;width:${(anteil*100).toFixed(1)}%;background:var(--brass)"></i></div>` +
+         `<p class="hintline" style="margin-top:4px">${text}</p>`;
+}
+
 function nextUnlock(){
   const byLevel = SKINS.filter(s => s.lv && !Profile.owned.has(s.id))
                        .sort((a,b) => a.lv-b.lv)[0];
@@ -4357,6 +4694,7 @@ function buildFriends(){
     del.type = "button"; del.textContent = t("remove");
     del.addEventListener("click", () => {
       Profile.friends = Profile.friends.filter(f => f !== name);
+      Gast.sichern();
       buildFriends(); friendNote(t("fr_removed", name));
     });
     row.appendChild(label); row.appendChild(del);
@@ -4373,6 +4711,7 @@ function addFriend(){
     return friendNote(t("fr_already", name), "warn");
   if (Profile.friends.length >= 50) return friendNote(t("fr_full"), "warn");
   Profile.friends.push(name);
+  Gast.sichern();
   $("friendName").value = "";
   buildFriends();
   friendNote(t("fr_added", name), "good");
@@ -4390,27 +4729,33 @@ const BONUS_ANZEIGE = [50, 75, 100, 150, 200, 300, 500];
 function paintBonus(){
   const box = $("bonusBox");
   if (!box) return;
-  if (!Konto.angemeldet() || !Konto.bonus){
+  /* Schritt 96: auch Gäste bekommen die Tagesreihe. Der alte Einwand („ein
+     Bonus, den man durch Leeren des Browsers beliebig oft bekommt") gilt
+     nicht mehr: Wer den Browser leert, verliert seit Schritt 95 auch das
+     Ore. Die Reihe liegt beim Gast im Browser, beim Konto auf dem Server. */
+  const gast = !Konto.angemeldet();
+  const B = gast ? Gast.bonusStand() : Konto.bonus;
+  if (!B){
     box.hidden = true; document.body.classList.remove("bonusoffen"); return;
   }
   box.hidden = false;
 
   /* Steht ein Bonus zum Abholen bereit, rückt der Kasten auf schmalen
      Schirmen nach oben (`body.bonusoffen`, siehe Stilblatt). */
-  document.body.classList.toggle("bonusoffen", !!Konto.bonus.offen);
+  document.body.classList.toggle("bonusoffen", !!B.offen);
 
-  const serie = Konto.bonus.serie || 0;
-  const naechster = Konto.bonus.offen ? Math.min(7, serie + 1) : serie;
+  const serie = B.serie || 0;
+  const naechster = B.offen ? Math.min(7, serie + 1) : serie;
   const perlen = BONUS_ANZEIGE.map((ore, i) => {
     const nr = i + 1;
-    const zustand = nr <= serie && !Konto.bonus.offen ? "done"
+    const zustand = nr <= serie && !B.offen ? "done"
                   : nr < naechster ? "done"
                   : nr === naechster ? "next" : "";
     return `<i class="bead ${zustand}" title="${ore} Ore">${nr}</i>`;
   }).join("");
 
   let unten;
-  if (Konto.bonus.offen){
+  if (B.offen){
     unten = `<button class="quiet" id="bonusGo">` +
             `${esc(t("b_get", naechster, BONUS_ANZEIGE[naechster-1]))}</button>`;
   } else {
@@ -4421,7 +4766,7 @@ function paintBonus(){
   const knopf = $("bonusGo");
   if (knopf) knopf.addEventListener("click", async () => {
     knopf.disabled = true;
-    const e = await Konto.bonusHolen();
+    const e = gast ? Gast.bonusHolen() : await Konto.bonusHolen();
     if (e.ok){ toast(t("b_got", e.tag, e.ore)); paintPurse(); }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
     paintBonus();
@@ -4587,6 +4932,7 @@ async function pick(s){
   if (Profile.owned.has(s.id)){
     kaufLeisteAus();
     skin = s; Profile.skin = s.id;
+    Gast.sichern();
     buildGrid();
     note(t("selected", s.label), "good");
     /* Bei einem Konto gehört die Wahl auf den Server. Ohne diesen Aufruf wäre
@@ -4634,7 +4980,8 @@ async function kaufMitOre(s){
   }
 
   if (Profile.buy(s)){
-    skin = s;
+    skin = s; Profile.skin = s.id;
+    Gast.sichern();
     paintPurse(); buildGrid(); kaufLeisteAus();
     note(t("bought", s.label, s.ore.toLocaleString(lang)), "good");
   }
@@ -4664,7 +5011,9 @@ const Kauf = {
   laeuft: false,
 
   async preiseLaden(){
-    if (!Konto.kauf) { this.preise = null; return; }
+    /* Auf Portalen kein Verkauf über Paddle (Schritt 96): Poki und
+       CrazyGames verbieten Bezahlwege an ihnen vorbei. Ore-Käufe bleiben. */
+    if (!Konto.kauf || Portal.name) { this.preise = null; return; }
     const a = await Konto.ruf("/preise");
     if (a.status === 200 && a.skins && typeof a.skins === "object")
       this.preise = { kauf: !!a.kauf, skins: a.skins, grenze: +a.grenze || 0 };
@@ -4853,6 +5202,10 @@ $("kaufGeld").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitGeld(K
 })();
 
 $("guestBtn").addEventListener("click", () => { paintPurse(); buildGrid(); show("startVeil"); });
+/* Auf Spieleportalen gleich ins Menü (Schritt 95). Dort will niemand vor
+   der ersten Runde ein Formular sehen, und die Portale werten die Zeit bis
+   zum ersten Spiel. Anmelden bleibt über die Einstellungen erreichbar. */
+if (Portal.name) setTimeout(() => { paintPurse(); buildGrid(); show("startVeil"); }, 0);
 
 /* ---- Anmeldung ----------------------------------------------------
    Ein Formular für beides. `anlegen` schaltet zwischen Anmelden und
@@ -4945,7 +5298,10 @@ function nachAnmeldung(){
 const FREMD_KNOPF = { google: "googleBtn", facebook: "facebookBtn" };
 
 function fremdKnoepfeZeigen(){
-  const liste = Array.isArray(Konto.oauth) ? Konto.oauth : [];
+  /* Auf Portalen läuft das Spiel in einem eingebetteten Fenster; Google und
+     Facebook verweigern ihre Anmeldeseite dort. Ein Knopf, der sicher
+     scheitert, bleibt weg. */
+  const liste = (Array.isArray(Konto.oauth) && !Portal.name) ? Konto.oauth : [];
   let eins = false;
   for (const a in FREMD_KNOPF){
     const el = $(FREMD_KNOPF[a]);
@@ -4966,6 +5322,11 @@ function fremdAnmelden(anbieter){
   const u = kontoBasis() + "/konto/oauth/" + anbieter +
             "?ziel=" + encodeURIComponent(ziel) + "&sprache=" + encodeURIComponent(lang);
   kontoMeldung(t("k_wait"));
+  /* Merker für den Rückweg (Schritt 96): Nur ein Tab, der die Anmeldung
+     selbst begonnen hat, nimmt ein `#tok=` an. Sonst könnte ein fremder Link
+     mit dem Token eines fremden Kontos jemanden unbemerkt dort anmelden —
+     und alles, was er dann spielt oder kauft, landete in diesem Konto. */
+  try { sessionStorage.setItem("talumi.oauth", String(Date.now())); } catch(_){}
   location.href = u;
 }
 
@@ -4986,10 +5347,28 @@ $("legalClose").addEventListener("click", () =>
   show(Game.name ? "startVeil" : "accountVeil"));
 /* Sofort weiter: Kein Umweg über den Startbildschirm, gleicher Modus,
    gleicher Name. Reibung nach dem Tod ist der häufigste Abbruchgrund. */
-$("again").addEventListener("click", () => Portal.breakBefore(() => start(Game.name)));
+/* Schritt 95: „Nochmal spielen" rief im Onlinemodus `start()` direkt auf.
+   Die Verbindung hatte `finish()` aber gerade getrennt (`Net.leave()`) —
+   die neue Runde begann ohne Server und endete nach einem Bild mit
+   „Verbindung verloren". Jeder zweite Versuch eines Spielers scheiterte so,
+   vom Tag der Serveranbindung an. Jetzt nimmt „Nochmal" denselben Weg wie
+   der Startknopf, und die Taste auf dem Ergebnisbildschirm auch (die ging
+   bisher zusätzlich an der Werbepause vorbei). */
+function nochmal(){
+  const knopf = $("again");
+  if (knopf.disabled) return;
+  Sound.unlock();
+  Portal.breakBefore(() => {
+    ersatz = false;
+    if (MODES[modeId] && MODES[modeId].online) verbindenDannStarten(Game.name, knopf);
+    else start(Game.name);
+  });
+}
+$("again").addEventListener("click", nochmal);
 addEventListener("keydown", e => {
   if ($("endVeil").hidden) return;
-  if (e.code === "Enter" || e.code === "Space"){ e.preventDefault(); start(Game.name); }
+  if (e.target && e.target.closest && e.target.closest("button,input,a") && e.target.id !== "again") return;
+  if (e.code === "Enter" || e.code === "Space"){ e.preventDefault(); nochmal(); }
 });
 
 /* Eingaben sofort säubern, damit niemand einen untippbaren Namen wählt */
@@ -5009,6 +5388,7 @@ function guardName(input, note){
   });
 }
 guardName($("name"), "nameNote");
+setTimeout(() => { if (!Konto.gemerkt()) Gast.nameEinsetzen(); }, 0);
 guardName($("friendName"));
 
 /* Der Name eines angemeldeten Spielers gehört auf den Server: Im
@@ -5054,8 +5434,9 @@ entryProof("talumi-" + Date.now(), 17, n => {
    danach scheitern zu lassen, hieße: der Spieler steht in einer leeren Welt
    und weiß nicht, warum. Scheitert es, wird offline gegen KI weitergespielt —
    ein Fehlschlag darf nicht in einem toten Bildschirm enden. */
-function verbindenDannStarten(name){
-  const btn = $("startBtn");
+function verbindenDannStarten(name, knopf){
+  const btn = knopf || $("startBtn");
+  const vorher = btn.dataset.i18n || "start";
   btn.disabled = true;
   btn.dataset.i18n = "net_dial";
   btn.textContent = t("net_dial");
@@ -5066,8 +5447,8 @@ function verbindenDannStarten(name){
   (function warten(){
     const fertig = () => {
       btn.disabled = false;
-      btn.dataset.i18n = "start";
-      btn.textContent = t("start");
+      btn.dataset.i18n = vorher;
+      btn.textContent = t(vorher);
     };
     if (Net.lage === "verbunden"){ fertig(); start(name); return; }
     if (Net.lage === "fehler" || jetzt() > frist){
@@ -5087,6 +5468,7 @@ function verbindenDannStarten(name){
 startBtn.addEventListener("click", () => {
   Sound.unlock();                       // Nutzergeste: erst hier darf Ton starten
   const name = $("name").value.trim().slice(0,14);
+  if (!Konto.angemeldet()) Gast.sichern();
   /* Jede Runde beginnt mit dem Versuch, online zu spielen. Erst wenn das
      scheitert, setzt `verbindenDannStarten` den Rückfall. */
   ersatz = false;
@@ -5163,7 +5545,7 @@ async function goImmersive(){
 /* Service Worker registrieren. Er hält das Spiel offline lauffähig und holt
    sich beim Start immer die neueste Fassung vom Server: einmal hochladen,
    und beim nächsten Öffnen ist die neue Version auf dem Handy. */
-if ("serviceWorker" in navigator){
+if ("serviceWorker" in navigator && !Portal.name){
   addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").then(reg => {
       reg.addEventListener("updatefound", () => {
@@ -5239,7 +5621,7 @@ const KONTO_SCHLUESSEL = "talumi.sitzung";
 
 function kontoBasis(){
   try {
-    const q = new URLSearchParams(location.search).get("api");
+    const q = adressUeberschreibung("api");
     if (q) return q.replace(/\/+$/, "");
     if (SERVER_HOST) return "https://" + SERVER_HOST;
     if (location.protocol === "https:") return location.origin;
@@ -5471,7 +5853,9 @@ function landAusSprache(){
 /* Computergegner des Servers tragen ein Kürzel vor dem Namen („NPC Vesta").
    Sie sollen nie als echte Mitspieler durchgehen — weder im Kreis noch in
    der Bestenliste noch auf dem Bildschirm „gefressen von". */
-const mitMarke = (name, bot) => bot ? t("ai_tag") + " " + name : name;
+/* Seit Schritt 98 ohne „NPC“-Vorsatz (Thomas' Vorgabe). Computergegner
+   erkennt man am fehlenden Rangabzeichen; `b` bleibt in den Daten. */
+const mitMarke = (name, bot) => name;
 
 /* Was der Server über einen Mitspieler schickt, in die Form bringen, in der
    der Client damit arbeitet. `l` (Level) und `r` (Rang) kommen nur für
@@ -5489,9 +5873,25 @@ const NET_DELAY = 0.09;          // Sekunden Zeichenverzögerung, knapp zwei Ser
 const NET_KEEP  = 1.5;           // Sekunden Schnappschüsse aufbewahren
 const jetzt = () => performance.now()/1000;
 
+/* `?server=` und `?api=` gelten nur auf dem eigenen Rechner (Schritt 95).
+   Vorher galten sie überall — ein Link wie
+   `https://talumi.io/?api=https://fremd.example` hätte das gemerkte
+   Sitzungstoken und beim Anmelden E-Mail und Passwort an einen fremden
+   Server geschickt. Alle Prüfstände laufen auf `localhost` und sind davon
+   nicht betroffen. */
+function adressUeberschreibung(name){
+  try {
+    const h = location.hostname;
+    const lokal = h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h === "::1" ||
+                  location.protocol === "file:";
+    if (!lokal) return null;
+    return new URLSearchParams(location.search).get(name);
+  } catch(_){ return null; }
+}
+
 function serverUrl(){
   try {
-    const q = new URLSearchParams(location.search).get("server");
+    const q = adressUeberschreibung("server");
     if (q) return q;
     if (SERVER_HOST) return "wss://" + SERVER_HOST + "/play";
     if (location.protocol === "https:") return "wss://" + location.host + "/play";
@@ -5547,6 +5947,7 @@ const Net = {
     this.schnapp = []; this.wer.clear(); this.eigen = null;
     this.deb.clear(); this.debNeu = true;
     this.top = []; this.tot = null; this.you = 0; this.seq = 0;
+    this.kt = 0; this.kts = 0;
     const url = serverUrl();
     try { this.socket = new WebSocket(url); }
     catch(e){ this.lage = "fehler"; this.grund = String(e && e.message || e); return; }
@@ -5650,6 +6051,21 @@ const Net = {
           Sound.levelUp();
         }
       }
+      /* Der Titel wechselt. Meldung nur, wenn es einen selbst betrifft oder
+         man gerade dem Träger nah genug ist, ihn zu sehen — sonst wäre das
+         bei 190 Körpern ein Dauerrauschen. */
+      if (e.t === "titel"){
+        this.kt = +e.id || 0; this.kts = 0;
+        if (+e.id === this.you){
+          toast(t("titel_du", t("titel_name")));
+          Sound.levelUp();
+          const [cx, cy] = centre();
+          ring(cx, cy, 260, "#f2c14e");
+        } else if (+e.von === this.you && +e.id){
+          const w = this.wer.get(+e.id);
+          toast(t("titel_weg", t("titel_name"), (w && w.n) || "?"));
+        }
+      }
       if (e.t === "burst" && isFinite(e.x) && isFinite(e.y))
         ring(+e.x, +e.y, 120, TH().shatter);
       /* Wer uns gefressen hat, sagt nur dieses Ereignis. Der Todesbildschirm
@@ -5678,6 +6094,9 @@ const Net = {
     /* Die Bestenliste kommt nur in jedem vierten Takt. Fehlt sie, gilt die
        letzte weiter — sie hier zu leeren ließe die Anzeige flackern. */
     if (Array.isArray(m.top)) this.top = m.top;
+    /* Titelträger (Schritt 97): Kennung und seit wie vielen Sekunden. */
+    if (Number.isInteger(m.kt)) this.kt = m.kt;
+    if (Number.isFinite(m.kts)) this.kts = m.kts;
     if (gruppen.has(this.you)) this.eigen = gruppen.get(this.you);
 
     /* Trümmer nachführen: erst entfernen, dann setzen. */
@@ -5708,6 +6127,7 @@ const Net = {
   schritt(dt){
     Game.t += dt;
     if (Game.toast) Game.toast.life -= dt;
+    effekteAltern(dt);
 
     if (this.connected && jetzt() - this.letzteEingabe >= 1/this.rate){
       this.letzteEingabe = jetzt();
@@ -5848,7 +6268,7 @@ let rangLauf = 0;          // laufende Nummer, gegen überholende Antworten
 
 function rangKnoepfe(){
   const wer = [["welt","r_world"], ["land","r_country"], ["freunde","r_friends"]];
-  const was = [["best","r_best"], ["level","r_level"], ["ore","r_ore"]];
+  const was = [["best","r_best"], ["level","r_level"], ["ore","r_ore"], ["titel","titel_name"]];
   for (const [box, liste, jetzt, setzen] of
        [[$("rankWho"), wer, rangWer, v => rangWer = v],
         [$("rankWhat"), was, rangWas, v => rangWas = v]]){
@@ -5872,13 +6292,46 @@ function rangHinweis(text, art){
 
 /* Zahlen groß genug, dass sie nebeneinander lesbar bleiben: 1.240.000 statt
    1240000. Masse und Ore werden gerundet, Level ist ohnehin ganz. */
+const dauerText = sek => {
+  sek = Math.max(0, Math.floor(sek));
+  const h = Math.floor(sek / 3600), m = Math.floor(sek / 60) % 60, s2 = sek % 60;
+  return h ? `${h}:${String(m).padStart(2,"0")}:${String(s2).padStart(2,"0")}`
+           : `${m}:${String(s2).padStart(2,"0")}`;
+};
 const rangWert = (e) => rangWas === "level"
   ? t("level") + " " + e.wert
+  : rangWas === "titel" ? dauerText(e.wert)
   : Math.round(e.wert).toLocaleString(lang);
+
+/* Titel-Rangliste (Schritt 97): weltweit, auch für Gäste lesbar — auf
+   Portalen spielt fast jeder ohne Konto. Land und Freunde gibt es hier nicht. */
+async function titelRangLaden(meine){
+  const box = $("rankList");
+  box.innerHTML = `<p class="hintline">${t("r_loading")}</p>`;
+  rangHinweis(t("titel_regel", t("titel_name")));
+  const a = await Konto.ruf("/titel");
+  if (meine !== rangLauf) return;
+  if (!a || a.status !== 200){ box.innerHTML = ""; return rangHinweis(t("r_offline"), "warn"); }
+  const liste = Array.isArray(a.liste) ? a.liste : [];
+  if (!liste.length){ box.innerHTML = ""; return rangHinweis(t("titel_leer", t("titel_name"))); }
+  const ichKonto = istAngemeldet() ? Konto.profil.id : -1;
+  const ichName = (Game.name || $("name").value || "").toLowerCase();
+  box.innerHTML = liste.map(e => {
+    const ich = e.id ? +e.id === ichKonto : (!istAngemeldet() && String(e.name).toLowerCase() === ichName);
+    const zusatz = e.laufend ? `<small style="color:#f2c14e">♛</small>`
+                 : e.gast ? `<small>${esc(t("k_guest"))}</small>`
+                 : e.land ? `<small>${esc(e.land)}</small>` : "";
+    return `<div class="rankrow${ich ? " me" : ""}">` +
+           `<i>${e.rang}</i><b>${esc(e.name)}${zusatz}</b>` +
+           `<span>${esc(dauerText(e.wert))}</span></div>`;
+  }).join("");
+}
 
 async function rangLaden(){
   const box = $("rankList");
   const meine = ++rangLauf;
+  { const w = $("rankWho"); if (w) w.hidden = rangWas === "titel"; }
+  if (rangWas === "titel") return titelRangLaden(meine);
 
   if (!Konto.angemeldet()){
     box.innerHTML = "";
@@ -6055,6 +6508,15 @@ async function markeAusAdresse(){
   try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
 
   if (tok){
+    let begonnen = 0;
+    try {
+      begonnen = +sessionStorage.getItem("talumi.oauth") || 0;
+      sessionStorage.removeItem("talumi.oauth");
+    } catch(_){}
+    if (!begonnen || Date.now() - begonnen > 30 * 60 * 1000){
+      kontoMeldung(t("k_fremd_fehler"), "warn");
+      return true;
+    }
     Konto.merken(tok);
     if (await Konto.wiederaufnehmen()){
       Kauf.fortsetzen();
@@ -6088,6 +6550,14 @@ async function markeAusAdresse(){
    die Seite schon offen hat und dann den Link aus der Mail anklickt, sähe
    sonst gar nichts passieren. */
 window.addEventListener("hashchange", () => { markeAusAdresse(); });
+
+/* Gastfortschritt auch sichern, wenn mitten in der Runde geschlossen wird —
+   offline vergibt `addXpLive()` XP unterwegs, und das soll nicht verfallen,
+   nur weil der Tab zugeht statt der Runde. */
+window.addEventListener("pagehide", () => Gast.sichern());
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") Gast.sichern();
+});
 
 /* Gemerkte Sitzung wieder aufnehmen. Steht bewusst am Dateiende: Das
    Konto-Modul wird mit `const` angelegt und ist vorher noch nicht benutzbar.
@@ -6351,6 +6821,7 @@ const PWA = {
   /* Lohnt sich der Knopf überhaupt? Am Rechner mit Maus nicht: Dort stört
      keine Adresszeile, und ein Fenster ist kein Startbildschirm. */
   moeglich(){
+    if (Portal.name) return false;      // Portale verbieten Wege aus ihrer Seite heraus
     if (this.installiert()) return false;
     if (!isTouch) return false;
     return !!this.angebot || this.apple();

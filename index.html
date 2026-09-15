@@ -10,11 +10,11 @@
 <meta name="apple-mobile-web-app-title" content="Talumi">
 <!-- Titel: Hauptbegriff vorn, unter 60 Zeichen. Er entscheidet in der
      Trefferliste und bei KI-Antworten über den Klick. -->
-<meta name="description" content="Talumi is a free browser io game: start as dust, eat debris and rivals, grow into a world with rings. Online rounds, four modes, 46 earned designs, no ads, no lasting advantages for sale.">
+<meta name="description" content="Talumi is a free browser io game: start as dust, eat debris and rivals, grow into a world with rings. Online rounds, four modes, 46 earned designs, no lasting advantages for sale.">
 <link rel="canonical" href="https://talumi.io/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Talumi — free io game, dust to planet">
-<meta property="og:description" content="Start as a grain of dust. Eat debris and rivals. Grow into a world with rings and moons. Online rounds against real players. Free, no ads. Nothing on sale gives a lasting advantage.">
+<meta property="og:description" content="Start as a grain of dust. Eat debris and rivals. Grow into a world with rings and moons. Online rounds against real players. Free to play. Nothing on sale gives a lasting advantage.">
 <meta property="og:image" content="https://talumi.io/share-1200x630.png">
 <meta property="og:url" content="https://talumi.io/">
 <meta name="twitter:card" content="summary_large_image">
@@ -437,6 +437,25 @@
      gestorben ist, muss ohne Scrollen zurück ins Menü kommen. Lieber scrollt
      die Liste in sich, als dass „Menü" unter dem Bildrand verschwindet. */
   #endGains,#endRecap{max-height:min(46vh,300px);overflow:auto;padding-right:4px}
+  /* Schritt 96: Ergebnisbildschirm ohne Scrollen auf Handys im Querformat.
+     Die Einzelposten der Abrechnung weichen der Summe, der Tastaturhinweis
+     entfällt auf Touchgeräten, und „Nochmal" rückt nach oben. */
+  @media (hover:none){ #endVeil [data-i18n="enterstarts"]{display:none} }
+  @media (max-height:500px){
+    #endVeil .card{padding:12px 18px}
+    #endVeil h1{font-size:30px;margin-bottom:2px}
+    #endVeil .tally:not(.sum){display:none}
+    #endVeil .gain{line-height:1.4;margin:4px 0 2px}
+    #endVeil #endGains{max-height:none;overflow:visible}
+    #endVeil #rwNote{display:none}
+    #endVeil #again{margin-top:6px}
+    #endZiel p{margin-bottom:0}
+  }
+  @media (max-height:340px){
+    #endVeil h1{font-size:24px}
+    #endVeil #endText{font-size:13px;line-height:1.35;margin:2px 0}
+    #endVeil #endRecap p{margin:2px 0}
+  }
 
   /* ---- Touch-Steuerung ------------------------------------------------
      Zwei Daumentasten rechts unten. Nur auf Geräten mit grobem Zeiger
@@ -904,6 +923,13 @@
   .konsReiter button[aria-selected=true]::after{content:"";position:absolute;left:12px;right:12px;
        bottom:-1px;height:2px;background:var(--brass);border-radius:2px;
        box-shadow:0 0 12px var(--brass)}
+  /* Schritt 97: Unter 420 px Breite ragte „Stats" 7 px aus dem Bild
+     (mobil.js, fenster-eng 360×780 — schon in v78). */
+  @media (max-width:420px){
+    #konsReiter{padding:0 4px;gap:0}
+    #konsReiter button{padding:0 7px;flex:0 1 auto;min-width:0}
+    #konsReiter button[aria-selected=true]::after{left:5px;right:5px}
+  }
   .konsW{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13px;
        color:var(--paper-2);padding-right:4px;white-space:nowrap}
   .konsW b{color:var(--paper);font-weight:700;font-variant-numeric:tabular-nums}
@@ -1782,8 +1808,7 @@
       <p>No advertising interrupts a round, and nothing sold ever affects play.
         All 46 designs can be earned — 21 by level, 25 with Ore you win by playing — and
         the tier of a design is visible on the body itself, so you can tell
-        an experienced player from a merely large one. There are no cookies, no
-        tracking and no third-party content on this page.</p>
+        an experienced player from a merely large one.</p>
 
       <p class="updated">Version 78 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
@@ -2081,11 +2106,13 @@
       <h1 data-i18n="scattered">Scattered</h1>
       <p class="sub" id="endText"></p>
       <div id="endRecap"></div>
+      <div id="endZiel"></div>
     </div>
     <div class="col">
       <div id="endGains"></div>
       <button id="again" data-i18n="again">Play again</button>
       <p class="hintline" style="text-align:center" data-i18n="enterstarts">Enter or space starts the next run</p>
+      <div id="endRw"></div>
       <div class="two">
         <button class="quiet" id="endShop" data-i18n="skins">Designs</button>
         <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
@@ -2098,7 +2125,7 @@
 <div class="veil" id="legalVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="fair">Fair play</h1>
-    <p class="sub" data-i18n="fair1">Talumi stores nothing on your device.</p>
+    <p class="sub" data-i18n="fair1">Without an account your progress stays in this browser. Signed in, it is kept on the game server.</p>
     <p class="foot" data-i18n="fair2">Nothing on sale gives a lasting advantage.</p>
     <p class="foot" data-i18n="fair3">Advertising never interrupts a running round.</p>
     <p class="foot" data-i18n="fair4">Anti-bot checks look at input only.</p>
