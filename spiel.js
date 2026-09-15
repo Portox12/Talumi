@@ -3921,7 +3921,7 @@ requestAnimationFrame(loop);
 /* Seit Schritt 79 sind „Designs" und „Errungenschaften" Reiter im
    Startbildschirm und keine eigenen Bildschirme mehr. */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","rankVeil","pwVeil"];
+               "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil"];
 
 
 const SET_UI = [
@@ -6190,7 +6190,7 @@ const MenueHimmel = {
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
   MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
-           "setVeil","rankVeil","pwVeil"],
+           "setVeil","rankVeil","pwVeil","pwaVeil"],
   sichtbar(){
     if (Game.running) return false;
     if (document.hidden) return false;
@@ -6293,3 +6293,118 @@ const MenueHimmel = {
     return true;
   },
 };
+
+/* =====================================================================
+   „Zum Startbildschirm hinzufügen" (Schritt 92)
+
+   Thomas am 15.09.2026: „Ich greife mit der App nur auf das Web zu. Habe
+   deshalb oben einen Refresh Button und teilen Button. Wie bekomme ich eine
+   richtige App auf Handy?"
+
+   Das Spiel **ist** seit Langem als App installierbar — `manifest.json` mit
+   `display: fullscreen`, ein Dienst-Worker, HTTPS. Nur gesagt hat es nie
+   jemand. Installiert verschwinden Adresszeile und Werkzeugleiste, und das
+   Spiel startet auch ohne Netz.
+
+   Die beiden Systeme funktionieren grundverschieden:
+
+   - **Android und andere Chromium-Browser** melden von sich aus, dass eine
+     Installation möglich ist (`beforeinstallprompt`). Der Browser darf aber
+     nur nach einem Klick fragen — deshalb wird das Ereignis aufgehoben und
+     erst beim Knopfdruck eingelöst.
+   - **iPhone und iPad kennen dieses Ereignis nicht.** Safari lässt keine
+     Anfrage zu; der Weg führt allein über das Teilen-Symbol. Dort bleibt
+     nur, ihn zu zeigen. (Nachgelesen 15.09.2026: Apple hat das bis heute
+     nicht geöffnet.)
+
+   Drei Regeln, damit daraus keine Nervensäge wird:
+   - **Kein Banner, das von selbst aufgeht.** Es gibt einen Knopf in der
+     Kopfzeile, mehr nicht. Wer ihn nicht drückt, sieht nie etwas.
+   - **Der Knopf erscheint nur, wenn es etwas zu tun gibt**: nicht im
+     Vollbild (dann läuft das Spiel schon als App), nicht am Rechner mit
+     Maus, und auf Android erst, wenn der Browser die Bereitschaft meldet.
+   - **Nach der Installation verschwindet er** von selbst, ohne Neuladen.
+   ===================================================================== */
+const PWA = {
+  angebot: null,          // das aufgehobene Ereignis (nur Chromium)
+
+  /* Läuft das Spiel schon als App? Zwei Wege, weil iOS den ersten nicht
+     kennt und Android den zweiten nicht. */
+  installiert(){
+    try {
+      if (matchMedia("(display-mode: standalone)").matches) return true;
+      if (matchMedia("(display-mode: fullscreen)").matches) return true;
+    } catch(_){}
+    return !!navigator.standalone;        // Safari auf iPhone und iPad
+  },
+
+  /* iPhone oder iPad? Neuere iPads melden sich als Mac — deshalb zusätzlich
+     die Frage nach dem Tippbildschirm. */
+  apple(){
+    const u = navigator.userAgent || "";
+    if (/iPhone|iPad|iPod/.test(u)) return true;
+    return /Macintosh/.test(u) && navigator.maxTouchPoints > 1;
+  },
+
+  /* Lohnt sich der Knopf überhaupt? Am Rechner mit Maus nicht: Dort stört
+     keine Adresszeile, und ein Fenster ist kein Startbildschirm. */
+  moeglich(){
+    if (this.installiert()) return false;
+    if (!isTouch) return false;
+    return !!this.angebot || this.apple();
+  },
+
+  knopfPruefen(){
+    const b = document.getElementById("pwaBtn");
+    if (b) b.hidden = !this.moeglich();
+  },
+
+  zeigen(){
+    const ios = this.apple() && !this.angebot;
+    const s = id => { const e = document.getElementById(id); if (e) e.hidden = true; };
+    const z = id => { const e = document.getElementById(id); if (e) e.hidden = false; };
+    (ios ? z : s)("pwaIos");
+    (ios ? s : z)("pwaAnd");
+    (ios ? s : z)("pwaGo");
+    show("pwaVeil");
+  },
+
+  /* Der Knopf im Fenster: Hier wird das aufgehobene Ereignis eingelöst.
+     Es gilt **genau einmal** — danach ist es verbraucht, egal wie der
+     Spieler entschieden hat. */
+  async einloesen(){
+    if (!this.angebot) return;
+    const angebot = this.angebot;
+    this.angebot = null;
+    try {
+      angebot.prompt();
+      await angebot.userChoice;
+    } catch(_){}
+    this.knopfPruefen();
+    show("startVeil");
+  },
+
+  start(){
+    addEventListener("beforeinstallprompt", e => {
+      /* Ohne das zeigt Chrome seine eigene Leiste unten im Bild — genau die
+         Art Einblendung, die auf einem flachen Schirm das Spiel verdeckt. */
+      e.preventDefault();
+      this.angebot = e;
+      this.knopfPruefen();
+    });
+    /* Fertig installiert: Der Knopf hat seinen Zweck erfüllt. */
+    addEventListener("appinstalled", () => {
+      this.angebot = null;
+      this.knopfPruefen();
+      try { toast(t("pwa_head")); } catch(_){}
+    });
+    const b = document.getElementById("pwaBtn");
+    if (b) b.addEventListener("click", () => this.zeigen());
+    const g = document.getElementById("pwaGo");
+    if (g) g.addEventListener("click", () => this.einloesen());
+    const c = document.getElementById("pwaClose");
+    if (c) c.addEventListener("click", () => show("startVeil"));
+    this.knopfPruefen();
+  },
+};
+PWA.start();

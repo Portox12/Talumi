@@ -2,7 +2,7 @@
   "name": "Talumi",
   "short_name": "Talumi",
   "description": "Grow from a grain of dust into a world with rings and moons.",
-  "id": "/talumi/",
+  "id": "/",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",

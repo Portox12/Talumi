@@ -230,6 +230,16 @@
   .bead.next{border-color:var(--brass);color:var(--brass);font-weight:600}
   #bonusBox button{margin-top:2px}
 
+  /* Die drei Schritte für iPhone und iPad. Zahlen in Messing, damit man
+     auf einen Blick sieht, dass es eine Reihenfolge ist. */
+  .pwaSchritte{margin:0 0 4px;padding:0;list-style:none;counter-reset:pwa}
+  .pwaSchritte li{counter-increment:pwa;position:relative;padding:7px 0 7px 30px;
+     font-size:13.5px;line-height:1.5;color:var(--paper)}
+  .pwaSchritte li::before{content:counter(pwa);position:absolute;left:0;top:7px;
+     width:21px;height:21px;border-radius:50%;border:1px solid var(--brass);
+     color:var(--brass);font-size:11.5px;display:grid;place-items:center;
+     font-variant-numeric:tabular-nums}
+
   .setlist{max-height:56vh;overflow:auto;padding-right:4px}
   .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;
      padding:9px 0;border-bottom:1px solid var(--line)}
@@ -828,6 +838,22 @@
        background:var(--glas);border:1px solid var(--line);color:var(--paper-2);
        font-size:13.5px;font-weight:600;backdrop-filter:blur(12px)}
   .konsNav:hover:not(:disabled){background:var(--plate);color:var(--paper)}
+  /* „App installieren": Symbol und Text. Auf schmalen Schirmen bleibt nur
+     das Symbol — mit Text war die Kopfzeile breiter als der Bildschirm, und
+     der Knopf lag außerhalb. Gemessen auf 844 Punkten Breite. */
+  .pwaKnopf{display:inline-flex;align-items:center;gap:7px}
+  /* `pointer-events:none`: Ohne das nimmt das Symbol den Tipp entgegen statt
+     der Knopf. Auf manchen Browsern kommt der Klick dann gar nicht an —
+     beim Prüfen ist genau das passiert. Gilt für alle Symbole in Knöpfen. */
+  .pwaKnopf svg{width:17px;height:17px;flex:0 0 auto;color:var(--brass);
+     pointer-events:none}
+  button.marke svg{pointer-events:none}
+  .pwaKnopf[hidden]{display:none}
+  @media (max-width:1100px){
+    .pwaKnopf span{display:none}
+    .pwaKnopf{padding:0 12px;gap:0}
+    .pwaKnopf svg{width:19px;height:19px}
+  }
   .konsStart{display:flex;flex-direction:column;align-items:center;gap:6px}
   #startBtn{margin:0;width:auto;height:64px;padding:0 56px;border-radius:14px;
        background:linear-gradient(180deg, var(--gruen-hell), var(--gruen));
@@ -1710,7 +1736,7 @@
         an experienced player from a merely large one. There are no cookies, no
         tracking and no third-party content on this page.</p>
 
-      <p class="updated">Version 75 · updated 15 September 2026 ·
+      <p class="updated">Version 76 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
@@ -1740,6 +1766,20 @@
       <div class="pow" id="onlineText" hidden></div>
     </div>
     <div class="konsG r">
+      <!-- „App installieren". Erscheint nur, wenn es etwas zu installieren
+           gibt: nicht im Vollbild (dann ist sie schon installiert), nicht am
+           Rechner, und auf Android erst, wenn der Browser die Bereitschaft
+           meldet. Sonst bliebe ein Knopf stehen, der nichts tun kann. -->
+      <button class="konsNav pwaKnopf" id="pwaBtn" hidden>
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+          <path d="M10 2v9m0 0 3.2-3.2M10 11 6.8 7.8" fill="none"
+                stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                stroke-linejoin="round"/>
+          <path d="M3.4 13.2v2.1a1.7 1.7 0 0 0 1.7 1.7h9.8a1.7 1.7 0 0 0 1.7-1.7v-2.1"
+                fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span data-i18n="pwa_btn">Install app</span>
+      </button>
       <button class="konsNav" id="settingsBtn" data-i18n="settings">Settings</button>
       <button class="konsNav" id="legalBtn2" data-i18n="legal">Legal</button>
     </div>
@@ -1894,6 +1934,34 @@
     <div id="rankList"></div>
     <p class="notice" id="rankNote"></p>
     <button class="quiet" id="rankClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- =====================================================================
+     „Zum Startbildschirm hinzufügen" (Schritt 92)
+     Auf Android fragt der Browser selbst — dort genügt ein Knopf. Auf
+     iPhone und iPad gibt es **keinen** solchen Weg: Safari kennt das
+     Ereignis nicht und lässt keine Anfrage zu. Dort bleibt nur, den Weg zu
+     zeigen. Beides steht in demselben Fenster; welcher Teil erscheint,
+     entscheidet die Oberfläche beim Öffnen.
+     ===================================================================== -->
+<div class="veil" id="pwaVeil" hidden>
+  <div class="card">
+    <h1 style="font-size:30px" data-i18n="pwa_head">Talumi on your home screen</h1>
+    <p class="sub" style="margin:6px 0 14px" data-i18n="pwa_why">Installed, the game runs full screen.</p>
+
+    <!-- iPhone und iPad: der Weg über das Teilen-Symbol -->
+    <ol class="pwaSchritte" id="pwaIos" hidden>
+      <li data-i18n="pwa_ios1">Tap the share button in Safari.</li>
+      <li data-i18n="pwa_ios2">Choose "Add to Home Screen".</li>
+      <li data-i18n="pwa_ios3">Confirm with "Add".</li>
+    </ol>
+
+    <!-- Android: der Browser fragt selbst -->
+    <p class="hintline" id="pwaAnd" data-i18n="pwa_and" hidden>Your browser will ask once.</p>
+
+    <button id="pwaGo" data-i18n="pwa_btn" hidden>Install app</button>
+    <button class="quiet" id="pwaClose" data-i18n="pwa_close">Got it</button>
   </div>
 </div>
 
