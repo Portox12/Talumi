@@ -720,7 +720,7 @@
        Zu zweit nebeneinander passt sie in ein Drittel davon. */
     /* Fünf Spielarten seit Schritt 108 (Liga): drei Spalten, zwei Reihen —
        zwei Spalten hießen drei Reihen und die Übersicht scrollte. */
-    .modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+    .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
     .modes button{padding:7px 9px}
     .modes b{font-size:13.5px}
     /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen
@@ -1355,6 +1355,29 @@
   .mondStaub{font-family:var(--disp);font-size:22px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .mondWoher{margin:0;padding-left:18px;font-size:12.5px;color:var(--paper-2);line-height:1.5}
   .mondWoher li.hat{color:var(--paper)}
+  /* Skillpunkte (Schritt 109) */
+  #skillInhalt{margin-bottom:14px}
+  #skillInhalt .hintline,#mondeInhalt .hintline{display:block;white-space:normal;line-height:1.4}
+  .skillZeile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+  .skillZeile:first-of-type{border-top:0}
+  .skillZeile b{display:block;font-size:13.5px}
+  .skillZeile small{display:block;font-size:11.5px;color:var(--paper-2)}
+  .skillKn{display:flex;align-items:center;gap:6px}
+  .skillKn button{margin:0;width:32px;min-width:32px;height:32px;padding:0;font-size:16px;line-height:1}
+  body.touch .skillKn button{width:44px;min-width:44px;height:44px}
+  .skillKn i{font-style:normal;font-family:var(--disp);min-width:28px;text-align:center;font-size:16px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .skillFuss{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .skillFuss button{margin:0;width:auto;min-width:0;height:34px;padding:0 14px;font-size:12.5px}
+  .kampfKarte{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .kampfKarte span{flex:1;min-width:0;font-size:13px}
+  .kampfKarte b{color:var(--brass-hell)}
+  .kampfKarte button{margin:0;width:auto;min-width:0;height:36px;padding:0 16px}
+  body.touch .kampfKarte button{height:44px}
+  .kampfZeile{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+  .kampfZeile:first-child{border-top:0}
+  .kampfZeile span{flex:1;min-width:0}
+  .kampfZeile button{margin:0;width:auto;min-width:0;height:32px;padding:0 12px;font-size:12.5px}
+  .skillFrei{font-family:var(--disp);font-size:18px;color:var(--brass-hell);margin:4px 0 8px;font-variant-numeric:tabular-nums}
   /* Der Link zur Spielanleitung steht in einer Hinweiszeile; auf Tippgeräten
      bekommt er unsichtbar 44 px Tippfläche (mobil.js, Schritt 108). */
   body.touch #hilfeLink{display:inline-block;padding:14px 8px;margin:-14px -4px}
@@ -2301,6 +2324,9 @@
     <div class="konsPane drei" id="paneStart">
       <div class="konsSp l">
         <!-- Anmeldebonus. Nur mit Konto; `paintBonus()` blendet ihn sonst aus. -->
+        <!-- Clankampf (Schritt 109): nur sichtbar, solange für den eigenen
+             Clan ein Kampf läuft. Gemalt von kampfKarteMalen(). -->
+        <div class="konsSek" id="kampfBox" hidden></div>
         <div class="konsSek" id="bonusBox" hidden></div>
         <div class="konsSek" id="naechstBox"></div>
         <div class="konsSek" id="freundBox"></div>
@@ -2408,6 +2434,9 @@
          Gebaut von buildMonde() in spiel.js. -->
     <div class="konsPane eine" id="paneMonde" hidden>
       <div class="konsKopfzeile"><h2 data-i18n="mo_kopf">Moons</h2><p data-i18n="mo_erkl"></p></div>
+      <!-- Skillpunkte (Schritt 109) stehen über den Monden: beides ist die
+           Ausrüstung für die Liga, gebaut von buildMonde(). -->
+      <div class="konsStat" id="skillInhalt"></div>
       <div class="konsStat" id="mondeInhalt"></div>
     </div>
   </div>

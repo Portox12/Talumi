@@ -1439,7 +1439,8 @@ const MODES = {
    gerade der Rückfall läuft, ohne die Auswahl im Menü zu verstellen. Vorher
    schrieb der Rückfall `modeId = "open"`, und danach blieb der Spieler
    stillschweigend für immer offline. */
-let modeId = "online";
+/* Seit Schritt 109 ist die Liga der Hauptmodus und deshalb vorausgewählt. */
+let modeId = "liga";
 let ersatz = false;
 /* Welcher Modus gerade wirklich läuft: im Rückfall die lokale Fassung,
    sonst der gewählte. Die Auswahl im Menü bleibt davon unberührt. */
@@ -2903,7 +2904,9 @@ function finish(timeUp){
     const neueMonde = Net.monde;
     if (neueMonde.length) setTimeout(() => toast(
       t("mo_neu", t((MONDE[neueMonde[0].art] || {}).name || "mo_eis"))), erreicht ? 4200 : 600);
-    mondeStand = null;
+    mondeStand = null; skillStand = null;
+    if (modeId === "clan"){ modeId = "liga"; buildModes(); buildBoost(); }
+    Konto.kampfPruefen();
     Net.lohn = null; Net.profil = null; Net.ehre = null;
     Net.erfolge = []; Net.rangNeu = 0; Net.monde = []; Net.staubDazu = 0;
     paintPurse(); buildGrid(); paintRank();
@@ -4877,7 +4880,55 @@ function mondeReiterZeigen(){
   knopf.hidden = !zeigen;
   if (!zeigen && reiterJetzt === "monde") reiter("start");
 }
+/* Skillpunkte (Schritt 109): ein Punkt je Level, verteilt auf fünf
+   Eigenschaften. Der Server rechnet (`modAusSkill` in sim.js) und prüft die
+   Summe; hier wird nur verteilt und gespeichert. */
+const SKILL_FELDER = ["start", "staub", "decay", "merge", "push"];
+let skillStand = null;    // {verteilung, punkte, frei} vom Server
+let skillEntwurf = null;  // lokale Verteilung bis zum Speichern
+function buildSkill(){
+  const box = $("skillInhalt");
+  if (!box) return;
+  if (!istAngemeldet()){ box.innerHTML = ""; return; }
+  const zeichnen = () => {
+    const st = skillStand; if (!st) return;
+    const v = skillEntwurf;
+    const vergeben = SKILL_FELDER.reduce((n, f) => n + (v[f] || 0), 0);
+    const frei = Math.max(0, st.punkte - vergeben);
+    const geaendert = SKILL_FELDER.some(f => (v[f] || 0) !== (st.verteilung[f] || 0));
+    box.innerHTML = `<div class="plate recbox" style="grid-column:1/-1"><h3>${esc(t("sp_kopf"))}</h3>` +
+      `<small class="hintline">${esc(t("sp_erkl"))}</small>` +
+      `<div class="skillFrei">${esc(t("sp_frei", frei, st.punkte))}</div><div id="skillZeilen"></div>` +
+      `<div class="skillFuss"><button type="button" id="skillSpeichern" ${geaendert ? "" : "disabled"}>${esc(t("sp_speichern"))}</button>` +
+      `<button type="button" class="quiet" id="skillReset" ${vergeben ? "" : "disabled"}>${esc(t("sp_reset"))}</button></div></div>`;
+    const z = $("skillZeilen");
+    for (const f of SKILL_FELDER){
+      const row = document.createElement("div"); row.className = "skillZeile";
+      row.innerHTML = `<div><b>${esc(t("sp_" + f))}</b><small>+${((v[f] || 0) / 10).toLocaleString(lang, {minimumFractionDigits:1, maximumFractionDigits:1})} %</small></div>` +
+        `<div class="skillKn"><button type="button" data-minus="${f}" ${v[f] ? "" : "disabled"}>−</button><i>${v[f] || 0}</i>` +
+        `<button type="button" data-plus="${f}" ${frei ? "" : "disabled"}>+</button></div>`;
+      z.appendChild(row);
+    }
+    for (const b of box.querySelectorAll("[data-plus]")) b.addEventListener("click", () => { v[b.dataset.plus] = (v[b.dataset.plus] || 0) + 1; zeichnen(); });
+    for (const b of box.querySelectorAll("[data-minus]")) b.addEventListener("click", () => { v[b.dataset.minus] = Math.max(0, (v[b.dataset.minus] || 0) - 1); zeichnen(); });
+    $("skillReset").addEventListener("click", () => { for (const f of SKILL_FELDER) v[f] = 0; zeichnen(); });
+    $("skillSpeichern").addEventListener("click", async () => {
+      $("skillSpeichern").disabled = true;
+      const a = await Konto.ruf("/konto/skill/setzen", { verteilung: v });
+      if (a && a.ok){ skillStand = a.skill; skillEntwurf = Object.assign({}, a.skill.verteilung); Profile.skill = Object.assign({}, a.skill.verteilung); toast(t("sp_gespeichert")); zeichnen(); }
+      else { toast(t("net_fail")); zeichnen(); }
+    });
+  };
+  if (skillStand && skillStand.konto === Konto.profil.id) zeichnen();
+  Konto.ruf("/konto/skill").then(a => {
+    if (!a || !a.ok) return;
+    a.konto = Konto.profil ? Konto.profil.id : 0;
+    skillStand = a; skillEntwurf = Object.assign({}, a.verteilung); Profile.skill = Object.assign({}, a.verteilung);
+    if (reiterJetzt === "monde") zeichnen();
+  });
+}
 function buildMonde(){
+  buildSkill();
   const box = $("mondeInhalt");
   if (!box) return;
   if (!istAngemeldet()){
@@ -5054,6 +5105,9 @@ function freundBoxMalen(){
 function show(id){
   hideAll(); $(id).hidden = false; anmeldungLage();
   if (id === "startVeil"){
+    /* Der Clankampf ist keine Wahl im Hangar (Schritt 109): Zurueck im
+       Hangar steht wieder die Liga, sonst bliebe „clan" als Spielart. */
+    if (modeId === "clan"){ modeId = "liga"; buildModes(); }
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
@@ -5317,7 +5371,31 @@ setInterval(() => {
   if (!v || v.hidden) return;
   if (document.hidden) return;
   Konto.anklopfen().catch(() => {});
+  Konto.kampfPruefen();
 }, 30000);
+
+/* Clankampf im Hangar (Schritt 109): die Karte steht nur, solange für den
+   eigenen Clan ein Kampf läuft — Thomas: „Außer der Kampf findet statt,
+   dann muss er für die Teilnehmer im Hauptmenü sichtbar sein." */
+function kampfKarteMalen(){
+  const box = $("kampfBox");
+  if (!box) return;
+  const k = Konto.kampf;
+  if (!k || !istAngemeldet() || !Konto.profil.clan || Date.now() > k.ende){ box.hidden = true; box.innerHTML = ""; return; }
+  const gegner = Konto.profil.clan.tag === k.von.tag ? k.an : k.von;
+  const restS = Math.max(0, Math.round((k.beitrittBis - Date.now()) / 1000));
+  const offen = k.offen !== false && restS > 0;
+  box.hidden = false;
+  box.innerHTML = `<h2>${esc(t("ck_kopf"))}</h2><div class="konsBlock kampfKarte">` +
+    `<span><b>${esc(t("ck_laeuft", "[" + gegner.tag + "] " + gegner.name))}</b><br><small>${esc(offen ? t("ck_offen", restS) : t("ck_zu"))}</small></span>` +
+    `<button type="button" id="kampfGo" ${offen ? "" : "disabled"}>${esc(t("ck_beitreten"))}</button></div>`;
+  $("kampfGo").addEventListener("click", kampfBeitreten);
+}
+function kampfBeitreten(){
+  const cv = $("clanVeil"); if (cv && !cv.hidden) show("startVeil");
+  modeId = "clan"; buildModes(); buildBoost();
+  $("startBtn").click();
+}
 
 /* Bestenliste auf dem Startbildschirm — die besten acht nach Spitzenmasse.
 
@@ -5363,7 +5441,10 @@ async function bestenlisteZeigen(){
 /* Reihenfolge im Menü. „Freier Raum" steht oben, weil es der Modus ist, für
    den die Leute kommen. `open` fehlt bewusst: Das ist seit Schritt 69 nur noch
    der lokale Rückfall desselben Eintrags, kein eigener Modus mehr. */
-const MODE_LISTE = ["online", "liga", "royale", "clan", "friendly"];
+/* Schritt 109 (Thomas): nur noch Liga (Hauptmodus) und Freies Spiel im
+   Hangar. Battle Royale und Freundschaftsspiel sind ausgeblendet, nicht
+   gelöscht (MODES kennt sie weiter); der Clankampf kommt über das Clanmenü. */
+const MODE_LISTE = ["liga", "online"];
 
 function buildModes(){
   const box = $("modes");
@@ -5474,8 +5555,58 @@ async function clanZeichnen(){
   const [ich, beste] = await Promise.all([Konto.clanIch(), Konto.clanListe("/clan/rangliste")]);
   if (!ich){ body.innerHTML = `<p class="hintline">${esc(t("e_net"))}</p>`; return; }
   const top = (beste && beste.liste) || [];
+  clanKampfStand = ich.kampf || null;
+  Konto.kampfPruefen();
   if (ich.clan) clanImClan(body, ich.clan, top);
   else await clanOhne(body, ich.einladungen || [], top);
+}
+let clanKampfStand = null;
+function kampfHtml(leiter, c){
+  const K = clanKampfStand || { laeuft: null, eingehend: [], ausgehend: [], letzte: [] };
+  const gegnerVon = k => (k.von.id === c.id ? k.an : k.von);
+  let html = `<div class="konsSek"><h2>${esc(t("ck_kopf"))}</h2><div class="konsBlock">` +
+    `<p class="hintline" style="margin:0 0 8px">${esc(t("ck_erkl"))}</p>`;
+  if (K.laeuft){
+    const g = gegnerVon(K.laeuft), restS = Math.max(0, Math.round((K.laeuft.beitrittBis - Date.now()) / 1000));
+    html += `<div class="kampfKarte"><span><b>${esc(t("ck_laeuft", "[" + g.tag + "] " + g.name))}</b><br><small>${esc(restS > 0 ? t("ck_offen", restS) : t("ck_zu"))}</small></span>` +
+      `<button type="button" id="kampfGo2" ${restS > 0 ? "" : "disabled"}>${esc(t("ck_beitreten"))}</button></div>`;
+  }
+  if (leiter){
+    html += `<div class="clanReihe" style="margin-top:8px"><input type="text" id="kampfTag" maxlength="24" placeholder="${esc(t("ck_tag"))}" autocomplete="off">` +
+      `<button type="button" id="kampfFordern">${esc(t("ck_fordern"))}</button></div>`;
+  } else html += `<p class="hintline">${esc(t("ck_leiter"))}</p>`;
+  if (K.eingehend.length){
+    html += `<h3 style="margin:10px 0 4px">${esc(t("ck_eingehend"))}</h3>` + K.eingehend.map(k =>
+      `<div class="kampfZeile"><span>[${esc(k.von.tag)}] ${esc(k.von.name)}</span>` +
+      (leiter ? `<button type="button" data-annehmen="${k.id}">${esc(t("ck_annehmen"))}</button><button type="button" class="quiet" data-ablehnen="${k.id}">${esc(t("ck_ablehnen"))}</button>` : "") +
+      `</div>`).join("");
+  }
+  if (K.ausgehend.length){
+    html += `<h3 style="margin:10px 0 4px">${esc(t("ck_ausgehend"))}</h3>` + K.ausgehend.map(k =>
+      `<div class="kampfZeile"><span>[${esc(k.an.tag)}] ${esc(k.an.name)}</span></div>`).join("");
+  }
+  if (K.letzte.length){
+    html += `<h3 style="margin:10px 0 4px">${esc(t("ck_letzte"))}</h3>` + K.letzte.map(k => {
+      const g = gegnerVon(k);
+      const txt = !k.sieger ? t("ck_remis", "[" + g.tag + "]") : k.sieger === c.id ? t("ck_sieg", "[" + g.tag + "]") : t("ck_niederlage", "[" + g.tag + "]");
+      const m = k.massen && Array.isArray(k.massen) ? ` · ${k.massen[0]} : ${k.massen[1]}` : "";
+      return `<div class="kampfZeile"><span>${esc(txt)}<small style="color:var(--paper-2)">${esc(m)}</small></span></div>`;
+    }).join("");
+  }
+  return html + `</div></div>`;
+}
+function kampfHandler(body){
+  const go = $("kampfGo2"); if (go) go.addEventListener("click", kampfBeitreten);
+  const f = $("kampfFordern");
+  if (f) f.addEventListener("click", () => {
+    const tag = ($("kampfTag").value || "").trim();
+    if (!tag) return clanMeldung(t("ck_tag"), "warn");
+    clanTun("herausfordern", { tag }, e => t("ck_gefordert", "[" + e.kampf.an.tag + "]"));
+  });
+  for (const b of body.querySelectorAll("[data-annehmen]"))
+    b.addEventListener("click", () => clanTun("annehmen", { id: +b.dataset.annehmen }));
+  for (const b of body.querySelectorAll("[data-ablehnen]"))
+    b.addEventListener("click", () => clanTun("ablehnen", { id: +b.dataset.ablehnen }));
 }
 function clanImClan(body, c, top){
   const ich = Konto.profil.id;
@@ -5496,7 +5627,7 @@ function clanImClan(body, c, top){
     `<p class="hintline" style="margin:0 0 10px">${esc(t("cl_gruender", new Date(c.erstellt).toLocaleDateString(lang)))} · ${esc(c.offen ? t("cl_offen") : t("cl_zu"))}</p>` +
     `<div class="clanSpalten"><div>` +
     `<div class="konsSek"><h2>${esc(t("cl_mitglieder"))}</h2><div class="konsBlock">${zeilen}</div></div></div>` +
-    `<div>` +
+    `<div>` + kampfHtml(leiter, c) +
     (leiter
       ? `<div class="konsSek"><h2>${esc(t("cl_einladen"))}</h2><div class="konsBlock">` +
         `<div class="clanReihe"><input type="text" id="clanEinlName" maxlength="14" placeholder="${esc(t("playername"))}" autocomplete="off" autocapitalize="off" spellcheck="false">` +
@@ -5519,6 +5650,7 @@ function clanImClan(body, c, top){
   });
   const offen = $("clanOffenGo");
   if (offen) offen.addEventListener("click", () => clanTun("offen", { offen: !c.offen }));
+  kampfHandler(body);
   const raus = $("clanRaus");
   raus.addEventListener("click", () => {
     if (raus.dataset.sicher !== "1"){ raus.dataset.sicher = "1"; raus.textContent = t("cl_sicher"); return; }
@@ -6140,6 +6272,9 @@ let anlegen = false;
 /* Die Fehlermeldungen des Servers sind Schlüssel, keine Sätze — sonst käme
    der Text in einer Sprache zurück, die der Spieler nicht gewählt hat. */
 const KONTO_FEHLER = {
+  kein_kampf: "e_kein_kampf", kampf_zu: "e_kampf_zu", clan_unbekannt: "e_clan_unbekannt",
+  kampf_selbst: "e_kampf_selbst", kampf_laeuft: "e_kampf_laeuft", kampf_offen: "e_kampf_offen",
+  kampf_unbekannt: "e_kampf_unbekannt",
   email_ungueltig: "e_email",
   passwort_kurz:   "e_pwshort",
   email_vergeben:  "e_taken",
@@ -6399,6 +6534,14 @@ function verbindenDannStarten(name, knopf){
       btn.textContent = t(vorher);
     };
     if (Net.lage === "verbunden"){ fertig(); start(name); return; }
+    if (Net.lage === "abgelehnt" || (modeId === "clan" && (Net.lage === "fehler" || jetzt() > frist))){
+      const grund = Net.lage === "abgelehnt" ? Net.grund : "";
+      Net.leave(); fertig();
+      modeId = "liga"; buildModes(); buildBoost();
+      toast(t(KONTO_FEHLER[grund] || "net_fail"));
+      Konto.kampfPruefen();
+      return;
+    }
     if (Net.lage === "fehler" || jetzt() > frist){
       Net.leave();
       fertig();
@@ -6670,6 +6813,7 @@ const Konto = {
     /* Monde (Schritt 108): Anzeige um den Körper, Wirkung nur in der Liga. */
     if (p.monde && typeof p.monde === "object")
       Profile.monde = { besitz: p.monde.besitz || {}, aktiv: Array.isArray(p.monde.aktiv) ? p.monde.aktiv : [], staub: +p.monde.staub || 0 };
+    if (p.skill && typeof p.skill === "object") Profile.skill = Object.assign({}, p.skill);
   },
 
   angemeldet(){ return !!(this.token && this.profil); },
@@ -6722,6 +6866,15 @@ const Konto = {
      Server läuft — und auf der öffentlichen Seite läuft noch keiner —, wäre
      ein Formular, das jede Eingabe mit „Server antwortet nicht" quittiert,
      schlechter als gar keines. */
+  /* Läuft für meinen Clan gerade ein Kampf? (Schritt 109) */
+  kampf: null,
+  async kampfPruefen(){
+    if (!this.angemeldet() || !this.profil.clan){ this.kampf = null; kampfKarteMalen(); return null; }
+    const a = await this.ruf("/konto/kampf");
+    this.kampf = a && a.ok && a.laeuft ? a.laeuft : null;
+    kampfKarteMalen();
+    return this.kampf;
+  },
   async anklopfen(){
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
@@ -6984,6 +7137,9 @@ const Net = {
     let m; try { m = JSON.parse(roh); } catch(_){ return; }
     if (!m || typeof m.t !== "string") return;
 
+    /* Der Server lehnt den Beitritt ab (Schritt 109: Clankampf ohne
+       laufende Herausforderung). Kein Rückfall auf eine lokale Runde. */
+    if (m.t === "abgelehnt"){ this.lage = "abgelehnt"; this.grund = String(m.grund || ""); return; }
     if (m.t === "welcome"){
       this.you = +m.you || 0;
       this.rate = +m.tick || 20;
