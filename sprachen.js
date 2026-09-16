@@ -1182,14 +1182,3 @@ const LANGS108M = {
       mo_q_glut:"Тлеющая луна: 1 000 тел всего или уровень 80", mo_q_sturm:"Штормовая луна: высшее достижение по массе"}
 };
 for (const c in LANGS108M) Object.assign(LANGS[c], LANGS108M[c]);
-/* Schritt 110: Anmeldung hochkant. */
-const LANGS110 = {
-  en:{hochkant:"Hold your phone upright to sign in — the keyboard covers the screen sideways."},
-  de:{hochkant:"Halte dein Handy zum Anmelden hochkant — quer verdeckt die Tastatur den Bildschirm."},
-  es:{hochkant:"Sujeta el móvil en vertical para iniciar sesión: en horizontal el teclado tapa la pantalla."},
-  pt:{hochkant:"Segure o celular na vertical para entrar — na horizontal o teclado cobre a tela."},
-  fr:{hochkant:"Tenez votre téléphone à la verticale pour vous connecter : en paysage, le clavier couvre l’écran."},
-  tr:{hochkant:"Giriş yapmak için telefonu dik tut — yatayda klavye ekranı kapatıyor."},
-  ru:{hochkant:"Держите телефон вертикально для входа — в горизонтальном положении клавиатура закрывает экран."}
-};
-for (const c in LANGS110) Object.assign(LANGS[c], LANGS110[c]);
