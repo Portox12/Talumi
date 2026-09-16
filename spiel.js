@@ -323,8 +323,9 @@ addEventListener("resize", resize);
 addEventListener("orientationchange", () => setTimeout(resize, 120));
 
 let portrait = false;
-/* `portrait` steuert seit Schritt 103 nur noch die Anordnung (body.portrait
-   im CSS) — gespielt wird in beiden Lagen. */
+/* `portrait` hält die Spielschleife an und zeigt den Drehhinweis. Hochkant
+   spielbar war es nur in v84/v85 (Schritt 103) — Thomas hat das
+   zurückgenommen. */
 function checkOrientation(){
   portrait = isTouch && VH > VW;
   document.body.classList.toggle("portrait", portrait);
@@ -1370,15 +1371,17 @@ const MODES = {
     world:9000, debris:4200, rivals:40, pulsars:42, start:24,
     teams:false, mirror:false, time:0, rewards:1
   },
+  /* Seit Schritt 105 online (Server rechnet Zone, Uhr, Mannschaften); die
+     Werte hier gelten nur noch für den lokalen Rückfall. */
   clan: {
     label:"Clan battle", blurb:"Two clans, mirrored arena, five minutes. Highest clan mass wins.",
     world:5200, debris:1500, rivals:18, pulsars:14, start:40,
-    teams:true, mirror:true, time:300, rewards:1
+    teams:true, mirror:true, time:300, rewards:1, online:true
   },
   royale: {
     label:"Battle royale", blurb:"Everyone starts equal, the field closes in. Last body standing wins.",
     world:6000, debris:2000, rivals:24, pulsars:20, start:50,
-    teams:false, mirror:false, time:330, rewards:1, royale:true
+    teams:false, mirror:false, time:330, rewards:1, royale:true, online:true
   },
   friendly: {
     label:"Friendly match", blurb:"Mirrored arena, everyone starts equal. Practice — no rewards.",
@@ -1416,7 +1419,7 @@ let modeId = "online";
 let ersatz = false;
 /* Welcher Modus gerade wirklich läuft: im Rückfall die lokale Fassung,
    sonst der gewählte. Die Auswahl im Menü bleibt davon unberührt. */
-const MODE_ID = () => (ersatz && MODES[modeId] && MODES[modeId].online) ? "open" : modeId;
+const MODE_ID = () => (ersatz && modeId === "online") ? "open" : modeId;
 const MODE = () => MODES[MODE_ID()];
 
 let WORLD = 9000, DEBRIS = 4200;
@@ -1632,7 +1635,9 @@ function start(name){
   levelBeimStart = Profile.level;
   const M = MODE();
   Musik.ducken(true);
-  Game.online = !!M.online;
+  /* Royale und Clankampf sind online **und** lokal (Rückfall) derselbe
+     Eintrag — `ersatz` entscheidet (Schritt 105). */
+  Game.online = !!M.online && !ersatz;
   /* Online bestimmt der Server die Weltgröße und schickt sie in `welcome`.
      Sie hier aus der eigenen Tabelle zu nehmen, hieße: Ändert jemand die
      Karte am Server, zeichnet der Client weiter die alte Grenze — sichtbar
@@ -1674,7 +1679,8 @@ function start(name){
   }
 
   Game.royale = !!M.royale;
-  Game.zoneR = Game.royale ? zoneRadius(0) : 0;
+  Game.zoneR = Game.royale ? (Game.online ? (Net.zone || 3200) : zoneRadius(0)) : 0;
+  if (Game.online){ Game.left = Net.zeit || 0; Game.team = Net.team || 0; }
   Game.zoneDeath = false; Game.placed = 0; Game.won = false;
 
   /* Im Royale müssen alle in den Kreis, sonst stirbt die halbe Karte sofort. */
@@ -2655,7 +2661,11 @@ function endeOnline(d){
   Game.kills = d.kills || 0;
   if (d.sek) Game.t = d.sek;
   if (d.abbruch){ Game.result = t("net_lost"); Game.killer = null; }
-  finish(false);
+  /* Spielart (Schritt 105): Sieg, Platz, Zonentod und Rundenende kommen vom
+     Server; `finish` liest sie aus `Net.ergebnis`. */
+  Net.ergebnis = d.ende !== undefined ? d : null;
+  Game.won = !!d.gewonnen; Game.placed = d.platz || 0; Game.zoneDeath = !!d.zone;
+  finish(!!d.ende);
 }
 
 function finish(timeUp){
@@ -2667,8 +2677,20 @@ function finish(timeUp){
   if (!timeUp) Sound.death();
   Net.leave();
 
-  /* Clanergebnis, bevor die Rivalen für die Anzeige eingefroren werden */
-  if (Game.teams){
+  /* Online (Schritt 105): Das Ergebnis hat der Server entschieden. */
+  if (Game.online && Net.ergebnis && (Game.teams || Game.royale)){
+    const e = Net.ergebnis;
+    if (Game.teams){
+      const tm = e.tms || Net.tms || [0, 0];
+      const us = Game.team === 2 ? tm[1] : tm[0], them = Game.team === 2 ? tm[0] : tm[1];
+      Game.result = e.gewonnen ? t("r_clanwin", us, them) : us < them ? t("r_clanlose", them, us) : t("r_even");
+    } else {
+      const gesamt = e.koerper || Net.koerper || 0;
+      Game.result = e.gewonnen ? (e.ende ? t("r_biggest") : t("r_last"))
+                  : e.ende ? t("r_timeup") + " " + t("r_placed", Game.placed || 1, gesamt)
+                           : t("r_placed", Game.placed || 1, gesamt);
+    }
+  } else if (Game.teams){
     let us = Game.cells.reduce((s,c) => s+c.m, 0), them = 0;
     for (const r of Game.rivals) (r.team === 1 ? us += r.m : them += r.m);
     Game.result = us > them ? t("r_clanwin", Math.round(us), Math.round(them))
@@ -4154,6 +4176,7 @@ function draw(){
   for (const {o,mine} of all){
     if (!mine && !seen(o)) continue;
     const pal = mine ? skin
+      : (Game.teams && o.team) ? teamPal(o.team)
       : o.pal ? o.pal
       : Game.teams ? teamPal(o.team) : RIVAL_PAL;
     /* Wer eine Zeile unter sich hat, trägt keinen Namen mehr im Kreis —
@@ -4298,10 +4321,11 @@ function draw(){
   const rp = $("royalePlate");
   if (Game.royale && Game.running){
     rp.hidden = false;
-    $("brLeft").textContent = bodyCount() + 1;
-    const nx = zoneNext(Game.t);
+    $("brLeft").textContent = Game.online ? Math.max(1, Net.lebende || 1) : bodyCount() + 1;
+    const nx = Game.online ? null : zoneNext(Game.t);
     $("brZoneLabel").textContent = nx === null ? t("field") : t("fieldcloses");
-    $("brZone").textContent = nx === null ? t("final") : Math.ceil(nx) + "s";
+    $("brZone").textContent = Game.online ? (Game.zoneR <= 320 ? t("final") : Math.round(Game.zoneR).toLocaleString(lang))
+                            : nx === null ? t("final") : Math.ceil(nx) + "s";
     const s = Math.max(0, Math.round(Game.left));
     $("brClock").textContent = Math.floor(s/60) + ":" + String(s%60).padStart(2,"0");
   } else rp.hidden = true;
@@ -4310,7 +4334,8 @@ function draw(){
   if (Game.teams && Game.running){
     plate.hidden = false;
     let us = gm, them = 0;
-    for (const r of Game.rivals) (r.team === 1 ? us += r.m : them += r.m);
+    if (Game.online && Net.tms){ us = Game.team === 2 ? Net.tms[1] : Net.tms[0]; them = Game.team === 2 ? Net.tms[0] : Net.tms[1]; }
+    else for (const r of Game.rivals) (r.team === 1 ? us += r.m : them += r.m);
     $("clanUs").textContent = Math.round(us);
     $("clanThem").textContent = Math.round(them);
     const s = Math.max(0, Math.round(Game.left));
@@ -4468,7 +4493,7 @@ function loop(t){
     requestAnimationFrame(loop);
     return;
   }
-  if (Game.running && !Integrity.locked && !paused){ step(dt); wacheFps(dt); }
+  if (Game.running && !Integrity.locked && !portrait && !paused){ step(dt); wacheFps(dt); }
   draw();
 }
 requestAnimationFrame(loop);
@@ -6035,10 +6060,13 @@ async function goImmersive(){
     if (!document.fullscreenElement && document.documentElement.requestFullscreen)
       await document.documentElement.requestFullscreen({navigationUI:"hide"});
   } catch (_) {}
-  /* Keine Ausrichtungssperre mehr (Schritt 103): Gespielt wird so, wie das
-     Telefon gehalten wird — hochkant oder quer, und drehen darf man
-     jederzeit. Poki: hochkant spielbare Spiele bringen mehr Spieler ins
-     Spiel. Der Drehhinweis (#rotate) ist damit außer Dienst. */
+  /* Querformat-Sperre — Schritt 103 hatte sie aufgehoben (hochkant
+     spielbar), Thomas am 16.09.2026 abends: „Nimm das Spiel im Hochformat
+     bitte wieder raus. Das ist nicht gut." Seitdem wieder wie vor v84. */
+  try {
+    if (screen.orientation && screen.orientation.lock)
+      await screen.orientation.lock("landscape");
+  } catch (_) {}   // iOS Safari kennt die Sperre nicht — dafür der Drehhinweis
   setTimeout(resize, 200);
 }
 
@@ -6406,6 +6434,8 @@ function steckbrief(e){
   if (Number.isInteger(e.l)) w.l = e.l;
   if (Number.isInteger(e.r)) w.r = e.r;
   if (e.b) w.b = 1;
+  if (Number.isInteger(e.tm)) w.tm = e.tm;
+  if (typeof e.t === "string" && e.t) w.t = e.t;
   return w;
 }
 
@@ -6487,6 +6517,8 @@ const Net = {
     this.schnapp = []; this.wer.clear(); this.eigen = null;
     this.deb.clear(); this.debNeu = true;
     this.top = []; this.platz = 0; this.tot = null; this.you = 0; this.seq = 0;
+    this.modus = "online"; this.team = 0; this.zeit = 0; this.zone = 0; this.rest = 0;
+    this.lebende = 0; this.tms = null; this.koerper = 0; this.ergebnis = null;
     this.kt = 0; this.kts = 0;
     const url = serverUrl();
     try { this.socket = new WebSocket(url); }
@@ -6496,7 +6528,7 @@ const Net = {
          Design aus dem Profil statt aus dieser Nachricht — und nur dann
          wird die Runde einem Konto gutgeschrieben. */
       try { this.socket.send(JSON.stringify({kind:"join", name:info.name, skin:info.skin,
-                                             bonus: info.bonus || 1,
+                                             bonus: info.bonus || 1, mode: modeId,
                                              token: Konto.token || undefined})); }
       catch(_){}
     };
@@ -6527,6 +6559,10 @@ const Net = {
       this.rate = +m.tick || 20;
       /* Weltgröße vom Server. `start()` liest sie gleich aus. */
       this.world = Math.max(1000, Math.min(40000, +m.world || 9000));
+      /* Spielart (Schritt 105). */
+      this.modus = typeof m.modus === "string" ? m.modus : "online";
+      this.team = +m.team || 0; this.zeit = +m.zeit || 0; this.koerper = +m.koerper || 0;
+      this.zone = 0; this.rest = 0; this.lebende = 0; this.tms = null;
       this.connected = true; this.lage = "verbunden";
       this.wer.clear();
       for (const id in (m.names || {})){
@@ -6548,7 +6584,9 @@ const Net = {
     }
 
     if (m.t === "dead"){
-      this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0};
+      this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0,
+                  ende: !!m.ende, gewonnen: !!m.gewonnen, platz: +m.platz || 0, zone: !!m.zone,
+                  tms: Array.isArray(m.tms) ? m.tms : null, koerper: +m.koerper || 0};
       /* Der Fresser kommt mit der Todesnachricht — ein „eat"-Ereignis im
          Zustand erreicht den Gefressenen nicht mehr. */
       if (m.von && typeof m.von.n === "string" && !Game.killer)
@@ -6634,6 +6672,11 @@ const Net = {
     /* Die Bestenliste kommt nur in jedem vierten Takt. Fehlt sie, gilt die
        letzte weiter — sie hier zu leeren ließe die Anzeige flackern. */
     if (Array.isArray(m.top)) this.top = m.top;
+    /* Spielart (Schritt 105). */
+    if (Number.isFinite(m.zone)){ this.zone = m.zone; if (Game.royale) Game.zoneR = m.zone; }
+    if (Number.isFinite(m.rest)){ this.rest = m.rest; Game.left = m.rest; }
+    if (Number.isInteger(m.leb)) this.lebende = m.leb;
+    if (Array.isArray(m.tms)) this.tms = m.tms;
     /* Eigener Platz im ganzen Raum (Schritt 102), kommt mit der Liste. */
     if (Number.isInteger(m.pl) && m.pl > 0) this.platz = m.pl;
     /* Titelträger (Schritt 97): Kennung und seit wie vielen Sekunden. */
@@ -6720,6 +6763,8 @@ const Net = {
                          die einzige Änderung. */
                       lvl:info.l, rang: info.b ? undefined : info.r,
                       tag: typeof info.t === "string" ? info.t : null,
+                      /* Mannschaft aus Sicht des Spielers: 1 = eigene, 2 = Gegner. */
+                      team: info.tm ? (info.tm === this.team ? 1 : 2) : 0,
                       tint:0, pal:haut, tier:(haut && haut.tier) || 1,
                       trait:(haut && haut.trait) || "plain"});
       }
