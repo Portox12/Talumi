@@ -1139,7 +1139,10 @@
   .konsName b{display:block;font-family:var(--disp);font-size:29px;font-weight:700;
        color:var(--paper);line-height:1.1}
   .konsName span{font-size:13px;color:var(--paper-2)}
-  #heldCanvas{display:block;width:360px;height:360px;max-width:100%}
+  /* `height:auto`: Der Kreis bleibt ein Kreis, auch wenn `max-width` ihn in
+     einer schmalen Spalte kleiner macht. Mit fester Höhe war er auf 667 × 375
+     ein Ei (16.09.2026, Bildschirmfoto). */
+  #heldCanvas{display:block;width:360px;height:auto;max-width:100%}
   .konsWerte{display:flex;gap:26px;justify-content:center}
   .konsWerte div{text-align:center}
   .konsWerte b{display:block;font-family:var(--disp);font-size:21px;font-weight:700;
@@ -1259,7 +1262,7 @@
     .konsSp{padding:14px;overflow:visible;min-height:0;flex:0 0 auto}
     .konsSp.m{justify-content:flex-start}
     .konsSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-    #heldCanvas{width:200px;height:200px}
+    #heldCanvas{width:200px;height:auto}
     .konsName b{font-size:22px}
     /* Schmal: sechs Kacheln passen nicht nebeneinander — schieben statt
        mittig abschneiden. */
@@ -1403,7 +1406,7 @@
     /* Zwei Kennungen, weil weiter unten noch ein Block mit `#heldCanvas`
        steht: Bei gleichem Gewicht gewinnt der spätere, und dann war der
        Körper wieder 168 Punkte groß in einem 188 Punkte hohen Fenster. */
-    #startVeil #heldCanvas{width:168px;height:168px}
+    #startVeil #heldCanvas{width:168px;height:auto}
     .konsName b{font-size:19px;line-height:1.05}
     .konsName span{font-size:11px}
     .konsWerte{gap:16px}
@@ -1452,7 +1455,7 @@
      Runden und Designs tritt zurück — sie steht vollständig im Reiter
      „Statistik". */
   @media (max-height:470px) and (min-width:640px){
-    #startVeil #heldCanvas{width:104px;height:104px}
+    #startVeil #heldCanvas{width:104px;height:auto}
     .konsName b{font-size:17px}
     /* Seit der Startknopf in die Kopfzeile gewandert ist (Schritt 90), sind
        68 Punkte frei — Bestmasse, Runden und Designs passen wieder ins Bild. */
@@ -1479,7 +1482,7 @@
          overflow:hidden;text-overflow:ellipsis}
   }
   @media (max-height:420px) and (min-width:640px){
-    #startVeil #heldCanvas{width:104px;height:104px}
+    #startVeil #heldCanvas{width:104px;height:auto}
     /* Bestmasse, Runden und Designs kosten mit Abstand 48 Punkte. Ab hier
        reicht es nicht mehr für beides, und der Körper ist wichtiger — die
        drei Zahlen stehen vollständig im Reiter „Statistik". */
@@ -1501,14 +1504,14 @@
      Zeilenhöhe. 78 statt 96 Punkte sind die letzten 18, die zwischen
      „passt" und „scrollt" liegen — erkennbar bleibt er. */
   @media (max-height:400px) and (min-width:640px){
-    #startVeil #heldCanvas{width:126px;height:126px}
+    #startVeil #heldCanvas{width:126px;height:auto}
     .konsSp.m{gap:5px}
     body.bonusoffen #startVeil #bonusBox{margin-top:4px}
   }
   /* Noch flacher als ein iPhone SE im Querformat (375). Solche Geräte sind
      selten, aber die Anordnung soll auch dort stehen statt zu scrollen. */
   @media (max-height:370px) and (min-width:640px){
-    #startVeil #heldCanvas{width:92px;height:92px}
+    #startVeil #heldCanvas{width:92px;height:auto}
     body.bonusoffen #startVeil #bonusBox{margin-top:2px;padding:0 10px}
     .rGrp{padding:5px 12px;gap:3px}
     .konsSp.m{padding:8px 12px}
@@ -1578,7 +1581,7 @@
     .konsReiter{height:44px}
     .konsReiter button{height:44px}
 
-    #heldCanvas{width:168px;height:168px}
+    #heldCanvas{width:168px;height:auto}
     /* Der Satz unter dem Namen steht im Spiel ohnehin über der Stufe. */
     #heldStufe{display:none}
   }
@@ -1629,9 +1632,16 @@
      Er bleibt der **einzige grüne Punkt** der Oberfläche — die Regel aus
      Schritt 79 gilt unverändert. */
   @media (max-height:640px) and (min-width:640px){
-    .konsStart{position:absolute;top:0;right:0;bottom:auto;left:auto;
+    /* `fixed`, nicht `absolute` (Schritt 101): Als absolutes Kind der
+       Kopfzeile lag der Block **im** schiebbaren Streifen — was rechts
+       überlief, lag unter ihm, und dass sich der Streifen schieben lässt,
+       sieht man ihm nicht an (Thomas, 16.09.2026: „überdeckt Einstellungen
+       halb und Rechtliches zu drei Vierteln"). Jetzt endet der Streifen
+       links vom Block (`.konsKopf{right:…}` unten), und was nicht passt,
+       wird geschoben — hinter einem Verlauf, der das andeutet. */
+    .konsStart{position:fixed;top:12px;right:14px;bottom:auto;left:auto;
          z-index:7;flex-direction:row;align-items:center;gap:10px;
-         height:44px;padding:0 14px 0 0}
+         height:46px;padding:0}
     #startBtn{width:auto;height:36px;padding:0 22px;font-size:15px;
          letter-spacing:.06em;border-radius:10px;
          box-shadow:0 0 0 1px rgba(141,245,189,.4),
@@ -1643,7 +1653,7 @@
     /* Die Spielerzahl steht links neben dem Knopf statt darunter. Bei sehr
        wenig Breite tritt sie zurück: Sie ist eine Auskunft, kein Knopf. */
     .konsStart .pow{margin:0;font-size:11.5px;white-space:nowrap;
-         color:var(--paper-2)}
+         color:var(--paper-2);order:-1}
     /* Das Fenster reicht jetzt bis unten — der Streifen darunter ist weg. */
     .konsFenster{bottom:14px}
     /* Die Reiterzeile muss dem Knopf Platz machen, sonst liegt die
@@ -1659,14 +1669,28 @@
        15.09.2026 gemeldet: "Der Start Button überdeckt den rechtliches
        Button".
 
-       190 Punkte reservieren mehr, als der Startknopf in jeder geprüften
-       Sprache braucht (höchstens 113 px) plus dem Installieren-Symbol und
-       reichlich Luft — der Streifen wird dafür etwas eher schiebbar, das
-       ist der Preis. Der Rand verschiebt nichts von selbst — die Knöpfe
-       layouten von links beginnend weiter genauso —, er sorgt nur dafür,
-       dass der letzte Knopf lieber ins Scrollen gerät, als unter den
-       Startknopf zu geraten. */
-    .konsKopf{padding-right:190px}
+       Bis Schritt 100 waren hier feste 190 Punkte reserviert. Das reichte,
+       solange rechts nur der Knopf stand — mit der Spielerzahl und der
+       Happy-Hour-Zeile daneben war der Block bis zu 330 Punkte breit, und
+       „Einstellungen" und „Rechtliches" lagen wieder darunter (Thomas,
+       16.09.2026, in der App). Die Prüfstände sahen das nicht, weil sie
+       ohne Server fahren und die Zeile dann leer bleibt.
+
+       Deshalb misst jetzt `kopfPlatz()` in spiel.js die echte Breite des
+       Blocks und schreibt sie in `--start-breite`; die Kopfzeile **endet**
+       davor (`right`), statt nur einen Rand zu lassen. Der Rückfall von 176
+       Punkten gilt nur, bis die Messung läuft. Was in den Streifen nicht
+       passt, wird geschoben — nie überdeckt. `kopfPlatz()` setzt dazu
+       `.schiebbar`, solange rechts noch etwas verborgen ist; der Verlauf
+       zeigt es an. */
+    .konsKopf{right:calc(14px + var(--start-breite, 176px) + 10px);padding-right:0}
+    /* Der Verlauf ist ein **klebendes** Pseudoelement, keine Maske: Eine
+       Maske auf der Kopfzeile machte sie zum Bezugsrahmen des fixierten
+       Startblocks — der wanderte dann in den Streifen und verschwand
+       (gemessen bei 844 × 390, nicht bei 932 × 430, wo nichts überlief). */
+    .konsKopf.schiebbar::after{content:"";position:sticky;right:0;flex:0 0 34px;
+         margin-left:-34px;height:100%;pointer-events:none;
+         background:linear-gradient(90deg,transparent,var(--ink) 85%)}
   }
   /* Schmal: Die Spielerzahl passt neben Reitern und Knopf nicht mehr. Sie
      steht auf dem Anmeldebildschirm ohnehin schon. */
@@ -1674,7 +1698,7 @@
     .konsStart .pow{display:none}
   }
   @media (max-height:470px) and (min-width:640px){
-    .konsStart{height:44px;padding-right:12px}
+    .konsStart{height:44px;top:10px}
     #startBtn{padding:0 18px;font-size:14px}
     .konsFenster{bottom:12px}
   }
@@ -2066,10 +2090,9 @@
     </div>
     <div class="konsStart">
       <button id="startBtn" data-i18n="forming" disabled>Forming…</button>
-      <!-- Wie viele gerade wirklich spielen. Kommt aus `/health`; ohne
-           erreichbaren Server bleibt die Zeile leer statt eine Null zu
-           behaupten. -->
-      <div class="pow" id="onlineText" hidden></div>
+      <!-- Die Spielerzahl stand hier bis Schritt 101 — Thomas am 16.09.2026:
+           „Noch niemand im Orbit" ist keine Werbung. Sie steht nur noch auf
+           dem Anmeldebildschirm, und dort nur, wenn wirklich jemand spielt. -->
       <!-- Happy Hour: eine Stunde am Tag 2,5-faches Ore. Kommt aus `/health`. -->
       <div class="pow happyZeile" id="happyText" hidden></div>
     </div>
@@ -2196,7 +2219,6 @@
         <p class="foot" id="kaufText" style="margin:10px 0 6px;color:var(--paper)"></p>
         <div class="two">
           <button id="kaufOre" type="button"></button>
-          <button class="quiet" id="kaufGeld" type="button" hidden></button>
         </div>
         <p class="foot" id="kaufHinweis" style="margin:6px 0 0"></p>
       </div>

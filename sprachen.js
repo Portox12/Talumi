@@ -399,6 +399,8 @@ const LANGS16 = {
   en:{r_head:"Leaderboards", r_sub:"Only online rounds count — a local round cannot be checked.",
       r_who:"Who", r_what:"Ranked by", r_world:"World", r_country:"Your country", r_friends:"Friends",
       r_best:"Best mass", r_level:"Level", r_ore:"Ore",
+      r_ehre:"Honour", r_kills:"Kills", r_kills_hint:"Only swallowed players count — never NPCs.",
+      r_clans_hint:"A clan's honour is the sum of its members' honour.", r_clan_n:"{0} members",
       r_loading:"Loading …", r_empty:"Nobody on this board yet.",
       r_nofriends:"Add friends first — then they appear here.",
       r_nofound:"None of your friends has an account yet.",
@@ -408,6 +410,8 @@ const LANGS16 = {
   de:{r_head:"Ranglisten", r_sub:"Es zählen nur Onlinerunden — eine lokale Runde lässt sich nicht prüfen.",
       r_who:"Wer", r_what:"Gewertet nach", r_world:"Weltweit", r_country:"Dein Land", r_friends:"Freunde",
       r_best:"Bestmasse", r_level:"Level", r_ore:"Ore",
+      r_ehre:"Ehre", r_kills:"Abschüsse", r_kills_hint:"Es zählen nur gefressene Spieler, nie NPCs.",
+      r_clans_hint:"Die Ehre eines Clans ist die Summe der Ehre seiner Mitglieder.", r_clan_n:"{0} Mitglieder",
       r_loading:"Wird geladen …", r_empty:"Hier steht noch niemand.",
       r_nofriends:"Erst Freunde hinzufügen, dann stehen sie hier.",
       r_nofound:"Noch keiner deiner Freunde hat ein Konto.",
@@ -416,7 +420,7 @@ const LANGS16 = {
       r_offline:"Der Server antwortet nicht. Später nochmal versuchen."},
   es:{r_head:"Clasificaciones", r_sub:"Solo cuentan las rondas en línea — una ronda local no se puede verificar.",
       r_who:"Quién", r_what:"Ordenado por", r_world:"Mundial", r_country:"Tu país", r_friends:"Amigos",
-      r_best:"Masa récord", r_level:"Nivel", r_ore:"Ore",
+      r_best:"Masa récord", r_ehre:"Honor", r_kills:"Bajas", r_kills_hint:"Solo cuentan los jugadores devorados, nunca los NPC.", r_clans_hint:"El honor de un clan es la suma del honor de sus miembros.", r_clan_n:"{0} miembros", r_level:"Nivel", r_ore:"Ore",
       r_loading:"Cargando …", r_empty:"Aún no hay nadie aquí.",
       r_nofriends:"Añade amigos primero y aparecerán aquí.",
       r_nofound:"Ninguno de tus amigos tiene cuenta todavía.",
@@ -425,7 +429,7 @@ const LANGS16 = {
       r_offline:"El servidor no responde. Inténtalo más tarde."},
   pt:{r_head:"Classificações", r_sub:"Só contam as rondas online — uma ronda local não pode ser verificada.",
       r_who:"Quem", r_what:"Ordenado por", r_world:"Mundial", r_country:"O teu país", r_friends:"Amigos",
-      r_best:"Massa recorde", r_level:"Nível", r_ore:"Ore",
+      r_best:"Massa recorde", r_ehre:"Honra", r_kills:"Abates", r_kills_hint:"Só contam os jogadores devorados, nunca os NPC.", r_clans_hint:"A honra de um clã é a soma da honra dos seus membros.", r_clan_n:"{0} membros", r_level:"Nível", r_ore:"Ore",
       r_loading:"A carregar …", r_empty:"Ainda não há ninguém aqui.",
       r_nofriends:"Adicione amigos primeiro e eles aparecem aqui.",
       r_nofound:"Nenhum dos seus amigos tem conta ainda.",
@@ -434,7 +438,7 @@ const LANGS16 = {
       r_offline:"O servidor não responde. Tente mais tarde."},
   fr:{r_head:"Classements", r_sub:"Seules les manches en ligne comptent — une manche locale n'est pas vérifiable.",
       r_who:"Qui", r_what:"Classé par", r_world:"Monde", r_country:"Votre pays", r_friends:"Amis",
-      r_best:"Meilleure masse", r_level:"Niveau", r_ore:"Minerai",
+      r_best:"Meilleure masse", r_ehre:"Honneur", r_kills:"Victimes", r_kills_hint:"Seuls les joueurs avalés comptent, jamais les PNJ.", r_clans_hint:"L'honneur d'un clan est la somme de l'honneur de ses membres.", r_clan_n:"{0} membres", r_level:"Niveau", r_ore:"Minerai",
       r_loading:"Chargement …", r_empty:"Personne ici pour l'instant.",
       r_nofriends:"Ajoutez d'abord des amis, ils apparaîtront ici.",
       r_nofound:"Aucun de vos amis n'a encore de compte.",
@@ -443,7 +447,7 @@ const LANGS16 = {
       r_offline:"Le serveur ne répond pas. Réessayez plus tard."},
   tr:{r_head:"Sıralamalar", r_sub:"Yalnızca çevrimiçi turlar sayılır — yerel bir tur doğrulanamaz.",
       r_who:"Kim", r_what:"Sıralama ölçütü", r_world:"Dünya", r_country:"Ülkeniz", r_friends:"Arkadaşlar",
-      r_best:"En iyi kütle", r_level:"Seviye", r_ore:"Cevher",
+      r_best:"En iyi kütle", r_ehre:"Onur", r_kills:"Avlar", r_kills_hint:"Yalnızca yutulan oyuncular sayılır, NPC'ler asla.", r_clans_hint:"Bir klanın onuru, üyelerinin onurunun toplamıdır.", r_clan_n:"{0} üye", r_level:"Seviye", r_ore:"Cevher",
       r_loading:"Yükleniyor …", r_empty:"Burada henüz kimse yok.",
       r_nofriends:"Önce arkadaş ekle, sonra burada görünürler.",
       r_nofound:"Arkadaşlarından hiçbirinin henüz hesabı yok.",
@@ -452,7 +456,7 @@ const LANGS16 = {
       r_offline:"Sunucu yanıt vermiyor. Daha sonra dene."},
   ru:{r_head:"Рейтинги", r_sub:"Учитываются только сетевые заходы — локальный заход проверить нельзя.",
       r_who:"Кто", r_what:"Сортировка", r_world:"Весь мир", r_country:"Ваша страна", r_friends:"Друзья",
-      r_best:"Лучшая масса", r_level:"Уровень", r_ore:"Руда",
+      r_best:"Лучшая масса", r_ehre:"Честь", r_kills:"Добыча", r_kills_hint:"Считаются только съеденные игроки, никогда не NPC.", r_clans_hint:"Честь клана — сумма чести его участников.", r_clan_n:"{0} участников", r_level:"Уровень", r_ore:"Руда",
       r_loading:"Загрузка …", r_empty:"Здесь пока никого нет.",
       r_nofriends:"Сначала добавьте друзей — тогда они появятся здесь.",
       r_nofound:"Ни у кого из ваших друзей пока нет учётной записи.",
@@ -777,81 +781,15 @@ const LANGS22 = {
 };
 for (const c in LANGS22) Object.assign(LANGS[c], LANGS22[c]);
 
-/* Oberflächen mit Geld kaufen (Schritt 67). Ore ist nicht mehr käuflich —
-   verkauft werden nur Oberflächen, die es auch für Ore gibt. Die Texte zum
-   Verkäufer und zum Abschluss auf Paddles Seite gehören zu den Rechtstexten
-   und werden vor dem Scharfschalten mit Thomas geprüft. */
+/* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
-  en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore", kauf_geld:"Buy for {0}",
-      kauf_paddle:"Payment happens on a Paddle page, where you complete the purchase. The seller is Paddle.com.",
-      kauf_konto:"Buying with money needs an account.",
-      kauf_warte:"Waiting for payment …",
-      kauf_warte_lang:"Waiting for Paddle to confirm. You can close Paddle's window after paying.",
-      kauf_fertig:"{0} is yours now.",
-      kauf_grenze:"Monthly limit reached: at most {0} per month. This protects against unwanted purchases.",
-      kauf_fehler:"Payment is not possible right now. Please try again later.",
-      kauf_abbruch:"No payment arrived. You can try again any time.",
-      kauf_hast:"You already own this design."},
-  de:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Für {0} Ore kaufen", kauf_geld:"Für {0} kaufen",
-      kauf_paddle:"Bezahlt wird auf einer Seite von Paddle, dort schließt du den Kauf ab. Verkäufer ist Paddle.com.",
-      kauf_konto:"Mit Geld kaufen geht nur mit Konto.",
-      kauf_warte:"Warte auf die Zahlung …",
-      kauf_warte_lang:"Warte auf die Bestätigung von Paddle. Nach dem Bezahlen kannst du das Fenster von Paddle schließen.",
-      kauf_fertig:"{0} gehört jetzt dir.",
-      kauf_grenze:"Monatsgrenze erreicht: höchstens {0} im Monat. Das schützt vor ungewollten Käufen.",
-      kauf_fehler:"Bezahlen ist gerade nicht möglich. Versuch es später noch einmal.",
-      kauf_abbruch:"Keine Zahlung eingegangen. Du kannst es jederzeit noch einmal versuchen.",
-      kauf_hast:"Dieses Design gehört dir schon."},
-  es:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore", kauf_geld:"Comprar por {0}",
-      kauf_paddle:"El pago se hace en una página de Paddle, donde completas la compra. El vendedor es Paddle.com.",
-      kauf_konto:"Comprar con dinero requiere una cuenta.",
-      kauf_warte:"Esperando el pago …",
-      kauf_warte_lang:"Esperando la confirmación de Paddle. Después de pagar puedes cerrar la ventana de Paddle.",
-      kauf_fertig:"{0} ya es tuyo.",
-      kauf_grenze:"Límite mensual alcanzado: como máximo {0} al mes. Protege contra compras no deseadas.",
-      kauf_fehler:"Ahora mismo no se puede pagar. Inténtalo más tarde.",
-      kauf_abbruch:"No ha llegado ningún pago. Puedes volver a intentarlo cuando quieras.",
-      kauf_hast:"Ya tienes este diseño."},
-  pt:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore", kauf_geld:"Comprar por {0}",
-      kauf_paddle:"O pagamento é feito numa página da Paddle, onde conclui a compra. O vendedor é a Paddle.com.",
-      kauf_konto:"Comprar com dinheiro requer uma conta.",
-      kauf_warte:"A aguardar o pagamento …",
-      kauf_warte_lang:"A aguardar a confirmação da Paddle. Depois de pagar, pode fechar a janela da Paddle.",
-      kauf_fertig:"{0} agora é seu.",
-      kauf_grenze:"Limite mensal atingido: no máximo {0} por mês. Protege contra compras indesejadas.",
-      kauf_fehler:"Não é possível pagar neste momento. Tente mais tarde.",
-      kauf_abbruch:"Nenhum pagamento recebido. Pode tentar de novo quando quiser.",
-      kauf_hast:"Já tem este design."},
-  fr:{kauf_wahl:"{0} — {1} minerai", kauf_ore:"Acheter pour {0} minerai", kauf_geld:"Acheter pour {0}",
-      kauf_paddle:"Le paiement se fait sur une page de Paddle, où vous finalisez l'achat. Le vendeur est Paddle.com.",
-      kauf_konto:"Acheter avec de l'argent nécessite un compte.",
-      kauf_warte:"En attente du paiement …",
-      kauf_warte_lang:"En attente de la confirmation de Paddle. Après le paiement, vous pouvez fermer la fenêtre de Paddle.",
-      kauf_fertig:"{0} est à vous.",
-      kauf_grenze:"Limite mensuelle atteinte : {0} par mois au maximum. Cela protège contre les achats non voulus.",
-      kauf_fehler:"Le paiement est impossible pour le moment. Réessayez plus tard.",
-      kauf_abbruch:"Aucun paiement reçu. Vous pouvez réessayer à tout moment.",
-      kauf_hast:"Vous possédez déjà ce design."},
-  tr:{kauf_wahl:"{0} — {1} cevher", kauf_ore:"{0} cevhere satın al", kauf_geld:"{0} karşılığında satın al",
-      kauf_paddle:"Ödeme Paddle'ın bir sayfasında yapılır ve satın almayı orada tamamlarsın. Satıcı Paddle.com'dur.",
-      kauf_konto:"Parayla satın almak için hesap gerekir.",
-      kauf_warte:"Ödeme bekleniyor …",
-      kauf_warte_lang:"Paddle'ın onayı bekleniyor. Ödemeden sonra Paddle penceresini kapatabilirsin.",
-      kauf_fertig:"{0} artık senin.",
-      kauf_grenze:"Aylık sınıra ulaşıldı: ayda en fazla {0}. İstenmeyen satın almalara karşı korur.",
-      kauf_fehler:"Şu anda ödeme yapılamıyor. Lütfen daha sonra tekrar dene.",
-      kauf_abbruch:"Ödeme gelmedi. İstediğin zaman tekrar deneyebilirsin.",
-      kauf_hast:"Bu tasarım zaten senin."},
-  ru:{kauf_wahl:"{0} — {1} руды", kauf_ore:"Купить за {0} руды", kauf_geld:"Купить за {0}",
-      kauf_paddle:"Оплата проходит на странице Paddle, там же вы завершаете покупку. Продавец — Paddle.com.",
-      kauf_konto:"Для покупки за деньги нужна учётная запись.",
-      kauf_warte:"Ожидание оплаты …",
-      kauf_warte_lang:"Ожидание подтверждения от Paddle. После оплаты окно Paddle можно закрыть.",
-      kauf_fertig:"{0} теперь ваш.",
-      kauf_grenze:"Достигнут месячный лимит: не более {0} в месяц. Это защищает от нежелательных покупок.",
-      kauf_fehler:"Сейчас оплата невозможна. Попробуйте позже.",
-      kauf_abbruch:"Оплата не поступила. Можно попробовать снова в любое время.",
-      kauf_hast:"Этот дизайн у вас уже есть."}
+  en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},
+  de:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Für {0} Ore kaufen"},
+  es:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore"},
+  pt:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Comprar por {0} Ore"},
+  fr:{kauf_wahl:"{0} — {1} minerai", kauf_ore:"Acheter pour {0} minerai"},
+  tr:{kauf_wahl:"{0} — {1} cevher", kauf_ore:"{0} cevhere satın al"},
+  ru:{kauf_wahl:"{0} — {1} руды", kauf_ore:"Купить за {0} руды"}
 };
 for (const c in LANGS23) Object.assign(LANGS[c], LANGS23[c]);
 
@@ -911,17 +849,8 @@ const LANGS26 = {
   ru:{online1:"Сейчас на орбите 1 игрок",    onlinen:"Сейчас на орбите {0} игроков"}
 };
 for (const c in LANGS26) Object.assign(LANGS[c], LANGS26[c]);
-
-const LANGS27 = {
-  en:{online0:"Nobody in orbit yet — be the first"},
-  de:{online0:"Noch niemand im Orbit — sei der Erste"},
-  es:{online0:"Nadie en órbita todavía — sé el primero"},
-  pt:{online0:"Ainda ninguém em órbita — sê o primeiro"},
-  fr:{online0:"Personne en orbite — soyez le premier"},
-  tr:{online0:"Yörüngede henüz kimse yok — ilk sen ol"},
-  ru:{online0:"На орбите пока никого — будьте первым"}
-};
-for (const c in LANGS27) Object.assign(LANGS[c], LANGS27[c]);
+/* LANGS27 (online0, „Noch niemand im Orbit") ist seit Schritt 101 weg — bei
+   null Spielern steht gar nichts, siehe onlineZeigen() in spiel.js. */
 
 /* Schritt 71 — Musik. Eigene Zeile in den Einstellungen, getrennt von den
    Spielgeräuschen. */

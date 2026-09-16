@@ -4458,8 +4458,7 @@ function reiter(name){
   const leiste = $("konsReiter");
   if (leiste) for (const b of leiste.querySelectorAll("button[data-reiter]"))
     b.setAttribute("aria-selected", String(b.dataset.reiter === name));
-  if (name === "haut"){ paintPurse(); buildGrid();
-    Kauf.preiseLaden().then(() => { if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }); }
+  if (name === "haut"){ paintPurse(); buildGrid(); }
   if (name === "erf") buildErfolge();
   if (name === "stat"){ buildRecords(); paintRank(); }
   if (name === "start") heldMalen();
@@ -4681,20 +4680,46 @@ function nextUnlock(){
    genau die Art Angabe, die das Spiel anderen vorwirft. */
 function onlineZeigen(){
   const n = Konto.online;
-  /* Dieselbe Zahl an zwei Stellen: unter dem Startknopf und auf dem
-     Anmeldebildschirm. Sie ist dort das einzige Zeichen, dass hinter dieser
-     Seite gerade jemand spielt — und genau das entscheidet, ob ein Besucher
-     es überhaupt versucht. */
-  for (const id of ["onlineText", "anmOnline"]){
-    const el = $(id);
-    if (!el) continue;
-    if (n === null || n === undefined){ el.hidden = true; el.textContent = ""; continue; }
-    el.hidden = false;
-    /* Bei null niemanden zu nennen wäre evasiv, „0 Spieler" abschreckend.
-       „Sei der Erste" sagt dasselbe und stimmt. */
-    el.textContent = n === 0 ? t("online0") : n === 1 ? t("online1") : t("onlinen", n);
-  }
+  /* Nur noch auf dem Anmeldebildschirm, und nur, wenn wirklich jemand
+     spielt. Thomas am 16.09.2026: „Noch niemand im Orbit — das ist nicht gut
+     für uns." Eine leere Zeile sagt nichts; eine Null sagt „hier ist nichts
+     los" — und das liest jeder Besucher als Grund zu gehen. Unter dem
+     Startknopf stand die Zahl bis Schritt 101 auch; dort verbreiterte sie
+     den Block und schob ihn über die Kopfzeile. */
+  const el = $("anmOnline");
+  if (!el) return;
+  if (!(n > 0)){ el.hidden = true; el.textContent = ""; return; }
+  el.hidden = false;
+  el.textContent = n === 1 ? t("online1") : t("onlinen", n);
 }
+
+/* Der Startblock sitzt im Querformat rechts **auf** der Kopfzeile, und die
+   Kopfzeile muss ihm Platz lassen (`padding-right`, siehe index.html). Wie
+   breit er ist, hängt von Sprache, Tippgerät und Happy-Hour-Zeile ab — eine
+   feste Zahl war zweimal zu klein (Schritt 94 und 101). Deshalb wird er
+   gemessen, und die Kopfzeile bekommt die Breite als `--start-breite`. */
+(function kopfPlatz(){
+  const kopf = document.querySelector(".konsKopf");
+  const start = document.querySelector(".konsStart");
+  if (!kopf || !start) return;
+  /* Ist rechts noch etwas verborgen? Dann bekommt der Streifen einen
+     Verlauf am Rand, damit man sieht, dass er sich schieben lässt. */
+  const rand = () => {
+    kopf.classList.toggle("schiebbar", kopf.scrollWidth - kopf.clientWidth - kopf.scrollLeft > 2);
+  };
+  const setzen = () => {
+    const b = Math.ceil(start.getBoundingClientRect().width);
+    if (b > 0) kopf.style.setProperty("--start-breite", b + "px");
+    rand();
+  };
+  if (typeof ResizeObserver === "function"){
+    new ResizeObserver(setzen).observe(start);
+    new ResizeObserver(rand).observe(kopf);
+  }
+  window.addEventListener("resize", setzen);
+  kopf.addEventListener("scroll", rand, { passive: true });
+  setzen();
+})();
 
 /* Happy Hour (Schritt 100): eine Zeile unter dem Startknopf und eine auf dem
    Anmeldebildschirm. Läuft sie, steht die Restzeit da; sonst die Uhrzeit der
@@ -5337,109 +5362,12 @@ async function kaufMitOre(s){
   }
 }
 
-/* =====================================================================
-   OBERFLÄCHEN MIT GELD KAUFEN
+/* Käufe mit echtem Geld gab es hier bis Schritt 100 (Designs über Paddle).
+   Zurückgebaut am 16.09.2026, weil Thomas Ore verkaufen will und Paddle das
+   verbietet. Der nächste Anbieter kommt nach seiner Entscheidung; bis dahin
+   gibt es im Laden nur Ore-Käufe. Alter Stand: Commit 0cefc66. */
 
-   Der Client weiß hier fast nichts, und das ist Absicht:
-   - Preise kommen vom Server (`/preise`), nie aus dieser Datei.
-   - Der Server legt den Vorgang bei Paddle an und nennt die Bezahlseite.
-   - Freigeschaltet wird, wenn Paddle dem Server die Zahlung meldet. Der
-     Client fragt nur nach, ob es so weit ist. Zurück auf der Seite zu sein
-     beweist nichts.
-   - Auf talumi.io läuft kein Programm von Paddle: Die Bezahlseite öffnet
-     sich in einem eigenen Fenster auf Paddles Adresse.
-   ===================================================================== */
-
-const KAUF_MERKER = "talumi.kauf";
-const KAUF_WARTEN_MS = 15 * 60 * 1000;
-
-const Kauf = {
-  preise: null,        // {kauf, skins:{id: cent}, grenze}
-  gewaehlt: null,      // Design in der Kaufleiste
-  wartet: null,        // {bestellung, skin, bis}
-  wecker: 0,
-  laeuft: false,
-
-  async preiseLaden(){
-    /* Auf Portalen kein Verkauf über Paddle (Schritt 96): Poki und
-       CrazyGames verbieten Bezahlwege an ihnen vorbei. Ore-Käufe bleiben. */
-    if (!Konto.kauf || Portal.name) { this.preise = null; return; }
-    const a = await Konto.ruf("/preise");
-    if (a.status === 200 && a.skins && typeof a.skins === "object")
-      this.preise = { kauf: !!a.kauf, skins: a.skins, grenze: +a.grenze || 0 };
-  },
-
-  preis(id){
-    const p = this.preise;
-    const cent = p && p.kauf ? +p.skins[id] : 0;
-    return Number.isInteger(cent) && cent > 0 ? cent : 0;
-  },
-
-  /* Die offene Zahlung über ein Neuladen hinweg merken: Blockiert der Browser
-     das Fenster, geht es im selben Tab zu Paddle und kommt danach zurück. */
-  merken(w){
-    try { w ? sessionStorage.setItem(KAUF_MERKER, JSON.stringify(w))
-            : sessionStorage.removeItem(KAUF_MERKER); } catch(_){}
-  },
-
-  warten(bestellung, skinId){
-    this.wartet = { bestellung, skin: skinId, bis: Date.now() + KAUF_WARTEN_MS };
-    this.merken(this.wartet);
-    clearInterval(this.wecker);
-    this.wecker = setInterval(() => this.pruefen(), 3000);
-    if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt);
-  },
-
-  fortsetzen(){
-    let w = null;
-    try { w = JSON.parse(sessionStorage.getItem(KAUF_MERKER) || "null"); } catch(_){}
-    if (!w || typeof w.bestellung !== "string" || !(w.bis > Date.now())){ this.merken(null); return; }
-    this.wartet = w;
-    clearInterval(this.wecker);
-    this.wecker = setInterval(() => this.pruefen(), 3000);
-    this.pruefen();
-  },
-
-  ende(){
-    clearInterval(this.wecker);
-    this.wecker = 0;
-    this.wartet = null;
-    this.merken(null);
-  },
-
-  async pruefen(){
-    const w = this.wartet;
-    if (!w || this.fragt) return;
-    if (Date.now() > w.bis){
-      this.ende();
-      if (ladenOffen()){ note(t("kauf_abbruch"), "warn"); if (Kauf.gewaehlt) kaufZeigen(Kauf.gewaehlt); }
-      return;
-    }
-    this.fragt = true;
-    const a = await Konto.ruf("/konto/bestellung?id=" + encodeURIComponent(w.bestellung));
-    this.fragt = false;
-    if (a.status === 401 || a.status === 404){ this.ende(); return; }
-    if (a.status !== 200) return;                       // Netzstörung: weiter warten
-    if (a.zustand === "bezahlt"){
-      this.ende();
-      if (a.profil) Konto.uebernehmen(a);
-      const s = SKINS.find(x => x.id === a.artikel);
-      const name = s ? s.label : String(a.artikel || "");
-      paintPurse(); buildGrid();
-      if (ladenOffen()){ kaufLeisteAus(); note(t("kauf_fertig", name), "good"); }
-      toast(t("kauf_fertig", name));
-    } else if (a.zustand === "erstattet"){
-      this.ende();
-    }
-  }
-};
-
-/* Wer von Paddles Fenster zurückkommt, soll nicht drei Sekunden warten. */
-document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && Kauf.wartet) Kauf.pruefen();
-});
-
-const euro = cent => (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" });
+let kaufGewaehlt = null;      // Design in der Kaufleiste
 
 /* Sieht der Spieler den Laden gerade? Früher war das „ist der Bildschirm
    sichtbar", jetzt „ist der Reiter vorn und der Startbildschirm offen". */
@@ -5454,12 +5382,12 @@ function ladenOeffnen(){
 }
 
 function kaufLeisteAus(){
-  Kauf.gewaehlt = null;
+  kaufGewaehlt = null;
   $("kaufLeiste").hidden = true;
 }
 
 function kaufZeigen(s){
-  Kauf.gewaehlt = s;
+  kaufGewaehlt = s;
   $("kaufLeiste").hidden = false;
   $("kaufText").textContent = t("kauf_wahl", s.label, s.ore.toLocaleString(lang));
 
@@ -5469,59 +5397,10 @@ function kaufZeigen(s){
   note(ore.disabled ? t("needore", s.label, s.ore.toLocaleString(lang)) : t("shoppick"),
        ore.disabled ? "warn" : "");
 
-  const geld = $("kaufGeld"), hinweis = $("kaufHinweis");
-  const cent = Kauf.preis(s.id);
-  const wartetHier = Kauf.wartet && Kauf.wartet.skin === s.id;
-  if (!cent){ geld.hidden = true; hinweis.textContent = ""; return; }
-  if (!istAngemeldet()){ geld.hidden = true; hinweis.textContent = t("kauf_konto"); return; }
-  geld.hidden = false;
-  geld.disabled = !!wartetHier;
-  geld.textContent = wartetHier ? t("kauf_warte") : t("kauf_geld", euro(cent));
-  hinweis.textContent = wartetHier ? t("kauf_warte_lang") : t("kauf_paddle");
+  $("kaufHinweis").textContent = "";
 }
 
-async function kaufMitGeld(s){
-  if (Kauf.laeuft || !istAngemeldet()) return;
-  Kauf.laeuft = true;
-  /* Das Fenster jetzt öffnen, noch innerhalb des Klicks. Erst nach der
-     Serverantwort geöffnet, hält der Browser es für Werbung und blockiert es. */
-  let fenster = null;
-  try { fenster = window.open("", "_blank"); } catch(_){}
-  note(t("k_wait"));
-  const a = await Konto.ruf("/konto/bestellen", { skin: s.id });
-  Kauf.laeuft = false;
-
-  const zu = () => { if (fenster) try { fenster.close(); } catch(_){} };
-  if (a.status !== 200 || typeof a.url !== "string" || !/^https:\/\//.test(a.url)){
-    zu();
-    if (a.fehler === "schon_im_besitz"){
-      const ich = await Konto.ruf("/konto/ich");
-      if (ich.status === 200) Konto.uebernehmen(ich);
-      paintPurse(); buildGrid(); kaufLeisteAus();
-      note(t("kauf_hast"), "good");
-    } else if (a.fehler === "grenze_erreicht"){
-      note(t("kauf_grenze", euro(+a.grenze || 0)), "warn");
-    } else if (a.fehler === "zu_viele_versuche"){
-      note(t("e_many"), "warn");
-    } else {
-      if (a.fehler === "kauf_aus"){ Konto.kauf = false; Kauf.preise = null; kaufZeigen(s); }
-      note(t("kauf_fehler"), "warn");
-    }
-    return;
-  }
-
-  Kauf.warten(a.bestellung, s.id);
-  if (fenster){
-    try { fenster.opener = null; fenster.location.href = a.url; }
-    catch(_){ location.href = a.url; }
-  } else {
-    location.href = a.url;
-  }
-  note(t("kauf_warte_lang"));
-}
-
-$("kaufOre").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitOre(Kauf.gewaehlt); });
-$("kaufGeld").addEventListener("click", () => { if (Kauf.gewaehlt) kaufMitGeld(Kauf.gewaehlt); });
+$("kaufOre").addEventListener("click", () => { if (kaufGewaehlt) kaufMitOre(kaufGewaehlt); });
 
 (function buildLangPick(){
   const box = $("langPick");
@@ -5556,6 +5435,17 @@ $("guestBtn").addEventListener("click", () => { paintPurse(); buildGrid(); show(
    der ersten Runde ein Formular sehen, und die Portale werten die Zeit bis
    zum ersten Spiel. Anmelden bleibt über die Einstellungen erreichbar. */
 if (Portal.name) setTimeout(() => { paintPurse(); buildGrid(); show("startVeil"); }, 0);
+/* Wiederkehrende Gäste ebenso (Schritt 101). Wer hier schon eine Runde
+   gespielt hat und kein Konto gemerkt hat, will nicht bei jedem Besuch erst
+   das Anmeldeformular wegklicken — Poki und CrazyGames zählen die Klicks bis
+   zum Spiel, und „höchstens einer" ist ihre Vorgabe. Der Anmeldebildschirm
+   bleibt für Erstbesucher (und für Suchmaschinen, die keinen Gaststand
+   haben); Anmelden bleibt über die Einstellungen erreichbar. Kommt jemand
+   über einen Link aus einer Mail (Anker), geht der vor. */
+else setTimeout(() => {
+  if (location.hash || Konto.gemerkt() || !((Profile.rec && Profile.rec.runs) > 0)) return;
+  paintPurse(); buildGrid(); show("startVeil");
+}, 0);
 
 /* ---- Anmeldung ----------------------------------------------------
    Ein Formular für beides. `anlegen` schaltet zwischen Anmelden und
@@ -6143,7 +6033,6 @@ const Konto = {
   async anklopfen(){
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
-    this.kauf = !!a.kauf;
     /* Zahl der Menschen im Betrieb — nur Menschen, `/health` zählt NPCs
        getrennt. Sie auf dem Startbildschirm zu zeigen ist das einzige
        Zeichen dort, dass gerade jemand spielt. */
@@ -6679,12 +6568,16 @@ const Net = {
    ===================================================================== */
 
 let rangWer = "welt";      // welt | land | freunde
-let rangWas = "best";      // best | level | ore
+let rangWas = "best";      // best | ehre | abschuesse | saison | level | clans | titel
 let rangLauf = 0;          // laufende Nummer, gegen überholende Antworten
 
+/* Wertungen (Schritt 101, Thomas' Vorgabe vom 16.09.2026): Ehre, Abschüsse
+   und Clans dazu, Ore weg — ein Kontostand ist keine Leistung, und eine
+   Liste, die ihn zeigt, lädt zum Horten ein statt zum Spielen. */
 function rangKnoepfe(){
   const wer = [["welt","r_world"], ["land","r_country"], ["freunde","r_friends"]];
-  const was = [["best","r_best"], ["saison","s_tab"], ["level","r_level"], ["ore","r_ore"], ["titel","titel_name"]];
+  const was = [["best","r_best"], ["ehre","r_ehre"], ["abschuesse","r_kills"], ["saison","s_tab"],
+               ["level","r_level"], ["clans","clan"], ["titel","titel_name"]];
   for (const [box, liste, jetzt, setzen] of
        [[$("rankWho"), wer, rangWer, v => rangWer = v],
         [$("rankWhat"), was, rangWas, v => rangWas = v]]){
@@ -6743,11 +6636,30 @@ async function titelRangLaden(meine){
   }).join("");
 }
 
+/* Clan-Rangliste: Summe der Ehre aller Mitglieder, weltweit, für jeden
+   lesbar. Derselbe Endpunkt wie im Reiter „Clan"; hier nur die volle Liste. */
+async function clanRangLaden(meine){
+  const box = $("rankList");
+  box.innerHTML = `<p class="hintline">${t("r_loading")}</p>`;
+  rangHinweis(t("r_clans_hint"));
+  const a = await Konto.ruf("/clan/rangliste");
+  if (meine !== rangLauf) return;
+  if (!a || a.status !== 200){ box.innerHTML = ""; return rangHinweis(t("r_offline"), "warn"); }
+  const liste = Array.isArray(a.liste) ? a.liste : [];
+  if (!liste.length){ box.innerHTML = ""; return rangHinweis(t("r_empty")); }
+  const meiner = istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.id : -1;
+  box.innerHTML = liste.map(e =>
+    `<div class="rankrow${+e.id === meiner ? " me" : ""}">` +
+    `<i>${e.rang}</i><b>[${esc(e.tag)}] ${esc(e.name)}<small>${esc(t("r_clan_n", e.mitglieder))}</small></b>` +
+    `<span>${Math.round(+e.ehre || 0).toLocaleString(lang)}</span></div>`).join("");
+}
+
 async function rangLaden(){
   const box = $("rankList");
   const meine = ++rangLauf;
-  { const w = $("rankWho"); if (w) w.hidden = rangWas === "titel"; }
+  { const w = $("rankWho"); if (w) w.hidden = rangWas === "titel" || rangWas === "clans"; }
   if (rangWas === "titel") return titelRangLaden(meine);
+  if (rangWas === "clans") return clanRangLaden(meine);
 
   if (!Konto.angemeldet()){
     box.innerHTML = "";
@@ -6801,7 +6713,10 @@ async function rangLaden(){
      sichtbaren Liste steht. Dort ist die eigene Zeile hervorgehoben; ein
      zweiter Satz darunter wäre nur Wiederholung. */
   const drin = liste.some(e => +e.id === ich);
-  rangHinweis(a.eigener && !drin ? t("r_you", a.eigener.toLocaleString(lang)) : "");
+  /* Bei den Abschüssen steht dazu, dass nur Menschen zählen — sonst fragt
+     jeder, warum seine 40 gefressenen NPCs fehlen. */
+  rangHinweis([a.eigener && !drin ? t("r_you", a.eigener.toLocaleString(lang)) : "",
+               rangWas === "abschuesse" ? t("r_kills_hint") : ""].filter(Boolean).join(" · "));
 }
 
 $("rankBtn").addEventListener("click", () => {
@@ -7012,7 +6927,6 @@ async function markeAusAdresse(){
     }
     Konto.merken(tok);
     if (await Konto.wiederaufnehmen()){
-      Kauf.fortsetzen();
       nachAnmeldung();
       return true;
     }
@@ -7070,8 +6984,7 @@ document.addEventListener("visibilitychange", () => {
     if (Konto.gemerkt()){
       if (!ausMail) kontoMeldung(t("k_wait"));
       if (await Konto.wiederaufnehmen()){
-        Kauf.fortsetzen();
-        if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
+          if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         else if (!$("accountVeil").hidden) nachAnmeldung();
         else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         return;
