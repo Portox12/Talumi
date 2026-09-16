@@ -10,18 +10,18 @@
 <meta name="apple-mobile-web-app-title" content="Talumi">
 <!-- Titel: Hauptbegriff vorn, unter 60 Zeichen. Er entscheidet in der
      Trefferliste und bei KI-Antworten über den Klick. -->
-<meta name="description" content="Talumi is a free browser io game: start as dust, eat debris and rivals, grow into a world with rings. Online rounds, four modes, 46 earned designs, no lasting advantages for sale.">
+<meta name="description" content="Talumi is a free online multiplayer io game in the browser: start as dust, eat debris and rivals, grow into a world with rings. Real players and NPC rivals in one arena, four modes, 46 earned designs, no lasting advantages for sale.">
 <link rel="canonical" href="https://talumi.io/">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Talumi — free io game, dust to planet">
-<meta property="og:description" content="Start as a grain of dust. Eat debris and rivals. Grow into a world with rings and moons. Online rounds against real players. Free to play. Nothing on sale gives a lasting advantage.">
+<meta property="og:title" content="Talumi — free online multiplayer io game, dust to planet">
+<meta property="og:description" content="Online multiplayer in the browser: start as a grain of dust, eat debris and rivals, grow into a world with rings and moons. Real players and NPC rivals in one arena. Free to play. Nothing on sale gives a lasting advantage.">
 <meta property="og:image" content="https://talumi.io/share-1200x630.png">
 <meta property="og:url" content="https://talumi.io/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Talumi — free io game, dust to planet</title>
+<title>Talumi — free online multiplayer io game, dust to planet</title>
 <link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
 <style>
   /* --- Eigene Schrift, auf talumi.io selbst gehostet -------------------
@@ -538,6 +538,22 @@
   .tally.sum{border-bottom:0;border-top:1px solid var(--line);margin-top:2px;
      font-family:var(--serif);font-size:16px;color:var(--brass)}
   .tally.sum span:last-child{color:var(--brass)}
+  .tally .ico,.gain .ico{width:16px;height:16px;vertical-align:-3px;margin-right:6px;color:var(--brass)}
+  /* Meilenstein-Banner (Schritt 103): Level oder Rang, groß und kurz
+     eingeblendet. */
+  .feier{margin:0 0 12px;padding:12px 14px 14px;border-radius:14px;text-align:center;
+       border:1px solid rgba(233,176,99,.42);
+       background:radial-gradient(ellipse at 50% 0%, rgba(233,176,99,.22), rgba(233,176,99,.04) 70%);
+       animation:feierEin .55s cubic-bezier(.2,.9,.3,1.2) both}
+  .feier small{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.2em;
+       text-transform:uppercase;color:var(--paper-2)}
+  .feier b.gross{display:block;font-family:var(--disp);font-size:52px;line-height:1.05;
+       color:var(--brass-hell);text-shadow:0 0 22px rgba(233,176,99,.55)}
+  .feier b:not(.gross){display:block;font-family:var(--disp);font-size:20px;color:var(--brass-hell);margin-top:4px}
+  .feier span{display:block;font-size:13px;color:var(--paper);margin-top:4px}
+  .feier canvas{width:96px;height:56px;display:block;margin:6px auto 0}
+  @keyframes feierEin{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+  @media (max-height:470px){ .feier{padding:8px 12px 10px;margin-bottom:8px} .feier b.gross{font-size:36px} .feier canvas{width:72px;height:42px} }
   .gain{font-size:13.5px;line-height:1.9;margin:8px 0 4px}
   .gain b{color:var(--brass)}
   /* Die Abrechnung darf die Knöpfe niemals aus dem Bild schieben: Wer gerade
@@ -584,6 +600,20 @@
         left:calc(30px + env(safe-area-inset-left))}
   body.touch #sky{cursor:none}
 
+  /* ---- Hochkant im Spiel (Schritt 103) ----------------------------
+     Die Breite ist knapp, die Höhe reichlich: links Masse und Stufe
+     schmaler, rechts die Tafeln schmaler, Daumentasten etwas kleiner und
+     tiefer, damit der rechte Daumen sie erreicht, ohne die Tafel zu decken. */
+  body.portrait .mass{font-size:30px}
+  body.portrait .stage{max-width:150px}
+  body.portrait .stage b{font-size:14px}
+  body.portrait .stage p{display:none}
+  body.portrait .plate{min-width:132px;padding:8px 10px}
+  body.portrait .hud{gap:8px}
+  body.portrait #pads{gap:10px;right:calc(16px + env(safe-area-inset-right));
+        bottom:calc(22px + env(safe-area-inset-bottom))}
+  body.portrait #pads button{width:66px;height:66px}
+
   /* Querformat erzwingen */
   #rotate{position:fixed;inset:0;z-index:9;display:none;place-items:center;text-align:center;
      background:var(--ink);padding:28px}
@@ -594,7 +624,9 @@
   #rotate .phone{width:74px;height:44px;border:2px solid var(--brass);border-radius:6px;
      margin:0 auto;animation:tip 2.4s ease-in-out infinite}
   @keyframes tip{0%,45%{transform:rotate(90deg)}60%,100%{transform:rotate(0)}}
-  body.portrait #rotate{display:grid}
+  /* Seit Schritt 103 ohne Dienst: Gespielt wird hochkant und quer. Die
+     Regel `body.portrait #rotate{display:grid}` ist gestrichen; das Element
+     bleibt vorerst im Markup, falls ein Portal ein Format vorschreibt. */
 
   /* Kurze Querformat-Bildschirme: alles enger.
      Die Breite wird dabei NICHT beschnitten. Eine frühere Fassung deckelte

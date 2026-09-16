@@ -323,6 +323,8 @@ addEventListener("resize", resize);
 addEventListener("orientationchange", () => setTimeout(resize, 120));
 
 let portrait = false;
+/* `portrait` steuert seit Schritt 103 nur noch die Anordnung (body.portrait
+   im CSS) — gespielt wird in beiden Lagen. */
 function checkOrientation(){
   portrait = isTouch && VH > VW;
   document.body.classList.toggle("portrait", portrait);
@@ -1595,6 +1597,7 @@ const seedStars = () => {
 seedStars();
 
 function start(name){
+  levelBeimStart = Profile.level;
   const M = MODE();
   Musik.ducken(true);
   Game.online = !!M.online;
@@ -2184,6 +2187,36 @@ function rivalGoal(r){
 
 function toast(text){ Game.toast = {text, life:3.4}; }
 
+/* Meilensteine feiern (Schritt 103, Thomas: „bei Level Up und so weiter soll
+   dieser noch besser ersichtlich sein"; Poki: „Congratulate the player at
+   every milestone"). Ein Banner oben in der Abrechnung — große Zahl bzw.
+   Abzeichen, kurz eingeblendet, mit Ton. Kein Konfetti über dem Spielfeld:
+   Der Ergebnisbildschirm liegt bewusst über dem eingefrorenen Feld, und
+   darauf soll man sehen, was gerade passiert ist. */
+let levelBeimStart = 1;
+/* Bildchen für Ore und XP in der Abrechnung (Schritt 103, Thomas' Wunsch).
+   Kleine Pfade in Messing, wie die Rangabzeichen — keine Bilddateien. */
+const ICON_ORE = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 11L3 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 10h18M9 4l3 6 3-6M12 10v11" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"/></svg>`;
+const ICON_XP  = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+function feierHtml({ level = 0, namen = [], rang = -1 } = {}){
+  let html = "";
+  if (level > 0){
+    html += `<div class="feier"><small>${esc(t("f_level"))}</small><b class="gross">${level}</b>` +
+            (namen.length ? `<span>${esc(t("f_frei", namen.join(", ")))}</span>` : "") + `</div>`;
+  }
+  if (rang >= 0){
+    html += `<div class="feier rang"><small>${esc(t("f_rang"))}</small><canvas width="192" height="112" data-stufe="${rang}"></canvas>` +
+            `<b>${esc(t("rk" + clamp(rang, 0, RANG_MAX)))}</b></div>`;
+  }
+  return html;
+}
+function feierMalen(){
+  for (const c of document.querySelectorAll(".feier canvas[data-stufe]")){
+    const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height);
+    abzeichen(g, 0, 0, +c.dataset.stufe, 112);
+  }
+}
+
 /* Lage einmal zusammenfassen und alle Hinweise dagegen prüfen. Läuft 2,5-mal
    pro Sekunde, nicht in jedem Bild — 40 Rivalen und 42 Pulsare abzutasten
    lohnt sich nicht sechzigmal. */
@@ -2712,9 +2745,8 @@ function finish(timeUp){
     const lesson = deathLesson(k, total);
     if (lesson) recap += `<p class="lesson">${lesson}</p>`;
   }
-  const gap = Profile.best - peak;
-  if (gap > 0 && Profile.best > 0)
-    recap += `<p class="lesson">${t("shortof", Math.round(gap))}</p>`;
+  /* „Noch N unter deiner Bestmasse" steht seit Schritt 103 nicht mehr da —
+     Thomas: „das ist demotivierend." Der Bestwert steht im Reiter Statistik. */
 
   $("endText").textContent = (Game.result ? Game.result + " " : "") +
     t("r_line", Game.name, Math.round(peak), t("st" + stageOf(peak)),
@@ -2740,19 +2772,17 @@ function finish(timeUp){
 
     let html = zeilen.filter(z => z[1] > 0)
       .map(z => `<div class="tally"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
-    html += `<div class="tally sum"><span>${t("oreearned")}</span><span>+${L.ore}</span></div>`;
-    html += `<p class="gain">+<b>${L.xp}</b> XP</p>`;
-    if (Net.aufgestiegen){
-      /* Der Server schickt Kennungen, keine Namen — Namen und Farben stehen
-         nur hier. Ohne diese Zuordnung stünde „Freigeschaltet:" mit nichts
-         dahinter. */
-      const namen = (Net.neueSkins || [])
-        .map(id => (SKINS.find(s => s.id === id) || {}).label)
-        .filter(Boolean);
-      html += namen.length
-        ? `<p class="gain">${t("levelup", Net.aufgestiegen)} <b>${esc(namen.join(", "))}</b></p>`
-        : `<p class="gain">${t("levelonly", Net.aufgestiegen)}</p>`;
-    }
+    html += `<div class="tally sum"><span>${ICON_ORE}${t("oreearned")}</span><span>+${L.ore}</span></div>`;
+    html += `<p class="gain">${ICON_XP}+<b>${L.xp}</b> XP</p>`;
+    /* Der Server schickt Kennungen, keine Namen — Namen und Farben stehen
+       nur hier. Level und Rang werden als Banner **vor** die Abrechnung
+       gestellt (Schritt 103), damit man sie nicht überliest. */
+    const namen = (Net.neueSkins || [])
+      .map(id => (SKINS.find(s => s.id === id) || {}).label)
+      .filter(Boolean);
+    const feier = feierHtml({ level: Net.aufgestiegen || 0, namen, rang: Net.rangNeu > 0 ? Net.rangNeu : -1 });
+    if (feier) Sound.levelUp();
+    html = feier + html;
     /* Ehre dieser Runde. Sie steht getrennt von Ore und XP, weil sie etwas
        anderes ist: Ore und XP bekommt man fürs Wachsen, Ehre nur fürs Jagen.
        Auch eine Null steht da — sonst weiß man nicht, ob man nichts bekommen
@@ -2774,6 +2804,7 @@ function finish(timeUp){
     $("endZiel").innerHTML = naechstesZiel();
     $("endRw").innerHTML = "";
     $("endGains").innerHTML = html;
+    feierMalen();
 
     Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
     /* Den Wert vorher festhalten: Zwei Zeilen tiefer wird Net.rangNeu
@@ -2815,11 +2846,12 @@ function finish(timeUp){
   let html = "";
   html += rows.filter(r => r[1] > 0)
     .map(r => `<div class="tally"><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("");
-  html += `<div class="tally sum"><span>${t("oreearned")}</span><span>+${oreGain}</span></div>`;
-  html += `<p class="gain">+<b>${Math.round(Game.xpRun)}</b> XP</p>`;
-  if (unlocked.length)
-    html += `<p class="gain">${t("levelup", Profile.level)} <b>` +
-            unlocked.map(s => s.label).join(", ") + `</b></p>`;
+  html += `<div class="tally sum"><span>${ICON_ORE}${t("oreearned")}</span><span>+${oreGain}</span></div>`;
+  html += `<p class="gain">${ICON_XP}+<b>${Math.round(Game.xpRun)}</b> XP</p>`;
+  /* Aufstieg als Banner (Schritt 103) — auch ohne neues Design, wenn das
+     Level in dieser Runde gestiegen ist. */
+  if (Profile.level > levelBeimStart || unlocked.length)
+    html = feierHtml({ level: Profile.level, namen: unlocked.map(s => s.label) }) + html;
   /* Freiwillige Belohnungsanzeige (nur auf Portalen, nur Gäste — deren Ore
      liegt ohnehin im Browser). Einmal pro Runde, deutlich als freiwillig
      gekennzeichnet, belohnt nur bei vollständig gesehener Anzeige. */
@@ -2859,6 +2891,40 @@ function finish(timeUp){
    4) RENDER
    ===================================================================== */
 const cam = {x:WORLD/2, y:WORLD/2, z:1};
+
+/* Gefahr außerhalb des Bildes (Schritt 103). Thomas: „Spieler gar nicht auf
+   meinem Bildschirm ersichtlich, aber so groß, dass er sich beim Teilen auf
+   mich schießen kann." Ein Kleiner sieht rund 600 Einheiten weit; ein
+   Großer springt beim Teilen 700 + anderthalb Radien. Ganz herauszoomen
+   hilft nicht — dann wäre der eigene Körper drei Bildpunkte groß. Deshalb
+   ein Pfeil am Bildrand für jeden Körper, der (1) auch halbiert noch fressen
+   könnte (mindestens das 2,44-Fache der eigenen größten Zelle: geteilt
+   bleibt die Hälfte, und die muss 1,22-mal schwerer sein) und (2) mit einem
+   Sprung erreichbar ist. Je näher, desto größer und kräftiger der Pfeil. */
+const randGefahren = [];
+function gefahrenMalen(g){
+  if (!randGefahren.length) return;
+  /* Auf einem Ring um die eigene Mitte, nicht am Bildrand: Dort liegen die
+     Tafeln der Anzeige darüber, und ein Pfeil unter der Rangliste warnt
+     niemanden (so gesehen beim ersten Versuch). */
+  const cx = VW/2, cy = VH/2, ring = Math.min(VW, VH)*0.36;
+  const puls = .75 + .25*Math.sin(Game.t*6);
+  for (const r of randGefahren){
+    const sx = r.dx*cam.z, sy = r.dy*cam.z;
+    const l = Math.hypot(sx, sy) || 1;
+    const px = cx + sx/l*ring, py = cy + sy/l*ring;
+    const groesse = 9 + 9*r.nah;
+    const a = Math.atan2(sy, sx);
+    g.save();
+    g.translate(px, py); g.rotate(a);
+    g.globalAlpha = .55 + .45*r.nah*puls;
+    g.beginPath();
+    g.moveTo(groesse, 0); g.lineTo(-groesse*.7, -groesse*.62); g.lineTo(-groesse*.7, groesse*.62); g.closePath();
+    g.fillStyle = "#f26b5b"; g.fill();
+    g.lineWidth = 1.5; g.strokeStyle = "rgba(20,8,6,.85)"; g.stroke();
+    g.restore();
+  }
+}
 
 /* =====================================================================
    DESIGNS — wie ein Körper gezeichnet wird
@@ -3873,7 +3939,9 @@ function draw(){
   peak = Math.max(peak, gm);
   // Basiszoom hängt nur an der Masse; FIT gleicht die Bildschirmgröße aus,
   // damit Handy und PC dieselbe Fläche des Spielfelds sehen.
-  const target = clamp(Math.pow(48/radiusOf(Math.max(gm,10)), .42), .3, 1.25) * FIT;
+  /* Obergrenze 1,1 statt 1,25 (Schritt 103): Kleine sehen ein Achtel weiter,
+     ohne dass sie selbst winzig werden. */
+  const target = clamp(Math.pow(48/radiusOf(Math.max(gm,10)), .42), .3, 1.1) * FIT;
   cam.x += (mx-cam.x)*.14; cam.y += (my-cam.y)*.14; cam.z += (target-cam.z)*.05;
 
   const pad = 60/cam.z;
@@ -3967,6 +4035,24 @@ function draw(){
   }
 
   const lead = Game.cells.reduce((p,c) => !p || c.m > p.m ? c : p, null);
+
+  /* Unsichtbare Große in Sprungweite einsammeln — gezeichnet nach dem
+     Spielfeld, in Bildschirmkoordinaten (`gefahrenMalen`). */
+  randGefahren.length = 0;
+  if (lead && Game.running){
+    const meine = lead.m;
+    const schonDa = new Set();
+    for (const {o, mine} of all){
+      if (mine || o.m < meine*2.44 || seen(o)) continue;
+      const key = o.gid !== undefined ? "g" + o.gid : o;
+      if (schonDa.has(key)) continue;
+      const d = Math.hypot(o.x - lead.x, o.y - lead.y);
+      const reich = splitPush(o.m/2) + radiusOf(o.m/2) + radiusOf(o.m) + radiusOf(meine) + 300;
+      if (d > reich) continue;
+      schonDa.add(key);
+      randGefahren.push({dx:o.x - cam.x, dy:o.y - cam.y, m:o.m, nah: clamp(1 - d/reich, 0, 1)});
+    }
+  }
 
   /* Namenszeilen einsammeln: je Spieler eine, am größten Stück. Online
      gehören alle Zellen mit derselben `gid` zu einem Spieler; lokal ist jeder
@@ -4133,6 +4219,9 @@ function draw(){
     }
     ctx.restore();
   }
+
+  /* Warnpfeile in Bildschirmkoordinaten — nach dem Spielfeld, vor der Anzeige. */
+  gefahrenMalen(ctx);
 
   const hEl = $("hint");
   if (Game.hint && Game.running && Game.t < Game.hintUntil){
@@ -4321,7 +4410,7 @@ function loop(t){
     requestAnimationFrame(loop);
     return;
   }
-  if (Game.running && !Integrity.locked && !portrait && !paused){ step(dt); wacheFps(dt); }
+  if (Game.running && !Integrity.locked && !paused){ step(dt); wacheFps(dt); }
   draw();
 }
 requestAnimationFrame(loop);
@@ -5852,10 +5941,10 @@ async function goImmersive(){
     if (!document.fullscreenElement && document.documentElement.requestFullscreen)
       await document.documentElement.requestFullscreen({navigationUI:"hide"});
   } catch (_) {}
-  try {
-    if (screen.orientation && screen.orientation.lock)
-      await screen.orientation.lock("landscape");
-  } catch (_) {}   // iOS Safari kennt die Sperre nicht — dafür der Drehhinweis
+  /* Keine Ausrichtungssperre mehr (Schritt 103): Gespielt wird so, wie das
+     Telefon gehalten wird — hochkant oder quer, und drehen darf man
+     jederzeit. Poki: hochkant spielbare Spiele bringen mehr Spieler ins
+     Spiel. Der Drehhinweis (#rotate) ist damit außer Dienst. */
   setTimeout(resize, 200);
 }
 

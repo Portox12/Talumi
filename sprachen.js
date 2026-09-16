@@ -806,6 +806,18 @@ const LANGS102 = {
 };
 for (const c in LANGS102) Object.assign(LANGS[c], LANGS102[c]);
 
+/* Meilenstein-Banner (Schritt 103). */
+const LANGS103 = {
+  en:{f_level:"New level", f_rang:"New rank", f_frei:"Unlocked: {0}"},
+  de:{f_level:"Neues Level", f_rang:"Neuer Rang", f_frei:"Freigeschaltet: {0}"},
+  es:{f_level:"Nuevo nivel", f_rang:"Nuevo rango", f_frei:"Desbloqueado: {0}"},
+  pt:{f_level:"Novo nível", f_rang:"Nova patente", f_frei:"Desbloqueado: {0}"},
+  fr:{f_level:"Nouveau niveau", f_rang:"Nouveau grade", f_frei:"Débloqué : {0}"},
+  tr:{f_level:"Yeni seviye", f_rang:"Yeni rütbe", f_frei:"Açıldı: {0}"},
+  ru:{f_level:"Новый уровень", f_rang:"Новое звание", f_frei:"Открыто: {0}"}
+};
+for (const c in LANGS103) Object.assign(LANGS[c], LANGS103[c]);
+
 /* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
   en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},

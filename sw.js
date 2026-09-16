@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v83";
+const VERSION = "v84";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
