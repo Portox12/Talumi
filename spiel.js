@@ -835,6 +835,10 @@ const SKINS = [
      schaltet es über das Werbeprogramm frei. */
   {id:"inferno",   mat:"glut",     label:"Inferno",    rock:"#c2481f", dark:"#5a1a0a", hot:"#ffd166", air:"#ff7b3a",
    special:"feuer", sonder:"werben"},
+  /* Sunflare (Schritt 107): die erste volle Woche Tagesbonus. Auffällig
+     (Thomas): rotierende Strahlen weit außerhalb des Kreises. */
+  {id:"sunflare",  mat:"energie",  label:"Sunflare",   rock:"#ffb43c", dark:"#a1480f", hot:"#fff2a8", air:"#ffd36a",
+   special:"strahlen", sonder:"woche"},
   /* Rime (Schritt 106, Raureif): nur über zehn volle Wochen Tagesbonus.
      „Glacier" gibt es schon als Level-Design — Kennungen müssen eindeutig
      sein, sonst findet `SKINS.find` das falsche. */
@@ -1045,14 +1049,15 @@ const Gast = {
     const g = BONUS_GAST[serie - 1] || {};
     const ore = g.ore || 0, xp = g.xp || 0, boost = g.boost || 0;
     this.bonus = { tag: h, serie, wochen };
-    let eis = false;
+    let eis = false, design = null;
     if (wochen >= 10 && !Profile.owned.has("rime")){ Profile.owned.add("rime"); eis = true; }
+    if (serie === 7 && !Profile.owned.has("sunflare")){ Profile.owned.add("sunflare"); design = "sunflare"; }
     Profile.ore += ore;
     if (xp) Profile.addXp(xp);
     /* Der Gutschein gilt für die nächste lokale Runde mit Startbonus. */
     if (boost) this.gutschein = boost;
     this.sichern();
-    return { ok: true, tag: serie, ore, xp, boost, ehre: 0, wochen, eis };
+    return { ok: true, tag: serie, ore, xp, boost, ehre: 0, wochen, eis, design };
   },
   gutschein: 0,
   nameVorschlag(){
@@ -3577,6 +3582,23 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.lineWidth = Math.max(1.5, r*.05); g.stroke();
   }
 
+  /* Sunflare (Schritt 107): zwölf drehende Strahlen und eine Korona — alles
+     außerhalb von r, durchscheinend; der Kreis bleibt der Kreis. */
+  if (F === "strahlen" && fancy && r > 6){
+    const n = 12, tt = Game.t;
+    g.save(); g.translate(x, y); g.rotate(tt*.5);
+    for (let i=0;i<n;i++){
+      const a = i*(6.2832/n), l = r*(.55 + .25*Math.sin(tt*3 + i*1.3)), w = r*.09;
+      g.save(); g.rotate(a);
+      g.beginPath(); g.moveTo(r*1.02, -w); g.lineTo(r*1.02 + l, 0); g.lineTo(r*1.02, w); g.closePath();
+      g.fillStyle = hexA(i % 2 ? pal.hot : pal.air, .34); g.fill();
+      g.restore();
+    }
+    g.restore();
+    g.beginPath(); g.arc(x, y, r*1.09, 0, 7);
+    g.strokeStyle = hexA(pal.hot, .38 + .12*Math.sin(tt*5)); g.lineWidth = Math.max(1.5, r*.06); g.stroke();
+  }
+
   /* Rime (Schritt 106): Eiskristalle, die langsam um den Körper kreisen,
      dazu ein kalter Schimmer knapp außerhalb von r. Zeit statt Zufall. */
   if (F === "frost" && fancy && r > 6){
@@ -5341,20 +5363,95 @@ async function clanOhne(body, einladungen, top){
    für den Startbonus (×2, ×3), Ehre, Erfahrung. Gäste haben keine Ehre —
    ihr vierter Tag zahlt Ore (`BONUS_GAST`). */
 const BONUS_ANZEIGE = [
-  { ore: 50 }, { ore: 75 }, { boost: 2 }, { ehre: 20 }, { xp: 150 }, { boost: 3 }, { ore: 500 }
+  { ore: 100 }, { ore: 150 }, { boost: 2 }, { ehre: 40 }, { xp: 400 }, { boost: 3 }, { ore: 1000, design: "sunflare" }
 ];
-const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 100 } : b);
+const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 200 } : b);
 function bonusReihe(){ return istAngemeldet() ? BONUS_ANZEIGE : BONUS_GAST; }
 /* Kurztext eines Tages: „50 Ore", „Startbonus ×2", „20 Ehre", „150 XP". */
 function bonusText(b){
   if (!b) return "";
+  if (b.design && !Profile.owned.has(b.design)){
+    const d = SKINS.find(k => k.id === b.design);
+    return t("b_design", d ? d.label : b.design) + " + " + (b.ore || 0).toLocaleString(lang) + " Ore";
+  }
   if (b.boost) return t("b_boost", b.boost);
   if (b.xp)    return b.xp.toLocaleString(lang) + " XP";
   if (b.ehre)  return b.ehre.toLocaleString(lang) + " " + t("ehre");
   return (b.ore || 0).toLocaleString(lang) + " Ore";
 }
-/* Die Bildchen der Tagesreihe — Pfade, wie bei den Errungenschaften. */
+/* Die Bildchen der Tagesreihe (Schritt 107, Thomas: „hochauflösende, echte
+   kleine Bildchen"): auf einer Leinwand mit Verläufen und Glanz gezeichnet
+   und als Bild eingebettet — doppelt so groß gerechnet wie gezeigt, damit
+   sie auf dichten Bildschirmen scharf bleiben. Ein Design wird mit
+   `body()` selbst gemalt, wie im Hangar. */
+const IKON_CACHE = {};
+function ikonBild(art, design){
+  const key = design ? "d:" + design : art;
+  if (IKON_CACHE[key]) return IKON_CACHE[key];
+  const S = 96, c = document.createElement("canvas"); c.width = c.height = S;
+  const g = c.getContext("2d");
+  if (design){
+    const pal = SKINS.find(k => k.id === design);
+    if (pal){ const t0 = Game.t; Game.t = 1.2; try { body(g, S/2, S/2, S*.30, 3000, pal, 0, "", true); } catch(_){} Game.t = t0; }
+  } else if (art === "ore"){
+    /* Erznugget: Facetten, Messingverlauf, Lichtkante links oben. */
+    const gr = g.createLinearGradient(14, 14, 82, 86);
+    gr.addColorStop(0, "#ffe2a4"); gr.addColorStop(.45, "#e9b063"); gr.addColorStop(1, "#7a4a1c");
+    g.beginPath(); g.moveTo(48, 10); g.lineTo(82, 30); g.lineTo(78, 68); g.lineTo(48, 88); g.lineTo(16, 66); g.lineTo(20, 28); g.closePath();
+    g.fillStyle = gr; g.fill();
+    g.strokeStyle = "rgba(60,30,10,.7)"; g.lineWidth = 2.5; g.stroke();
+    g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(48, 10); g.lineTo(52, 48); g.lineTo(82, 30); g.moveTo(52, 48); g.lineTo(48, 88); g.moveTo(52, 48); g.lineTo(16, 66); g.stroke();
+    g.fillStyle = "rgba(255,255,255,.55)"; g.beginPath(); g.ellipse(36, 30, 9, 5, -.6, 0, 7); g.fill();
+  } else if (art === "xp"){
+    const glow = g.createRadialGradient(48, 48, 6, 48, 48, 46);
+    glow.addColorStop(0, "rgba(255,230,140,.85)"); glow.addColorStop(1, "rgba(255,200,80,0)");
+    g.fillStyle = glow; g.fillRect(0, 0, S, S);
+    const st = g.createLinearGradient(20, 16, 76, 84); st.addColorStop(0, "#fff6c8"); st.addColorStop(1, "#e9a23a");
+    g.beginPath();
+    for (let i=0;i<10;i++){ const a = -1.5708 + i*.6283, rr = i%2 ? 15 : 36; i ? g.lineTo(48+Math.cos(a)*rr, 50+Math.sin(a)*rr) : g.moveTo(48+Math.cos(a)*rr, 50+Math.sin(a)*rr); }
+    g.closePath(); g.fillStyle = st; g.fill();
+    g.strokeStyle = "rgba(120,70,10,.6)"; g.lineWidth = 2; g.stroke();
+  } else if (art === "ehre"){
+    /* Medaille: Band, Scheibe, Ring, Stern. */
+    g.fillStyle = "#b03a3a"; g.beginPath(); g.moveTo(30, 6); g.lineTo(46, 40); g.lineTo(36, 46); g.lineTo(20, 12); g.closePath(); g.fill();
+    g.fillStyle = "#8a2c2c"; g.beginPath(); g.moveTo(66, 6); g.lineTo(50, 40); g.lineTo(60, 46); g.lineTo(76, 12); g.closePath(); g.fill();
+    const md = g.createRadialGradient(42, 52, 4, 48, 60, 30); md.addColorStop(0, "#fff0bf"); md.addColorStop(.6, "#e9b063"); md.addColorStop(1, "#8a5a24");
+    g.beginPath(); g.arc(48, 60, 27, 0, 7); g.fillStyle = md; g.fill();
+    g.strokeStyle = "rgba(90,50,10,.8)"; g.lineWidth = 2.5; g.stroke();
+    g.beginPath(); g.arc(48, 60, 19, 0, 7); g.strokeStyle = "rgba(255,255,255,.45)"; g.lineWidth = 1.5; g.stroke();
+    g.beginPath();
+    for (let i=0;i<10;i++){ const a = -1.5708 + i*.6283, rr = i%2 ? 5 : 12; i ? g.lineTo(48+Math.cos(a)*rr, 60+Math.sin(a)*rr) : g.moveTo(48+Math.cos(a)*rr, 60+Math.sin(a)*rr); }
+    g.closePath(); g.fillStyle = "#6b3f14"; g.fill();
+  } else if (art === "boost2" || art === "boost3"){
+    const ring = g.createRadialGradient(48, 48, 20, 48, 48, 44);
+    ring.addColorStop(0, "rgba(61,220,132,.05)"); ring.addColorStop(.8, "rgba(61,220,132,.35)"); ring.addColorStop(1, "rgba(61,220,132,0)");
+    g.fillStyle = ring; g.fillRect(0, 0, S, S);
+    g.beginPath(); g.arc(48, 48, 34, 0, 7); g.strokeStyle = "rgba(141,245,189,.9)"; g.lineWidth = 4; g.stroke();
+    g.fillStyle = "#c8ffe0"; g.font = "700 40px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    g.shadowColor = "rgba(61,220,132,.9)"; g.shadowBlur = 12;
+    g.fillText("×" + art.slice(-1), 48, 50);
+  }
+  let url = "";
+  try { url = c.toDataURL("image/png"); } catch(_){}
+  IKON_CACHE[key] = `<img class="ik" src="${url}" alt="">`;
+  return IKON_CACHE[key];
+}
+/* Was ein Tag zeigt: das Design, solange man es noch nicht hat, sonst
+   sein Ore. */
+function bonusArt(b){
+  if (b.design && !Profile.owned.has(b.design)) return { design: b.design };
+  return b;
+}
 function bonusBild(b){
+  const a = bonusArt(b);
+  if (a.design) return ikonBild(null, a.design);
+  if (a.boost) return ikonBild("boost" + a.boost);
+  if (a.xp) return ikonBild("xp");
+  if (a.ehre) return ikonBild("ehre");
+  return ikonBild("ore");
+}
+function bonusBildAlt(b){
   const svg = inhalt => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
   if (b.boost) return `<em class="bx">×${b.boost}</em>`;
   if (b.xp)    return svg(`<path d="m12 3 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1L3.2 9.4l6.1-.8z"/>`);
@@ -5390,8 +5487,9 @@ function paintBonus(){
     const zustand = nr <= serie && !B.offen ? "done"
                   : nr < naechster ? "done"
                   : nr === naechster ? "next" : "";
-    const wert = b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
-    return `<i class="bead ${zustand}" title="${esc(bonusText(b))}">` +
+    const a = bonusArt(b);
+    const wert = a.design ? t("b_designkurz") : b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
+    return `<i class="bead ${zustand}${a.design ? " design" : ""}" title="${esc(bonusText(b))}">` +
            (gross ? `<small>${nr}</small>` : "") +
            `<span class="bb">${bonusBild(b)}</span>` + (gross ? `<b>${wert}</b>` : "") + `</i>`;
   }).join("");
@@ -5415,7 +5513,12 @@ function paintBonus(){
       const b = e.boost ? {boost:e.boost} : e.xp ? {xp:e.xp} : e.ehre ? {ehre:e.ehre} : {ore:e.ore};
       /* Strahlend in der Mitte (Thomas) — statt der kleinen Zeile unten. */
       lohnZeigen(bonusText(b), t("b_got3", e.tag), bonusBild(b));
-      if (e.eis) setTimeout(() => lohnZeigen("Rime", t("b_eis_da"), ""), 2300);
+      if (e.design){
+        const d = SKINS.find(k => k.id === e.design);
+        Profile.owned.add(e.design);
+        setTimeout(() => lohnZeigen(d ? d.label : e.design, t("b_design_da"), ikonBild(null, e.design)), 2300);
+      }
+      if (e.eis) setTimeout(() => lohnZeigen("Rime", t("b_eis_da"), ikonBild(null, "rime")), e.design ? 4600 : 2300);
       paintPurse(); buildBoost(); buildGrid();
     }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
@@ -5441,7 +5544,20 @@ function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen){
   if (!v) return;
   $("bonusVeilSub").textContent = t("b_get2", tag, bonusText(heute));
   $("bonusVeilBeads").innerHTML = perlen;
-  $("bonusVeilWochen").textContent = wochenText + " · " + t("b_eis", ziel);
+  $("bonusVeilWochen").textContent = wochenText;
+  /* Ansporn (Schritt 107): die beiden Designs, die es zu holen gibt — mit
+     Bild, gemalt wie im Hangar. */
+  const ansporn = $("bonusAnsporn");
+  if (ansporn){
+    const karte = (id, wann) => {
+      const d = SKINS.find(k => k.id === id); if (!d) return "";
+      const hat = Profile.owned.has(id);
+      return `<div class="ziel${hat ? " hat" : ""}">${ikonBild(null, id)}<b>${esc(d.label)}</b>` +
+             `<small>${esc(hat ? t("b_besitz") : wann)}</small></div>`;
+    };
+    ansporn.innerHTML = `<p class="hinweis" style="margin:12px 0 6px">${esc(t("b_ansporn"))}</p>` +
+      `<div class="ziele">${karte("sunflare", t("b_nach7"))}${karte("rime", t("b_nach10w", ziel))}</div>`;
+  }
   const go = $("bonusVeilGo");
   go.disabled = false;
   go.onclick = () => holen(go);
@@ -6374,7 +6490,8 @@ const Konto = {
                            this.bonus = {offen:false, serie:a.tag, wochen:a.wochen || 0, ziel:10};
                            erfolgeMelden(a);
                            return { ok:true, tag:a.tag, ore:a.ore || 0, xp:a.xp || 0,
-                                    boost:a.boost || 0, ehre:a.ehre || 0, wochen:a.wochen || 0, eis:!!a.eis }; }
+                                    boost:a.boost || 0, ehre:a.ehre || 0, wochen:a.wochen || 0, eis:!!a.eis,
+                                    design: typeof a.design === "string" ? a.design : null }; }
     return { fehler: a.fehler || "netz" };
   },
 

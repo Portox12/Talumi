@@ -312,7 +312,21 @@
   /* Das große Bonusfenster */
   .bonusKarte{max-width:min(560px,100%);text-align:center}
   .bonusKarte .beads.gross{gap:6px;margin:0}
-  .bonusKarte .beads.gross .bead{height:64px}
+  .bonusKarte .beads.gross .bead{height:72px}
+  .bead .bb img.ik{width:22px;height:22px;display:block}
+  .bonusKarte .beads.gross .bead .bb,.bonusKarte .beads.gross .bead .bb img.ik{width:30px;height:30px}
+  .bead.design .bb img.ik{width:34px;height:34px}
+  #bonusBox.klein .bead .bb img.ik{width:16px;height:16px}
+  /* Ansporn: die zwei Designs mit Bild */
+  .ziele{display:flex;gap:10px;justify-content:center}
+  .ziele .ziel{flex:0 1 150px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);
+     display:grid;justify-items:center;gap:2px}
+  .ziele .ziel img.ik{width:64px;height:64px}
+  .ziele .ziel b{font-family:var(--disp);font-size:14px;color:var(--brass-hell)}
+  .ziele .ziel small{font-size:11.5px;color:var(--paper-2)}
+  .ziele .ziel.hat{border-color:rgba(233,176,99,.4)}
+  .ziele .ziel.hat small{color:var(--brass)}
+  #lohnGlanz .glanz span img.ik{width:84px;height:84px;display:block}
   .bonusKarte #bonusVeilGo{margin-top:16px;width:100%;
      border:1px solid rgba(61,220,132,.5);background:rgba(61,220,132,.13);color:var(--gruen-hell);font-weight:600}
   .bonusKarte #bonusVeilGo:hover:not(:disabled){background:rgba(61,220,132,.22)}
@@ -2613,6 +2627,7 @@
     <p class="sub" id="bonusVeilSub" style="margin:0 0 14px"></p>
     <div class="beads gross" id="bonusVeilBeads"></div>
     <p class="hinweis" id="bonusVeilWochen" style="margin:10px 0 0;color:var(--brass)"></p>
+    <div id="bonusAnsporn"></div>
     <button id="bonusVeilGo" data-i18n="b_holen">Abholen</button>
     <button class="quiet" id="bonusVeilSpaeter" data-i18n="b_spaeter">Später</button>
   </div>

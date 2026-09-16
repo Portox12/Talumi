@@ -842,6 +842,18 @@ const LANGS106 = {
 };
 for (const c in LANGS106) Object.assign(LANGS[c], LANGS106[c]);
 
+/* Schritt 107: Design nach der ersten Woche, Ansporn mit Bildern. */
+const LANGS107 = {
+  en:{b_design:"Design {0}", b_designkurz:"Design", b_design_da:"Design unlocked", b_ansporn:"Worth coming back for", b_nach7:"after 7 days", b_nach10w:"after {0} weeks", b_besitz:"yours", sk_woche:"7 days of daily bonus", sk_woche_note:"Sunflare comes with the first full week of daily bonus."},
+  de:{b_design:"Design {0}", b_designkurz:"Design", b_design_da:"Design freigeschaltet", b_ansporn:"Dafür lohnt sich das Wiederkommen", b_nach7:"nach 7 Tagen", b_nach10w:"nach {0} Wochen", b_besitz:"gehört dir", sk_woche:"7 Tage Tagesbonus", sk_woche_note:"Sunflare gibt es für die erste volle Woche Tagesbonus."},
+  es:{b_design:"Diseño {0}", b_designkurz:"Diseño", b_design_da:"Diseño desbloqueado", b_ansporn:"Vale la pena volver", b_nach7:"tras 7 días", b_nach10w:"tras {0} semanas", b_besitz:"es tuyo", sk_woche:"7 días de bono diario", sk_woche_note:"Sunflare llega con la primera semana completa de bono diario."},
+  pt:{b_design:"Design {0}", b_designkurz:"Design", b_design_da:"Design desbloqueado", b_ansporn:"Vale a pena voltar", b_nach7:"após 7 dias", b_nach10w:"após {0} semanas", b_besitz:"é teu", sk_woche:"7 dias de bónus diário", sk_woche_note:"O Sunflare vem com a primeira semana completa de bónus diário."},
+  fr:{b_design:"Design {0}", b_designkurz:"Design", b_design_da:"Design débloqué", b_ansporn:"Ça vaut le coup de revenir", b_nach7:"après 7 jours", b_nach10w:"après {0} semaines", b_besitz:"à vous", sk_woche:"7 jours de bonus quotidien", sk_woche_note:"Sunflare vient avec la première semaine complète de bonus quotidien."},
+  tr:{b_design:"{0} tasarımı", b_designkurz:"Tasarım", b_design_da:"Tasarım açıldı", b_ansporn:"Geri gelmeye değer", b_nach7:"7 gün sonra", b_nach10w:"{0} hafta sonra", b_besitz:"senin", sk_woche:"7 gün günlük bonus", sk_woche_note:"Sunflare ilk tam günlük bonus haftasıyla gelir."},
+  ru:{b_design:"Дизайн {0}", b_designkurz:"Дизайн", b_design_da:"Дизайн открыт", b_ansporn:"Ради этого стоит возвращаться", b_nach7:"через 7 дней", b_nach10w:"через {0} недель", b_besitz:"ваш", sk_woche:"7 дней ежедневного бонуса", sk_woche_note:"Sunflare даётся за первую полную неделю ежедневного бонуса."}
+};
+for (const c in LANGS107) Object.assign(LANGS[c], LANGS107[c]);
+
 /* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
   en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},
