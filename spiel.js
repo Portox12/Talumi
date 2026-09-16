@@ -4698,9 +4698,23 @@ function nameZeileBauen(box){
     buildSettings();
   });
 }
+/* Welche Fassung läuft (Schritt 114): steht unten in den Einstellungen,
+   damit Thomas am Handy sieht, ob die neue Fassung angekommen ist. Die
+   Nummer steht nur in sw.js — von dort wird sie gelesen. */
+let fassungText = "";
+function fassungZeigen(){
+  const el = $("setFassung");
+  if (!el) return;
+  if (fassungText){ el.textContent = fassungText; return; }
+  fetch("sw.js", { cache: "no-store" }).then(r => r.text()).then(txt => {
+    const m = txt.match(/VERSION = "(v\d+)"/);
+    if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText; }
+  }).catch(() => {});
+}
 function buildSettings(){
   const box = $("setList");
   box.innerHTML = "";
+  fassungZeigen();
   if (istAngemeldet()) nameZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
@@ -5866,7 +5880,9 @@ function paintBonus(){
   if (!B){
     box.hidden = true; document.body.classList.remove("bonusoffen"); return;
   }
-  box.hidden = false;
+  /* Schritt 114 (Thomas): der Kasten bleibt aus dem Hangar — der Bonus ist
+     nur noch das Bildchen neben dem Spielen-Knopf (`bonusKnopfMalen`). */
+  box.hidden = true;
 
   /* Steht ein Bonus zum Abholen bereit, rückt der Kasten auf schmalen
      Schirmen nach oben (`body.bonusoffen`, siehe Stilblatt). */
@@ -5893,13 +5909,8 @@ function paintBonus(){
      ein Viertel des Bildschirms"): eine Zeile — Titel, Tag, Woche, Perlen
      nur als Bildchen, Knopf. Groß gibt es die Reihe einmal am Tag im
      Fenster `#bonusVeil`. */
-  box.classList.add("klein");
   const wochenText = t("b_woche", wochen, ziel);
-  const knopfText = B.offen ? esc(t("b_holen")) : "";
-  box.innerHTML = `<h2>${esc(t("b_title"))}<em>${esc(t("b_tag", Math.max(1, naechster)))} · <small class="wochen">${esc(wochenText)}</small></em></h2>` +
-                  `<div class="konsBlock"><div class="beads">${perlen(false)}</div>` +
-                  (B.offen ? `<button class="holen" id="bonusGo">${knopfText}</button>`
-                           : `<p class="recline"><span>${esc(t("b_next"))}</span></p>`) + `</div>`;
+  box.innerHTML = "";
 
   const holen = async (knopf) => {
     if (knopf) knopf.disabled = true;
@@ -5920,8 +5931,10 @@ function paintBonus(){
     bonusVeilZu();
     paintBonus();
   };
-  const knopf = $("bonusGo");
-  if (knopf) knopf.addEventListener("click", () => holen(knopf));
+  /* Das Bildchen neben dem Spielen-Knopf: heutige (oder nächste) Belohnung,
+     grüner Punkt, solange etwas abzuholen ist; Klick öffnet das Fenster. */
+  bonusKnopfMalen(B, reihe[naechster - 1], () =>
+    bonusVeilAuf(perlen(true), naechster, reihe[naechster - 1], wochenText, wochen, ziel, holen, !!B.offen));
 
   /* Einmal am Tag groß (Thomas): beim ersten Öffnen des Hangars mit offenem
      Bonus erscheint das Fenster; danach nur noch die kleine Zeile. */
@@ -5929,15 +5942,27 @@ function paintBonus(){
   let gezeigt = 0; try { gezeigt = +localStorage.getItem("talumi.bonusGezeigt") || 0; } catch(_){}
   if (B.offen && gezeigt !== heute && !$("startVeil").hidden){
     try { localStorage.setItem("talumi.bonusGezeigt", String(heute)); } catch(_){}
-    bonusVeilAuf(perlen(true), naechster, reihe[naechster - 1], wochenText, wochen, ziel, holen);
+    bonusVeilAuf(perlen(true), naechster, reihe[naechster - 1], wochenText, wochen, ziel, holen, true);
   }
+}
+function bonusKnopfMalen(B, heute, oeffnen){
+  const k = $("bonusKnopf");
+  if (!k) return;
+  if (!B || !heute){ k.hidden = true; return; }
+  k.hidden = false;
+  k.classList.toggle("offen", !!B.offen);
+  const titel = t("b_title") + (B.offen ? " — " + t("b_holen") : "");
+  k.title = titel; k.setAttribute("aria-label", titel);
+  k.innerHTML = bonusBild(heute);
+  k.onclick = oeffnen;
 }
 
 /* Das große Bonusfenster (Schritt 106) — einmal am Tag. */
-function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen){
+function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen, offen = true){
   const v = $("bonusVeil");
   if (!v) return;
-  $("bonusVeilSub").textContent = t("b_get2", tag, bonusText(heute));
+  /* Schon abgeholt: das Fenster zeigt die Reihe, aber keinen Abholknopf. */
+  $("bonusVeilSub").textContent = offen ? t("b_get2", tag, bonusText(heute)) : t("b_next");
   $("bonusVeilBeads").innerHTML = perlen;
   $("bonusVeilWochen").textContent = wochenText;
   /* Ansporn (Schritt 107): die beiden Designs, die es zu holen gibt — mit
@@ -5954,6 +5979,7 @@ function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen){
       `<div class="ziele">${karte("sunflare", t("b_nach7"))}${karte("rime", t("b_nach10w", ziel))}</div>`;
   }
   const go = $("bonusVeilGo");
+  go.hidden = !offen;
   go.disabled = false;
   go.onclick = () => holen(go);
   $("bonusVeilSpaeter").onclick = bonusVeilZu;
