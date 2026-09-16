@@ -1304,3 +1304,15 @@ const LANGS112 = {
       mo_staub_erkl:"1 за раунд Восхождения, 3 при новом рекорде массы. Улучшает луну."}
 };
 for (const c in LANGS112) Object.assign(LANGS[c], LANGS112[c]);
+
+/* Schritt 113: Spielername in den Einstellungen. */
+const LANGS113 = {
+  en:{namekonto:"Set at registration — change it in Settings, once every 30 days.", s_name:"Player name", s_name_note:"Only once every 30 days. Possible again from {0}.", s_name_go:"Change", s_name_ok:"Name changed."},
+  de:{namekonto:"Bei der Registrierung vergeben — ändern in den Einstellungen, alle 30 Tage.", s_name:"Spielername", s_name_note:"Nur alle 30 Tage. Wieder möglich ab {0}.", s_name_go:"Ändern", s_name_ok:"Name geändert."},
+  es:{namekonto:"Fijado al registrarte — cámbialo en Ajustes, cada 30 días.", s_name:"Nombre de jugador", s_name_note:"Solo cada 30 días. De nuevo posible desde {0}.", s_name_go:"Cambiar", s_name_ok:"Nombre cambiado."},
+  pt:{namekonto:"Definido no cadastro — mude nas Configurações, a cada 30 dias.", s_name:"Nome do jogador", s_name_note:"Só a cada 30 dias. Possível de novo a partir de {0}.", s_name_go:"Mudar", s_name_ok:"Nome alterado."},
+  fr:{namekonto:"Fixé à l’inscription — à changer dans les réglages, tous les 30 jours.", s_name:"Nom de joueur", s_name_note:"Seulement tous les 30 jours. À nouveau possible à partir du {0}.", s_name_go:"Changer", s_name_ok:"Nom modifié."},
+  tr:{namekonto:"Kayıtta belirlendi — Ayarlar’dan değiştir, 30 günde bir.", s_name:"Oyuncu adı", s_name_note:"Yalnızca 30 günde bir. {0} tarihinden itibaren yeniden mümkün.", s_name_go:"Değiştir", s_name_ok:"Ad değiştirildi."},
+  ru:{namekonto:"Задано при регистрации — меняется в настройках, раз в 30 дней.", s_name:"Имя игрока", s_name_note:"Только раз в 30 дней. Снова возможно с {0}.", s_name_go:"Изменить", s_name_ok:"Имя изменено."}
+};
+for (const c in LANGS113) Object.assign(LANGS[c], LANGS113[c]);

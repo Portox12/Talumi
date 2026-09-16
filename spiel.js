@@ -4665,9 +4665,43 @@ function applySetting(key){
   if (key === "lowPower"){ seedStars(); resize(); }   // resize: Sparmodus regelt die Bildschärfe
 }
 
+/* Der Spielername (Schritt 113, Thomas): vergeben bei der Registrierung,
+   danach nur in den Einstellungen, alle 30 Tage (`NAME_SPERRE_TAGE` im
+   Server). Im Hangar ist das Feld für Konten deshalb nur noch Anzeige;
+   Gäste tippen dort weiter ihren Namen. */
+function nameFeldLage(){
+  const feld = $("name"), note = $("nameNote"), konto = $("nameKonto");
+  if (!feld) return;
+  const an = istAngemeldet();
+  feld.readOnly = an;
+  if (an && Konto.profil.name) feld.value = Konto.profil.name;
+  if (note) note.hidden = an;
+  if (konto) konto.hidden = !an;
+}
+function nameZeileBauen(box){
+  const p = Konto.profil;
+  const seit = Number(p.nameSeit) || 0, frei = seit + 30 * 86400000, gesperrt = seit > 0 && Date.now() < frei;
+  const wrap = document.createElement("div");
+  wrap.className = "opt"; wrap.dataset.key = "name";
+  wrap.innerHTML = `<div><b>${esc(t("s_name"))}</b><small>${esc(gesperrt ? t("s_name_note", new Date(frei).toLocaleDateString(lang)) : t("namerule"))}</small></div>` +
+    `<div class="nameWechsel"><input type="text" id="setName" maxlength="14" value="${esc(p.name || "")}" autocomplete="off" autocapitalize="off" spellcheck="false" ${gesperrt ? "disabled" : ""}>` +
+    `<button type="button" id="setNameGo" ${gesperrt ? "disabled" : ""}>${esc(t("s_name_go"))}</button></div>`;
+  box.appendChild(wrap);
+  const go = $("setNameGo");
+  if (go) go.addEventListener("click", async () => {
+    const n = cleanName($("setName").value).trim();
+    if (!n || n === Konto.profil.name) return;
+    go.disabled = true;
+    const e = await Konto.einstellen({ name: n });
+    if (e.ok){ toast(t("s_name_ok")); Game.name = Konto.profil.name; nameFeldLage(); heldMalen(); }
+    else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
+    buildSettings();
+  });
+}
 function buildSettings(){
   const box = $("setList");
   box.innerHTML = "";
+  if (istAngemeldet()) nameZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
     if (row.key === "music" && !MUSIK_AKTIV) continue;
@@ -5028,9 +5062,17 @@ function heldMalen(){
   /* Monde nur, wenn die Liga gewählt ist — im Freien Raum zählen sie nicht,
      und das Bild soll zeigen, was man dort sehen wird (Thomas, 16.09.). */
   const monde = modeId === "liga" && Profile.monde && Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
-  if (monde) mondeMalen(g, S/2, S/2, S*0.40, monde, 1.2, true);
-  try { body(g, S/2, S/2, S*0.40, masse, skin, 0, "", true); } catch(_){}
-  if (monde) mondeMalen(g, S/2, S/2, S*0.40, monde, 1.2);
+  /* Platz für alles, was ein Design außerhalb von r zeichnet (Schritt 113,
+     Thomas: „rechts und links fehlen ein paar Millimeter"): Ringe reichen bis
+     2,05 r, die Lufthülle bis 1,35 r, Monde bis etwa 1,5 r. Der Radius
+     richtet sich nach der Stufe, damit ein Staubkorn nicht winzig wird. */
+  const stufe = stageOf(masse);
+  let anteil = stufe >= 4 ? 0.235 : stufe === 3 ? 0.35 : 0.40;
+  if (monde) anteil = Math.min(anteil, 0.32);
+  const R = S * anteil;
+  if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2, true);
+  try { body(g, S/2, S/2, R, masse, skin, 0, "", true); } catch(_){}
+  if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2);
   MENUE_VOLL = false;
   Game.t = saveT;
 
@@ -5108,6 +5150,7 @@ function show(id){
     /* Der Clankampf ist keine Wahl im Hangar (Schritt 109): Zurueck im
        Hangar steht wieder die Liga, sonst bliebe „clan" als Spielart. */
     if (modeId === "clan"){ modeId = "liga"; buildModes(); }
+    nameFeldLage();
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
