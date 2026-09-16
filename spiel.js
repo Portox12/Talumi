@@ -4712,13 +4712,15 @@ function onlineZeigen(){
     if (b > 0) kopf.style.setProperty("--start-breite", b + "px");
     rand();
   };
-  if (typeof ResizeObserver === "function"){
-    new ResizeObserver(setzen).observe(start);
-    new ResizeObserver(rand).observe(kopf);
-  }
+  /* Nur der Startblock wird beobachtet. Die Kopfzeile selbst zu beobachten
+     und im Rückruf ihre Klasse zu ändern, meldete der Browser als
+     „ResizeObserver loop" (gesehen auf talumi.io, 16.09.2026) — der Rand
+     wird stattdessen nach jeder Breitenänderung und beim Schieben geprüft. */
+  if (typeof ResizeObserver === "function") new ResizeObserver(setzen).observe(start);
   window.addEventListener("resize", setzen);
   kopf.addEventListener("scroll", rand, { passive: true });
   setzen();
+  requestAnimationFrame(rand);
 })();
 
 /* Happy Hour (Schritt 100): eine Zeile unter dem Startknopf und eine auf dem
