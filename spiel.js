@@ -52,6 +52,8 @@ const Settings = {
   volume:0.7, shake:true, sens:62, lefty:false,
   teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
   theme:"earth",
+  /* Bildrate links unten einblenden (Schritt 115) — zum Nachsehen am Handy. */
+  fps:false,
   /* Fassung der gespeicherten Einstellungen. 2 = seit Schritt 100: ein vom
      alten Wächter gesetzter Sparmodus wird einmal zurückgenommen. */
   fassung:2,
@@ -4405,6 +4407,19 @@ function draw(){
 
   /* Warnpfeile in Bildschirmkoordinaten — nach dem Spielfeld, vor der Anzeige. */
   gefahrenMalen(ctx);
+  /* Bildrate (Schritt 115): kleine Zahl links unten, nur auf Wunsch. */
+  if (Settings.fps && Game.running){
+    ctx.save();
+    ctx.font = "600 12px " + (getComputedStyle(document.body).getPropertyValue("--sans") || "sans-serif");
+    ctx.textBaseline = "bottom"; ctx.textAlign = "left";
+    const txt = Math.round(fpsAnzeige) + " fps" + (ECO ? " · " + t("s_eco_kurz") : "") + " · " + DPR.toFixed(2) + "×";
+    ctx.fillStyle = "rgba(0,0,0,.45)";
+    const w = ctx.measureText(txt).width + 12;
+    ctx.fillRect(Settings.hudEdge, VH - Settings.hudEdge - 20, w, 20);
+    ctx.fillStyle = fpsAnzeige >= 50 ? "#7fffc4" : fpsAnzeige >= 30 ? "#ffd166" : "#f26b5b";
+    ctx.fillText(txt, Settings.hudEdge + 6, VH - Settings.hudEdge - 3);
+    ctx.restore();
+  }
 
   const hEl = $("hint");
   if (Game.hint && Game.running && Game.t < Game.hintUntil){
@@ -4565,7 +4580,9 @@ document.addEventListener("visibilitychange", () => {
    - läuft es eine Weile gut, geht es wieder hoch,
    - gespeichert wird nichts. */
 let fpsFenster = [], fpsSchlecht = 0, fpsGut = 0;
+let fpsAnzeige = 0;                     // geglättete Bilder je Sekunde (Schritt 115)
 function wacheFps(dt){
+  if (dt > 0) fpsAnzeige = fpsAnzeige ? fpsAnzeige * 0.9 + (1 / dt) * 0.1 : 1 / dt;
   if (Settings.lowPower || !Game.running) return;
   if (Game.t < 3){ fpsFenster.length = 0; return; }
   fpsFenster.push(dt);
@@ -4638,6 +4655,8 @@ const SET_UI = [
   {key:"hudEdge", label:"s_edge", hint:"s_edge_h",
    opts:[["o_tight",8],["o_safe",44]], touch:true},
   {key:"lowPower", label:"s_perf", hint:"s_perf_h",
+   opts:[["o_off",false],["o_on",true]]},
+  {key:"fps", label:"s_fps", hint:"s_fps_h",
    opts:[["o_off",false],["o_on",true]]}
 ];
 

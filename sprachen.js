@@ -1316,3 +1316,15 @@ const LANGS113 = {
   ru:{namekonto:"Задано при регистрации — меняется в настройках, раз в 30 дней.", s_name:"Имя игрока", s_name_note:"Только раз в 30 дней. Снова возможно с {0}.", s_name_go:"Изменить", s_name_ok:"Имя изменено."}
 };
 for (const c in LANGS113) Object.assign(LANGS[c], LANGS113[c]);
+
+/* Schritt 115: Bildrate anzeigen. */
+const LANGS115 = {
+  en:{s_fps:"Show frame rate", s_fps_h:"Small number bottom left: frames per second. Green is smooth, red is choppy.", s_eco_kurz:"eco"},
+  de:{s_fps:"Bildrate anzeigen", s_fps_h:"Kleine Zahl links unten: Bilder je Sekunde. Grün ist flüssig, Rot ruckelt.", s_eco_kurz:"Sparstufe"},
+  es:{s_fps:"Mostrar fotogramas", s_fps_h:"Número pequeño abajo a la izquierda: fotogramas por segundo. Verde es fluido, rojo va a tirones.", s_eco_kurz:"ahorro"},
+  pt:{s_fps:"Mostrar taxa de quadros", s_fps_h:"Número pequeno embaixo à esquerda: quadros por segundo. Verde é fluido, vermelho trava.", s_eco_kurz:"economia"},
+  fr:{s_fps:"Afficher les images/s", s_fps_h:"Petit nombre en bas à gauche : images par seconde. Vert = fluide, rouge = saccadé.", s_eco_kurz:"éco"},
+  tr:{s_fps:"Kare hızını göster", s_fps_h:"Sol altta küçük sayı: saniyedeki kare. Yeşil akıcı, kırmızı takılıyor.", s_eco_kurz:"tasarruf"},
+  ru:{s_fps:"Показывать кадры/с", s_fps_h:"Маленькое число слева внизу: кадров в секунду. Зелёный — плавно, красный — рывки.", s_eco_kurz:"эконом"}
+};
+for (const c in LANGS115) Object.assign(LANGS[c], LANGS115[c]);
