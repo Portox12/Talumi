@@ -544,7 +544,7 @@ function applyLang(){
   for (const el of phs) el.placeholder = t(el.dataset.i18nPh);
   const ctrl = $("controls");
   if (ctrl) ctrl.innerHTML = (isTouch ? t("ctrltouch") : t("ctrlmouse")) +
-    "<br>" + t("earned");
+    "<br>" + t("earned") + ` · <a href="#" id="hilfeLink" style="color:var(--brass)">${esc(t("hilfe"))}</a>`;
   buildModes(); buildStrip(); buildGrid(); paintPurse(); paintIntegrity();
   buildRecords(); buildBoost();
   // Die Sprachknöpfe im Startbildschirm werden einmal gebaut, bevor die
@@ -3526,15 +3526,24 @@ const ERFOLG_TEXT = {
   w_planetes: ["e_masse",     800,  100],
   w_proto:    ["e_masse",    2000,  200],
   w_welt:     ["e_masse",    5000,  400],
+  w_koloss:   ["e_masse",   12000,  400],
   j_erster:   ["e_jagd1",       1,   25],
   j_25:       ["e_jagd",       25,  100],
   j_250:      ["e_jagd",      250,  400],
+  j_1000:     ["e_jagd",     1000,  400],
   j_runde5:   ["e_jagdrunde",   5,  150],
   j_runde12:  ["e_jagdrunde",  12,  350],
+  j_runde25:  ["e_jagdrunde",  25,  300],
+  d_erster:   ["e_duell1",      1,   50],
+  d_25:       ["e_duell",      25,  150],
+  d_100:      ["e_duell",     100,  300],
   a_10:       ["e_runden",     10,   50],
   a_100:      ["e_runden",    100,  200],
   a_500:      ["e_runden",    500,  600],
   a_fuenfmin: ["e_zeit",        5,  200],
+  a_zehnmin:  ["e_zeit",       10,  250],
+  a_stunden:  ["e_stunden",    10,  250],
+  c_mitglied: ["e_clan",        1,  100],
   t_woche:    ["e_treue",       7,  300],
   s_10:       ["e_skins",      10,  100],
   s_25:       ["e_skins",      25,  300],
@@ -3594,6 +3603,43 @@ const RANG_STIL = [
   {art:"gross",  n:1, farbe:"#f1d38c", rand:"#d8a75f", grund:"#2a1f12"}   // Großadmiral
 ];
 const RANG_MAX = RANG_STIL.length - 1;
+
+/* Bedingungen der Ränge — **Spiegel** von `EHRE_SCHWELLE` und `OBERE_RAENGE`
+   in server.js, nur zum Anzeigen. `testkonto-runde.js` vergleicht beide bei
+   jedem Lauf; vergeben wird ausschließlich dort. */
+const RANG_SCHWELLE = [0, 25, 100, 300, 750, 1600, 3200, 6000];
+const RANG_OBEN = [
+  { stufe: 8,  anteil: 0.10, plaetze: 0, minEhre:  10000 },
+  { stufe: 9,  anteil: 0.03, plaetze: 0, minEhre:  20000 },
+  { stufe: 10, anteil: 0.01, plaetze: 0, minEhre:  40000 },
+  { stufe: 11, anteil: 0,    plaetze: 5, minEhre:  80000 },
+  { stufe: 12, anteil: 0,    plaetze: 1, minEhre: 150000 }
+];
+function rangBedingung(stufe){
+  if (stufe < RANG_SCHWELLE.length)
+    return stufe === 0 ? t("rg_start") : t("rg_ab", RANG_SCHWELLE[stufe].toLocaleString(lang));
+  const o = RANG_OBEN.find(x => x.stufe === stufe);
+  if (!o) return "";
+  const ehre = o.minEhre.toLocaleString(lang);
+  if (o.plaetze === 1) return t("rg_erster", ehre);
+  if (o.plaetze) return t("rg_plaetze", o.plaetze, ehre);
+  return t("rg_anteil", Math.round(o.anteil * 100), ehre);
+}
+/* Alle Ränge untereinander, der eigene hervorgehoben. Auch für Gäste: Wer
+   sieht, was es zu erreichen gibt, hat einen Grund für ein Konto. */
+function buildRaenge(){
+  const box = $("rangListe");
+  if (!box) return;
+  const meiner = istAngemeldet() && Number.isInteger(Konto.profil.rang) ? Konto.profil.rang : -1;
+  box.innerHTML = `<h2>${esc(t("rg_head"))}</h2><p class="hinweis" style="margin:0 0 6px">${esc(t("rg_sub"))}</p>` +
+    RANG_STIL.map((_, i) =>
+      `<div class="rangZeile${i === meiner ? " du" : ""}"><canvas width="96" height="56"></canvas>` +
+      `<div><b>${esc(t("rk" + i))}${i === meiner ? " · " + esc(t("rg_du")) : ""}</b>` +
+      `<small>${esc(rangBedingung(i))}</small></div></div>`).join("");
+  box.querySelectorAll("canvas").forEach((c, i) => {
+    const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height); abzeichen(g, 0, 0, i, 56);
+  });
+}
 /* Seitenverhältnis der Plakette, 48 × 28 aus dem Entwurf. */
 const ABZEICHEN_V = 48/28;
 const abzeichenBreite = h => h * ABZEICHEN_V;
@@ -4169,13 +4215,14 @@ function paintBoard(gm){
     /* Online kommt die Rangliste vom Server. Die lokale Zählung könnte nur
        Spieler im eigenen Sichtfeld sehen — das wäre keine Rangliste, sondern
        eine Nachbarschaftsliste. Der Server schickt die besten zehn des Raums.
-       Steht man selbst nicht darunter, wird man angehängt; die angezeigte
-       Platzziffer ist dann eine Untergrenze, weil der eigene Rang nicht
-       mitgeschickt wird. */
+       Steht man selbst nicht darunter, wird man angehängt — mit dem echten
+       Platz aus `Net.platz` (Schritt 102). Vorher stand dort immer „11",
+       weil nur die Länge der Liste plus eins bekannt war. */
     list = Net.top.map(e => +e.id === Net.you
       ? {name:Game.name, m:+e.m, me:true, titel: +e.id === Net.kt}
       : {name:mitMarke(String(e.n || "?"), e.b), m:+e.m, titel: +e.id === Net.kt});
-    if (gm > 0 && !list.some(e => e.me)) list.push({name:Game.name, m:gm, me:true, titel: Net.kt === Net.you});
+    if (gm > 0 && !list.some(e => e.me))
+      list.push({name:Game.name, m:gm, me:true, titel: Net.kt === Net.you, platz: Net.platz || 0});
   } else {
     const byGid = new Map();
     for (const r of Game.rivals){
@@ -4204,7 +4251,8 @@ function paintBoard(gm){
   const meIdx = list.findIndex(e => e.me);
   const zeigen = list.slice(0, BOARD_PLAETZE).map((e,i) => ({e, rang:i+1}));
   if (meIdx >= BOARD_PLAETZE){
-    zeigen.push({e:list[meIdx], rang:meIdx+1});
+    const eigener = list[meIdx];
+    zeigen.push({e:eigener, rang: eigener.platz > meIdx ? eigener.platz : meIdx+1});
   }
   let titelZeile = "";
   if (Game.online && Net.kt > 0 && !zeigen.some(z => z.e.titel)){
@@ -4613,6 +4661,7 @@ function paintPurse(){
 /* Rangtafel im Menü. Sie steht nur bei einem Konto da: Ehre gibt es
    ausschließlich aus Onlinerunden, die der Server gerechnet hat. */
 function paintRank(){
+  buildRaenge();
   const box = $("rankBox");
   if (!box) return;
   if (!istAngemeldet() || !Number.isInteger(Konto.profil.rang)){ box.hidden = true; return; }
@@ -6252,7 +6301,7 @@ const Net = {
     this.lage = "waehlt"; this.grund = "";
     this.schnapp = []; this.wer.clear(); this.eigen = null;
     this.deb.clear(); this.debNeu = true;
-    this.top = []; this.tot = null; this.you = 0; this.seq = 0;
+    this.top = []; this.platz = 0; this.tot = null; this.you = 0; this.seq = 0;
     this.kt = 0; this.kts = 0;
     const url = serverUrl();
     try { this.socket = new WebSocket(url); }
@@ -6400,6 +6449,8 @@ const Net = {
     /* Die Bestenliste kommt nur in jedem vierten Takt. Fehlt sie, gilt die
        letzte weiter — sie hier zu leeren ließe die Anzeige flackern. */
     if (Array.isArray(m.top)) this.top = m.top;
+    /* Eigener Platz im ganzen Raum (Schritt 102), kommt mit der Liste. */
+    if (Number.isInteger(m.pl) && m.pl > 0) this.platz = m.pl;
     /* Titelträger (Schritt 97): Kennung und seit wie vielen Sekunden. */
     if (Number.isInteger(m.kt)) this.kt = m.kt;
     if (Number.isFinite(m.kts)) this.kts = m.kts;
@@ -6725,6 +6776,22 @@ $("rankBtn").addEventListener("click", () => {
   rangKnoepfe(); show("rankVeil"); rangLaden();
 });
 $("rankClose").addEventListener("click", () => show("startVeil"));
+
+/* Spielanleitung (Schritt 102): aus den Einstellungen, aus „Rechtliches" und
+   aus dem Hangar. „Zurück" führt dorthin, wo man herkam. */
+let hilfeZurueck = "startVeil";
+function hilfeOeffnen(){
+  const offen = document.querySelector(".veil:not([hidden])");
+  hilfeZurueck = offen && offen.id !== "hilfeVeil" ? offen.id : "startVeil";
+  show("hilfeVeil");
+  const v = $("hilfeVeil"); if (v) v.scrollTop = 0;
+}
+for (const id of ["hilfeBtn", "hilfeBtn2"]){ const b = $(id); if (b) b.addEventListener("click", hilfeOeffnen); }
+$("hilfeClose").addEventListener("click", () => show(hilfeZurueck));
+document.addEventListener("click", e => {
+  const a = e.target && e.target.closest && e.target.closest("#hilfeLink");
+  if (a){ e.preventDefault(); hilfeOeffnen(); }
+});
 /* „alle" über der Bestenliste im Hangar: derselbe Weg wie der Knopf oben. */
 if ($("boardMehr")) $("boardMehr").addEventListener("click", () => $("rankBtn").click());
 /* „Designs" in der Kopfzeile: der Reiter, in dem man sie sich ansieht. */
@@ -6762,12 +6829,15 @@ if ($("hautBtn")) $("hautBtn").addEventListener("click", () => reiter("haut"));
    sie gezeigt werden. `e_jagd1` (der erste Abschuss) ist die erste Stufe der
    Jagd, kein eigener Eintrag. */
 const ERFOLG_FAMILIEN = [
-  { art:"e_masse",     bild:"masse",  ids:["w_geroell","w_planetes","w_proto","w_welt"] },
-  { art:"e_jagd",      bild:"jagd",   ids:["j_erster","j_25","j_250"] },
-  { art:"e_jagdrunde", bild:"blitz",  ids:["j_runde5","j_runde12"] },
+  { art:"e_masse",     bild:"masse",  ids:["w_geroell","w_planetes","w_proto","w_welt","w_koloss"] },
+  { art:"e_jagd",      bild:"jagd",   ids:["j_erster","j_25","j_250","j_1000"] },
+  { art:"e_jagdrunde", bild:"blitz",  ids:["j_runde5","j_runde12","j_runde25"] },
+  { art:"e_duell",     bild:"duell",  ids:["d_erster","d_25","d_100"] },
   { art:"e_runden",    bild:"runden", ids:["a_10","a_100","a_500"] },
-  { art:"e_zeit",      bild:"uhr",    ids:["a_fuenfmin"] },
+  { art:"e_zeit",      bild:"uhr",    ids:["a_fuenfmin","a_zehnmin"] },
+  { art:"e_stunden",   bild:"sand",   ids:["a_stunden"] },
   { art:"e_treue",     bild:"tage",   ids:["t_woche"] },
+  { art:"e_clan",      bild:"clan",   ids:["c_mitglied"] },
   { art:"e_skins",     bild:"skins",  ids:["s_10","s_25","s_alle"] },
   { art:"e_level",     bild:"level",  ids:["l_10","l_25","l_50","l_100"] }
 ];
@@ -6782,7 +6852,10 @@ const ERFOLG_BILD = {
   uhr:    `<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>`,
   tage:   `<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m8.5 15 2.5 2.5 4.5-4.5"/>`,
   skins:  `<path d="M12 3 20 9l-3 11H7L4 9z"/><path d="M4 9h16M12 3l-3 6 3 11 3-11z"/>`,
-  level:  `<path d="m5 15 7-7 7 7"/><path d="m5 20 7-7 7 7" opacity=".5"/>`
+  level:  `<path d="m5 15 7-7 7 7"/><path d="m5 20 7-7 7 7" opacity=".5"/>`,
+  duell:  `<circle cx="8" cy="12" r="4"/><circle cx="17" cy="9" r="2.5"/><path d="M12 12h2M4 20l4-4M20 20l-3-3"/>`,
+  sand:   `<path d="M7 3h10M7 21h10M8 3c0 5 4 6 4 9s-4 4-4 9M16 3c0 5-4 6-4 9s4 4 4 9"/>`,
+  clan:   `<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3.5 2.7-6 6-6s6 2.5 6 6M10 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/>`
 };
 function erfolgBild(name){
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ` +
@@ -7070,7 +7143,7 @@ const MenueHimmel = {
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
   MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
-           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil"],
+           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil"],
   sichtbar(){
     if (Game.running) return false;
     if (document.hidden) return false;

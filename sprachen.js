@@ -781,6 +781,31 @@ const LANGS22 = {
 };
 for (const c in LANGS22) Object.assign(LANGS[c], LANGS22[c]);
 
+/* Errungenschaften, Schritt 102: Duelle (nur Menschen), Gesamtspielzeit, Clan. */
+const LANGS22b = {
+  en:{e_duell1:"Swallow your first player (NPCs don't count)", e_duell:"Swallow {0} players — NPCs don't count", e_stunden:"Play {0} hours in total", e_clan:"Join a clan"},
+  de:{e_duell1:"Verschling deinen ersten Spieler (NPCs zählen nicht)", e_duell:"Verschling {0} Spieler — NPCs zählen nicht", e_stunden:"Spiele insgesamt {0} Stunden", e_clan:"Tritt einem Clan bei"},
+  es:{e_duell1:"Traga a tu primer jugador (los NPC no cuentan)", e_duell:"Traga a {0} jugadores — los NPC no cuentan", e_stunden:"Juega {0} horas en total", e_clan:"Únete a un clan"},
+  pt:{e_duell1:"Engula o seu primeiro jogador (NPC não contam)", e_duell:"Engula {0} jogadores — NPC não contam", e_stunden:"Jogue {0} horas no total", e_clan:"Entre num clã"},
+  fr:{e_duell1:"Avalez votre premier joueur (les PNJ ne comptent pas)", e_duell:"Avalez {0} joueurs — les PNJ ne comptent pas", e_stunden:"Jouez {0} heures au total", e_clan:"Rejoignez un clan"},
+  tr:{e_duell1:"İlk oyuncunu yut (NPC'ler sayılmaz)", e_duell:"{0} oyuncu yut — NPC'ler sayılmaz", e_stunden:"Toplam {0} saat oyna", e_clan:"Bir klana katıl"},
+  ru:{e_duell1:"Поглотите первого игрока (NPC не считаются)", e_duell:"Поглотите {0} игроков — NPC не считаются", e_stunden:"Сыграйте {0} часов в сумме", e_clan:"Вступите в клан"}
+};
+for (const c in LANGS22b) Object.assign(LANGS[c], LANGS22b[c]);
+
+/* Rangübersicht und Spielanleitung (Schritt 102). Die Anleitung selbst steht
+   nur auf Deutsch in index.html (Thomas: „heute alles nur deutsch"). */
+const LANGS102 = {
+  en:{hilfe:"How to play", rg_head:"Ranks", rg_sub:"Honour comes only online, account against account.", rg_start:"Everyone starts here", rg_ab:"from {0} honour", rg_anteil:"top {0} % of your country, from {1} honour", rg_plaetze:"top {0} of your country, from {1} honour", rg_erster:"the best of your country, from {0} honour", rg_du:"your rank"},
+  de:{hilfe:"Spielanleitung", rg_head:"Ränge", rg_sub:"Ehre gibt es nur online, Konto gegen Konto.", rg_start:"Hier beginnt jeder", rg_ab:"ab {0} Ehre", rg_anteil:"die besten {0} % deines Landes, ab {1} Ehre", rg_plaetze:"die {0} Besten deines Landes, ab {1} Ehre", rg_erster:"der Beste deines Landes, ab {0} Ehre", rg_du:"dein Rang"},
+  es:{hilfe:"Cómo se juega", rg_head:"Rangos", rg_sub:"El honor solo se gana en línea, cuenta contra cuenta.", rg_start:"Todos empiezan aquí", rg_ab:"desde {0} de honor", rg_anteil:"el {0} % mejor de tu país, desde {1} de honor", rg_plaetze:"los {0} mejores de tu país, desde {1} de honor", rg_erster:"el mejor de tu país, desde {0} de honor", rg_du:"tu rango"},
+  pt:{hilfe:"Como jogar", rg_head:"Patentes", rg_sub:"A honra só se ganha online, conta contra conta.", rg_start:"Todos começam aqui", rg_ab:"a partir de {0} de honra", rg_anteil:"os {0} % melhores do seu país, a partir de {1} de honra", rg_plaetze:"os {0} melhores do seu país, a partir de {1} de honra", rg_erster:"o melhor do seu país, a partir de {0} de honra", rg_du:"a sua patente"},
+  fr:{hilfe:"Comment jouer", rg_head:"Grades", rg_sub:"L'honneur ne se gagne qu'en ligne, compte contre compte.", rg_start:"Tout le monde commence ici", rg_ab:"à partir de {0} d'honneur", rg_anteil:"les {0} % meilleurs de votre pays, à partir de {1} d'honneur", rg_plaetze:"les {0} meilleurs de votre pays, à partir de {1} d'honneur", rg_erster:"le meilleur de votre pays, à partir de {0} d'honneur", rg_du:"votre grade"},
+  tr:{hilfe:"Nasıl oynanır", rg_head:"Rütbeler", rg_sub:"Onur yalnızca çevrimiçi, hesap hesaba karşı kazanılır.", rg_start:"Herkes buradan başlar", rg_ab:"{0} onurdan itibaren", rg_anteil:"ülkenin en iyi % {0}'i, {1} onurdan itibaren", rg_plaetze:"ülkenin en iyi {0} oyuncusu, {1} onurdan itibaren", rg_erster:"ülkenin en iyisi, {0} onurdan itibaren", rg_du:"senin rütben"},
+  ru:{hilfe:"Как играть", rg_head:"Звания", rg_sub:"Честь даётся только онлайн, учётная запись против учётной записи.", rg_start:"Здесь начинают все", rg_ab:"от {0} чести", rg_anteil:"лучшие {0} % вашей страны, от {1} чести", rg_plaetze:"{0} лучших вашей страны, от {1} чести", rg_erster:"лучший в своей стране, от {0} чести", rg_du:"ваше звание"}
+};
+for (const c in LANGS102) Object.assign(LANGS[c], LANGS102[c]);
+
 /* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
   en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},

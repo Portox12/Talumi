@@ -144,6 +144,26 @@
         background:color-mix(in srgb, var(--ink) 88%, transparent);
         backdrop-filter:blur(2px);z-index:5;overflow:auto}
   .veil[hidden]{display:none}
+  /* Spielanleitung: lang, deshalb oben beginnen und den Schleier scrollen
+     lassen — mittig gesetzt wäre der Anfang auf dem Handy unerreichbar. */
+  #hilfeVeil{align-items:start}
+  #hilfeVeil .card{max-width:min(820px,100%)}
+  .hilfe h2{font-family:var(--disp);font-size:13px;letter-spacing:.14em;text-transform:uppercase;
+       color:var(--brass);margin:20px 0 6px}
+  .hilfe p,.hilfe li{font-size:13.5px;line-height:1.55;color:var(--paper-2);margin:4px 0}
+  .hilfe ul{margin:2px 0 0 18px;padding:0}
+  .hilfe b{color:var(--paper);font-weight:600}
+  .hilfe #hilfeClose{margin-top:22px}
+  /* Rangübersicht im Reiter Statistik (Schritt 102). */
+  .rangZeile{display:grid;grid-template-columns:48px 1fr;gap:12px;align-items:center;padding:6px 0;
+       border-top:1px solid var(--line)}
+  .rangZeile:first-of-type{border-top:0}
+  .rangZeile canvas{width:48px;height:28px;display:block}
+  .rangZeile b{display:block;font-weight:600;color:var(--paper);font-size:13.5px}
+  .rangZeile small{display:block;color:var(--paper-2);font-size:12px}
+  .rangZeile.du{background:var(--plate);margin:0 -8px;padding:6px 8px;border-radius:8px}
+  .rangZeile.du b{color:var(--brass-hell)}
+  #rangListe .hinweis{font-size:12.5px;color:var(--paper-2)}
   /* Vorher feste 460 px — auf einem Handy im Querformat blieb ein Drittel
      der Breite ungenutzt. Jetzt so breit wie verfügbar, gedeckelt für große
      Bildschirme, damit Zeilen lesbar kurz bleiben. */
@@ -2240,6 +2260,9 @@
       <div class="konsStat">
         <div class="plate recbox" id="recBox"></div>
         <div class="plate recbox" id="rankBox" hidden></div>
+        <!-- Alle 13 Ränge mit ihren Bedingungen (Schritt 102). Für Gäste
+             lesbar — es ist die Antwort auf „was kann ich erreichen?". -->
+        <div class="plate recbox" id="rangListe"></div>
       </div>
     </div>
   </div>
@@ -2251,6 +2274,7 @@
     <h1 style="font-size:34px" data-i18n="settings">Settings</h1>
     <div id="setList" class="setlist"></div>
     <p class="foot" data-i18n="setnote">These live in this session.</p>
+    <button class="quiet" id="hilfeBtn" data-i18n="hilfe">Spielanleitung</button>
     <button id="setClose" data-i18n="back">Back</button>
   </div>
 </div>
@@ -2412,7 +2436,91 @@
       <a href="impressum.html" style="color:var(--brass)">Impressum</a> ·
       <a href="datenschutz.html" style="color:var(--brass)">Datenschutz</a>
     </p>
+    <button class="quiet" id="hilfeBtn2" data-i18n="hilfe">Spielanleitung</button>
     <button id="legalClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Spielanleitung (Schritt 102, Thomas' Auftrag vom 16.09.2026: „eine
+     Spielanleitung für die, die es brauchen"). Bewusst nur auf Deutsch —
+     Thomas' Vorgabe „heute alles nur deutsch"; übersetzt wird vor dem
+     App-Store-Start. Die Zahlen hier sind die aus sim.js/server.js
+     (Teilen ab 36 Masse, 16 Stücke, 5 Sekunden Schutz, Pulsar fünfmal
+     füttern, Happy Hour 20–21 Uhr). Wer dort etwas ändert, ändert es hier mit.
+     ===================================================================== -->
+<div class="veil" id="hilfeVeil" hidden>
+  <div class="card hilfe">
+    <h1 style="font-size:34px;margin-bottom:4px" data-i18n="hilfe">Spielanleitung</h1>
+    <p class="sub" style="margin:0">Aus einem Staubkorn wird ein Planet. Alles, was du wissen musst, auf einer Seite.</p>
+
+    <h2>Das Ziel</h2>
+    <p>Du beginnst als <b>Staubkorn</b>. Sammle die kleinen Trümmer ein und verschlinge Körper, die deutlich kleiner sind als du. So wächst du über <b>Geröll</b>, <b>Planetesimal</b> und <b>Protoplanet</b> zur <b>Welt</b> mit Ringen und Monden. Wer dich verschlingt, beendet deine Runde — und dann heißt es: Nochmal.</p>
+
+    <h2>Steuerung</h2>
+    <ul>
+      <li><b>Am Rechner:</b> Die Maus bewegen, dein Körper folgt dem Zeiger. <b>Leertaste</b> teilt dich in Richtung Zeiger. <b>W</b> wirft ein Stück Masse ab. <b>M</b> schaltet den Ton aus und ein.</li>
+      <li><b>Am Handy:</b> Irgendwo auf dem Bildschirm ziehen, um zu steuern. Die beiden Tasten am Rand sind <b>Teilen</b> und <b>Abwerfen</b>.</li>
+    </ul>
+
+    <h2>Fressen und gefressen werden</h2>
+    <ul>
+      <li>Du kannst alles verschlingen, das <b>deutlich kleiner</b> ist als du — einfach überfahren. Ist der andere ähnlich groß, passiert nichts.</li>
+      <li><b>Größer heißt langsamer.</b> Kleine Körper entkommen großen immer. Die eigentliche Gefahr sind Körper in deiner Größenordnung.</li>
+      <li>Ab etwa <b>1.200 Masse</b> schrumpfst du langsam von selbst. Friss weiter oder bleib absichtlich handlich.</li>
+      <li>Nach dem Start bist du <b>5 Sekunden geschützt</b>. Der Schutz endet, sobald du teilst oder abwirfst.</li>
+    </ul>
+
+    <h2>Teilen und Abwerfen</h2>
+    <ul>
+      <li><b>Teilen</b> geht ab 36 Masse: Die Hälfte springt nach vorn — der einzige Weg, einen Fliehenden zu fangen. Bis zu 16 Stücke sind möglich; sie verschmelzen nach einigen Sekunden wieder. Geteilt bist du verwundbar: Teile nur, wenn das Ziel schon in Reichweite ist.</li>
+      <li><b>Abwerfen</b> schleudert ein kleines Stück Masse in Blickrichtung. Damit wirst du etwas schneller, kannst Mitspieler füttern — und Pulsare.</li>
+    </ul>
+
+    <h2>Pulsare</h2>
+    <p>Die stacheligen, leuchtenden Körper sind <b>Pulsare</b>. Solange du klein bist, sind sie Deckung: Große, die einen Pulsar überdecken, werden in Stücke gerissen — und das gilt auch für dich, sobald du groß genug bist. Fütterst du einen Pulsar <b>fünfmal</b> mit abgeworfener Masse, stößt er einen neuen Pulsar in Wurfrichtung aus. So sprengt man Riesen.</p>
+
+    <h2>Spielarten</h2>
+    <ul>
+      <li><b>Freier Raum</b> — online mit allen anderen, ohne Zeitlimit. Nur hier gibt es Ore, XP, Ehre und Ranglistenplätze; der Server rechnet alles selbst.</li>
+      <li><b>Battle Royale</b> — das Feld schließt sich, wer draußen ist, zehrt aus. Der Letzte gewinnt. Gegen Computergegner.</li>
+      <li><b>Clankampf</b> — zwei Mannschaften, fünf Minuten, die Mannschaft mit mehr Masse führt am Ende. Gegen Computergegner.</li>
+      <li><b>Freundschaftsspiel</b> — reine Übung ohne Belohnung.</li>
+    </ul>
+    <p>Computergegner sind am Namen zu erkennen — kein Mensch heißt so. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
+
+    <h2>Ore, XP und Level</h2>
+    <ul>
+      <li>Nach jeder Onlinerunde bekommst du <b>Ore</b> (Spielwährung) und <b>XP</b>: für deine Bestmasse, für jeden verschlungenen Körper, für jede erreichte Stufe und für einen neuen Rekord.</li>
+      <li><b>Happy Hour:</b> täglich von 20 bis 21 Uhr zahlt jede Onlinerunde das 2,5-Fache an Ore.</li>
+      <li>XP bringen dich bis <b>Level 100</b>. Jedes Level ist ein Schritt näher an neuen Designs.</li>
+      <li><b>Designs</b> sind das Aussehen deines Körpers: 46 Stück, freigeschaltet durch Level oder gekauft mit Ore. Kein Design bringt einen Vorteil im Spiel.</li>
+      <li>Der <b>Startbonus</b> lässt dich im Freien Raum mit doppelter oder dreifacher Masse beginnen — bezahlt mit erspieltem Ore. Größer heißt aber auch langsamer und auffälliger.</li>
+      <li>Der <b>Tagesbonus</b> wartet jeden Tag im Hangar; sieben Tage in Folge geben die volle Reihe.</li>
+    </ul>
+
+    <h2>Ehre und Ränge</h2>
+    <ul>
+      <li><b>Ehre</b> gibt es nur online und nur, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — keine Computergegner. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag.</li>
+      <li>Ehre bringt dich durch <b>13 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Kapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
+      <li><b>Errungenschaften</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
+      <li>Alle <b>28 Tage</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet, am Ende gibt es Ore nach Platz, dann beginnt alles von vorn.</li>
+      <li><b>Clans:</b> Bis zu 30 Spieler, die Ehre aller Mitglieder zählt zusammen. Gründen oder beitreten über den Knopf <b>Clan</b>.</li>
+    </ul>
+
+    <h2>Konto oder Gast</h2>
+    <p>Als Gast bleibt dein Fortschritt in diesem Browser. Mit Konto liegt er auf dem Spielserver — dann zählen Ehre, Ränge, Errungenschaften, Saison und Ranglisten. Anmelden geht jederzeit über die <b>Einstellungen</b>.</p>
+
+    <h2>Fünf Tipps</h2>
+    <ul>
+      <li>Nutz die geschützten Sekunden am Anfang, um Abstand zu allem Großen zu gewinnen.</li>
+      <li>Behalte die Rangliste im Blick: Wo die Größten stehen, sollte man wissen, bevor sie nah sind.</li>
+      <li>Wer sich halbiert, halbiert auch, was er überlebt. Teile nur mit Ziel in Reichweite.</li>
+      <li>Klein neben einem Pulsar ist sicherer als groß auf freier Fläche.</li>
+      <li>Im Battle Royale bei der ersten Warnung loslaufen, nicht bei der letzten.</li>
+    </ul>
+
+    <button id="hilfeClose" data-i18n="back">Zurück</button>
   </div>
 </div>
 
