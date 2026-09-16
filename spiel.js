@@ -38,10 +38,23 @@ if (isTouch) document.body.classList.add("touch");
 /* Einstellungen. Sitzungsweit, aber bewusst als eigenes Objekt gebaut —
    sobald es Konten gibt, wandert genau dieses Objekt auf den Server.
    Steht hier oben, weil resize() gleich darunter schon lowPower liest. */
+/* Bildqualität zur Laufzeit (Schritt 100). `ECO` 0 = alles, 1 = Sparstufe:
+   Bildschärfe 1,25, kein Ranglühen, keine Lufthülle, weniger Sterne — die
+   Materialien der Designs bleiben. Der Bildratenwächter senkt und hebt die
+   Stufe je nach gemessener Rate; **gespeichert wird nichts**. Bis v79 setzte
+   er stattdessen die Einstellung „Sparmodus" auf Dauer in den Speicher — ein
+   schlechter Start auf einem guten Telefon, und die Designs waren für immer
+   flache Scheiben (Thomas: „die neuen Designs verschwinden dauernd"). */
+let ECO = 0;
+let MENUE_VOLL = false;   // der Körper im Menü wird immer in voller Qualität gezeichnet
+
 const Settings = {
   volume:0.7, shake:true, sens:62, lefty:false,
   teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
   theme:"earth",
+  /* Fassung der gespeicherten Einstellungen. 2 = seit Schritt 100: ein vom
+     alten Wächter gesetzter Sparmodus wird einmal zurückgenommen. */
+  fassung:2,
   /* Musik getrennt von den Spielgeräuschen: Wer die Töne braucht, um Gefahr
      zu hören, will deshalb noch lange keine Musik — und umgekehrt. */
   music:0
@@ -73,6 +86,11 @@ function einstellungenLaden(){
     if (typeof v === "number" && !Number.isFinite(v)) continue;
     Settings[k] = v;
   }
+  /* Bis Fassung 1 schrieb der Bildratenwächter `lowPower:true` in den
+     Speicher — meist nach einem holprigen Rundenstart, nicht nach echter
+     Not. Einmal zurücknehmen; wer den Sparmodus wirklich will, schaltet ihn
+     in den Einstellungen wieder ein, und ab dann bleibt er. */
+  if (!(roh.fassung >= 2)){ Settings.lowPower = false; Settings.fassung = 2; einstellungenSichern(); }
   /* Zahlen in vernünftige Grenzen zwingen, auch wenn die Art stimmt. */
   Settings.volume = Math.min(1, Math.max(0, Settings.volume));
   Settings.music  = Math.min(1, Math.max(0, Settings.music));
@@ -289,7 +307,11 @@ function resize(){
      Jetzt ist scharf der Normalfall (bis zur doppelten Dichte, darüber sieht
      man nichts mehr), und wer Akku oder Wärme sparen will, schaltet in den
      Einstellungen den Sparmodus ein. */
-  const cap = Settings.lowPower ? 1.25 : 2;
+  /* Schritt 100: Auf Tippgeräten reicht die anderthalbfache Dichte — der
+     Unterschied zu 2 ist am Handy nicht zu sehen, kostet aber 78 % mehr
+     Bildpunkte, und genau die Füllrate war der Engpass (Profil: 61 % der
+     Zeit im Rastern, 4 % im Spielcode). Die Sparstufe (`ECO`) senkt weiter. */
+  const cap = Settings.lowPower ? 1.25 : ECO ? 1.25 : (isTouch ? 1.5 : 2);
   DPR = Math.min(devicePixelRatio || 1, cap);
   VW = innerWidth; VH = innerHeight;
   cvs.width = Math.round(VW*DPR); cvs.height = Math.round(VH*DPR);
@@ -530,6 +552,8 @@ function applyLang(){
   // angehakt, während der Rest der Seite längst deutsch ist.
   const lp = $("langPick");
   if (lp && lp.draw) lp.draw();
+  const lb = $("langBtn");
+  if (lb){ lb.textContent = lang.toUpperCase(); lb.setAttribute("aria-label", t("language") + ": " + (LANGNAMES[lang] || lang)); }
   if ($("friendList")) buildFriends();
   if ($("setList") && !$("setVeil").hidden) buildSettings();
 }
@@ -951,6 +975,7 @@ const Gast = {
     if (typeof r.name === "string") this.name = cleanName(r.name).trim().slice(0, NAME_MAX);
     if (r.bonus && typeof r.bonus === "object")
       this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)) };
+    this.gutschein = [2, 3].includes(r.gutschein) ? r.gutschein : 0;
   },
 
   /* Name des Gastes (Schritt 95). Vorher war ein getippter Name nach dem
@@ -974,12 +999,17 @@ const Gast = {
     const h = this.heute(), b = this.bonus;
     if (b.tag === h) return { fehler: "schon_abgeholt" };
     const serie = b.tag === h - 1 ? Math.min(7, b.serie + 1) : 1;
-    const ore = BONUS_ANZEIGE[serie - 1] || 0;
+    const g = BONUS_GAST[serie - 1] || {};
+    const ore = g.ore || 0, xp = g.xp || 0, boost = g.boost || 0;
     this.bonus = { tag: h, serie };
     Profile.ore += ore;
+    if (xp) Profile.addXp(xp);
+    /* Der Gutschein gilt für die nächste lokale Runde mit Startbonus. */
+    if (boost) this.gutschein = boost;
     this.sichern();
-    return { ok: true, tag: serie, ore };
+    return { ok: true, tag: serie, ore, xp, boost, ehre: 0 };
   },
+  gutschein: 0,
   nameVorschlag(){
     const w = this.NAMENSWORTE[(Math.random() * this.NAMENSWORTE.length) | 0];
     return (w + " " + (10 + ((Math.random() * 990) | 0))).slice(0, NAME_MAX);
@@ -1010,6 +1040,7 @@ const Gast = {
         if (n) this.name = n;
         if (this.name) d.name = this.name;
         d.bonus = this.bonus;
+        d.gutschein = this.gutschein;
       }
       if (mitKonto && !(alt && alt.v === this.V)) return;
       d.friends = Profile.friends.slice(0, 50);
@@ -1558,7 +1589,7 @@ const bodyCount = () => new Set(Game.rivals.map(r => r.gid)).size;
 
 let stars = [];
 const seedStars = () => {
-  stars = Array.from({length: Math.round(WORLD*WORLD/(Settings.lowPower ? 260000 : 110000))}, () => ({
+  stars = Array.from({length: Math.round(WORLD*WORLD/(Settings.lowPower ? 260000 : ECO ? 180000 : 110000))}, () => ({
     x:rnd(0,WORLD), y:rnd(0,WORLD), r:rnd(.5,1.5), a:rnd(.15,.7), d:rnd(.25,.7)}));
 };
 seedStars();
@@ -1637,7 +1668,12 @@ function start(name){
   let startMass = M.start;
   if (MODE_ID() === "open" && Profile.boost > 1 && !Konto.angemeldet()){
     const cost = BOOST_COST[Profile.boost];
-    if (Profile.ore >= cost){
+    if (Gast.gutschein === Profile.boost){
+      /* Gutschein aus dem Tagesbonus: diese eine Runde kostet nichts. */
+      Gast.gutschein = 0;
+      Gast.sichern();
+      startMass = M.start * Profile.boost;
+    } else if (Profile.ore >= cost){
       Profile.ore -= cost;
       Gast.sichern();
       startMass = M.start * Profile.boost;
@@ -2609,7 +2645,12 @@ function finish(timeUp){
   const oreWin = Game.won ? 200 : 0;
   checkGoals();                       // Ziele, die erst am Ende feststehen
   const oreGoals = Game.goals.reduce((s,it) => s + (it.done ? it.def.ore : 0), 0);
-  const oreGain   = oreMass + oreKills + oreStages + oreBest + oreWin + oreGoals;
+  const oreGrund  = oreMass + oreKills + oreStages + oreBest + oreWin + oreGoals;
+  /* Happy Hour für Gäste im Onlinemodus — derselbe Faktor, den der Server
+     für Konten anlegt. Lokale Runden gegen KI bleiben außen vor. */
+  const oreHappy  = (!!MODE().online && !Konto.angemeldet())
+    ? Math.round(oreGrund * (happyFaktor() - 1)) : 0;
+  const oreGain   = oreGrund + oreHappy;
 
   /* Freundschaftsspiele zahlen nichts. Sonst wäre die gespiegelte Arena mit
      schwachen Gegnern der schnellste Weg zu Ore — Übung soll Übung bleiben. */
@@ -2695,6 +2736,7 @@ function finish(timeUp){
     ];
     if (T.rekord) zeilen.push([t("newbest"), T.rekord]);
     if (T.sieg)   zeilen.push([t("wonround"), T.sieg]);
+    if (T.happy)  zeilen.push([t("hh_zeile"), T.happy]);
 
     let html = zeilen.filter(z => z[1] > 0)
       .map(z => `<div class="tally"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
@@ -2768,6 +2810,7 @@ function finish(timeUp){
   if (oreWin) rows.push([t("wonround"), oreWin]);
   for (const it of Game.goals)
     if (it.done) rows.push([t("objective") + ": " + t("g_"+it.def.id), it.def.ore]);
+  if (oreHappy) rows.push([t("hh_zeile"), oreHappy]);
 
   let html = "";
   html += rows.filter(r => r[1] > 0)
@@ -3252,13 +3295,17 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   const F = trait || pal.trait || "plain";
   const M = merkmale(pal);
   const rock = shade(pal.rock, tint||0), dark = shade(pal.dark, tint||0);
-  const fancy = !Settings.lowPower;
+  /* Drei Stufen: voll, Sparstufe (ECO — Material und Schatten bleiben, das
+     Leuchten drumherum fällt weg), flach (Einstellung „Sparmodus"). Im Menü
+     immer voll: Dort ist der Körper die Fortschrittsanzeige. */
+  const voll  = MENUE_VOLL || (!Settings.lowPower && !ECO);
+  const fancy = MENUE_VOLL || !Settings.lowPower;
   const fein  = fancy && r > 11;      // Feinheiten erst, wenn man sie sähe
 
   /* ---- 1. Außenraum: Rang, Lufthülle, Ringe --------------------------
      Alles außerhalb von r. Der Rang muss sichtbar sein: Größe sagt nur,
      wer gerade satt ist — nicht, wer etwas kann. */
-  if (T >= 3 && fancy && r > 8){
+  if (T >= 3 && voll && r > 8){
     const puls = T >= 6 ? .30 + .14*Math.sin(Game.t*2.2 + x*.01)
                : T >= 5 ? .26 + .12*Math.sin(Game.t*3 + x*.01)
                : T >= 4 ? .17 : .09;
@@ -3270,7 +3317,7 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.beginPath(); g.arc(x,y,far,0,7); g.fill();
   }
 
-  if (st >= 3 && fancy){
+  if (st >= 3 && voll){
     const halo = g.createRadialGradient(x,y,r*.9, x,y,r*1.35);
     halo.addColorStop(0, hexA(pal.air,.28));
     halo.addColorStop(1, hexA(pal.air,0));
@@ -3290,7 +3337,7 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   /* ---- 2. Die Grundkugel ---------------------------------------------
      Der Verlauf sitzt auf der Lichtseite, nicht in der Mitte. */
   g.beginPath(); g.arc(x,y,r,0,7);
-  if (Settings.lowPower){
+  if (!fancy){
     g.fillStyle = rock;
   } else {
     const grad = g.createRadialGradient(x+LX*r*.50, y+LY*r*.50, r*.04, x, y, r*1.06);
@@ -3686,13 +3733,16 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
 
     const hatAbz = Number.isInteger(z.rang);
     const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
+    /* Clan-Kürzel in eckigen Klammern vor dem Namen (Schritt 100). */
+    const tag    = z.tag ? "[" + z.tag + "]" : "";
 
     g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
     const nameB  = g.measureText(z.name).width;
     g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
     const stufeB = stufe ? g.measureText(stufe).width + ZEILE_H * .45 : 0;
+    const tagB   = tag ? g.measureText(tag).width + ZEILE_H * .35 : 0;
     const abzB   = hatAbz ? abzeichenBreite(ZEILE_H) + ZEILE_H * .32 : 0;
-    const breite = abzB + stufeB + nameB;
+    const breite = abzB + stufeB + tagB + nameB;
     const luft   = ZEILE_H * .38;
 
     /* Unterhalb des Körpers, mit Abstand zu Ringen und Glühen. Am unteren
@@ -3718,6 +3768,12 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
       g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
       g.fillText(stufe, ox, cy + .5);
       ox += g.measureText(stufe).width + ZEILE_H * .45;
+    }
+    if (tag){
+      g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
+      g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
+      g.fillText(tag, ox, cy + .5);
+      ox += g.measureText(tag).width + ZEILE_H * .35;
     }
     g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
     g.textAlign = "left"; g.fillStyle = TH().paper || "#e8ddc8";
@@ -3765,6 +3821,7 @@ const TEAM_PALS = {
 };
 const teamPal = t => TEAM_PALS[Settings.teams][t === 1 ? 1 : 2];
 
+let zieleStand = "";
 function draw(){
   const [mx,my,gm] = centre();
   peak = Math.max(peak, gm);
@@ -3886,6 +3943,7 @@ function draw(){
       traeger.add(c);
       zeilen.push({x:c.x, y:c.y, r:radiusOf(c.m), name:c.name,
                    titel: Game.online && Net.kt > 0 && c.gid === Net.kt,
+                   tag: c.tag || null,
                    level:Number.isInteger(c.lvl) ? c.lvl : null,
                    rang: Number.isInteger(c.rang) ? c.rang : null});
     }
@@ -3896,6 +3954,7 @@ function draw(){
       traeger.add(meins);
       zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name,
                    titel: Game.online && Net.kt > 0 && Net.kt === Net.you,
+                   tag: istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : null,
                    level:Profile.level,
                    rang: istAngemeldet() && Number.isInteger(Konto.profil.rang)
                          ? Konto.profil.rang : null});
@@ -3976,9 +4035,17 @@ function draw(){
     gp.hidden = false;
     // Die ersten Sekunden blinkt der Rahmen, damit man die Tafel überhaupt bemerkt
     gp.classList.toggle("flash", Game.t < 4);
-    $("goalList").innerHTML = Game.goals.map(it =>
-      `<div class="goal${it.done ? " done" : ""}"><i>${it.done ? "✓" : "○"}</i>` +
-      `<span>${esc(t("g_"+it.def.id))}</span></div>`).join("");
+    /* Nur neu aufbauen, wenn sich etwas geändert hat: Vorher wurde die
+       Liste bei **jedem Bild** neu in die Seite geschrieben — Layout und
+       Schriftsatz sechzigmal je Sekunde für einen Text, der sich alle paar
+       Minuten ändert. */
+    const stand = Game.goals.map(it => (it.done ? "1" : "0") + it.def.id).join("|") + lang;
+    if (stand !== zieleStand){
+      zieleStand = stand;
+      $("goalList").innerHTML = Game.goals.map(it =>
+        `<div class="goal${it.done ? " done" : ""}"><i>${it.done ? "✓" : "○"}</i>` +
+        `<span>${esc(t("g_"+it.def.id))}</span></div>`).join("");
+    }
   } else gp.hidden = true;
 
   /* Levelaufstieg: groß in der Bildmitte, Ringe nach außen, Schrift wächst
@@ -4168,21 +4235,28 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-/* Bildratenwächter. Fällt die Rate über zwei Sekunden unter 45, wird der
-   Sparmodus von allein eingeschaltet — einmal, und mit Meldung, damit niemand
-   rätselt, warum es plötzlich schlichter aussieht. */
-let fpsFenster = [], fpsGeprueft = false;
+/* Bildratenwächter (Schritt 100 neu). Vorher: Einmal in den ersten zwei
+   Sekunden unter 45 Bilder/s — genau dann, wenn der Browser noch übersetzt
+   und lädt — und der Sparmodus stand **für immer** im Speicher. Jetzt:
+   - die ersten drei Sekunden zählen nicht,
+   - zwei schlechte Fenster hintereinander senken auf die Sparstufe (`ECO`),
+   - läuft es eine Weile gut, geht es wieder hoch,
+   - gespeichert wird nichts. */
+let fpsFenster = [], fpsSchlecht = 0, fpsGut = 0;
 function wacheFps(dt){
-  if (fpsGeprueft || Settings.lowPower || !Game.running) return;
+  if (Settings.lowPower || !Game.running) return;
+  if (Game.t < 3){ fpsFenster.length = 0; return; }
   fpsFenster.push(dt);
-  if (fpsFenster.length < 120) return;
+  if (fpsFenster.length < 90) return;
   const mittel = fpsFenster.reduce((a,b)=>a+b,0) / fpsFenster.length;
   fpsFenster.length = 0;
-  if (1/mittel < 45){
-    fpsGeprueft = true;
-    Settings.lowPower = true;
-    applySetting("lowPower");
-    toast(t("s_perf") + ": " + t("o_on"));
+  const fps = 1 / mittel;
+  if (fps < 40){ fpsSchlecht++; fpsGut = 0; } else if (fps > 55){ fpsGut++; fpsSchlecht = 0; } else { fpsSchlecht = 0; }
+  if (ECO === 0 && fpsSchlecht >= 2){
+    ECO = 1; fpsSchlecht = 0; seedStars(); resize();
+    toast(t("s_eco"));
+  } else if (ECO === 1 && fpsGut >= 12){   // rund 20 Sekunden flüssig
+    ECO = 0; fpsGut = 0; seedStars(); resize();
   }
 }
 
@@ -4210,7 +4284,7 @@ requestAnimationFrame(loop);
 /* Seit Schritt 79 sind „Designs" und „Errungenschaften" Reiter im
    Startbildschirm und keine eigenen Bildschirme mehr. */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil"];
+               "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil"];
 
 
 const SET_UI = [
@@ -4409,13 +4483,17 @@ function heldMalen(){
      lernt daraus nur, dass die Anzeige nichts bedeutet. */
   const masse = Math.max(30, Profile.best || 0);
   const saveT = Game.t; Game.t = 1.2;
+  MENUE_VOLL = true;
   try { body(g, S/2, S/2, S*0.40, masse, skin, 0, "", true); } catch(_){}
+  MENUE_VOLL = false;
   Game.t = saveT;
 
   setze("heldName", istAngemeldet() ? Konto.profil.name
         : (cleanName($("name") ? $("name").value : "") || t("k_guest")));
   const st = stageOf(masse);
-  setze("heldStufe", t("st" + st + "h"));
+  /* „Stufe 4 — Welt" wie im Entwurf, nicht der ganze Erklärsatz: Der steht
+     im Spiel über der Stufenanzeige, wo er gebraucht wird. */
+  setze("heldStufe", t("k_stufe", st + 1, t("st" + st)));
 }
 
 /* „Nächste Errungenschaften": die drei, die am nächsten dran sind.
@@ -4449,12 +4527,15 @@ function naechsteErfolgeMalen(){
   offen.sort((a, b) => b.anteil - a.anteil);
   const drei = offen.slice(0, 3);
   const kopf = `<h2>${esc(t("k_next"))}<em>${hat.size}/${ERFOLG_REIHE.length}</em></h2>`;
-  if (!drei.length){ box.innerHTML = kopf + `<p class="hintline">${esc(t("allunlocked"))}</p>`; return; }
-  box.innerHTML = kopf + drei.map(e =>
+  if (!drei.length){
+    box.innerHTML = kopf + `<div class="konsBlock"><p class="hintline" style="margin:0">${esc(t("allunlocked"))}</p></div>`;
+    return;
+  }
+  box.innerHTML = kopf + `<div class="konsBlock">` + drei.map(e =>
     `<div class="konsFort${e.anteil >= 1 ? " fertig" : ""}">` +
     `<span>${esc(erfolgLabel(e.id))}</span>` +
     `<span class="bar"><i style="width:${Math.round(e.anteil*100)}%"></i></span>` +
-    `<b>${Math.round(e.anteil*100)} %</b></div>`).join("");
+    `<b>${e.anteil >= 1 ? "✓" : Math.round(e.anteil*100) + " %"}</b></div>`).join("") + `</div>`;
 }
 
 /* Freundekasten im Startbildschirm. Bewusst **ohne** Onlineanzeige: Die gibt
@@ -4466,11 +4547,11 @@ function freundBoxMalen(){
   const kopf = `<h2>${esc(t("friends"))}<em><button type="button" id="freundMehr">` +
                `${esc(t("k_manage"))}</button></em></h2>`;
   const liste = Profile.friends.slice(0, 4);
-  box.innerHTML = kopf + (liste.length
+  box.innerHTML = kopf + `<div class="konsBlock">` + (liste.length
     ? liste.map(n => `<div class="konsFr"><span>${esc(n)}</span></div>`).join("") +
       (Profile.friends.length > liste.length
         ? `<div class="konsFr"><small>+${Profile.friends.length - liste.length}</small></div>` : "")
-    : `<p class="hintline">${esc(t("nofriends"))}</p>`);
+    : `<p class="hintline" style="margin:0">${esc(t("nofriends"))}</p>`) + `</div>`;
   const b = $("freundMehr");
   if (b) b.addEventListener("click", () => { buildFriends(); friendNote(""); show("friendsVeil"); });
 }
@@ -4479,7 +4560,7 @@ function show(id){
   hideAll(); $(id).hidden = false;
   if (id === "startVeil"){
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
-    naechsteErfolgeMalen(); freundBoxMalen(); heldMalen();
+    naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
   }
   /* Im Menü darf die Musik vorn stehen, im Spiel nicht: Dort verdeckt sie
@@ -4513,6 +4594,20 @@ function paintPurse(){
     const hat = istAngemeldet() && Number.isFinite(+Konto.profil.ehre);
     zeile.hidden = !hat;
     if (hat) setze("ehreNum", (+Konto.profil.ehre).toLocaleString(lang));
+    /* Das Rangabzeichen neben der Ehre — dasselbe, das im Spiel neben dem
+       Namen steht, gezeichnet von `abzeichen()`. */
+    const abz = $("ehreAbz");
+    if (abz){
+      const stufe = hat && Number.isInteger(Konto.profil.rang) ? clamp(Konto.profil.rang, 0, RANG_MAX) : null;
+      abz.hidden = stufe === null;
+      if (stufe !== null){
+        try {
+          const g = abz.getContext("2d");
+          g.clearRect(0, 0, abz.width, abz.height);
+          abzeichen(g, 0, 0, stufe, abz.height);
+        } catch(_){}
+      }
+    }
   }
 }
 
@@ -4599,6 +4694,65 @@ function onlineZeigen(){
        „Sei der Erste" sagt dasselbe und stimmt. */
     el.textContent = n === 0 ? t("online0") : n === 1 ? t("online1") : t("onlinen", n);
   }
+}
+
+/* Happy Hour (Schritt 100): eine Zeile unter dem Startknopf und eine auf dem
+   Anmeldebildschirm. Läuft sie, steht die Restzeit da; sonst die Uhrzeit der
+   nächsten, in der Ortszeit des Spielers. Ohne Server bleibt die Zeile weg. */
+function happyFaktor(){
+  const h = Konto.happy;
+  if (!h) return 1;
+  /* Aus den Zeitmarken gerechnet, nicht aus `aktiv`: Der letzte Stand kommt
+     vom Startbildschirm, und eine Runde kann in die Stunde hinein- oder aus
+     ihr herauslaufen. Der Server rechnet für Konten ohnehin selbst. */
+  const jetzt = Date.now();
+  const laeuft = h.aktiv ? jetzt < h.bis
+               : (h.naechste > 0 && jetzt >= h.naechste && jetzt < h.naechste + 3600000);
+  return laeuft ? h.faktor : 1;
+}
+function happyZeigen(){
+  const h = Konto.happy;
+  for (const id of ["happyText", "anmHappy"]){
+    const el = $(id);
+    if (!el) continue;
+    /* Unter dem Startknopf nur, solange sie läuft — als Werbung für die
+       nächste Stunde reicht die Zeile auf dem Anmeldebildschirm; unter dem
+       Knopf wäre sie eine zweite Textzeile, die die Kopfzeile sprengt. */
+    if (!h || (id === "happyText" && !h.aktiv)){ el.hidden = true; el.textContent = ""; el.classList.remove("an"); continue; }
+    el.hidden = false;
+    const faktor = h.faktor.toLocaleString(lang, { maximumFractionDigits: 1 });
+    if (h.aktiv){
+      const rest = Math.max(1, Math.ceil((h.bis - Date.now()) / 60000));
+      el.textContent = t("hh_aktiv", faktor, rest);
+      el.classList.add("an");
+    } else {
+      const uhr = h.naechste
+        ? new Date(h.naechste).toLocaleTimeString(lang, { hour: "2-digit", minute: "2-digit" }) : "";
+      el.textContent = t("hh_naechste", uhr, faktor);
+      el.classList.remove("an");
+    }
+  }
+}
+
+/* Saison im Hangar (Schritt 100): „Saison 1 · noch 12 Tage", darunter die
+   eigene Saison-Ehre mit Fortschrittsbalken der Saison. Gäste sehen Nummer
+   und Restzeit und den Satz, worum es geht. */
+function saisonZeigen(){
+  const box = $("saisonBox");
+  if (!box) return;
+  const s = Konto.saison;
+  if (!s){ box.hidden = true; return; }
+  box.hidden = false;
+  const tage = Math.max(0, Math.ceil((s.ende - Date.now()) / 86400000));
+  setze("saisonKopf", t("s_kopf", s.nr));
+  setze("saisonRest", tage <= 1 ? t("s_rest1") : t("s_rest", tage));
+  const anteil = s.ende > s.start ? clamp((Date.now() - s.start) / (s.ende - s.start), 0, 1) : 0;
+  const ehre = istAngemeldet() && Konto.profil.saison ? (+Konto.profil.saison.ehre || 0) : null;
+  $("saisonInhalt").innerHTML =
+    (ehre === null
+      ? `<span>${esc(t("s_regel"))}</span>`
+      : `<span><b>${ehre.toLocaleString(lang)}</b>${esc(t("s_ehre"))}</span>`) +
+    `<span class="balken" title="${Math.round(anteil*100)} %"><i style="width:${Math.round(anteil*100)}%"></i></span>`;
 }
 
 /* Regelmäßig nachfragen, aber nur solange der Startbildschirm zu sehen ist —
@@ -4717,6 +4871,152 @@ function addFriend(){
   friendNote(t("fr_added", name), "good");
 }
 
+/* --- Clans (Schritt 100) ---------------------------------------------
+   Eine Karte, drei Lagen: kein Konto, kein Clan, im Clan. Alles, was hier
+   steht, kommt vom Server (`/konto/clan/…`, `/clan/…`); der Client zeigt
+   nur an und schickt Wünsche. */
+function clanMeldung(text, art){
+  const n = $("clanNote");
+  if (!n) return;
+  n.textContent = text || "";
+  n.className = "notice" + (art ? " " + art : "");
+}
+function clanKnopfMalen(){
+  const b = $("clanBtnTag");
+  if (!b) return;
+  const tag = istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : "";
+  b.textContent = tag; b.hidden = !tag;
+}
+async function clanTun(was, daten, erfolgText){
+  clanMeldung(t("k_wait"));
+  const e = await Konto.clanTun(was, daten);
+  if (e.fehler){ clanMeldung(t(KONTO_FEHLER[e.fehler] || "e_net"), "warn"); return null; }
+  clanMeldung("");
+  if (erfolgText) toast(erfolgText(e));
+  clanKnopfMalen();
+  await clanZeichnen();
+  return e;
+}
+function clanListeHtml(liste, mitBeitreten){
+  if (!liste || !liste.length) return `<p class="hintline">${esc(t("cl_keine"))}</p>`;
+  return `<div class="clanListe">` + liste.map((c, i) =>
+    `<div class="clanZeile"><span class="tg">${esc(c.tag)}</span>` +
+    `<span>${esc(c.name)}<small style="color:var(--paper-2)"> · ${c.mitglieder} · ${(c.ehre || 0).toLocaleString(lang)} ${esc(t("ehre"))}</small></span>` +
+    `<i>${c.rang ? "#" + c.rang : ""}</i>` +
+    (mitBeitreten ? `<button type="button" class="quiet" data-clan="${c.id}">${esc(t("cl_beitreten"))}</button>` : `<span></span>`) +
+    `</div>`).join("") + `</div>`;
+}
+async function clanZeichnen(){
+  const body = $("clanBody");
+  if (!body) return;
+  if (!Konto.angemeldet()){
+    body.innerHTML = `<p class="hintline">${esc(t("cl_konto"))}</p>` +
+      `<button type="button" id="clanAnmelden" style="margin-top:12px;width:auto;padding:10px 18px">${esc(t("k_signin"))}</button>`;
+    $("clanAnmelden").addEventListener("click", () => show("accountVeil"));
+    return;
+  }
+  body.innerHTML = `<p class="hintline">${esc(t("k_wait"))}</p>`;
+  const [ich, beste] = await Promise.all([Konto.clanIch(), Konto.clanListe("/clan/rangliste")]);
+  if (!ich){ body.innerHTML = `<p class="hintline">${esc(t("e_net"))}</p>`; return; }
+  const top = (beste && beste.liste) || [];
+  if (ich.clan) clanImClan(body, ich.clan, top);
+  else await clanOhne(body, ich.einladungen || [], top);
+}
+function clanImClan(body, c, top){
+  const ich = Konto.profil.id;
+  const leiter = c.mitglieder.some(m => m.id === ich && m.rolle === "leiter");
+  const zeilen = c.mitglieder.map((m, i) =>
+    `<div class="clanZeile"><i>${i + 1}</i>` +
+    `<span>${esc(m.name)}<small style="color:var(--paper-2)"> · ${esc(t("level"))} ${m.level}</small></span>` +
+    `<span class="${m.rolle === "leiter" ? "rolle" : "ehre"}">${m.rolle === "leiter" ? esc(t("cl_leiter")) : (m.ehre || 0).toLocaleString(lang)}</span>` +
+    (leiter && m.id !== ich
+      ? `<span><button type="button" class="quiet" data-raus="${m.id}">${esc(t("cl_rauswerfen"))}</button> ` +
+        `<button type="button" class="quiet" data-chef="${m.id}">${esc(t("cl_uebergeben"))}</button></span>`
+      : `<span></span>`) + `</div>`).join("");
+  body.innerHTML =
+    `<div class="clanKopf"><span class="tag">[${esc(c.tag)}]</span><span class="nm">${esc(c.name)}</span>` +
+    `<div class="werte"><span><b>${(c.ehre || 0).toLocaleString(lang)}</b>${esc(t("cl_ehre"))}</span>` +
+    `<span><b>#${c.platz}</b>${esc(t("cl_platz"))}</span>` +
+    `<span><b>${c.mitglieder.length}/30</b>${esc(t("cl_mitglieder"))}</span></div></div>` +
+    `<p class="hintline" style="margin:0 0 10px">${esc(t("cl_gruender", new Date(c.erstellt).toLocaleDateString(lang)))} · ${esc(c.offen ? t("cl_offen") : t("cl_zu"))}</p>` +
+    `<div class="clanSpalten"><div>` +
+    `<div class="konsSek"><h2>${esc(t("cl_mitglieder"))}</h2><div class="konsBlock">${zeilen}</div></div></div>` +
+    `<div>` +
+    (leiter
+      ? `<div class="konsSek"><h2>${esc(t("cl_einladen"))}</h2><div class="konsBlock">` +
+        `<div class="clanReihe"><input type="text" id="clanEinlName" maxlength="14" placeholder="${esc(t("playername"))}" autocomplete="off" autocapitalize="off" spellcheck="false">` +
+        `<button type="button" id="clanEinlGo">${esc(t("cl_einladen"))}</button></div>` +
+        `<div class="clanReihe"><button type="button" class="quiet" id="clanOffenGo" style="flex:1">${esc(c.offen ? t("cl_zu") : t("cl_offen"))}</button></div>` +
+        `</div></div>`
+      : "") +
+    `<div class="konsSek"><h2>${esc(t("cl_beste"))}</h2><div class="konsBlock">${clanListeHtml(top.slice(0, 8), false)}</div></div>` +
+    `<div class="clanReihe" style="margin-top:14px"><button type="button" class="quiet" id="clanRaus" style="flex:1">${esc(t("cl_verlassen"))}</button></div>` +
+    `</div></div>`;
+  for (const b of body.querySelectorAll("[data-raus]"))
+    b.addEventListener("click", () => clanTun("rauswerfen", { id: +b.dataset.raus }, () => t("cl_entfernt")));
+  for (const b of body.querySelectorAll("[data-chef]"))
+    b.addEventListener("click", () => clanTun("uebergeben", { id: +b.dataset.chef }));
+  const einl = $("clanEinlGo");
+  if (einl) einl.addEventListener("click", () => {
+    const n = cleanName($("clanEinlName").value).trim();
+    if (!n) return clanMeldung(t("fr_type"), "warn");
+    clanTun("einladen", { name: n }, e => t("cl_eingeladen", e.name));
+  });
+  const offen = $("clanOffenGo");
+  if (offen) offen.addEventListener("click", () => clanTun("offen", { offen: !c.offen }));
+  const raus = $("clanRaus");
+  raus.addEventListener("click", () => {
+    if (raus.dataset.sicher !== "1"){ raus.dataset.sicher = "1"; raus.textContent = t("cl_sicher"); return; }
+    clanTun("verlassen", {}, () => t("cl_verlassen_ok"));
+  });
+}
+async function clanOhne(body, einladungen, top){
+  const offene = await Konto.clanListe("/clan/suche");
+  const einl = einladungen.length
+    ? `<div class="clanListe">` + einladungen.map(e =>
+        `<div class="clanZeile"><span class="tg">${esc(e.tag)}</span><span>${esc(e.name)}` +
+        (e.von ? `<small style="color:var(--paper-2)"> · ${esc(t("cl_von", e.von))}</small>` : "") + `</span><i></i>` +
+        `<button type="button" class="quiet" data-clan="${e.id}">${esc(t("cl_beitreten"))}</button></div>`).join("") + `</div>`
+    : `<p class="hintline" style="margin:0">${esc(t("cl_keine_einl"))}</p>`;
+  body.innerHTML =
+    `<p class="hintline" style="margin:0 0 10px">${esc(t("cl_none"))}</p>` +
+    `<div class="clanSpalten"><div class="clanForm">` +
+    `<div class="konsSek"><h2>${esc(t("cl_gruenden"))}</h2><div class="konsBlock">` +
+    `<label for="clanNeuName">${esc(t("cl_name"))}</label><input type="text" id="clanNeuName" maxlength="20" autocomplete="off" spellcheck="false">` +
+    `<label for="clanNeuTag">${esc(t("cl_tag"))}</label><input type="text" id="clanNeuTag" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">` +
+    `<div class="seg" id="clanNeuOffen" style="margin-top:10px"><button type="button" data-offen="1" aria-pressed="true">${esc(t("cl_offen"))}</button><button type="button" data-offen="0" aria-pressed="false">${esc(t("cl_zu"))}</button></div>` +
+    `<button type="button" id="clanNeuGo">${esc(t("cl_gruenden"))}</button></div></div></div>` +
+    `<div>` +
+    `<div class="konsSek"><h2>${esc(t("cl_einladungen"))}</h2><div class="konsBlock">${einl}</div></div>` +
+    `<div class="konsSek"><h2>${esc(t("cl_offene"))}</h2><div class="konsBlock">` +
+    `<div class="clanReihe" style="margin:0 0 6px"><input type="text" id="clanSuche" maxlength="20" placeholder="${esc(t("cl_suchen"))}" autocomplete="off" spellcheck="false"></div>` +
+    `<div id="clanOffeneListe">${clanListeHtml((offene && offene.liste) || [], true)}</div></div></div>` +
+    `<div class="konsSek"><h2>${esc(t("cl_beste"))}</h2><div class="konsBlock">${clanListeHtml(top.slice(0, 5), false)}</div></div>` +
+    `</div></div>`;
+  let neuOffen = true;
+  for (const b of body.querySelectorAll("#clanNeuOffen button"))
+    b.addEventListener("click", () => {
+      neuOffen = b.dataset.offen === "1";
+      for (const x of body.querySelectorAll("#clanNeuOffen button")) x.setAttribute("aria-pressed", String(x === b));
+    });
+  $("clanNeuGo").addEventListener("click", () =>
+    clanTun("gruenden", { name: $("clanNeuName").value, tag: $("clanNeuTag").value, offen: neuOffen },
+            e => t("cl_gegruendet", e.clan.name)));
+  const beitritt = b => clanTun("beitreten", { id: +b.dataset.clan }, e => t("cl_beigetreten", e.clan.name));
+  for (const b of body.querySelectorAll("[data-clan]")) b.addEventListener("click", () => beitritt(b));
+  let suchWecker = 0;
+  $("clanSuche").addEventListener("input", () => {
+    clearTimeout(suchWecker);
+    suchWecker = setTimeout(async () => {
+      const r = await Konto.clanListe("/clan/suche?q=" + encodeURIComponent($("clanSuche").value.trim()));
+      const box = $("clanOffeneListe");
+      if (!box) return;
+      box.innerHTML = clanListeHtml((r && r.liste) || [], true);
+      for (const b of box.querySelectorAll("[data-clan]")) b.addEventListener("click", () => beitritt(b));
+    }, 250);
+  });
+}
+
 /* Anmeldebonus im Startbildschirm. Nur für angemeldete Spieler — ohne Konto
    gäbe es nichts, woran sich die Reihe festmachen ließe, und ein Bonus, den
    man durch Leeren des Browsers beliebig oft bekommt, ist keiner.
@@ -4724,7 +5024,30 @@ function addFriend(){
    Die Staffel steht auf dem Server; hier wird nur angezeigt, was er meldet.
    Abgeholt wird auf Knopfdruck, nicht von allein: Eine Belohnung, die man
    nicht bemerkt hat, holt niemanden zurück. */
-const BONUS_ANZEIGE = [50, 75, 100, 150, 200, 300, 500];
+/* Dieselbe Reihe wie `BONUS_STAFFEL` im Server (Schritt 100): Ore, Gutschein
+   für den Startbonus (×2, ×3), Ehre, Erfahrung. Gäste haben keine Ehre —
+   ihr vierter Tag zahlt Ore (`BONUS_GAST`). */
+const BONUS_ANZEIGE = [
+  { ore: 50 }, { ore: 75 }, { boost: 2 }, { ehre: 20 }, { xp: 150 }, { boost: 3 }, { ore: 500 }
+];
+const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 100 } : b);
+function bonusReihe(){ return istAngemeldet() ? BONUS_ANZEIGE : BONUS_GAST; }
+/* Kurztext eines Tages: „50 Ore", „Startbonus ×2", „20 Ehre", „150 XP". */
+function bonusText(b){
+  if (!b) return "";
+  if (b.boost) return t("b_boost", b.boost);
+  if (b.xp)    return b.xp.toLocaleString(lang) + " XP";
+  if (b.ehre)  return b.ehre.toLocaleString(lang) + " " + t("ehre");
+  return (b.ore || 0).toLocaleString(lang) + " Ore";
+}
+/* Die Bildchen der Tagesreihe — Pfade, wie bei den Errungenschaften. */
+function bonusBild(b){
+  const svg = inhalt => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inhalt}</svg>`;
+  if (b.boost) return `<em class="bx">×${b.boost}</em>`;
+  if (b.xp)    return svg(`<path d="m12 3 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 17l-5.4 2.8 1.1-6.1L3.2 9.4l6.1-.8z"/>`);
+  if (b.ehre)  return svg(`<path d="M6 3h12l-1 8a5 5 0 0 1-10 0z"/><path d="M8 21h8M12 16v5M4 6H2a3 3 0 0 0 3 4M20 6h2a3 3 0 0 1-3 4"/>`);
+  return svg(`<path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 3v18M5 7l7 4 7-4"/>`);
+}
 
 function paintBonus(){
   const box = $("bonusBox");
@@ -4746,28 +5069,36 @@ function paintBonus(){
 
   const serie = B.serie || 0;
   const naechster = B.offen ? Math.min(7, serie + 1) : serie;
-  const perlen = BONUS_ANZEIGE.map((ore, i) => {
+  const reihe = bonusReihe();
+  const perlen = reihe.map((b, i) => {
     const nr = i + 1;
     const zustand = nr <= serie && !B.offen ? "done"
                   : nr < naechster ? "done"
                   : nr === naechster ? "next" : "";
-    return `<i class="bead ${zustand}" title="${ore} Ore">${nr}</i>`;
+    const wert = b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
+    return `<i class="bead ${zustand}" title="${esc(bonusText(b))}"><small>${nr}</small>` +
+           `<span class="bb">${bonusBild(b)}</span><b>${wert}</b></i>`;
   }).join("");
 
   let unten;
   if (B.offen){
-    unten = `<button class="quiet" id="bonusGo">` +
-            `${esc(t("b_get", naechster, BONUS_ANZEIGE[naechster-1]))}</button>`;
+    unten = `<button class="holen" id="bonusGo">` +
+            `${esc(t("b_get2", naechster, bonusText(reihe[naechster-1])))}</button>`;
   } else {
     unten = `<p class="recline"><span>${esc(t("b_next"))}</span></p>`;
   }
-  box.innerHTML = `<h2>${esc(t("b_title"))}</h2><div class="beads">${perlen}</div>${unten}`;
+  box.innerHTML = `<h2>${esc(t("b_title"))}<em>${esc(t("b_tag", Math.max(1, naechster)))}</em></h2>` +
+                  `<div class="konsBlock"><div class="beads">${perlen}</div>${unten}</div>`;
 
   const knopf = $("bonusGo");
   if (knopf) knopf.addEventListener("click", async () => {
     knopf.disabled = true;
     const e = gast ? Gast.bonusHolen() : await Konto.bonusHolen();
-    if (e.ok){ toast(t("b_got", e.tag, e.ore)); paintPurse(); }
+    if (e.ok){
+      const b = { ore: e.ore, xp: e.xp, boost: e.boost, ehre: e.ehre };
+      toast(t("b_got2", e.tag, bonusText(b.boost ? {boost:b.boost} : b.xp ? {xp:b.xp} : b.ehre ? {ehre:b.ehre} : {ore:b.ore})));
+      paintPurse(); buildBoost();
+    }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
     paintBonus();
   });
@@ -4840,7 +5171,11 @@ function buildBoost(){
       const oben = document.createElement("b");
       oben.textContent = "×" + f;
       const unten = document.createElement("small");
-      unten.textContent = BOOST_COST[f].toLocaleString(lang) + " Ore";
+      /* Ein Gutschein aus dem Tagesbonus macht genau diese Stufe einmal
+         umsonst — das steht dann statt des Preises da. */
+      const gutschein = istAngemeldet() ? (Konto.profil.gutschein || 0) : Gast.gutschein;
+      unten.textContent = gutschein === f ? t("b_gratis") : BOOST_COST[f].toLocaleString(lang) + " Ore";
+      if (gutschein === f) b.classList.add("gratis");
       b.append(oben, unten);
     }
     b.setAttribute("aria-pressed", String(Profile.boost === f));
@@ -4861,40 +5196,55 @@ function buildBoost(){
   notiz.hidden = erlaubt && Profile.boost === 1;
 }
 
+/* Fünf Kacheln wie im Entwurf: die freigeschalteten Designs zuerst (das
+   gewählte ist immer dabei), dann die nächsten noch gesperrten, gedimmt mit
+   ihrer Bedingung — so sieht man, was als Nächstes kommt. Ein Tipp auf eine
+   gesperrte Kachel führt in den Reiter „Designs" zu genau diesem Design. */
+const STRIP_KACHELN = 5;
+
 function buildStrip(){
   const strip = $("strip");
   if (!strip) return;
   strip.innerHTML = "";
-  for (const s of SKINS){
-    if (!Profile.owned.has(s.id)) continue;
+  const frei = SKINS.filter(s => Profile.owned.has(s.id));
+  const zu   = SKINS.filter(s => !Profile.owned.has(s.id));
+  let wahl = frei.slice(0, STRIP_KACHELN);
+  if (!wahl.some(s => s.id === skin.id) && Profile.owned.has(skin.id)) wahl = [skin, ...wahl.slice(0, STRIP_KACHELN - 1)];
+  const reihe = wahl.map(s => ({ s, offen: true }))
+    .concat(zu.slice(0, Math.max(0, STRIP_KACHELN - wahl.length)).map(s => ({ s, offen: false })));
+  for (const { s, offen } of reihe){
     const b = document.createElement("button");
     b.type = "button";
-    b.setAttribute("aria-pressed", String(skin.id === s.id));
-    b.title = s.label;
+    b.setAttribute("aria-pressed", String(offen && skin.id === s.id));
+    if (!offen) b.className = "zu";
+    b.title = offen ? s.label : Profile.requirement(s);
     const c = document.createElement("canvas");
     b.appendChild(c);
     preview(c, s);
     const nm = document.createElement("span");
-    nm.className = "nm"; nm.textContent = s.label;
+    nm.className = "nm"; nm.textContent = offen ? s.label : Profile.requirement(s);
     b.appendChild(nm);
-    b.addEventListener("click", () => { skin = s; buildStrip(); });
+    b.addEventListener("click", () => {
+      if (offen){ skin = s; buildStrip(); }
+      else { reiter("haut"); pick(s); }
+    });
     strip.appendChild(b);
     /* Nur den Streifen selbst schieben, nicht die Seite. `scrollIntoView`
        scrollt jeden Vorfahren mit — auf einem Telefon landete man dadurch
        mitten im Fenster statt oben, ohne je gescrollt zu haben. */
-    if (skin.id === s.id) setTimeout(() => {
+    if (offen && skin.id === s.id) setTimeout(() => {
       strip.scrollLeft = b.offsetLeft - (strip.clientWidth - b.offsetWidth)/2;
     }, 0);
   }
   const more = document.createElement("button");
   more.type = "button";
-  /* Die Klasse gehört auf die Schaltfläche, nicht auf den Text darin: Das
-     Stilblatt gibt `.strip .more` die Breite 76, `.strip button` nur 60 — und
-     die Schaltfläche schneidet mit `overflow:hidden` ab. Stand die Klasse auf
+  /* Die Klasse gehört auf die Schaltfläche, nicht auf den Text darin: Die
+     Schaltfläche schneidet mit `overflow:hidden` ab. Stand die Klasse auf
      dem inneren `span`, ragte der Text aus seiner eigenen Schaltfläche heraus
      und wurde abgeschnitten: sichtbar als „all skin:" statt „all skins". */
   more.className = "more";
-  more.innerHTML = `<span>${t("skincount", Profile.owned.size, SKINS.length)}<br>${t("allskins")}</span>`;
+  more.title = t("skincount", Profile.owned.size, SKINS.length);
+  more.innerHTML = `<span>${t("k_all")}<b>${SKINS.length} →</b></span>`;
   more.addEventListener("click", () => reiter("haut"));
   strip.appendChild(more);
 }
@@ -5227,6 +5577,19 @@ const KONTO_FEHLER = {
   name_ungueltig:  "e_name",
   gesperrt:        "e_blocked",
   land_gesperrt:   "e_land",
+  name_gesperrt:   "e_name_gesperrt",
+  clan_name_ungueltig: "e_cl_name",
+  clan_tag_ungueltig:  "e_cl_tag",
+  clan_name_vergeben:  "e_cl_name_vergeben",
+  clan_tag_vergeben:   "e_cl_tag_vergeben",
+  schon_im_clan:       "e_schon_im_clan",
+  kein_clan:           "e_kein_clan",
+  clan_voll:           "e_clan_voll",
+  clan_geschlossen:    "e_clan_geschlossen",
+  nicht_leiter:        "e_nicht_leiter",
+  clan_unbekannt:      "e_clan_unbekannt",
+  konto_unbekannt:     "e_konto_unbekannt",
+  selbst:              "e_selbst",
   netz:            "e_net"
 };
 
@@ -5239,6 +5602,7 @@ function kontoMeldung(text, art){
 function kontoFormZeichnen(){
   $("acctNameRow").hidden = !anlegen;
   $("acctPwHint").hidden = !anlegen;
+  if ($("acctPw2Row")){ $("acctPw2Row").hidden = !anlegen; if (!anlegen) $("acctPw2").value = ""; }
   $("acctGo").textContent = t(anlegen ? "k_signup" : "k_signin");
   $("acctSwap").textContent = t(anlegen ? "k_have" : "k_new");
   $("acctPw").autocomplete = anlegen ? "new-password" : "current-password";
@@ -5260,6 +5624,8 @@ $("acctForm").addEventListener("submit", async e => {
   if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email))
     return kontoMeldung(t("e_email"), "warn");
   if (anlegen && pw.length < 8) return kontoMeldung(t("e_pwshort"), "warn");
+  if (anlegen && $("acctPw2") && $("acctPw2").value !== pw)
+    return kontoMeldung(t("e_pwmatch"), "warn");
   if (anlegen && !name)         return kontoMeldung(t("e_name"), "warn");
 
   Konto.laeuft = true;
@@ -5273,6 +5639,7 @@ $("acctForm").addEventListener("submit", async e => {
   if (e2.fehler) return kontoMeldung(t(KONTO_FEHLER[e2.fehler] || "e_net"), "warn");
 
   $("acctPw").value = "";
+  if ($("acctPw2")) $("acctPw2").value = "";
   nachAnmeldung();
 });
 
@@ -5401,13 +5768,22 @@ $("name").addEventListener("change", async () => {
   const n = cleanName($("name").value).trim();
   if (!n || n === Konto.profil.name) return;
   const e = await Konto.einstellen({name: n});
-  if (e.ok){ $("name").value = Konto.profil.name; Game.name = Konto.profil.name; }
-  else $("name").value = Konto.profil.name;
+  if (e.ok){ $("name").value = Konto.profil.name; Game.name = Konto.profil.name; heldMalen(); }
+  else {
+    $("name").value = Konto.profil.name;
+    /* Der Server sagt, warum — ein Feld, das sich stumm zurücksetzt, sieht
+       aus wie ein Fehler im Spiel. */
+    toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
+  }
 });
 
 $("friendsBtn").addEventListener("click", () => {
   buildFriends(); friendNote(""); show("friendsVeil");
 });
+if ($("clanBtn")){
+  $("clanBtn").addEventListener("click", () => { clanMeldung(""); show("clanVeil"); clanZeichnen(); });
+  $("clanClose").addEventListener("click", () => show("startVeil"));
+}
 $("friendsClose").addEventListener("click", () => show("startVeil"));
 $("friendAdd").addEventListener("click", addFriend);
 $("friendName").addEventListener("keydown", e => { if (e.key === "Enter") addFriend(); });
@@ -5689,6 +6065,15 @@ const Konto = {
     this.profil = antwort.profil;
     if (antwort.stand) this.stand = antwort.stand;
     if (antwort.bonus) this.bonus = antwort.bonus;
+    if (antwort.saison && typeof antwort.saison === "object")
+      this.saison = { nr: Number(antwort.saison.nr) || 1, ende: Number(antwort.saison.ende) || 0,
+                      start: Number(antwort.saison.start) || 0 };
+    /* Saisonlohn (Schritt 100): kommt genau einmal mit und wird gezeigt,
+       kurz nach der Begrüßung, damit er nicht von ihr überschrieben wird. */
+    const lohn = antwort.saisonLohn;
+    if (lohn && typeof lohn === "object")
+      setTimeout(() => toast(t("s_lohn", lohn.nr, lohn.platz, (+lohn.ore || 0).toLocaleString(lang))), 2200);
+    try { saisonZeigen(); } catch(_){}
 
     const p = antwort.profil;
     Profile.level = p.level;
@@ -5746,7 +6131,8 @@ const Konto = {
     const a = await this.ruf("/konto/bonus", {});
     if (a.status === 200){ this.uebernehmen(a); this.bonus = {offen:false, serie:a.tag};
                            erfolgeMelden(a);
-                           return { ok:true, tag:a.tag, ore:a.ore }; }
+                           return { ok:true, tag:a.tag, ore:a.ore || 0, xp:a.xp || 0,
+                                    boost:a.boost || 0, ehre:a.ehre || 0 }; }
     return { fehler: a.fehler || "netz" };
   },
 
@@ -5765,8 +6151,20 @@ const Konto = {
     /* Welche Fremdanmeldungen der Server anbietet. Ist keine eingerichtet,
        bleibt der ganze Streifen weg. */
     this.oauth = Array.isArray(a.oauth) ? a.oauth : [];
+    /* Happy Hour (Schritt 100): Zeiten kommen vom Server, gerechnet wird
+       hier nur die Anzeige. Gäste bekommen denselben Faktor auf ihr Ore. */
+    this.happy = a.status === 200 && a.happy && typeof a.happy === "object"
+      ? { aktiv: !!a.happy.aktiv, faktor: Math.max(1, Number(a.happy.faktor) || 1),
+          bis: Number(a.happy.bis) || 0, naechste: Number(a.happy.naechste) || 0,
+          gemessen: Date.now() }
+      : null;
+    this.saison = a.status === 200 && a.saison && typeof a.saison === "object"
+      ? { nr: Number(a.saison.nr) || 1, ende: Number(a.saison.ende) || 0, start: Number(a.saison.start) || 0 }
+      : null;
     fremdKnoepfeZeigen();
     onlineZeigen();
+    happyZeigen();
+    saisonZeigen();
     if (a.status === 200) bestenlisteZeigen().catch(() => {});
     return a.status === 200;
   },
@@ -5824,6 +6222,23 @@ const Konto = {
   /* `namen` statt Kennungen: Die Freundesliste liegt im Browser und soll dort
      bleiben. `freunde` sagt dem Server, dass eine Einschränkung gewollt war —
      sonst käme bei unbekannten Namen die Weltrangliste zurück. */
+  /* ---- Clans (Schritt 100) ---------------------------------------- */
+  async clanIch(){
+    if (!this.angemeldet()) return null;
+    const a = await this.ruf("/konto/clan/ich");
+    return a.status === 200 ? a : null;
+  },
+  async clanTun(was, daten){
+    if (!this.angemeldet()) return { fehler: "kein_konto" };
+    const a = await this.ruf("/konto/clan/" + was, daten || {});
+    if (a.status === 200 && a.profil) this.uebernehmen(a);
+    return a.status === 200 ? a : { fehler: a.fehler || "netz" };
+  },
+  async clanListe(pfad){
+    const a = await this.ruf(pfad);
+    return a.status === 200 ? a : null;
+  },
+
   async rangliste(art, land, namen){
     const teile = ["art=" + encodeURIComponent(art || "best")];
     if (land) teile.push("land=" + encodeURIComponent(land));
@@ -6177,6 +6592,7 @@ const Net = {
                          Soll sie doch im Bild stehen, ist `!info.b &&` hier
                          die einzige Änderung. */
                       lvl:info.l, rang: info.b ? undefined : info.r,
+                      tag: typeof info.t === "string" ? info.t : null,
                       tint:0, pal:haut, tier:(haut && haut.tier) || 1,
                       trait:(haut && haut.trait) || "plain"});
       }
@@ -6268,7 +6684,7 @@ let rangLauf = 0;          // laufende Nummer, gegen überholende Antworten
 
 function rangKnoepfe(){
   const wer = [["welt","r_world"], ["land","r_country"], ["freunde","r_friends"]];
-  const was = [["best","r_best"], ["level","r_level"], ["ore","r_ore"], ["titel","titel_name"]];
+  const was = [["best","r_best"], ["saison","s_tab"], ["level","r_level"], ["ore","r_ore"], ["titel","titel_name"]];
   for (const [box, liste, jetzt, setzen] of
        [[$("rankWho"), wer, rangWer, v => rangWer = v],
         [$("rankWhat"), was, rangWas, v => rangWas = v]]){
@@ -6392,19 +6808,96 @@ $("rankBtn").addEventListener("click", () => {
   rangKnoepfe(); show("rankVeil"); rangLaden();
 });
 $("rankClose").addEventListener("click", () => show("startVeil"));
+/* „alle" über der Bestenliste im Hangar: derselbe Weg wie der Knopf oben. */
+if ($("boardMehr")) $("boardMehr").addEventListener("click", () => $("rankBtn").click());
+/* „Designs" in der Kopfzeile: der Reiter, in dem man sie sich ansieht. */
+if ($("hautBtn")) $("hautBtn").addEventListener("click", () => reiter("haut"));
+
+/* Sprachwahl in der Kopfzeile der Konsole (Schritt 99). Ein Kürzel-Knopf
+   öffnet die Liste der sieben Sprachen; Klick daneben oder Escape schließt. */
+(function langMenue(){
+  const knopf = $("langBtn"), menue = $("langMenu");
+  if (!knopf || !menue) return;
+  const zu = () => { menue.hidden = true; knopf.setAttribute("aria-expanded", "false"); };
+  const auf = () => {
+    menue.innerHTML = "";
+    for (const code of Object.keys(LANGNAMES)){
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "menuitemradio");
+      b.textContent = LANGNAMES[code];
+      b.setAttribute("aria-pressed", String(code === lang));
+      b.addEventListener("click", () => { lang = code; applyLang(); zu(); });
+      menue.appendChild(b);
+    }
+    menue.hidden = false; knopf.setAttribute("aria-expanded", "true");
+  };
+  knopf.addEventListener("click", e => { e.stopPropagation(); menue.hidden ? auf() : zu(); });
+  document.addEventListener("click", e => { if (!menue.hidden && !menue.contains(e.target)) zu(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !menue.hidden) zu(); });
+})();
 
 /* ---- Errungenschaften ---------------------------------------------- */
+
+/* Errungenschaften als **eine Zeile je Art** (Thomas, 15.09.2026): links ein
+   Bildchen, dann der Name der Art, die Stufen als Punkte, der Fortschritt
+   zur nächsten Stufe und was sie einbringt. Die 21 Kennungen und ihre Ehre
+   bleiben unverändert — der Server kennt sie so; hier ändert sich nur, wie
+   sie gezeigt werden. `e_jagd1` (der erste Abschuss) ist die erste Stufe der
+   Jagd, kein eigener Eintrag. */
+const ERFOLG_FAMILIEN = [
+  { art:"e_masse",     bild:"masse",  ids:["w_geroell","w_planetes","w_proto","w_welt"] },
+  { art:"e_jagd",      bild:"jagd",   ids:["j_erster","j_25","j_250"] },
+  { art:"e_jagdrunde", bild:"blitz",  ids:["j_runde5","j_runde12"] },
+  { art:"e_runden",    bild:"runden", ids:["a_10","a_100","a_500"] },
+  { art:"e_zeit",      bild:"uhr",    ids:["a_fuenfmin"] },
+  { art:"e_treue",     bild:"tage",   ids:["t_woche"] },
+  { art:"e_skins",     bild:"skins",  ids:["s_10","s_25","s_alle"] },
+  { art:"e_level",     bild:"level",  ids:["l_10","l_25","l_50","l_100"] }
+];
+
+/* Die Bildchen: kleine Pfade, in Messing gezeichnet, keine Bilddateien —
+   wie die Rangabzeichen. */
+const ERFOLG_BILD = {
+  masse:  `<circle cx="12" cy="12" r="5.5"/><ellipse cx="12" cy="12" rx="10" ry="3.2" transform="rotate(-18 12 12)"/>`,
+  jagd:   `<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.2"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>`,
+  blitz:  `<path d="M13 2 5 13h6l-1 9 8-12h-6z"/>`,
+  runden: `<path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>`,
+  uhr:    `<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>`,
+  tage:   `<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m8.5 15 2.5 2.5 4.5-4.5"/>`,
+  skins:  `<path d="M12 3 20 9l-3 11H7L4 9z"/><path d="M4 9h16M12 3l-3 6 3 11 3-11z"/>`,
+  level:  `<path d="m5 15 7-7 7 7"/><path d="m5 20 7-7 7 7" opacity=".5"/>`
+};
+function erfolgBild(name){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ` +
+         `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ERFOLG_BILD[name] || ""}</svg>`;
+}
 
 function buildErfolge(){
   const box = $("erfList");
   if (!box) return;
   const hat = new Set((istAngemeldet() && Konto.profil.erfolge) || []);
-  box.innerHTML = ERFOLG_REIHE.map(id => {
-    const fertig = hat.has(id);
-    return `<div class="erf${fertig ? " done" : ""}">` +
-           `<i>${fertig ? "✓" : "○"}</i>` +
-           `<span>${esc(erfolgLabel(id))}</span>` +
-           `<b>+${ERFOLG_TEXT[id][2].toLocaleString(lang)}</b></div>`;
+  box.innerHTML = ERFOLG_FAMILIEN.map(f => {
+    const da = f.ids.filter(id => hat.has(id)).length;
+    const naechste = f.ids.find(id => !hat.has(id));
+    const punkte = f.ids.map((id, i) => `<i class="${i < da ? "da" : ""}"></i>`).join("");
+    let rechts, unten;
+    if (naechste){
+      const st = erfolgStand(naechste);
+      const anteil = st ? Math.min(1, st.ist / st.ziel) : 0;
+      const ehre = ERFOLG_TEXT[naechste][2];
+      rechts = `<b>+${ehre.toLocaleString(lang)}</b>`;
+      unten = `<span class="ziel">${esc(erfolgLabel(naechste))}</span>` +
+              `<span class="bar"><i style="width:${Math.round(anteil*100)}%"></i></span>` +
+              `<small>${st ? Math.min(st.ist, st.ziel).toLocaleString(lang) + " / " + st.ziel.toLocaleString(lang) : ""}</small>`;
+    } else {
+      rechts = `<b class="fertig">✓</b>`;
+      unten = `<span class="ziel fertig">${esc(t("e_alle"))}</span>`;
+    }
+    return `<div class="erfZ${naechste ? "" : " done"}">` +
+           `<div class="bild">${erfolgBild(f.bild)}</div>` +
+           `<div class="mitte"><div class="kopf"><span class="titel">${esc(t("ef_" + f.art.slice(2)))}</span>` +
+           `<span class="stufen">${punkte}</span></div><div class="fort">${unten}</div></div>` +
+           `<div class="rechts">${rechts}<small>${naechste ? esc(t("e_naechste")) : ""}</small></div></div>`;
   }).join("");
   $("erfNote").textContent = istAngemeldet()
     ? t("e_stand", hat.size, ERFOLG_REIHE.length)
@@ -6662,7 +7155,7 @@ const MenueHimmel = {
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
   MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
-           "setVeil","rankVeil","pwVeil","pwaVeil"],
+           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil"],
   sichtbar(){
     if (Game.running) return false;
     if (document.hidden) return false;

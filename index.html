@@ -63,6 +63,10 @@
     --fenster-1:rgba(15,20,32,.93); --fenster-2:rgba(10,14,23,.95);
     --serif:"Talumi Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
     --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;
+    /* Schritt 99: Konsole und Anmeldung nach dem Entwurf B — dort ist die
+       Auszeichnungsschrift eine fette Grotesk, keine Serife. Im Spiel selbst
+       (Masse, Stufe, Rangliste) bleibt Lora. */
+    --disp:"Segoe UI Variable Display","Segoe UI",ui-sans-serif,system-ui,Roboto,"Helvetica Neue",Arial,sans-serif;
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--paper);
@@ -156,7 +160,9 @@
      box-shadow:0 36px 100px rgba(0,0,0,.55);padding:26px 28px}
   /* Der Todesbildschirm und die Anmeldung bringen ihr eigenes Fenster mit. */
   #endVeil .card{padding:24px 26px}
-  .card h1{margin-top:0}
+  /* Seit Schritt 100 in derselben Grotesk wie Konsole und Anmeldung —
+     ein Fenster in Serifen neben drei in Grotesk sah nach zwei Spielen aus. */
+  .card h1{margin-top:0;font-family:var(--disp);font-weight:700;letter-spacing:-.01em;color:var(--paper)}
   .card input[type=text],.card input[type=email],.card input[type=password]{
      border-radius:10px;background:var(--block)}
   .card button{border-radius:11px}
@@ -239,14 +245,33 @@
   /* Anmeldebonus: sieben Tage als Reihe. Abgeholte Tage sind gefüllt, der
      nächste ist umrandet — man sieht auf einen Blick, wo man steht und was
      eine ausgelassene Nacht kostet. */
-  .beads{display:flex;gap:5px;margin:2px 0 8px}
-  .bead{flex:1;font-style:normal;font-size:10px;text-align:center;padding:4px 0;
-     border:1px solid var(--line);border-radius:2px;color:var(--paper-2);
-     font-variant-numeric:tabular-nums}
-  .bead.done{background:var(--brass);border-color:var(--brass);color:var(--on-brass);
-     font-weight:600}
-  .bead.next{border-color:var(--brass);color:var(--brass);font-weight:600}
-  #bonusBox button{margin-top:2px}
+  /* Seit Schritt 99 nach dem Entwurf: abgeholte Tage in Messing, der heutige
+     in Grün — derselbe Ton wie der Knopf darunter, weil beide dasselbe
+     meinen: „das hier kannst du jetzt holen". */
+  /* Seit Schritt 100 mit Bildchen: Tagesnummer klein oben, Bild in der
+     Mitte, Wert unten. Startbonus ×2/×3 steht als Zeichen statt Bild. */
+  .beads{display:flex;gap:4px;margin:0 0 9px}
+  .bead{flex:1;min-width:0;height:52px;font-style:normal;display:flex;flex-direction:column;
+     align-items:center;justify-content:center;gap:1px;
+     border:1px solid var(--line);border-radius:7px;color:var(--paper-2);
+     background:rgba(255,255,255,.05);font-variant-numeric:tabular-nums}
+  .bead small{font-size:11px;line-height:1;opacity:.75}
+  .bead .bb{display:block;width:16px;height:16px;line-height:0}
+  .bead .bb svg{width:16px;height:16px}
+  .bead .bb .bx{font-style:normal;font-family:var(--disp);font-size:13px;font-weight:700;line-height:16px}
+  .bead b{font-size:11px;line-height:1;font-weight:600;white-space:nowrap}
+  .bead.done{background:rgba(233,176,99,.16);border-color:rgba(233,176,99,.4);
+     color:var(--brass-hell);font-weight:700}
+  .bead.next{background:rgba(61,220,132,.16);border-color:rgba(61,220,132,.5);
+     color:var(--gruen-hell);font-weight:700}
+  #boostPick button.gratis{border-color:rgba(61,220,132,.5)}
+  #boostPick button.gratis small{color:var(--gruen-hell);opacity:1}
+  #bonusBox .konsBlock{padding:10px 12px 12px}
+  #bonusBox .holen{margin:0;width:100%;height:34px;padding:0;border-radius:9px;
+     border:1px solid rgba(61,220,132,.5);background:rgba(61,220,132,.13);
+     color:var(--gruen-hell);font-size:13px;font-weight:600}
+  #bonusBox .holen:hover:not(:disabled){background:rgba(61,220,132,.22)}
+  #bonusBox .recline{padding:0;font-size:12px}
 
   /* Die drei Schritte für iPhone und iPad. Zahlen in Messing, damit man
      auf einen Blick sieht, dass es eine Reihenfolge ist. */
@@ -295,6 +320,40 @@
      font-size:14px;font-weight:600;vertical-align:middle;cursor:pointer}
   .qmark:hover:not(:disabled){border-color:var(--brass);color:var(--brass);background:none}
 
+  /* Clans (Schritt 100) */
+  #clanBtnTag{margin-left:6px;color:var(--brass-hell);font-weight:700;letter-spacing:.06em}
+  #clanBtnTag[hidden]{display:none}
+  .clanKarte{display:block!important}
+  .clanKopf{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+  .clanKopf .tag{font-family:var(--disp);font-size:26px;font-weight:700;color:var(--brass-hell);
+     letter-spacing:.08em}
+  .clanKopf .nm{font-family:var(--disp);font-size:22px;font-weight:700}
+  .clanKopf .werte{display:flex;gap:18px;margin-left:auto;font-size:12.5px;color:var(--paper-2)}
+  .clanKopf .werte b{display:block;font-family:var(--disp);font-size:18px;color:var(--brass-hell)}
+  .clanSpalten{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  @media (max-width:660px){ .clanSpalten{grid-template-columns:1fr} }
+  .clanZeile{display:grid;grid-template-columns:22px 1fr auto auto;gap:10px;align-items:center;
+     padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+  .clanZeile:last-child{border-bottom:0}
+  .clanZeile i{font-style:normal;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .clanZeile .rolle{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--brass)}
+  .clanZeile .ehre{color:var(--brass);font-variant-numeric:tabular-nums}
+  .clanZeile button,.clanListe button{margin:0;width:auto;padding:5px 10px;font-size:12px}
+  .clanListe .clanZeile{grid-template-columns:52px 1fr auto auto}
+  .clanListe .tg{font-weight:700;color:var(--brass-hell);letter-spacing:.06em}
+  .clanForm label{margin-top:10px}
+  .clanForm .two{margin-top:8px}
+  .clanForm .two button{margin:0}
+  .clanReihe{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .clanReihe input{flex:1 1 auto;min-width:0}
+  .clanReihe button{margin:0;width:auto;padding:9px 14px;flex:0 0 auto}
+  .clanKarte .konsSek{margin-top:14px}
+  .clanKarte .konsBlock{padding:8px 14px}
+  #clanBody .hintline{margin:8px 0 0}
+  @media (max-height:560px){
+    .clanKarte{max-height:calc(100vh - 20px);overflow:auto}
+  }
+
   .friend{display:flex;justify-content:space-between;align-items:center;gap:10px;
      padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
   .friend small{color:var(--paper-2);font-size:11px;display:block}
@@ -321,6 +380,34 @@
   /* Errungenschaften. Feste Spalten, damit Haken, Text und Wert untereinander
      stehen und die Liste von oben nach unten lesbar bleibt. */
   #erfList{margin-top:12px;max-height:52vh;overflow:auto;padding-right:12px}
+  /* Eine Zeile je Art (Schritt 100): Bildchen, Name, Stufenpunkte, Fortschritt
+     zur nächsten Stufe, deren Ehre rechts. */
+  .erfZ{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;
+     padding:11px 0;border-bottom:1px solid var(--line)}
+  .erfZ .bild{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;
+     background:rgba(233,176,99,.10);border:1px solid rgba(233,176,99,.32);color:var(--brass-hell)}
+  .erfZ .bild svg{width:22px;height:22px}
+  .erfZ.done .bild{background:rgba(233,176,99,.22);border-color:var(--brass)}
+  .erfZ .kopf{display:flex;align-items:center;gap:10px;margin-bottom:5px}
+  .erfZ .titel{font-weight:600;font-size:14px;color:var(--paper)}
+  .erfZ .stufen{display:flex;gap:4px}
+  .erfZ .stufen i{width:9px;height:9px;border-radius:50%;border:1px solid var(--brass);display:block}
+  .erfZ .stufen i.da{background:var(--brass);box-shadow:0 0 6px rgba(233,176,99,.6)}
+  .erfZ .fort{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--paper-2)}
+  .erfZ .fort .ziel{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .erfZ .fort .ziel.fertig{color:var(--brass)}
+  .erfZ .fort .bar{flex:0 0 90px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  .erfZ .fort .bar i{display:block;height:100%;background:var(--brass)}
+  .erfZ .fort small{font-size:11px;font-variant-numeric:tabular-nums;flex:0 0 auto}
+  .erfZ .rechts{text-align:right;min-width:64px}
+  .erfZ .rechts b{display:block;font-family:var(--disp);font-size:17px;font-weight:700;color:var(--brass-hell)}
+  .erfZ .rechts b.fertig{color:var(--brass)}
+  .erfZ .rechts small{font-size:11px;color:var(--paper-2);letter-spacing:.06em;text-transform:uppercase}
+  @media (max-width:560px){
+    .erfZ{grid-template-columns:34px minmax(0,1fr) auto;gap:10px}
+    .erfZ .fort .bar{flex-basis:56px}
+    .erfZ .fort small{display:none}
+  }
   .erf{display:grid;grid-template-columns:18px 1fr auto;gap:10px;align-items:baseline;
      padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px;
      color:var(--paper-2)}
@@ -635,7 +722,12 @@
   .anmSprache .seg{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
        scrollbar-width:none;padding:2px 0}
   .anmSprache .seg::-webkit-scrollbar{display:none}
-  .anmSprache .seg button{flex:0 0 auto;border-radius:9px;height:34px;padding:0 12px}
+  /* Die Sprachknöpfe tragen dieselbe Form wie die Knöpfe der Konsole. */
+  .anmSprache .seg button{flex:0 0 auto;border-radius:10px;height:38px;padding:0 13px;
+       background:var(--glas);border:1px solid var(--line-hell);color:#cfd4de;
+       font-size:13px;font-weight:600}
+  .anmSprache .seg button[aria-pressed=true]{color:var(--brass-hell);
+       border-color:rgba(233,176,99,.32);background:rgba(233,176,99,.10)}
   .anmSprache .seg button .kurz{display:none}
 
   /* Gedeckelt und mittig: Auf einem 1920er Schirm lief das Fenster sonst
@@ -649,10 +741,11 @@
   .anmSp{padding:26px 28px;min-width:0}
   .anmLinks{display:flex;flex-direction:column;justify-content:center;gap:2px}
   .anmRechts{border-left:1px solid var(--line)}
-  #accountVeil h1{font-size:clamp(36px,6.4vw,58px);line-height:.9;margin:0 0 4px;
-       border:0;padding:0}
-  #accountVeil .sub{font-size:16px;line-height:1.55;margin:10px 0 16px;max-width:34ch;
-       color:var(--paper)}
+  #accountVeil h1{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;
+       font-size:clamp(36px,6vw,54px);line-height:.95;margin:0 0 4px;
+       border:0;padding:0;color:var(--paper)}
+  #accountVeil .sub{font-family:var(--sans);font-size:16px;line-height:1.55;margin:10px 0 16px;
+       max-width:34ch;color:var(--paper)}
   .anmPunkte{list-style:none;margin:0;padding:0;display:grid;gap:7px}
   .anmPunkte li{position:relative;padding-left:20px;font-size:13px;line-height:1.5;
        color:var(--paper-2)}
@@ -660,14 +753,24 @@
        border-radius:50%;background:var(--brass);box-shadow:0 0 9px var(--brass)}
   #anmOnline{margin-top:14px;color:var(--brass)}
   #anmOnline[hidden]{display:none}
+  /* Happy Hour: läuft sie gerade, steht die Zeile in hellem Messing mit
+     Uhrsymbol; sonst nennt sie nur die Stunde. Kein Grün — das bleibt dem
+     Startknopf und dem Abholknopf. */
+  .happyZeile{margin-top:6px;color:var(--paper-2)}
+  .happyZeile.an{color:var(--brass-hell);font-weight:600}
+  .happyZeile[hidden]{display:none}
+  #anmHappy{margin-top:6px}
+  .konsStart .happyZeile{margin:0;font-size:12px;white-space:nowrap}
 
-  #accountVeil label{margin-bottom:5px}
+  #accountVeil label{margin-bottom:6px;font-size:11px;font-weight:700;letter-spacing:.16em;
+       text-transform:uppercase}
   #accountVeil form label + input{margin-bottom:11px}
   #accountVeil input[type=text],#accountVeil input[type=email],
-  #accountVeil input[type=password]{border-radius:10px;padding:11px 13px;
-       background:var(--block);border:1px solid var(--line)}
+  #accountVeil input[type=password]{border-radius:11px;padding:0 14px;height:44px;
+       background:rgba(255,255,255,.06);border:1px solid var(--line)}
   #accountVeil input:focus{border-color:var(--brass)}
-  #acctGo{border-radius:11px;margin-top:6px;padding:12px}
+  #acctGo{border-radius:11px;margin-top:6px;padding:0;height:46px;font-family:var(--disp);
+       font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
   #accountVeil button.quiet{border-radius:10px}
   #accountVeil .notice{min-height:0;margin:9px 0 0}
   #accountVeil .notice:empty{display:none}
@@ -693,7 +796,7 @@
   button.facebook svg path{fill:#1877F2}
   .anmRechts .two{gap:9px}
 
-  #guestBtn{margin-top:12px;padding:11px;font-size:14px}
+  #guestBtn{margin-top:12px;padding:0;height:44px;font-size:14px;font-weight:600;border-radius:11px}
   /* Solange er Nebenknopf ist, darf er heller sein als die anderen ruhigen
      Knöpfe — er ist der zweite Weg ins Spiel. Fällt `quiet` weg (kein
      Server erreichbar), gilt wieder die Grundregel für Hauptknöpfe:
@@ -869,12 +972,25 @@
   .konsMarke i{width:26px;height:26px;border-radius:50%;display:block;
        background:radial-gradient(circle at 32% 30%, var(--brass-hell), var(--brass) 46%, #8a5f22 100%);
        box-shadow:0 0 16px rgba(233,176,99,.45)}
-  .konsMarke b{font-family:var(--serif);font-size:16px;font-weight:600;
-       letter-spacing:.28em;text-transform:uppercase;color:var(--paper)}
+  .konsMarke b{font-family:var(--disp);font-size:16px;font-weight:700;
+       letter-spacing:.3em;text-transform:uppercase;color:var(--paper)}
   .konsNav{margin:0;width:auto;height:40px;padding:0 15px;border-radius:10px;
-       background:var(--glas);border:1px solid var(--line);color:var(--paper-2);
+       background:var(--glas);border:1px solid var(--line-hell);color:#cfd4de;
        font-size:13.5px;font-weight:600;backdrop-filter:blur(12px)}
   .konsNav:hover:not(:disabled){background:var(--plate);color:var(--paper)}
+  /* Messingfarbene Knöpfe: Wege zu dem, was man sich erspielt. */
+  .konsNav.kauf{color:var(--brass-hell);border-color:rgba(233,176,99,.32)}
+  #langBtn{padding:0 13px;letter-spacing:.06em;font-variant-caps:all-small-caps;font-size:14px}
+  .langMenu{position:absolute;top:88px;right:26px;z-index:8;min-width:170px;
+       border-radius:12px;border:1px solid var(--line-hell);padding:6px;
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+       box-shadow:0 20px 60px rgba(0,0,0,.55);display:grid;gap:2px}
+  .langMenu[hidden]{display:none}
+  .langMenu button{margin:0;width:100%;text-align:left;background:none;border:0;
+       border-radius:8px;padding:9px 12px;color:var(--paper-2);font-size:13px;font-weight:600}
+  .langMenu button:hover:not(:disabled){background:var(--block);color:var(--paper)}
+  .langMenu button[aria-pressed=true]{color:var(--brass-hell);background:rgba(233,176,99,.10)}
+  body.touch .langMenu button{min-height:44px}
   /* „App installieren": Symbol und Text. Auf schmalen Schirmen bleibt nur
      das Symbol — mit Text war die Kopfzeile breiter als der Bildschirm, und
      der Knopf lag außerhalb. Gemessen auf 844 Punkten Breite. */
@@ -894,8 +1010,8 @@
   .konsStart{display:flex;flex-direction:column;align-items:center;gap:6px}
   #startBtn{margin:0;width:auto;height:64px;padding:0 56px;border-radius:14px;
        background:linear-gradient(180deg, var(--gruen-hell), var(--gruen));
-       color:var(--auf-gruen);font-family:var(--serif);font-size:24px;font-weight:600;
-       letter-spacing:.11em;
+       color:var(--auf-gruen);font-family:var(--disp);font-size:24px;font-weight:700;
+       letter-spacing:.12em;text-transform:uppercase;
        box-shadow:0 0 0 1px rgba(141,245,189,.45), 0 16px 44px rgba(61,220,132,.38),
                   inset 0 2px 0 rgba(255,255,255,.5)}
   #startBtn:hover:not(:disabled){background:linear-gradient(180deg,#a5f8cd,#4ae692)}
@@ -916,8 +1032,8 @@
        display:grid;grid-template-rows:54px 1fr;overflow:hidden}
   .konsReiter{display:flex;align-items:center;gap:2px;padding:0 14px;
        border-bottom:1px solid var(--line);min-width:0}
-  .konsReiter button{margin:0;width:auto;height:54px;padding:0 18px;background:none;border:0;
-       color:var(--paper-2);font-size:14px;font-weight:600;position:relative;border-radius:0}
+  .konsReiter button{margin:0;width:auto;height:54px;padding:0 20px;background:none;border:0;
+       color:var(--paper-2);font-size:14.5px;font-weight:600;position:relative;border-radius:0}
   .konsReiter button:hover:not(:disabled){background:none;color:var(--paper)}
   .konsReiter button[aria-selected=true]{color:var(--brass-hell)}
   .konsReiter button[aria-selected=true]::after{content:"";position:absolute;left:12px;right:12px;
@@ -930,33 +1046,54 @@
     #konsReiter button{padding:0 7px;flex:0 1 auto;min-width:0}
     #konsReiter button[aria-selected=true]::after{left:5px;right:5px}
   }
-  .konsW{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:13px;
+  .konsW{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;
        color:var(--paper-2);padding-right:4px;white-space:nowrap}
   .konsW b{color:var(--paper);font-weight:700;font-variant-numeric:tabular-nums}
-  .konsW .ore b{color:var(--brass-hell)}
-  .konsW .xpbar{width:104px;margin:0;display:inline-block;vertical-align:middle}
+  .konsW .ore b{color:var(--brass-hell);font-family:var(--disp);font-size:15px}
+  .konsW .xpbar{width:110px;height:6px;margin:0;display:inline-block;vertical-align:middle;
+       background:rgba(255,255,255,.13)}
+  .konsW .xpbar i{background:linear-gradient(90deg, var(--brass), var(--brass-hell))}
   .konsW small{font-size:11.5px}
+  /* Level und Ehre „ein wenig hervorgehoben" (Thomas, 15.09.2026): eine
+     Messingplakette statt bloßer Zahl im Fließtext. Ore bleibt ohne Rahmen —
+     sonst wäre nichts mehr hervorgehoben. */
+  .konsW .chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;
+       border-radius:9px;background:rgba(233,176,99,.10);border:1px solid rgba(233,176,99,.32)}
+  .konsW .chip b{font-family:var(--disp);font-size:16px;color:var(--brass-hell)}
+  .konsW .chip[hidden]{display:none}
+  #ehreAbz{width:26px;height:18px;display:block}
+  #ehreAbz[hidden]{display:none}
 
   .konsPane{overflow:auto;min-height:0}
-  .konsPane[hidden]{display:none}
-  .konsPane.drei{display:grid;grid-template-columns:314px minmax(0,1fr) 316px;overflow:hidden}
+  /* `!important`, weil die Regeln für flache und schmale Schirme weiter
+     unten `.konsPane.drei{display:flex|grid}` setzen — gleiche Spezifität,
+     später in der Datei, und schon stand der Hangar unter jedem anderen
+     Reiter durch (gesehen am 16.09.2026 bei 800 × 600). */
+  .konsPane[hidden]{display:none!important}
+  .konsPane.drei{display:grid;grid-template-columns:330px minmax(0,1fr) 320px;overflow:hidden}
   .konsSp{padding:20px;display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0}
   .konsSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line);
        align-items:center;justify-content:center;gap:10px}
   .konsSp > label{margin:0}
 
-  .konsBlock{background:var(--block);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .konsBlock h2{margin:0 0 9px;font-family:var(--serif);font-size:11px;font-weight:700;
-       letter-spacing:.15em;text-transform:uppercase;color:var(--paper-2);
-       display:flex;justify-content:space-between;align-items:baseline;gap:8px}
-  .konsBlock h2 em{font-style:normal;font-family:var(--sans);font-size:11.5px;
+  /* Ein Abschnitt: Überschrift **über** dem Kasten, wie im Entwurf — nicht
+     darin. Rechts in der Überschrift steht in Messing, was zählt („Tag 4 von
+     7", „0/21", „verwalten"). */
+  .konsSek h2{margin:0 0 9px;font-family:var(--sans);font-size:11px;font-weight:700;
+       letter-spacing:.16em;text-transform:uppercase;color:var(--paper-2);
+       display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .konsSek h2 em{font-style:normal;font-family:var(--sans);font-size:11.5px;
        letter-spacing:0;text-transform:none;color:var(--brass);font-weight:600}
-  .konsBlock h2 em button{margin:0;width:auto;padding:0;background:none;border:0;
+  .konsSek h2 em button{margin:0;width:auto;padding:0;background:none;border:0;
        color:var(--brass);font-size:11.5px;font-weight:600;min-height:0}
+  .konsSek h2 em button:hover:not(:disabled){background:none;color:var(--brass-hell)}
+  .konsBlock{background:var(--block);border:1px solid var(--line);border-radius:12px;padding:13px 15px}
+  .konsH{display:block;margin:0 0 9px;font-size:11px;font-weight:700;letter-spacing:.16em;
+       text-transform:uppercase;color:var(--paper-2)}
   /* Auf Tippgeräten braucht auch ein Textknopf eine Fläche, die der Daumen
      trifft. Der negative Rand hält die Überschrift trotzdem schmal —
      gewachsen ist nur, was man antippen kann. */
-  body.touch .konsBlock h2 em button{min-height:44px;padding:0 10px;margin:-15px -10px}
+  body.touch .konsSek h2 em button{min-height:44px;padding:0 10px;margin:-15px -10px}
   #startVeil .plate.recbox{background:var(--block);border-radius:12px;margin:0;min-width:0}
   /* Wie viele Plätze der Startbildschirm zeigt, hängt daran, wie viel Platz
      die rechte Spalte hat. Fünf sind es im Entwurf und auf einem normalen
@@ -969,38 +1106,98 @@
 
   /* Fortschrittszeile: dieselbe Form für Errungenschaften und alles andere,
      was einen Balken braucht. */
-  .konsFort{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:12.5px}
+  .konsFort{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:13px}
   .konsFort span:first-child{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .konsFort .bar{flex:0 0 66px;height:5px;border-radius:99px;background:var(--line);overflow:hidden}
+  .konsFort .bar{flex:0 0 72px;height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
   .konsFort .bar i{display:block;height:100%;background:var(--brass)}
-  .konsFort b{color:var(--paper-2);font-weight:400;font-size:11.5px;
-       font-variant-numeric:tabular-nums;flex:0 0 auto}
-  .konsFort.fertig b{color:var(--gruen)}
+  .konsFort b{color:var(--paper-2);font-weight:400;font-size:12px;
+       font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:34px;text-align:right}
+  .konsFort.fertig b{color:var(--brass)}
 
-  .konsFr{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 0}
+  .konsFr{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:4px 0}
   .konsFr span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .konsFr small{color:var(--paper-2);font-size:11.5px}
+  .konsFr small{color:var(--paper-2);font-size:12px}
+
+  /* Saison im Hangar (Schritt 100): eine Zeile, zwei Zahlen. */
+  .saisonBlock{display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--paper-2);padding:9px 14px}
+  .saisonBlock b{font-family:var(--disp);font-size:16px;color:var(--brass-hell);margin-right:4px}
+  .saisonBlock .balken{flex:1 1 auto;height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden;min-width:40px}
+  .saisonBlock .balken i{display:block;height:100%;background:linear-gradient(90deg,var(--brass),var(--brass-hell))}
+  #saisonBox[hidden]{display:none}
+  @media (max-height:640px) and (min-width:640px){ #startVeil #saisonBox{display:none} }
+  @media (max-height:640px), (max-width:900px){ .konsSp.r #saisonBox{display:none} }
+
+  /* Bestenliste im Kasten: Platz, Name, Wert — wie im Entwurf ohne Balken
+     hinter der eigenen Zeile, nur in hellem Messing. */
+  .konsSek .rankrow{grid-template-columns:18px 1fr auto;gap:10px;font-size:13.5px;padding:4px 0}
+  .konsSek .rankrow i{font-size:13px}
+  .konsSek .rankrow.me{background:none;margin:0;padding:4px 0}
+  .konsSek .rankrow.me i,.konsSek .rankrow.me b{color:var(--brass-hell)}
 
   /* --- Mitte: der eigene Körper ------------------------------------- */
-  .konsName{text-align:center}
-  .konsName b{display:block;font-family:var(--serif);font-size:27px;font-weight:600;
+  .konsName{text-align:center;margin-bottom:-8px}
+  .konsName b{display:block;font-family:var(--disp);font-size:29px;font-weight:700;
        color:var(--paper);line-height:1.1}
-  .konsName span{font-size:12.5px;color:var(--paper-2)}
-  #heldCanvas{display:block;width:330px;height:330px;max-width:100%}
-  .konsWerte{display:flex;gap:24px;justify-content:center}
+  .konsName span{font-size:13px;color:var(--paper-2)}
+  #heldCanvas{display:block;width:360px;height:360px;max-width:100%}
+  .konsWerte{display:flex;gap:26px;justify-content:center}
   .konsWerte div{text-align:center}
-  .konsWerte b{display:block;font-family:var(--serif);font-size:20px;font-weight:600;
+  .konsWerte b{display:block;font-family:var(--disp);font-size:21px;font-weight:700;
        color:var(--brass-hell);font-variant-numeric:tabular-nums}
-  .konsWerte span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--paper-2)}
-  .konsSp.m .strip{width:100%;justify-content:center}
+  .konsWerte span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper-2)}
+  /* Die Schnellwahl als Kachelreihe wie im Entwurf: fünf Kacheln und „alle
+     46 →". Freigeschaltete zuerst, dann die nächsten noch gesperrten — so
+     sieht man, was als Nächstes kommt, ohne den Reiter zu wechseln. */
+  .konsSp.m .strip{width:auto;max-width:100%;justify-content:center;gap:8px;padding-bottom:0;
+       overflow:visible;flex-wrap:nowrap}
+  .konsSp.m .strip button{width:54px;height:68px;border-radius:11px;
+       background:rgba(255,255,255,.05);border:1px solid var(--line);
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+  .konsSp.m .strip button[aria-pressed=true]{border-color:var(--brass);
+       box-shadow:0 0 0 1px var(--brass);background:rgba(233,176,99,.10)}
+  .konsSp.m .strip button.zu{opacity:.45}
+  .konsSp.m .strip canvas{width:34px;height:34px;flex:0 0 auto}
+  .konsSp.m .strip .nm{font-size:11px;padding:0 3px;max-width:100%}
+  .konsSp.m .strip .more{width:54px;height:68px;min-height:0;padding:0 4px;
+       border:1px dashed var(--line);background:none;display:grid;place-content:center;
+       font-size:11px;line-height:1.3}
+  .konsSp.m .strip .more b{display:block;font-family:var(--disp);font-size:14px;color:var(--paper)}
   /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen untereinander
      brauchen in dieser Spalte über zweihundert Punkte Höhe, und man liest
      ohnehin nur die des Modus, für den man sich gerade entscheidet. */
   /* Die beiden Gruppen in der rechten Spalte geben ihren Inhalt auf breiten
      Schirmen einfach durch — dort ändert sich nichts gegenüber Schritt 82. */
   .rGrp{display:contents}
-  .konsSp.r .modes span{display:none}
-  .konsSp.r .modes button[aria-pressed=true] span{display:block}
+  /* Die Spielarten als Karten mit Punkt, wie im Entwurf. Der Punkt ist ein
+     Pseudo-Element, damit die Beschriftung `<b>` + `<span>` unverändert
+     bleibt und alle Regeln für flache Schirme weiter greifen. */
+  .konsSp.r .modes{gap:7px}
+  .konsSp.r .modes button{display:flex;flex-wrap:wrap;align-items:center;column-gap:11px;
+       padding:11px 13px;border-radius:11px;background:rgba(255,255,255,.04);
+       border:1px solid var(--line);box-shadow:none}
+  .konsSp.r .modes button::before{content:"";width:9px;height:9px;border-radius:50%;
+       background:#495063;flex:0 0 auto}
+  .konsSp.r .modes button[aria-pressed=true]{border-color:rgba(233,176,99,.55);
+       background:rgba(233,176,99,.10);box-shadow:none}
+  .konsSp.r .modes button[aria-pressed=true]::before{background:var(--brass);
+       box-shadow:0 0 10px var(--brass)}
+  .konsSp.r .modes b{flex:1 1 0;min-width:0;font-family:var(--sans);font-size:13.5px;
+       font-weight:600;color:var(--paper)}
+  .konsSp.r .modes button[aria-pressed=true] b{color:var(--brass-hell)}
+  .konsSp.r .modes span{flex:0 0 100%;padding-left:20px;font-size:11px;margin-top:1px}
+  /* Beschreibung nur beim gewählten Modus, sobald die Höhe knapp wird. Auf
+     einem hohen Schirm stehen alle vier da, wie im Entwurf. */
+  @media (max-height:820px){
+    .konsSp.r .modes span{display:none}
+    .konsSp.r .modes button[aria-pressed=true] span{display:block}
+  }
+  .konsSp.r input[type=text]{height:44px;border-radius:11px;padding:0 14px;font-size:15px;
+       background:rgba(255,255,255,.06);border:1px solid var(--line)}
+  .konsSp.r input[type=text]:focus{border-color:var(--brass)}
+  .konsSp.r .seg button{border-radius:9px;padding:7px 12px;background:rgba(255,255,255,.05);
+       font-size:12.5px}
+  .konsSp.r .seg button[aria-pressed=true]{background:rgba(233,176,99,.12);
+       border-color:rgba(233,176,99,.5);color:var(--brass-hell)}
 
   /* --- Designs, Errungenschaften, Statistik ---------------------- */
   .konsPane.eine{padding:20px 22px}
@@ -1064,10 +1261,26 @@
     .konsSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
     #heldCanvas{width:200px;height:200px}
     .konsName b{font-size:22px}
+    /* Schmal: sechs Kacheln passen nicht nebeneinander — schieben statt
+       mittig abschneiden. */
+    .konsSp.m .strip{justify-content:flex-start;overflow-x:auto;padding-bottom:5px;width:100%}
     .konsReiter{height:48px}
     .konsReiter button{height:48px;padding:0 13px;font-size:13px}
-    .konsW{gap:12px;font-size:12px}
+    .konsW{gap:10px;font-size:12px}
     .konsW .xpbar{width:60px}
+    /* Auf flachen Schirmen ohne Rahmen: Die Plakette kostete 18 Punkte
+       Breite, und genau die fehlten bei 667 px auf Deutsch, Französisch und
+       Russisch — die Zahlenleiste lief über den Rand (mobil.js, 16.09.). */
+    .konsW .chip{height:auto;padding:0;border:0;background:none;gap:4px}
+    .konsW .chip b{font-size:13px}
+    .konsW .ore b{font-size:13px}
+    /* „Designs" steht hier als Reiter direkt darunter — der Knopf in der
+       Kopfzeile wäre derselbe Weg zweimal und macht den Streifen zu breit. */
+    #hautBtn{display:none}
+    /* Kein Weichzeichner hinter den Knöpfen des schiebbaren Streifens: Auf
+       dem Telefon ist Füllrate das Knappste, was es gibt. */
+    .konsNav{backdrop-filter:none}
+    .langMenu{top:60px;right:14px}
     .konsStat{grid-template-columns:1fr}
   }
   /* Sehr schmal (Telefon hochkant, schmales Fenster am Rechner).
@@ -1218,9 +1431,17 @@
        Zeile statt in drei. Voll ausgeschrieben kostete er 150 Punkte Höhe —
        hier sind es 44, und der Knopf bleibt mit dem Daumen zu treffen. */
     body.bonusoffen #startVeil #bonusBox{display:flex;align-items:center;gap:12px;
-         padding:8px 12px}
+         padding:8px 12px;background:var(--block);border:1px solid var(--line);
+         border-radius:12px}
+    /* Der innere Kasten löst sich auf, damit Perlen und Knopf selbst in der
+       Zeile stehen (seit Schritt 99 liegt beides in einem `.konsBlock`). */
+    body.bonusoffen #bonusBox .konsBlock{display:contents}
     body.bonusoffen #bonusBox h2{margin:0;flex:0 0 auto;white-space:nowrap}
     body.bonusoffen #bonusBox .beads{margin:0;flex:1 1 auto;min-width:0}
+    /* In der Leiste nur das Bildchen je Tag — Nummer und Wert stehen im
+       Knopf; sonst wüchse die 44-Punkte-Leiste auf 68. */
+    body.bonusoffen #bonusBox .bead{height:32px;gap:0}
+    body.bonusoffen #bonusBox .bead small,body.bonusoffen #bonusBox .bead b{display:none}
     body.bonusoffen #bonusBox button{margin:0;width:auto;flex:0 0 auto;
          padding:0 14px;min-height:40px;white-space:nowrap}
     body.touch.bonusoffen #bonusBox button{min-height:44px}
@@ -1249,6 +1470,8 @@
     .konsSp.r .modes{display:grid;grid-template-columns:1fr 1fr;gap:5px}
     .konsSp.r .modes button{min-height:44px;display:flex;align-items:center;
          padding:0 8px;overflow:hidden}
+    /* Der Punkt kostet 20 Punkte Breite, die „Freundschaftsspiel" hier fehlen. */
+    .konsSp.r .modes button::before{display:none}
     /* 11 px ist die Untergrenze für Lesbarkeit auf einem Telefon und
        zugleich die Größe, bei der „Freundschaftsspiel" — das längste Wort
        der Oberfläche — in eine Zeile passt. */
@@ -1696,6 +1919,7 @@
         <li data-i18n="a_pt3">46 designs, thirteen ranks, four modes.</li>
       </ul>
       <p class="pow" id="anmOnline" hidden></p>
+      <p class="pow happyZeile" id="anmHappy" hidden></p>
     </div>
 
     <div class="anmSp anmRechts">
@@ -1706,11 +1930,18 @@
         <label for="acctPw" data-i18n="k_pw">Password</label>
         <input type="password" id="acctPw" autocomplete="current-password">
         <p class="hintline" id="acctPwHint" data-i18n="k_pwhint" hidden>At least 8 characters.</p>
+        <!-- Nur beim Anlegen: das Passwort ein zweites Mal (Thomas, 15.09.2026).
+             Ein Tippfehler im einzigen Feld hieße sonst: Konto angelegt, Passwort
+             unbekannt. -->
+        <div id="acctPw2Row" hidden>
+          <label for="acctPw2" data-i18n="k_pw2">Repeat password</label>
+          <input type="password" id="acctPw2" autocomplete="new-password">
+        </div>
         <div id="acctNameRow" hidden>
           <label for="acctName" data-i18n="designation">Name</label>
           <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
-                 autocapitalize="off" spellcheck="false" placeholder="Unnamed body"
-                 data-i18n-ph="unnamed">
+                 autocapitalize="off" spellcheck="false" placeholder="Choose a player name"
+                 data-i18n-ph="namepick">
         </div>
         <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
       </form>
@@ -1810,7 +2041,7 @@
         the tier of a design is visible on the body itself, so you can tell
         an experienced player from a merely large one.</p>
 
-      <p class="updated">Version 78 · updated 15 September 2026 ·
+      <p class="updated">Version 80 · updated 15 September 2026 ·
         <a href="about.html">More about the game</a></p>
     </section>
   </div>
@@ -1829,6 +2060,7 @@
   <div class="konsKopf">
     <div class="konsG">
       <div class="konsMarke"><i></i><b>Talumi</b></div>
+      <button class="konsNav" id="clanBtn"><span data-i18n="clan">Clan</span><b id="clanBtnTag" hidden></b></button>
       <button class="konsNav" id="friendsBtn" data-i18n="friends">Friends</button>
       <button class="konsNav" id="rankBtn" data-i18n="r_head">Leaderboards</button>
     </div>
@@ -1838,6 +2070,8 @@
            erreichbaren Server bleibt die Zeile leer statt eine Null zu
            behaupten. -->
       <div class="pow" id="onlineText" hidden></div>
+      <!-- Happy Hour: eine Stunde am Tag 2,5-faches Ore. Kommt aus `/health`. -->
+      <div class="pow happyZeile" id="happyText" hidden></div>
     </div>
     <div class="konsG r">
       <!-- „App installieren". Erscheint nur, wenn es etwas zu installieren
@@ -1854,10 +2088,15 @@
         </svg>
         <span data-i18n="pwa_btn">Install app</span>
       </button>
+      <button class="konsNav kauf" id="hautBtn" data-i18n="skins">Designs</button>
       <button class="konsNav" id="settingsBtn" data-i18n="settings">Settings</button>
       <button class="konsNav" id="legalBtn2" data-i18n="legal">Legal</button>
+      <button class="konsNav" id="langBtn" aria-haspopup="menu" aria-expanded="false">EN</button>
     </div>
   </div>
+  <!-- Sprachwahl unter dem Kürzel-Knopf. Vorher ließ sich die Sprache nur auf
+       dem Anmeldebildschirm und in den Einstellungen wechseln. -->
+  <div class="langMenu" id="langMenu" role="menu" hidden></div>
 
   <div class="konsFenster">
     <div class="konsReiter" id="konsReiter" role="tablist">
@@ -1870,11 +2109,11 @@
       <button type="button" data-reiter="stat" role="tab" aria-selected="false"
               data-i18n="k_stat">Stats</button>
       <div class="konsW">
-        <span><span data-i18n="level">Level</span> <b id="lvNum">1</b>
+        <span class="chip"><span data-i18n="level">Level</span> <b id="lvNum">1</b>
           <span class="xpbar"><i id="xpBar"></i></span>
           <small id="xpText">0 / 400 XP</small></span>
         <span class="ore"><b id="oreNum">0</b> Ore</span>
-        <span id="ehreZeile" hidden><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
+        <span class="chip" id="ehreZeile" hidden><canvas id="ehreAbz" width="52" height="36" hidden></canvas><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
       </div>
     </div>
 
@@ -1882,9 +2121,9 @@
     <div class="konsPane drei" id="paneStart">
       <div class="konsSp l">
         <!-- Anmeldebonus. Nur mit Konto; `paintBonus()` blendet ihn sonst aus. -->
-        <div class="plate recbox" id="bonusBox" hidden></div>
-        <div class="konsBlock" id="naechstBox"></div>
-        <div class="konsBlock" id="freundBox"></div>
+        <div class="konsSek" id="bonusBox" hidden></div>
+        <div class="konsSek" id="naechstBox"></div>
+        <div class="konsSek" id="freundBox"></div>
         <p class="foot" id="controls" style="margin:0"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
           No lasting advantages for sale. Every design can be earned by playing.</p>
       </div>
@@ -1910,25 +2149,32 @@
              Punkte, das Fenster hat dort 196. Auf breiten Schirmen ändert
              sich nichts: Die Gruppen fließen wie bisher untereinander. -->
         <div class="rGrp">
-        <label data-i18n="mode">Mode</label>
+        <label class="konsH" data-i18n="mode">Mode</label>
         <div class="modes" id="modes"></div>
         </div>
 
         <div class="rGrp">
-        <label for="name" data-i18n="designation">Name</label>
-        <input type="text" id="name" maxlength="14" placeholder="Unnamed body" data-i18n-ph="unnamed"
+        <label class="konsH" for="name" data-i18n="designation">Name</label>
+        <input type="text" id="name" maxlength="14" placeholder="Choose a player name" data-i18n-ph="namepick"
                autocomplete="off" autocapitalize="off" spellcheck="false">
         <p class="hintline" id="nameNote" data-i18n="namerule">Name rule</p>
 
-        <label data-i18n="boost">Start bonus</label>
+        <label class="konsH" data-i18n="boost">Start bonus</label>
         <div class="seg" id="boostPick"></div>
         <p class="hintline" id="boostNote" data-i18n="boostnote">Open space only.</p>
 
+          <!-- Saison (Schritt 100): Nummer, Restzeit, eigene Saison-Ehre.
+               Kommt aus `/health` bzw. dem Profil; ohne Server verborgen. -->
+          <div class="konsSek" id="saisonBox" hidden>
+            <h2><span id="saisonKopf"></span><em id="saisonRest"></em></h2>
+            <div class="konsBlock saisonBlock" id="saisonInhalt"></div>
+          </div>
           <!-- Bestenliste direkt auf dem Startbildschirm. Ohne erreichbaren
                Server bleibt der Kasten verborgen. -->
-          <div class="plate recbox" id="boardBox" hidden>
-            <h2 data-i18n="r_head">Leaderboards</h2>
-            <div id="boardList"></div>
+          <div class="konsSek" id="boardBox" hidden>
+            <h2><span data-i18n="r_head">Leaderboards</span>
+              <em><button type="button" id="boardMehr" data-i18n="k_all">all</button></em></h2>
+            <div class="konsBlock"><div id="boardList"></div></div>
           </div>
           <div class="pow" id="powText" data-i18n="powrun">Running the entry check …</div>
         </div>
@@ -2066,6 +2312,17 @@
 </div>
 
 <!-- Freunde -->
+<!-- Clans (Schritt 100). Eine Karte, deren Inhalt `clanZeichnen()` je nach
+     Lage baut: kein Konto, kein Clan, im Clan. -->
+<div class="veil" id="clanVeil" hidden>
+  <div class="card wide clanKarte">
+    <h1 style="font-size:34px" data-i18n="clan">Clan</h1>
+    <div id="clanBody"></div>
+    <p class="notice" id="clanNote"></p>
+    <button class="quiet" id="clanClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
 <div class="veil" id="friendsVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px">Friends
