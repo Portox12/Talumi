@@ -1269,3 +1269,38 @@ const LANGS109C = {
       e_kampf_laeuft:"Один из кланов уже в битве.", e_kampf_offen:"Между этими кланами уже есть открытый вызов.", e_kampf_unbekannt:"Этого вызова больше нет."}
 };
 for (const c in LANGS109C) Object.assign(LANGS[c], LANGS109C[c]);
+
+/* Schritt 112: Namen getauscht — Kennung `liga` = Aufstieg (Hauptmodus mit
+   Levelbonus, Skillpunkten, Monden), Kennung `online` = Liga (alle gleich,
+   nur Ehre und Rang). Thomas: „Im Liga-Modus sollte jeder gleich gut sein." */
+const LANGS112 = {
+  en:{m_liga:"Ascent", m_liga_b:"The main mode: levels, skill points and moons count. Swallowing stronger players pays more XP, honour and Ore.",
+      m_online:"League", m_online_b:"The contest: everyone equal — no level bonus, no moons, no clan tags. Only honour and rank count. Without a connection the round runs on your device.",
+      mo_erkl:"Moons are earned, never bought. Up to three orbit your body and count only in Ascent — at most 8 % each. In the League everyone is equal.",
+      mo_staub_erkl:"1 per Ascent round, 3 with a new best mass. Upgrades a moon."},
+  de:{m_liga:"Aufstieg", m_liga_b:"Der Hauptmodus: Level, Skillpunkte und Monde zählen. Wer stärkere Spieler schluckt, bekommt mehr XP, Ehre und Ore.",
+      m_online:"Liga", m_online_b:"Der Wettkampf: alle gleich gut — keine Level-Boni, keine Monde, keine Clankürzel. Nur Ehre und Rang zählen. Ohne Verbindung läuft die Runde auf dem Gerät.",
+      mo_erkl:"Monde werden erspielt, nie gekauft. Bis zu drei kreisen um deinen Körper und zählen nur im Aufstieg — höchstens 8 % je Mond. In der Liga sind alle gleich.",
+      mo_staub_erkl:"1 je Aufstiegsrunde, 3 bei neuer Bestmasse. Wertet einen Mond auf."},
+  es:{m_liga:"Ascenso", m_liga_b:"El modo principal: cuentan niveles, puntos de habilidad y lunas. Tragar jugadores más fuertes da más XP, honor y Ore.",
+      m_online:"Liga", m_online_b:"La competición: todos iguales — sin bonus de nivel, sin lunas, sin etiquetas de clan. Solo cuentan honor y rango. Sin conexión la ronda corre en tu dispositivo.",
+      mo_erkl:"Las lunas se ganan jugando, nunca se compran. Hasta tres orbitan tu cuerpo y solo cuentan en Ascenso — como máximo 8 % cada una. En la Liga todos son iguales.",
+      mo_staub_erkl:"1 por partida de Ascenso, 3 con nueva masa récord. Mejora una luna."},
+  pt:{m_liga:"Ascensão", m_liga_b:"O modo principal: contam níveis, pontos de habilidade e luas. Engolir jogadores mais fortes rende mais XP, honra e Ore.",
+      m_online:"Liga", m_online_b:"A competição: todos iguais — sem bônus de nível, sem luas, sem siglas de clã. Só contam honra e patente. Sem conexão a rodada roda no seu aparelho.",
+      mo_erkl:"Luas são conquistadas jogando, nunca compradas. Até três orbitam seu corpo e só contam na Ascensão — no máximo 8 % cada. Na Liga todos são iguais.",
+      mo_staub_erkl:"1 por partida de Ascensão, 3 com nova massa recorde. Melhora uma lua."},
+  fr:{m_liga:"Ascension", m_liga_b:"Le mode principal : niveaux, points de compétence et lunes comptent. Avaler des joueurs plus forts rapporte plus d’XP, d’honneur et d’Ore.",
+      m_online:"Ligue", m_online_b:"La compétition : tous égaux — pas de bonus de niveau, pas de lunes, pas de sigle de clan. Seuls l’honneur et le rang comptent. Sans connexion, la manche tourne sur votre appareil.",
+      mo_erkl:"Les lunes se gagnent en jouant, jamais en payant. Jusqu’à trois orbitent autour de votre corps et ne comptent qu’en Ascension — 8 % au plus chacune. En Ligue, tout le monde est égal.",
+      mo_staub_erkl:"1 par partie d’Ascension, 3 avec un nouveau record de masse. Améliore une lune."},
+  tr:{m_liga:"Yükseliş", m_liga_b:"Ana mod: seviyeler, yetenek puanları ve uydular sayılır. Daha güçlü oyuncuları yutmak daha çok XP, onur ve Ore getirir.",
+      m_online:"Lig", m_online_b:"Yarışma: herkes eşit — seviye bonusu yok, uydu yok, klan kısaltması yok. Yalnızca onur ve rütbe sayılır. Bağlantı yoksa tur cihazında çalışır.",
+      mo_erkl:"Uydular oynayarak kazanılır, asla satın alınmaz. En fazla üçü gövdenin etrafında döner ve yalnızca Yükseliş’te sayılır — her biri en çok % 8. Lig’de herkes eşittir.",
+      mo_staub_erkl:"Yükseliş turu başına 1, yeni rekor kütlede 3. Bir uyduyu yükseltir."},
+  ru:{m_liga:"Восхождение", m_liga_b:"Основной режим: считаются уровни, очки навыков и луны. Поглощение более сильных игроков даёт больше опыта, чести и Ore.",
+      m_online:"Лига", m_online_b:"Состязание: все равны — без бонусов уровня, без лун, без клановых тегов. Считаются только честь и ранг. Без связи раунд идёт на вашем устройстве.",
+      mo_erkl:"Луны зарабатываются игрой, их нельзя купить. До трёх вращаются вокруг вашего тела и действуют только в Восхождении — не больше 8 % каждая. В Лиге все равны.",
+      mo_staub_erkl:"1 за раунд Восхождения, 3 при новом рекорде массы. Улучшает луну."}
+};
+for (const c in LANGS112) Object.assign(LANGS[c], LANGS112[c]);
