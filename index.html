@@ -164,6 +164,15 @@
   .rangZeile.du{background:var(--plate);margin:0 -8px;padding:6px 8px;border-radius:8px}
   .rangZeile.du b{color:var(--brass-hell)}
   #rangListe .hinweis{font-size:12.5px;color:var(--paper-2)}
+  /* Freunde werben (Schritt 104) */
+  #werbeBox .hinweis{font-size:12.5px;color:var(--paper-2)}
+  .werbeZeile{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)}
+  .werbeZeile span{color:var(--paper-2);font-size:12.5px}
+  .werbeZeile b{font-family:var(--disp);font-size:18px;letter-spacing:.14em;color:var(--brass-hell)}
+  .werbeZeile b.klein{font-family:var(--sans);font-size:12px;letter-spacing:0;color:var(--paper);word-break:break-all;text-align:right}
+  .werbeKnoepfe{display:flex;gap:8px;margin-top:10px}
+  .werbeKnoepfe button{margin:0;flex:1}
+  .werbeStand{margin-top:8px!important;color:var(--brass)!important}
   /* Vorher feste 460 px — auf einem Handy im Querformat blieb ein Drittel
      der Breite ungenutzt. Jetzt so breit wie verfügbar, gedeckelt für große
      Bildschirme, damit Zeilen lesbar kurz bleiben. */
@@ -2019,6 +2028,13 @@
                  autocapitalize="off" spellcheck="false" placeholder="Choose a player name"
                  data-i18n-ph="namepick">
         </div>
+        <!-- Werbecode (Schritt 104), nur beim Anlegen. Aus dem Link `?w=…`
+             vorausgefüllt, sonst leer — freiwillig. -->
+        <div id="acctCodeRow" hidden>
+          <label for="acctCode" data-i18n="w_feld">Referral code (optional)</label>
+          <input type="text" id="acctCode" maxlength="12" autocomplete="off"
+                 autocapitalize="characters" spellcheck="false">
+        </div>
         <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
       </form>
       <p class="notice" id="acctNote"></p>
@@ -2295,6 +2311,8 @@
         <!-- Alle 13 Ränge mit ihren Bedingungen (Schritt 102). Für Gäste
              lesbar — es ist die Antwort auf „was kann ich erreichen?". -->
         <div class="plate recbox" id="rangListe"></div>
+        <!-- Freunde werben (Schritt 104): Code, Link, Stand. Nur mit Konto. -->
+        <div class="plate recbox" id="werbeBox" hidden></div>
       </div>
     </div>
   </div>

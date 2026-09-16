@@ -828,8 +828,15 @@ const SKINS = [
   {id:"singular",  mat:"schlund",  label:"Singularity",rock:"#0f1119", dark:"#03040a", hot:"#a8c8ff", air:"#eaf2ff", wucht:1,
    ore:1500000, special:"warp"},
   {id:"prism",     mat:"kristall",     label:"Prism",      rock:"#8f8fa8", dark:"#3f3f52", hot:"#ffffff", air:"#e8e8f5",
-   ore:2000000, special:"prism"}
+   ore:2000000, special:"prism"},
+  /* Inferno (Schritt 104): nur fürs Werben — weder Level noch Ore. `sonder`
+     hält es aus Zählung, Preisliste und Levelvergleich heraus; der Server
+     schaltet es über das Werbeprogramm frei. */
+  {id:"inferno",   mat:"glut",     label:"Inferno",    rock:"#c2481f", dark:"#5a1a0a", hot:"#ffd166", air:"#ff7b3a",
+   special:"feuer", sonder:"werben"}
 ];
+/* Zählbare Designs: alles, was sich erspielen oder kaufen lässt. */
+const SKINS_ZAHL = SKINS.filter(s => !s.sonder).length;
 
 /* Stufenprämien: erreichte Spitzenmasse zahlt sprunghaft, nicht nur linear.
    Damit lohnt sich das Weiterwachsen statt frühem Sterben und Neustarten. */
@@ -918,6 +925,7 @@ const Profile = {
   },
   requirement(s){
     if (this.owned.has(s.id)) return t("owned");
+    if (s.sonder === "werben") return t("sk_werben");
     return s.lv ? t("levelreq", s.lv) : t("orereq", s.ore.toLocaleString(lang));
   },
   state(s){
@@ -949,6 +957,29 @@ let skin = SKINS[0];
    Solange ein Sitzungstoken existiert, wird nichts geschrieben — sonst
    überschriebe der Kontostand den Gaststand. Nach dem Abmelden ist der
    Gaststand wieder da. */
+/* Werbeprogramm im Client (Schritt 104). Der Code kommt vom Server; der
+   Link führt auf die öffentliche Adresse mit `?w=CODE`. Ein mitgebrachter
+   Code wird beim Laden gemerkt und beim Anlegen eines Kontos mitgeschickt. */
+const Werben = {
+  KEY: "talumi.werbecode",
+  stand: null,
+  ausAdresse(){
+    try {
+      const w = new URLSearchParams(location.search).get("w");
+      if (w && /^[A-Za-z0-9]{3,12}$/.test(w)) localStorage.setItem(this.KEY, w.toUpperCase());
+    } catch(_){}
+  },
+  gemerkt(){ try { return localStorage.getItem(this.KEY) || ""; } catch(_){ return ""; } },
+  vergessen(){ try { localStorage.removeItem(this.KEY); } catch(_){} },
+  link(){ return "https://talumi.io/?w=" + (this.stand ? this.stand.code : ""); },
+  async laden(){
+    if (!istAngemeldet()){ this.stand = null; return null; }
+    const a = await Konto.ruf("/konto/werben");
+    this.stand = a && a.status === 200 ? a : null;
+    return this.stand;
+  }
+};
+
 const Gast = {
   KEY: "talumi.gast",
   V: 1,
@@ -1051,6 +1082,7 @@ const Gast = {
   }
 };
 Gast.laden();
+Werben.ausAdresse();
 
 /* =====================================================================
    2b) SOUND
@@ -3487,6 +3519,31 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.restore();
   }
 
+  /* Inferno (Schritt 104): brennende Zungen **außerhalb** von r — der Kreis
+     bleibt, was er ist. Zeit statt Zufall: dieselbe Zunge flackert bei jedem
+     Bild weiter, statt zu springen. */
+  if (F === "feuer" && fancy && r > 6){
+    const n = 14, tt = Game.t;
+    g.save(); g.translate(x, y);
+    for (let i=0;i<n;i++){
+      const a = i*(6.2832/n) + Math.sin(tt*1.7 + i)*.12;
+      const flack = .5 + .5*Math.sin(tt*9 + i*2.3)*Math.cos(tt*4.1 + i*.7);
+      const h = r*(.26 + .40*flack), w = r*.22;
+      g.save(); g.rotate(a);
+      g.beginPath();
+      g.moveTo(r*.94, -w);
+      g.quadraticCurveTo(r + h*.55, -w*.35, r + h, 0);
+      g.quadraticCurveTo(r + h*.55, w*.35, r*.94, w);
+      g.closePath();
+      g.fillStyle = hexA(i % 3 ? pal.hot : pal.air, .26 + .24*flack);
+      g.fill(); g.restore();
+    }
+    g.restore();
+    g.beginPath(); g.arc(x, y, r*1.05, 0, 7);
+    g.strokeStyle = hexA(pal.hot, .30 + .15*Math.sin(tt*6));
+    g.lineWidth = Math.max(1.5, r*.05); g.stroke();
+  }
+
   /* Singularity: Lichtbeugung am Rand. Echte Verzerrung wäre zu teuer —
      tangentiale Bögen in wechselnder Höhe erzeugen den Einsteinring. */
   if (F === "warp" && fancy && r > 10){
@@ -3610,6 +3667,7 @@ const ERFOLG_TEXT = {
   a_zehnmin:  ["e_zeit",       10,  250],
   a_stunden:  ["e_stunden",    10,  250],
   c_mitglied: ["e_clan",        1,  100],
+  g_werber:   ["e_werben",     10,  250],
   t_woche:    ["e_treue",       7,  300],
   s_10:       ["e_skins",      10,  100],
   s_25:       ["e_skins",      25,  300],
@@ -4718,7 +4776,7 @@ function paintPurse(){
   setze("oreNum", Profile.ore.toLocaleString(lang));
   setze("bestNum", Profile.best.toLocaleString(lang));
   setze("runNum", (Profile.rec.runs || 0).toLocaleString(lang));
-  setze("hautNum", Profile.owned.size + " / " + SKINS.length);
+  setze("hautNum", Profile.owned.size + " / " + SKINS_ZAHL);
   const bar = $("xpBar");
   if (bar) bar.style.width = (Profile.level >= MAX_LEVEL ? 1
     : clamp(Profile.xp/need, 0, 1))*100 + "%";
@@ -4749,8 +4807,38 @@ function paintPurse(){
 
 /* Rangtafel im Menü. Sie steht nur bei einem Konto da: Ehre gibt es
    ausschließlich aus Onlinerunden, die der Server gerechnet hat. */
+/* „Freunde werben" im Reiter Statistik (Schritt 104). Nur mit Konto — der
+   Code hängt an der Kontokennung. */
+async function buildWerben(){
+  const box = $("werbeBox");
+  if (!box) return;
+  if (!istAngemeldet()){ box.hidden = true; return; }
+  const st = Werben.stand || await Werben.laden();
+  if (!st){ box.hidden = true; return; }
+  box.hidden = false;
+  const link = Werben.link();
+  box.innerHTML =
+    `<h2>${esc(t("w_head"))}</h2>` +
+    `<p class="hinweis">${esc(t("w_text", st.level, st.lohnWerber.toLocaleString(lang), st.lohnNeu.toLocaleString(lang), st.ziel, st.bonusOre.toLocaleString(lang)))}</p>` +
+    `<div class="werbeZeile"><span>${esc(t("w_code"))}</span><b>${esc(st.code)}</b></div>` +
+    `<div class="werbeZeile"><span>${esc(t("w_link"))}</span><b class="klein">${esc(link)}</b></div>` +
+    `<div class="werbeKnoepfe"><button type="button" id="werbeKopie">${esc(t("w_kopieren"))}</button>` +
+    (navigator.share ? `<button type="button" class="quiet" id="werbeTeilen">${esc(t("w_teilen"))}</button>` : "") + `</div>` +
+    `<p class="hinweis werbeStand">${esc(t("w_stand", st.geworben, st.ziel))}${st.bonus ? " · " + esc(t("w_bonus")) : ""}</p>`;
+  const kopie = $("werbeKopie");
+  if (kopie) kopie.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(link); kopie.textContent = t("w_kopiert"); }
+    catch(_){ kopie.textContent = link; }
+  });
+  const teilen = $("werbeTeilen");
+  if (teilen) teilen.addEventListener("click", () => {
+    try { navigator.share({ title: "Talumi", text: t("w_teiltext"), url: link }).catch(() => {}); } catch(_){}
+  });
+}
+
 function paintRank(){
   buildRaenge();
+  buildWerben().catch(() => {});
   const box = $("rankBox");
   if (!box) return;
   if (!istAngemeldet() || !Number.isInteger(Konto.profil.rang)){ box.hidden = true; return; }
@@ -5408,8 +5496,8 @@ function buildStrip(){
      dem inneren `span`, ragte der Text aus seiner eigenen Schaltfläche heraus
      und wurde abgeschnitten: sichtbar als „all skin:" statt „all skins". */
   more.className = "more";
-  more.title = t("skincount", Profile.owned.size, SKINS.length);
-  more.innerHTML = `<span>${t("k_all")}<b>${SKINS.length} →</b></span>`;
+  more.title = t("skincount", Profile.owned.size, SKINS_ZAHL);
+  more.innerHTML = `<span>${t("k_all")}<b>${SKINS_ZAHL} →</b></span>`;
   more.addEventListener("click", () => reiter("haut"));
   strip.appendChild(more);
 }
@@ -5417,7 +5505,7 @@ function buildStrip(){
 function buildGrid(){
   const grid = $("grid");
   grid.innerHTML = "";
-  $("shopCount").textContent = t("ownedcount", Profile.owned.size, SKINS.length);
+  $("shopCount").textContent = t("ownedcount", Profile.owned.size, SKINS_ZAHL);
   $("shopNext").textContent = nextUnlock();
   for (const s of SKINS){
     const st = Profile.state(s);
@@ -5453,6 +5541,11 @@ async function pick(s){
     /* Bei einem Konto gehört die Wahl auf den Server. Ohne diesen Aufruf wäre
        sie nur eine Anzeige und nach dem Neuladen wieder verschwunden. */
     if (Konto.angemeldet()) Konto.einstellen({skin: s.id});
+    return;
+  }
+  if (s.sonder === "werben"){
+    kaufLeisteAus();
+    note(t("sk_werben_note"), "warn");
     return;
   }
   if (s.lv){
@@ -5631,6 +5724,7 @@ function kontoMeldung(text, art){
 
 function kontoFormZeichnen(){
   $("acctNameRow").hidden = !anlegen;
+  { const cr = $("acctCodeRow"); if (cr){ cr.hidden = !anlegen; const f = $("acctCode"); if (f && !f.value) f.value = Werben.gemerkt(); } }
   $("acctPwHint").hidden = !anlegen;
   if ($("acctPw2Row")){ $("acctPw2Row").hidden = !anlegen; if (!anlegen) $("acctPw2").value = ""; }
   $("acctGo").textContent = t(anlegen ? "k_signup" : "k_signin");
@@ -6139,9 +6233,11 @@ const Konto = {
   },
 
   async registrieren(email, passwort, name){
+    const feld = $("acctCode");
+    const code = ((feld && feld.value.trim()) || Werben.gemerkt() || "").toUpperCase().slice(0, 12);
     const a = await this.ruf("/konto/registrieren",
-      { email, passwort, name, land: landAusSprache() });
-    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+      { email, passwort, name, land: landAusSprache(), code: code || undefined });
+    if (a.status === 200){ Werben.vergessen(); this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
     return { fehler: a.fehler || "netz" };
   },
 
@@ -6927,6 +7023,7 @@ const ERFOLG_FAMILIEN = [
   { art:"e_stunden",   bild:"sand",   ids:["a_stunden"] },
   { art:"e_treue",     bild:"tage",   ids:["t_woche"] },
   { art:"e_clan",      bild:"clan",   ids:["c_mitglied"] },
+  { art:"e_werben",    bild:"werben", ids:["g_werber"] },
   { art:"e_skins",     bild:"skins",  ids:["s_10","s_25","s_alle"] },
   { art:"e_level",     bild:"level",  ids:["l_10","l_25","l_50","l_100"] }
 ];
@@ -6944,6 +7041,7 @@ const ERFOLG_BILD = {
   level:  `<path d="m5 15 7-7 7 7"/><path d="m5 20 7-7 7 7" opacity=".5"/>`,
   duell:  `<circle cx="8" cy="12" r="4"/><circle cx="17" cy="9" r="2.5"/><path d="M12 12h2M4 20l4-4M20 20l-3-3"/>`,
   sand:   `<path d="M7 3h10M7 21h10M8 3c0 5 4 6 4 9s-4 4-4 9M16 3c0 5-4 6-4 9s4 4 4 9"/>`,
+  werben: `<circle cx="9" cy="9" r="3.5"/><path d="M3 20c0-3.6 2.7-6.2 6-6.2s6 2.6 6 6.2M18 8v6M15 11h6"/>`,
   clan:   `<circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M2 20c0-3.5 2.7-6 6-6s6 2.5 6 6M10 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/>`
 };
 function erfolgBild(name){
