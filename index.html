@@ -682,6 +682,20 @@
      16.09.2026 abends zurückgenommen: „Das ist nicht gut." Der Drehhinweis
      gilt wieder. */
   body.portrait #rotate{display:grid}
+  /* Anmeldung hochkant (Schritt 110, Tipp von Tobi): Solange der
+     Anmeldebildschirm steht, gibt es keinen Drehhinweis — die Tastatur
+     verdeckt im Querformat den ganzen Schirm. Auf einem Telefon im
+     Querformat steht stattdessen die Bitte, es hochkant zu halten; erst
+     nach der Anmeldung kommt die Aufforderung zum Drehen. */
+  body.portrait.anmeldung #rotate{display:none}
+  #drehHoch{position:fixed;inset:0;z-index:9;display:none;place-items:center;text-align:center;
+       background:var(--ink);padding:24px}
+  #drehHoch p{font-family:var(--serif);font-size:18px;line-height:1.5;max-width:26ch;margin:14px auto 0}
+  #drehHoch .phone{width:44px;height:74px;border:2px solid var(--brass);border-radius:6px;
+       margin:0 auto;box-shadow:0 0 18px rgba(233,176,99,.35)}
+  @media (max-height:500px){
+    body.touch.anmeldung:not(.portrait) #drehHoch{display:grid}
+  }
 
   /* Kurze Querformat-Bildschirme: alles enger.
      Die Breite wird dabei NICHT beschnitten. Eine frühere Fassung deckelte
@@ -1967,6 +1981,9 @@
   <button id="padSplit" type="button" data-i18n="p_split">Split</button>
 </div>
 
+<div id="drehHoch" aria-live="polite">
+  <div><div class="phone"></div><p data-i18n="hochkant">Hold your phone upright to sign in.</p></div>
+</div>
 <div id="rotate">
   <div>
     <!-- Pfeil zeigt die Drehrichtung an, passend zur Bewegung des Geräts

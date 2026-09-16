@@ -329,6 +329,7 @@ let portrait = false;
 function checkOrientation(){
   portrait = isTouch && VH > VW;
   document.body.classList.toggle("portrait", portrait);
+  anmeldungLage();
 }
 resize();
 
@@ -2992,6 +2993,9 @@ const cam = {x:WORLD/2, y:WORLD/2, z:1};
    bleibt die Hälfte, und die muss 1,22-mal schwerer sein) und (2) mit einem
    Sprung erreichbar ist. Je näher, desto größer und kräftiger der Pfeil. */
 const randGefahren = [];
+/* Letzter Abstand je Gegner, um „kommt näher" zu erkennen (Schritt 111). */
+const gefahrAbstand = new Map();
+const GEFAHR_MASSE = 20000;
 function gefahrenMalen(g){
   if (!randGefahren.length) return;
   /* Auf einem Ring um die eigene Mitte, nicht am Bildrand: Dort liegen die
@@ -4095,7 +4099,14 @@ function draw(){
   // damit Handy und PC dieselbe Fläche des Spielfelds sehen.
   /* Obergrenze 1,1 statt 1,25 (Schritt 103): Kleine sehen ein Achtel weiter,
      ohne dass sie selbst winzig werden. */
-  const target = clamp(Math.pow(48/radiusOf(Math.max(gm,10)), .42), .3, 1.1) * FIT;
+  /* Deckel nach oben hin (Schritt 111, Thomas: „Wenn man extrem groß ist,
+     verdeckt man den ganzen Bildschirm"): Der eigene Körper nimmt höchstens
+     30 % der kürzeren Bildkante ein. Unter der alten Untergrenze 0,3 füllte
+     ein Körper ab etwa 45.000 Masse das Bild. Der Server weitet die Sicht
+     dazu (`sicht()` in sim.js), sonst wäre der Rand leer. */
+  const eigenR = radiusOf(Math.max(gm,10));
+  const deckel = Math.max(0.04, 0.30 * Math.min(VW, VH) / eigenR);
+  const target = Math.min(clamp(Math.pow(48/eigenR, .42), .3, 1.1), deckel) * FIT;
   cam.x += (mx-cam.x)*.14; cam.y += (my-cam.y)*.14; cam.z += (target-cam.z)*.05;
 
   const pad = 60/cam.z;
@@ -4196,16 +4207,24 @@ function draw(){
   if (lead && Game.running){
     const meine = lead.m;
     const schonDa = new Set();
+    /* Schritt 111 (Thomas): Pfeile nur für Körper über GEFAHR_MASSE, und
+       nur, wenn sie näher kommen — ein Riese, der wegfährt, ist keine
+       Warnung wert. */
+    const jetztDa = new Set();
     for (const {o, mine} of all){
-      if (mine || o.m < meine*2.44 || seen(o)) continue;
+      if (mine || o.m < GEFAHR_MASSE || o.m < meine*2.44 || seen(o)) continue;
       const key = o.gid !== undefined ? "g" + o.gid : o;
       if (schonDa.has(key)) continue;
+      schonDa.add(key); jetztDa.add(key);
       const d = Math.hypot(o.x - lead.x, o.y - lead.y);
+      const vorher = gefahrAbstand.get(key);
+      gefahrAbstand.set(key, d);
       const reich = splitPush(o.m/2) + radiusOf(o.m/2) + radiusOf(o.m) + radiusOf(meine) + 300;
       if (d > reich) continue;
-      schonDa.add(key);
+      if (!(vorher > d + 0.5)) continue;          // kommt nicht näher
       randGefahren.push({dx:o.x - cam.x, dy:o.y - cam.y, m:o.m, nah: clamp(1 - d/reich, 0, 1)});
     }
+    for (const k of gefahrAbstand.keys()) if (!jetztDa.has(k)) gefahrAbstand.delete(k);
   }
 
   /* Namenszeilen einsammeln: je Spieler eine, am größten Stück. Online
@@ -4743,7 +4762,14 @@ function buildSettings(){
   wrap.appendChild(text); wrap.appendChild(knopf);
   box.appendChild(wrap);
 }
-function hideAll(){ VEILS.forEach(v => $(v).hidden = true); }
+function hideAll(){ VEILS.forEach(v => $(v).hidden = true); anmeldungLage(); }
+/* Merkt am <body>, ob gerade die Anmeldung zu sehen ist (Schritt 110):
+   Dann darf hochkant kein Drehhinweis stehen, und ein Telefon im Querformat
+   bekommt die Bitte, hochkant zu halten. */
+function anmeldungLage(){
+  const a = document.getElementById("accountVeil");
+  document.body.classList.toggle("anmeldung", !!a && !a.hidden);
+}
 /* ---- Reiter im Konsolenfenster (Schritt 79) ------------------------
    Vier Reiter statt vier Vollbildschirmen. Der Unterschied ist nicht nur
    Gestaltung: Wer im Laden steht, sieht weiter seinen Stand und kommt mit
@@ -5026,7 +5052,7 @@ function freundBoxMalen(){
 }
 
 function show(id){
-  hideAll(); $(id).hidden = false;
+  hideAll(); $(id).hidden = false; anmeldungLage();
   if (id === "startVeil"){
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
