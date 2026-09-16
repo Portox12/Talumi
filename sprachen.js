@@ -854,6 +854,18 @@ const LANGS107 = {
 };
 for (const c in LANGS107) Object.assign(LANGS[c], LANGS107[c]);
 
+/* Liga (Schritt 108). */
+const LANGS108 = {
+  en:{m_liga:"League", m_liga_b:"Levels and moons count here. Swallowing stronger players pays more XP, honour and Ore."},
+  de:{m_liga:"Liga", m_liga_b:"Hier zählen Level und Monde. Wer stärkere Spieler schluckt, bekommt mehr XP, Ehre und Ore."},
+  es:{m_liga:"Liga", m_liga_b:"Aquí cuentan niveles y lunas. Tragar jugadores más fuertes da más XP, honor y Ore."},
+  pt:{m_liga:"Liga", m_liga_b:"Aqui contam níveis e luas. Engolir jogadores mais fortes rende mais XP, honra e Ore."},
+  fr:{m_liga:"Ligue", m_liga_b:"Ici, niveaux et lunes comptent. Avaler des joueurs plus forts rapporte plus d'XP, d'honneur et de minerai."},
+  tr:{m_liga:"Lig", m_liga_b:"Burada seviyeler ve aylar sayılır. Daha güçlü oyuncuları yutmak daha çok XP, onur ve cevher getirir."},
+  ru:{m_liga:"Лига", m_liga_b:"Здесь важны уровни и луны. Поглощение более сильных игроков даёт больше опыта, чести и руды."}
+};
+for (const c in LANGS108) Object.assign(LANGS[c], LANGS108[c]);
+
 /* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
   en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},
@@ -1109,3 +1121,64 @@ const LANGS36 = {
   ru:{clan:"Клан", cl_konto:"Для кланов нужен аккаунт — сначала войдите.", cl_none:"Вы пока не в клане.", cl_gruenden:"Основать клан", cl_name:"Название клана", cl_tag:"Тег (2–4 символа)", cl_offen:"Открыт для всех", cl_zu:"Только по приглашению", cl_beitreten:"Вступить", cl_verlassen:"Покинуть клан", cl_sicher:"Точно покинуть?", cl_einladen:"Пригласить игрока", cl_einladungen:"Приглашения", cl_keine_einl:"Приглашений нет.", cl_offene:"Открытые кланы", cl_beste:"Лучшие кланы", cl_mitglieder:"Участники", cl_leiter:"Лидер", cl_mitglied:"Участник", cl_ehre:"Честь клана", cl_platz:"Место", cl_rauswerfen:"Исключить", cl_uebergeben:"Сделать лидером", cl_von:"от {0}", cl_suchen:"Найти клан", cl_keine:"Кланов пока нет — создайте первый.", cl_gegruendet:"Клан {0} основан.", cl_beigetreten:"Добро пожаловать в {0}.", cl_verlassen_ok:"Вы покинули клан.", cl_eingeladen:"{0} приглашён.", cl_entfernt:"Исключён.", cl_gruender:"Основан {0}", cl_max:"{0} из {1} участников", e_cl_name:"Название: 3–20 букв, цифр, пробелов, . _ -", e_cl_tag:"Тег: 2–4 буквы или цифры.", e_cl_name_vergeben:"Такое название клана уже есть.", e_cl_tag_vergeben:"Такой тег уже есть.", e_schon_im_clan:"Вы уже в клане.", e_kein_clan:"Вы не в клане.", e_clan_voll:"Этот клан полон.", e_clan_geschlossen:"Этот клан принимает только по приглашению.", e_nicht_leiter:"Это может только лидер.", e_clan_unbekannt:"Клан не найден.", e_konto_unbekannt:"Игрока с таким именем нет.", e_selbst:"Это вы сами."}
 };
 for (const c in LANGS36) Object.assign(LANGS[c], LANGS36[c]);
+
+/* Schritt 108: Monde. */
+const LANGS108M = {
+  en:{k_monde:"Moons", mo_kopf:"Moons", mo_erkl:"Moons are earned, never bought. Up to three orbit your body and count only in the League — at most 8 % each. In the Free Orbit everyone is equal.",
+      mo_konto:"Moons need an account — sign in first.", mo_leer:"No moons yet. Below you can see how to earn them.", mo_staub:"Moondust", mo_staub_erkl:"1 per League round, 3 with a new best mass. Upgrades a moon.",
+      mo_angelegt:"Equipped", mo_platz:"free slot", mo_besitz:"Your moons", mo_anlegen:"Equip", mo_ablegen:"Unequip", mo_aufwerten:"Upgrade ({0} moondust)", mo_max:"Top tier",
+      mo_stufe:"Tier {0}", mo_woher:"How to earn moons", mo_neu:"New moon: {0}", mo_staub_dazu:"Moondust", mo_voll:"All three slots are in use.",
+      mo_eis:"Ice moon", mo_eis_w:"loses {0} % less mass over time", mo_eisen:"Iron moon", mo_eisen_w:"pieces merge {0} % sooner",
+      mo_glut:"Ember moon", mo_glut_w:"split pieces fly {0} % farther", mo_staubm:"Dust moon", mo_staubm_w:"debris is worth {0} % more", mo_sturm:"Storm moon", mo_sturm_w:"{0} % more starting mass",
+      mo_q_eis:"Ice moon: eat 500 bodies in total, or reach level 20", mo_q_staub:"Dust moon: 100 debris in one round, or level 40", mo_q_eisen:"Iron moon: 25 bodies in one round, or level 60",
+      mo_q_glut:"Ember moon: 1,000 bodies in total, or level 80", mo_q_sturm:"Storm moon: reach the top mass achievement"},
+  de:{k_monde:"Monde", mo_kopf:"Monde", mo_erkl:"Monde werden erspielt, nie gekauft. Bis zu drei kreisen um deinen Körper und zählen nur in der Liga — höchstens 8 % je Mond. Im Freien Raum sind alle gleich.",
+      mo_konto:"Monde brauchen ein Konto — melde dich zuerst an.", mo_leer:"Noch keine Monde. Unten steht, wie du sie bekommst.", mo_staub:"Mondstaub", mo_staub_erkl:"1 je Ligarunde, 3 bei neuer Bestmasse. Wertet einen Mond auf.",
+      mo_angelegt:"Angelegt", mo_platz:"freier Platz", mo_besitz:"Deine Monde", mo_anlegen:"Anlegen", mo_ablegen:"Ablegen", mo_aufwerten:"Aufwerten ({0} Mondstaub)", mo_max:"Höchste Stufe",
+      mo_stufe:"Stufe {0}", mo_woher:"So bekommst du Monde", mo_neu:"Neuer Mond: {0}", mo_staub_dazu:"Mondstaub", mo_voll:"Alle drei Plätze sind belegt.",
+      mo_eis:"Eismond", mo_eis_w:"verliert {0} % weniger Masse mit der Zeit", mo_eisen:"Eisenmond", mo_eisen_w:"Teile finden {0} % früher zusammen",
+      mo_glut:"Glutmond", mo_glut_w:"geteilte Stücke fliegen {0} % weiter", mo_staubm:"Staubmond", mo_staubm_w:"Trümmer bringen {0} % mehr", mo_sturm:"Sturmmond", mo_sturm_w:"{0} % mehr Startmasse",
+      mo_q_eis:"Eismond: insgesamt 500 Körper fressen oder Level 20", mo_q_staub:"Staubmond: 100 Trümmer in einer Runde oder Level 40", mo_q_eisen:"Eisenmond: 25 Körper in einer Runde oder Level 60",
+      mo_q_glut:"Glutmond: insgesamt 1.000 Körper oder Level 80", mo_q_sturm:"Sturmmond: die höchste Masse-Errungenschaft"},
+  es:{k_monde:"Lunas", mo_kopf:"Lunas", mo_erkl:"Las lunas se ganan jugando, nunca se compran. Hasta tres orbitan tu cuerpo y solo cuentan en la Liga — como máximo 8 % cada una. En el Espacio libre todos son iguales.",
+      mo_konto:"Las lunas necesitan una cuenta — inicia sesión primero.", mo_leer:"Aún no tienes lunas. Abajo ves cómo conseguirlas.", mo_staub:"Polvo lunar", mo_staub_erkl:"1 por partida de Liga, 3 con nueva masa récord. Mejora una luna.",
+      mo_angelegt:"Equipadas", mo_platz:"hueco libre", mo_besitz:"Tus lunas", mo_anlegen:"Equipar", mo_ablegen:"Quitar", mo_aufwerten:"Mejorar ({0} polvo lunar)", mo_max:"Nivel máximo",
+      mo_stufe:"Nivel {0}", mo_woher:"Cómo conseguir lunas", mo_neu:"Nueva luna: {0}", mo_staub_dazu:"Polvo lunar", mo_voll:"Los tres huecos están ocupados.",
+      mo_eis:"Luna de hielo", mo_eis_w:"pierde {0} % menos masa con el tiempo", mo_eisen:"Luna de hierro", mo_eisen_w:"las partes se unen {0} % antes",
+      mo_glut:"Luna de brasa", mo_glut_w:"las partes divididas vuelan {0} % más lejos", mo_staubm:"Luna de polvo", mo_staubm_w:"los escombros valen {0} % más", mo_sturm:"Luna de tormenta", mo_sturm_w:"{0} % más masa inicial",
+      mo_q_eis:"Luna de hielo: 500 cuerpos en total o nivel 20", mo_q_staub:"Luna de polvo: 100 escombros en una partida o nivel 40", mo_q_eisen:"Luna de hierro: 25 cuerpos en una partida o nivel 60",
+      mo_q_glut:"Luna de brasa: 1.000 cuerpos en total o nivel 80", mo_q_sturm:"Luna de tormenta: el logro de masa más alto"},
+  pt:{k_monde:"Luas", mo_kopf:"Luas", mo_erkl:"Luas são conquistadas jogando, nunca compradas. Até três orbitam seu corpo e só contam na Liga — no máximo 8 % cada. No Espaço livre todos são iguais.",
+      mo_konto:"Luas precisam de uma conta — entre primeiro.", mo_leer:"Ainda sem luas. Abaixo você vê como consegui-las.", mo_staub:"Poeira lunar", mo_staub_erkl:"1 por partida de Liga, 3 com nova massa recorde. Melhora uma lua.",
+      mo_angelegt:"Equipadas", mo_platz:"vaga livre", mo_besitz:"Suas luas", mo_anlegen:"Equipar", mo_ablegen:"Remover", mo_aufwerten:"Melhorar ({0} poeira lunar)", mo_max:"Nível máximo",
+      mo_stufe:"Nível {0}", mo_woher:"Como conseguir luas", mo_neu:"Nova lua: {0}", mo_staub_dazu:"Poeira lunar", mo_voll:"As três vagas estão ocupadas.",
+      mo_eis:"Lua de gelo", mo_eis_w:"perde {0} % menos massa com o tempo", mo_eisen:"Lua de ferro", mo_eisen_w:"as partes se juntam {0} % antes",
+      mo_glut:"Lua de brasa", mo_glut_w:"as partes divididas voam {0} % mais longe", mo_staubm:"Lua de poeira", mo_staubm_w:"destroços valem {0} % mais", mo_sturm:"Lua de tempestade", mo_sturm_w:"{0} % mais massa inicial",
+      mo_q_eis:"Lua de gelo: 500 corpos no total ou nível 20", mo_q_staub:"Lua de poeira: 100 destroços em uma partida ou nível 40", mo_q_eisen:"Lua de ferro: 25 corpos em uma partida ou nível 60",
+      mo_q_glut:"Lua de brasa: 1.000 corpos no total ou nível 80", mo_q_sturm:"Lua de tempestade: a conquista de massa mais alta"},
+  fr:{k_monde:"Lunes", mo_kopf:"Lunes", mo_erkl:"Les lunes se gagnent en jouant, jamais en payant. Jusqu’à trois orbitent autour de votre corps et ne comptent qu’en Ligue — 8 % au plus chacune. En Espace libre, tout le monde est égal.",
+      mo_konto:"Les lunes demandent un compte — connectez-vous d’abord.", mo_leer:"Pas encore de lunes. Ci-dessous, comment les obtenir.", mo_staub:"Poussière lunaire", mo_staub_erkl:"1 par partie de Ligue, 3 avec un nouveau record de masse. Améliore une lune.",
+      mo_angelegt:"Équipées", mo_platz:"place libre", mo_besitz:"Vos lunes", mo_anlegen:"Équiper", mo_ablegen:"Retirer", mo_aufwerten:"Améliorer ({0} poussière)", mo_max:"Niveau maximal",
+      mo_stufe:"Niveau {0}", mo_woher:"Comment obtenir des lunes", mo_neu:"Nouvelle lune : {0}", mo_staub_dazu:"Poussière lunaire", mo_voll:"Les trois places sont prises.",
+      mo_eis:"Lune de glace", mo_eis_w:"perd {0} % de masse en moins avec le temps", mo_eisen:"Lune de fer", mo_eisen_w:"les morceaux fusionnent {0} % plus tôt",
+      mo_glut:"Lune de braise", mo_glut_w:"les morceaux divisés volent {0} % plus loin", mo_staubm:"Lune de poussière", mo_staubm_w:"les débris valent {0} % de plus", mo_sturm:"Lune de tempête", mo_sturm_w:"{0} % de masse de départ en plus",
+      mo_q_eis:"Lune de glace : 500 corps au total ou niveau 20", mo_q_staub:"Lune de poussière : 100 débris en une partie ou niveau 40", mo_q_eisen:"Lune de fer : 25 corps en une partie ou niveau 60",
+      mo_q_glut:"Lune de braise : 1 000 corps au total ou niveau 80", mo_q_sturm:"Lune de tempête : le plus haut haut fait de masse"},
+  tr:{k_monde:"Uydular", mo_kopf:"Uydular", mo_erkl:"Uydular oynayarak kazanılır, asla satın alınmaz. En fazla üçü gövdenin etrafında döner ve yalnızca Lig’de sayılır — her biri en çok % 8. Serbest Alan’da herkes eşittir.",
+      mo_konto:"Uydular için hesap gerekir — önce giriş yap.", mo_leer:"Henüz uydun yok. Aşağıda nasıl kazanacağın yazıyor.", mo_staub:"Ay tozu", mo_staub_erkl:"Lig turu başına 1, yeni rekor kütlede 3. Bir uyduyu yükseltir.",
+      mo_angelegt:"Takılı", mo_platz:"boş yer", mo_besitz:"Uyduların", mo_anlegen:"Tak", mo_ablegen:"Çıkar", mo_aufwerten:"Yükselt ({0} ay tozu)", mo_max:"En üst seviye",
+      mo_stufe:"Seviye {0}", mo_woher:"Uydular nasıl kazanılır", mo_neu:"Yeni uydu: {0}", mo_staub_dazu:"Ay tozu", mo_voll:"Üç yer de dolu.",
+      mo_eis:"Buz uydusu", mo_eis_w:"zamanla % {0} daha az kütle kaybeder", mo_eisen:"Demir uydusu", mo_eisen_w:"parçalar % {0} daha erken birleşir",
+      mo_glut:"Kor uydusu", mo_glut_w:"bölünen parçalar % {0} daha uzağa uçar", mo_staubm:"Toz uydusu", mo_staubm_w:"enkaz % {0} daha değerli", mo_sturm:"Fırtına uydusu", mo_sturm_w:"% {0} daha fazla başlangıç kütlesi",
+      mo_q_eis:"Buz uydusu: toplam 500 gövde ye ya da seviye 20", mo_q_staub:"Toz uydusu: bir turda 100 enkaz ya da seviye 40", mo_q_eisen:"Demir uydusu: bir turda 25 gövde ya da seviye 60",
+      mo_q_glut:"Kor uydusu: toplam 1.000 gövde ya da seviye 80", mo_q_sturm:"Fırtına uydusu: en yüksek kütle başarımı"},
+  ru:{k_monde:"Луны", mo_kopf:"Луны", mo_erkl:"Луны зарабатываются игрой, их нельзя купить. До трёх вращаются вокруг вашего тела и действуют только в Лиге — не больше 8 % каждая. В Свободном пространстве все равны.",
+      mo_konto:"Для лун нужен аккаунт — сначала войдите.", mo_leer:"Лун пока нет. Ниже написано, как их получить.", mo_staub:"Лунная пыль", mo_staub_erkl:"1 за раунд Лиги, 3 при новом рекорде массы. Улучшает луну.",
+      mo_angelegt:"Надеты", mo_platz:"свободное место", mo_besitz:"Ваши луны", mo_anlegen:"Надеть", mo_ablegen:"Снять", mo_aufwerten:"Улучшить ({0} пыли)", mo_max:"Высший уровень",
+      mo_stufe:"Уровень {0}", mo_woher:"Как получить луны", mo_neu:"Новая луна: {0}", mo_staub_dazu:"Лунная пыль", mo_voll:"Все три места заняты.",
+      mo_eis:"Ледяная луна", mo_eis_w:"со временем теряет на {0} % меньше массы", mo_eisen:"Железная луна", mo_eisen_w:"части сливаются на {0} % раньше",
+      mo_glut:"Тлеющая луна", mo_glut_w:"разделённые части летят на {0} % дальше", mo_staubm:"Пылевая луна", mo_staubm_w:"обломки дают на {0} % больше", mo_sturm:"Штормовая луна", mo_sturm_w:"на {0} % больше стартовой массы",
+      mo_q_eis:"Ледяная луна: съесть 500 тел всего или уровень 20", mo_q_staub:"Пылевая луна: 100 обломков за раунд или уровень 40", mo_q_eisen:"Железная луна: 25 тел за раунд или уровень 60",
+      mo_q_glut:"Тлеющая луна: 1 000 тел всего или уровень 80", mo_q_sturm:"Штормовая луна: высшее достижение по массе"}
+};
+for (const c in LANGS108M) Object.assign(LANGS[c], LANGS108M[c]);

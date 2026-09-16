@@ -1415,6 +1415,13 @@ const MODES = {
        mitbringt — maßgeblich ist `Net.world` vom Server (siehe `start()`). */
     world:14142, debris:0, rivals:0, pulsars:0, start:24,
     teams:false, mirror:false, time:0, rewards:0, online:true
+  },
+  /* Liga (Schritt 108): online wie der Freie Raum, aber Level und Monde
+     zählen, und stärkere Beute bringt mehr — der Server rechnet das. */
+  liga: {
+    label:"League", blurb:"Levels and moons count. Stronger prey pays more.",
+    world:14142, debris:0, rivals:0, pulsars:0, start:24,
+    teams:false, mirror:false, time:0, rewards:0, online:true, liga:true
   }
 };
 /* Seit Schritt 69 gibt es „Freier Raum" nur noch einmal.
@@ -1435,7 +1442,7 @@ let modeId = "online";
 let ersatz = false;
 /* Welcher Modus gerade wirklich läuft: im Rückfall die lokale Fassung,
    sonst der gewählte. Die Auswahl im Menü bleibt davon unberührt. */
-const MODE_ID = () => (ersatz && modeId === "online") ? "open" : modeId;
+const MODE_ID = () => (ersatz && (modeId === "online" || modeId === "liga")) ? "open" : modeId;
 const MODE = () => MODES[MODE_ID()];
 
 let WORLD = 9000, DEBRIS = 4200;
@@ -2864,6 +2871,15 @@ function finish(timeUp){
         `<div class="tally"><span>${esc(t("e_neu"))}: ${esc(erfolgLabel(e.id))}</span>` +
         `<span>+${(+e.ehre || 0).toLocaleString(lang)}</span></div>`).join("");
     }
+    /* Monde und Mondstaub (Schritt 108): stehen bei den Errungenschaften,
+       weil sie wie diese etwas Bleibendes sind. */
+    if (Net.monde.length){
+      html += Net.monde.map(m =>
+        `<div class="tally"><span>${esc(t("mo_neu", t((MONDE[m.art] || {}).name || "mo_eis")))}</span>` +
+        `<span>${esc(t("mo_stufe", ["I", "II", "III"][(m.stufe || 1) - 1] || m.stufe))}</span></div>`).join("");
+    }
+    if (Net.staubDazu > 0)
+      html += `<div class="tally"><span>${esc(t("mo_staub_dazu"))}</span><span>+${Net.staubDazu}</span></div>`;
     if (Net.ehre){
       html += Net.ehre.dazu > 0
         ? `<div class="tally sum"><span>${t("ehredazu")}</span>` +
@@ -2883,8 +2899,12 @@ function finish(timeUp){
     const erreicht = Net.rangNeu;
     if (erreicht) setTimeout(() => toast(
       t("rangneu", t("rk" + clamp(erreicht, 0, RANG_MAX)))), 600);
+    const neueMonde = Net.monde;
+    if (neueMonde.length) setTimeout(() => toast(
+      t("mo_neu", t((MONDE[neueMonde[0].art] || {}).name || "mo_eis"))), erreicht ? 4200 : 600);
+    mondeStand = null;
     Net.lohn = null; Net.profil = null; Net.ehre = null;
-    Net.erfolge = []; Net.rangNeu = 0;
+    Net.erfolge = []; Net.rangNeu = 0; Net.monde = []; Net.staubDazu = 0;
     paintPurse(); buildGrid(); paintRank();
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
@@ -4227,6 +4247,7 @@ function draw(){
     }
   }
 
+  const meineMonde = eigeneMonde();
   for (const {o,mine} of all){
     if (!mine && !seen(o)) continue;
     const pal = mine ? skin
@@ -4237,8 +4258,13 @@ function draw(){
        sonst stünde er zweimal da. */
     const label = Settings.labels === "off" || traeger.has(o) ? ""
       : (Settings.labels === "lead" && mine && o !== lead) ? "" : o.name;
+    /* Monde (Schritt 108): Bahn außerhalb von r, hintere Hälfte vor dem
+       Körper, vordere danach. Eigene nur in der Liga. */
+    const monde = mine ? meineMonde : o.mo;
+    if (monde) mondeMalen(ctx, o.x, o.y, radiusOf(o.m), monde, Game.t, true);
     body(ctx, o.x, o.y, radiusOf(o.m), o.m, pal, mine ? 0 : o.tint, label, mine,
          mine ? skin.tier : o.tier, mine ? skin.trait : o.trait);
+    if (monde) mondeMalen(ctx, o.x, o.y, radiusOf(o.m), monde, Game.t);
   }
   if (Game.safe > 0 && Game.running){
     const puls = .35 + .25*Math.sin(Game.t*7);
@@ -4723,7 +4749,7 @@ function hideAll(){ VEILS.forEach(v => $(v).hidden = true); }
    Gestaltung: Wer im Laden steht, sieht weiter seinen Stand und kommt mit
    einem Klick zurück, statt über einen „Fertig"-Knopf. */
 let reiterJetzt = "start";
-const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat" };
+const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat", monde:"paneMonde" };
 
 function reiter(name){
   if (!REITER[name]) name = "start";
@@ -4738,7 +4764,169 @@ function reiter(name){
   if (name === "haut"){ paintPurse(); buildGrid(); }
   if (name === "erf") buildErfolge();
   if (name === "stat"){ buildRecords(); paintRank(); }
+  if (name === "monde") buildMonde();
   if (name === "start") heldMalen();
+}
+
+/* ---- Monde (Schritt 108) ------------------------------------------------
+   Erspielte Ausrüstung: fünf Arten, drei Stufen, höchstens drei angelegt.
+   Sie wirken nur in der Liga (der Server rechnet, `modFuer` in sim.js);
+   hier werden sie gezeigt, angelegt und aufgewertet. Nie kaufbar — das ist
+   die Zusage aus KONZEPT-AUSRUESTUNG.md, und deshalb gibt es hier keinen
+   Ore-Knopf. */
+const MONDE = {
+  eis:   { name:"mo_eis",   wirkung:"mo_eis_w",    quelle:"mo_q_eis",   farbe:"#cfe9f7", kern:"#7fb8d8", schein:"#bfe8ff" },
+  eisen: { name:"mo_eisen", wirkung:"mo_eisen_w",  quelle:"mo_q_eisen", farbe:"#aab2bb", kern:"#5c656f", schein:"#d7dde3" },
+  glut:  { name:"mo_glut",  wirkung:"mo_glut_w",   quelle:"mo_q_glut",  farbe:"#ff9a3c", kern:"#8a2a08", schein:"#ffd08a" },
+  staub: { name:"mo_staubm",wirkung:"mo_staubm_w", quelle:"mo_q_staub", farbe:"#d9c9a6", kern:"#8a7a58", schein:"#f1e6c8" },
+  sturm: { name:"mo_sturm", wirkung:"mo_sturm_w",  quelle:"mo_q_sturm", farbe:"#eef2ff", kern:"#6c7bd6", schein:"#ffffff" }
+};
+const MOND_ARTEN = ["eis", "eisen", "glut", "staub", "sturm"];
+const MOND_PCT_ANZEIGE = [0, 3, 5, 8];
+/* Feste Umlaufbahn je Art (Phase, Neigung, Umlaufzeit) — nie Math.random,
+   damit nichts flackert und drei Monde nicht im Gleichschritt laufen. */
+const MOND_BAHN = {
+  eis:   { phase: 0.0, neig: 0.42, umlauf: 9.0 },
+  eisen: { phase: 2.1, neig: 0.30, umlauf: 7.0 },
+  glut:  { phase: 4.2, neig: 0.55, umlauf: 11.0 },
+  staub: { phase: 1.3, neig: 0.36, umlauf: 8.0 },
+  sturm: { phase: 3.4, neig: 0.48, umlauf: 6.0 }
+};
+/* Ein Mond: kleine Kugel, Lichtseite links oben wie LICHT. `r` ist der
+   Radius des Mondes selbst. */
+function mondKugel(g, x, y, r, art, alpha = 1){
+  const M = MONDE[art]; if (!M) return;
+  g.save(); g.globalAlpha = alpha;
+  const lx = x - r*0.35, ly = y - r*0.35;
+  const v = g.createRadialGradient(lx, ly, r*0.1, x, y, r);
+  v.addColorStop(0, M.schein); v.addColorStop(0.45, M.farbe); v.addColorStop(1, M.kern);
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = v; g.fill();
+  g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = Math.max(0.6, r*0.08); g.stroke();
+  if (art === "glut"){ g.beginPath(); g.arc(x, y, r*1.35, 0, 7); g.fillStyle = "rgba(255,140,40,.18)"; g.fill(); }
+  if (art === "sturm"){ g.beginPath(); g.arc(x, y, r*1.3, 0, 7); g.strokeStyle = "rgba(200,215,255,.45)"; g.lineWidth = r*0.18; g.stroke(); }
+  g.restore();
+}
+/* Monde um einen Körper: Bahn außerhalb von r (Regel 1 der Designs — nichts
+   täuscht über die Reichweite). `hinten` zeichnet die Hälfte der Bahn, die
+   hinter dem Körper liegt (vor `body()` aufrufen), sonst die vordere. */
+function mondeMalen(g, x, y, r, arten, zeit, hinten = false){
+  if (!arten || !arten.length) return;
+  const mr = Math.max(3, r * 0.16);
+  const bahn = r * 1.32 + mr;
+  arten.slice(0, 3).forEach((art, i) => {
+    const B = MOND_BAHN[art]; if (!B) return;
+    /* Drittel je Platz, damit zwei Monde nicht übereinanderliegen; die
+       Art gibt nur Tempo und Neigung. */
+    const w = i * 2.094 + B.phase * 0.25 + zeit * (6.283 / B.umlauf);
+    const sw = Math.sin(w);
+    if (hinten ? sw >= 0 : sw < 0) return;
+    mondKugel(g, x + Math.cos(w) * bahn, y + sw * bahn * B.neig, mr * (0.85 + 0.15 * sw), art, hinten ? 0.85 : 1);
+  });
+}
+/* Die eigenen Monde im Spiel: nur online in der Liga, nur mit Konto. */
+function eigeneMonde(){
+  if (!Game.online || Net.modus !== "liga" || !Profile.monde) return null;
+  return Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
+}
+function mondBild(art, stufe){
+  const c = document.createElement("canvas");
+  c.width = c.height = 104;
+  const g = c.getContext("2d");
+  mondKugel(g, 52, 48, 30, art);
+  for (let i = 0; i < 3; i++){
+    g.beginPath(); g.arc(40 + i*12, 94, 3.2, 0, 7);
+    g.fillStyle = i < stufe ? "#e9b063" : "rgba(255,255,255,.18)"; g.fill();
+  }
+  return c;
+}
+let mondeStand = null;   // letzte Antwort von /konto/monde
+/* Der Reiter „Monde" ist nur da, wenn die Liga gewählt ist — Entscheidung
+   von Thomas am 16.09.2026: sichtbar nur, wo sie zählen. Wechselt die
+   Spielart, während der Reiter offen ist, geht es zurück in den Hangar. */
+function mondeReiterZeigen(){
+  const leiste = $("konsReiter");
+  const knopf = leiste && leiste.querySelector("button[data-reiter=monde]");
+  if (!knopf) return;
+  const zeigen = modeId === "liga";
+  knopf.hidden = !zeigen;
+  if (!zeigen && reiterJetzt === "monde") reiter("start");
+}
+function buildMonde(){
+  const box = $("mondeInhalt");
+  if (!box) return;
+  if (!istAngemeldet()){
+    box.innerHTML = `<p class="hintline">${esc(t("mo_konto"))}</p>`;
+    return;
+  }
+  const roem = st => ["I", "II", "III"][st - 1] || String(st);
+  const zeichnen = () => {
+    const m = mondeStand;
+    if (!m) return;
+    const besitz = m.monde.besitz, aktiv = m.monde.aktiv;
+    box.innerHTML =
+      `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><div class="mondPlaetze" id="mondPlaetze"></div>` +
+      `<h3 style="margin-top:14px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
+      `<small class="hintline">${esc(t("mo_staub_erkl"))}</small></div>` +
+      `<div class="plate recbox"><h3>${esc(t("mo_besitz"))}</h3><div id="mondListe"></div>` +
+      `<h3 style="margin-top:14px">${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
+      MOND_ARTEN.map(a => `<li class="${besitz[a] ? "hat" : ""}">${esc(t(MONDE[a].quelle))}</li>`).join("") + `</ol></div>`;
+    const pl = $("mondPlaetze");
+    for (let i = 0; i < (m.plaetze || 3); i++){
+      const art = aktiv[i];
+      const d = document.createElement("div");
+      d.className = "mondPlatz" + (art ? " voll" : "");
+      if (art){ d.appendChild(mondBild(art, besitz[art] || 1)); const n = document.createElement("span"); n.textContent = t(MONDE[art].name); d.appendChild(n); }
+      else d.textContent = t("mo_platz");
+      pl.appendChild(d);
+    }
+    const liste = $("mondListe");
+    const eigene = MOND_ARTEN.filter(a => besitz[a]);
+    if (!eigene.length){ liste.innerHTML = `<p class="hintline">${esc(t("mo_leer"))}</p>`; return; }
+    for (const art of eigene){
+      const st = besitz[art], an = aktiv.includes(art);
+      const k = document.createElement("div"); k.className = "mondKarte";
+      k.appendChild(mondBild(art, st));
+      const tx = document.createElement("div");
+      tx.innerHTML = `<b>${esc(t(MONDE[art].name))} · ${esc(t("mo_stufe", roem(st)))}</b>` +
+        `<small>${esc(t(MONDE[art].wirkung, MOND_PCT_ANZEIGE[st]))}</small>`;
+      k.appendChild(tx);
+      const kn = document.createElement("div"); kn.className = "kn";
+      const b1 = document.createElement("button"); b1.type = "button";
+      b1.textContent = t(an ? "mo_ablegen" : "mo_anlegen");
+      b1.onclick = async () => {
+        const neu = an ? aktiv.filter(a => a !== art) : aktiv.concat(art);
+        if (neu.length > (m.plaetze || 3)){ toast(t("mo_voll")); return; }
+        b1.disabled = true;
+        const a = await Konto.ruf("/konto/monde/anlegen", { aktiv: neu });
+        if (a && a.ok){ m.monde = a.monde; Profile.monde = a.monde; zeichnen(); heldMalen(); }
+        else { b1.disabled = false; toast(t("net_fail")); }
+      };
+      kn.appendChild(b1);
+      const b2 = document.createElement("button"); b2.type = "button";
+      if (st >= 3){ b2.textContent = t("mo_max"); b2.disabled = true; }
+      else {
+        const kosten = (m.kosten || [0, 0, 30, 80])[st + 1];
+        b2.textContent = t("mo_aufwerten", kosten);
+        b2.disabled = (m.monde.staub || 0) < kosten;
+        b2.onclick = async () => {
+          b2.disabled = true;
+          const a = await Konto.ruf("/konto/monde/aufwerten", { art });
+          if (a && a.ok){ m.monde = a.monde; Profile.monde = a.monde; zeichnen(); heldMalen(); Sound.levelUp(); }
+          else { b2.disabled = false; toast(t("net_fail")); }
+        };
+      }
+      kn.appendChild(b2);
+      k.appendChild(kn);
+      liste.appendChild(k);
+    }
+  };
+  if (mondeStand && mondeStand.konto === Konto.profil.id) zeichnen();
+  Konto.ruf("/konto/monde").then(a => {
+    if (!a || !a.ok) return;
+    a.konto = Konto.profil ? Konto.profil.id : 0;
+    mondeStand = a; Profile.monde = a.monde;
+    if (reiterJetzt === "monde") zeichnen();
+  });
 }
 
 /* Der eigene Körper in der Mitte — gezeichnet von `body()`, also von
@@ -4760,7 +4948,12 @@ function heldMalen(){
   const masse = Math.max(30, Profile.best || 0);
   const saveT = Game.t; Game.t = 1.2;
   MENUE_VOLL = true;
+  /* Monde nur, wenn die Liga gewählt ist — im Freien Raum zählen sie nicht,
+     und das Bild soll zeigen, was man dort sehen wird (Thomas, 16.09.). */
+  const monde = modeId === "liga" && Profile.monde && Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
+  if (monde) mondeMalen(g, S/2, S/2, S*0.40, monde, 1.2, true);
   try { body(g, S/2, S/2, S*0.40, masse, skin, 0, "", true); } catch(_){}
+  if (monde) mondeMalen(g, S/2, S/2, S*0.40, monde, 1.2);
   MENUE_VOLL = false;
   Game.t = saveT;
 
@@ -5144,7 +5337,7 @@ async function bestenlisteZeigen(){
 /* Reihenfolge im Menü. „Freier Raum" steht oben, weil es der Modus ist, für
    den die Leute kommen. `open` fehlt bewusst: Das ist seit Schritt 69 nur noch
    der lokale Rückfall desselben Eintrags, kein eigener Modus mehr. */
-const MODE_LISTE = ["online", "royale", "clan", "friendly"];
+const MODE_LISTE = ["online", "liga", "royale", "clan", "friendly"];
 
 function buildModes(){
   const box = $("modes");
@@ -5156,9 +5349,10 @@ function buildModes(){
     b.type = "button";
     b.setAttribute("aria-pressed", String(modeId === id));
     b.innerHTML = `<b>${t("m_"+id)}</b><span>${t("m_"+id+"_b")}</span>`;
-    b.addEventListener("click", () => { modeId = id; buildModes(); buildBoost(); });
+    b.addEventListener("click", () => { modeId = id; buildModes(); buildBoost(); heldMalen(); });
     box.appendChild(b);
   }
+  mondeReiterZeigen();
 }
 
 /* --- Freunde -------------------------------------------------------- */
@@ -6447,6 +6641,9 @@ const Konto = {
     const gewaehlt = SKINS.find(s => s.id === p.skin);
     if (gewaehlt && Profile.owned.has(p.skin)){ Profile.skin = p.skin; skin = gewaehlt; }
     if (p.name) Game.name = p.name;
+    /* Monde (Schritt 108): Anzeige um den Körper, Wirkung nur in der Liga. */
+    if (p.monde && typeof p.monde === "object")
+      Profile.monde = { besitz: p.monde.besitz || {}, aktiv: Array.isArray(p.monde.aktiv) ? p.monde.aktiv : [], staub: +p.monde.staub || 0 };
   },
 
   angemeldet(){ return !!(this.token && this.profil); },
@@ -6641,6 +6838,7 @@ function steckbrief(e){
   if (e.b) w.b = 1;
   if (Number.isInteger(e.tm)) w.tm = e.tm;
   if (typeof e.t === "string" && e.t) w.t = e.t;
+  if (Array.isArray(e.mo)){ const mo = e.mo.filter(a => MONDE[a]).slice(0, 3); if (mo.length) w.mo = mo; }
   return w;
 }
 
@@ -6714,6 +6912,7 @@ const Net = {
   lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
   ehre:null,                     // {dazu, gesamt, rang} — nur mit Konto
   erfolge:[], rangNeu:0,         // in dieser Runde neu erreicht
+  monde:[], staubDazu:0,         // Monde und Mondstaub dieser Runde (Liga)
   letzteEingabe:0,
 
   join(info){
@@ -6809,6 +7008,8 @@ const Net = {
       this.profil = m.profil || null;
       this.ehre = m.ehre || null;
       this.erfolge = Array.isArray(m.erfolge) ? m.erfolge : [];
+      this.monde = Array.isArray(m.monde) ? m.monde : [];
+      this.staubDazu = +m.staubDazu || 0;
       this.rangNeu = +m.rangNeu || 0;
       this.stand = m.stand || null;
       this.aufgestiegen = m.aufgestiegen || 0;
@@ -6970,6 +7171,7 @@ const Net = {
                       tag: typeof info.t === "string" ? info.t : null,
                       /* Mannschaft aus Sicht des Spielers: 1 = eigene, 2 = Gegner. */
                       team: info.tm ? (info.tm === this.team ? 1 : 2) : 0,
+                      mo: info.mo || null,
                       tint:0, pal:haut, tier:(haut && haut.tier) || 1,
                       trait:(haut && haut.trait) || "plain"});
       }

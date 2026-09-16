@@ -713,7 +713,9 @@
        Verfügung. Die Modusauswahl allein brauchte untereinander 350 — man
        scrollte durch zweieinhalb Bildschirme, bevor der Startknopf kam.
        Zu zweit nebeneinander passt sie in ein Drittel davon. */
-    .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    /* Fünf Spielarten seit Schritt 108 (Liga): drei Spalten, zwei Reihen —
+       zwei Spalten hießen drei Reihen und die Übersicht scrollte. */
+    .modes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
     .modes button{padding:7px 9px}
     .modes b{font-size:13.5px}
     /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen
@@ -1148,6 +1150,15 @@
        box-shadow:0 0 12px var(--brass)}
   /* Schritt 97: Unter 420 px Breite ragte „Stats" 7 px aus dem Bild
      (mobil.js, fenster-eng 360×780 — schon in v78). */
+  /* Fünf Reiter (Schritt 108): unter 760 px enger, sonst schieben sie die
+     Werte rechts aus dem Bild. */
+  @media (max-width:760px){
+    #konsReiter button{padding:0 9px;font-size:13px}
+    #konsReiter .konsW{gap:9px}
+    /* Der XP-Text („0 / 425 XP") weicht dem fünften Reiter; Leiste und
+       Level bleiben, die Zahl steht unter „Statistik". */
+    #konsReiter #xpText{display:none}
+  }
   @media (max-width:420px){
     #konsReiter{padding:0 4px;gap:0}
     #konsReiter button{padding:0 7px;flex:0 1 auto;min-width:0}
@@ -1317,6 +1328,31 @@
   .konsKopfzeile h2{margin:0;font-family:var(--serif);font-size:20px;font-weight:600;color:var(--paper)}
   .konsKopfzeile p{margin:0;font-size:12.5px;color:var(--paper-2)}
   .konsStat{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
+  /* Monde (Schritt 108) */
+  .mondPlaetze{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+  .mondPlatz{width:78px;height:92px;border:1px dashed rgba(233,176,99,.35);border-radius:12px;
+       display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+       font-size:11px;color:var(--paper-2);text-align:center;padding:4px;box-sizing:border-box}
+  .mondPlatz.voll{border-style:solid;border-color:rgba(233,176,99,.6);background:rgba(233,176,99,.07);color:var(--paper)}
+  .mondPlatz canvas{width:44px;height:44px}
+  .mondKarte{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;align-items:center;
+       padding:8px 0;border-top:1px solid var(--line);min-width:0}
+  .mondKarte:first-of-type{border-top:0}
+  .mondKarte canvas{width:52px;height:52px}
+  .mondKarte b{display:block;font-size:14px}
+  .mondKarte small{display:block;font-size:12px;color:var(--paper-2)}
+  .mondKarte .kn{grid-column:2;display:flex;flex-wrap:wrap;gap:6px}
+  #paneMonde{overflow-x:hidden}
+  #mondeInhalt .plate{min-width:0}
+  @media (max-width:820px){ #mondeInhalt{grid-template-columns:1fr} }
+  .mondKarte .kn button{margin:0;width:auto;min-width:0;height:32px;padding:0 12px;font-size:12.5px}
+  body.touch .mondKarte .kn button{height:44px}
+  .mondStaub{font-family:var(--disp);font-size:22px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .mondWoher{margin:0;padding-left:18px;font-size:12.5px;color:var(--paper-2);line-height:1.5}
+  .mondWoher li.hat{color:var(--paper)}
+  /* Der Link zur Spielanleitung steht in einer Hinweiszeile; auf Tippgeräten
+     bekommt er unsichtbar 44 px Tippfläche (mobil.js, Schritt 108). */
+  body.touch #hilfeLink{display:inline-block;padding:14px 8px;margin:-14px -4px}
 
   /* --- Flache Schirme: ein Fenster, eine Spalte, Knopf unten --------- */
   @media (max-height:640px), (max-width:900px){
@@ -2245,6 +2281,8 @@
               data-i18n="e_head">Achievements</button>
       <button type="button" data-reiter="stat" role="tab" aria-selected="false"
               data-i18n="k_stat">Stats</button>
+      <button type="button" data-reiter="monde" role="tab" aria-selected="false"
+              data-i18n="k_monde" hidden>Moons</button>
       <div class="konsW">
         <span class="chip"><span data-i18n="level">Level</span> <b id="lvNum">1</b>
           <span class="xpbar"><i id="xpBar"></i></span>
@@ -2360,6 +2398,12 @@
         <!-- Freunde werben (Schritt 104): Code, Link, Stand. Nur mit Konto. -->
         <div class="plate recbox" id="werbeBox" hidden></div>
       </div>
+    </div>
+    <!-- Monde (Schritt 108): erspielte Ausrüstung, wirkt nur in der Liga.
+         Gebaut von buildMonde() in spiel.js. -->
+    <div class="konsPane eine" id="paneMonde" hidden>
+      <div class="konsKopfzeile"><h2 data-i18n="mo_kopf">Moons</h2><p data-i18n="mo_erkl"></p></div>
+      <div class="konsStat" id="mondeInhalt"></div>
     </div>
   </div>
 </div>
