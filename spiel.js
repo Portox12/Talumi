@@ -834,7 +834,12 @@ const SKINS = [
      hält es aus Zählung, Preisliste und Levelvergleich heraus; der Server
      schaltet es über das Werbeprogramm frei. */
   {id:"inferno",   mat:"glut",     label:"Inferno",    rock:"#c2481f", dark:"#5a1a0a", hot:"#ffd166", air:"#ff7b3a",
-   special:"feuer", sonder:"werben"}
+   special:"feuer", sonder:"werben"},
+  /* Rime (Schritt 106, Raureif): nur über zehn volle Wochen Tagesbonus.
+     „Glacier" gibt es schon als Level-Design — Kennungen müssen eindeutig
+     sein, sonst findet `SKINS.find` das falsche. */
+  {id:"rime",      mat:"eis",      label:"Rime",       rock:"#bfe3f4", dark:"#6fa3bf", hot:"#ffffff", air:"#dff6ff",
+   special:"frost", sonder:"wochen"}
 ];
 /* Zählbare Designs: alles, was sich erspielen oder kaufen lässt. */
 const SKINS_ZAHL = SKINS.filter(s => !s.sonder).length;
@@ -926,7 +931,7 @@ const Profile = {
   },
   requirement(s){
     if (this.owned.has(s.id)) return t("owned");
-    if (s.sonder === "werben") return t("sk_werben");
+    if (s.sonder) return t("sk_" + s.sonder);
     return s.lv ? t("levelreq", s.lv) : t("orereq", s.ore.toLocaleString(lang));
   },
   state(s){
@@ -1008,7 +1013,7 @@ const Gast = {
     if (gew && Profile.owned.has(gew.id)){ Profile.skin = gew.id; skin = gew; }
     if (typeof r.name === "string") this.name = cleanName(r.name).trim().slice(0, NAME_MAX);
     if (r.bonus && typeof r.bonus === "object")
-      this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)) };
+      this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)), wochen: zahl(r.bonus.wochen, 9999) };
     this.gutschein = [2, 3].includes(r.gutschein) ? r.gutschein : 0;
   },
 
@@ -1022,26 +1027,32 @@ const Gast = {
                 "Astro","Cosmo","Stardust","Lumen","Vortex","Solar","Lunar"],
   /* Tagesreihe für Gäste (Schritt 96) — dieselbe Staffel wie am Server
      (`BONUS_ANZEIGE`), gezählt in Kalendertagen der Ortszeit. */
-  bonus: { tag: 0, serie: 0 },
+  bonus: { tag: 0, serie: 0, wochen: 0 },
   heute(){ return Math.floor((Date.now() - new Date().getTimezoneOffset() * 6e4) / 864e5); },
   bonusStand(){
     const h = this.heute(), b = this.bonus;
     return { offen: b.tag !== h,
-             serie: (b.tag === h || b.tag === h - 1) ? b.serie : 0 };
+             serie: (b.tag === h || b.tag === h - 1) ? b.serie : 0,
+             wochen: b.wochen || 0, ziel: 10 };
   },
   bonusHolen(){
     const h = this.heute(), b = this.bonus;
     if (b.tag === h) return { fehler: "schon_abgeholt" };
-    const serie = b.tag === h - 1 ? Math.min(7, b.serie + 1) : 1;
+    /* Im Kreis wie am Server (Schritt 106): nach Tag 7 wieder Tag 1, jede
+       volle Woche zählt; nach zehn Wochen das Eis-Design. */
+    const serie = b.tag === h - 1 ? (b.serie % 7) + 1 : 1;
+    const wochen = (b.wochen || 0) + (serie === 7 ? 1 : 0);
     const g = BONUS_GAST[serie - 1] || {};
     const ore = g.ore || 0, xp = g.xp || 0, boost = g.boost || 0;
-    this.bonus = { tag: h, serie };
+    this.bonus = { tag: h, serie, wochen };
+    let eis = false;
+    if (wochen >= 10 && !Profile.owned.has("rime")){ Profile.owned.add("rime"); eis = true; }
     Profile.ore += ore;
     if (xp) Profile.addXp(xp);
     /* Der Gutschein gilt für die nächste lokale Runde mit Startbonus. */
     if (boost) this.gutschein = boost;
     this.sichern();
-    return { ok: true, tag: serie, ore, xp, boost, ehre: 0 };
+    return { ok: true, tag: serie, ore, xp, boost, ehre: 0, wochen, eis };
   },
   gutschein: 0,
   nameVorschlag(){
@@ -3566,6 +3577,27 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.lineWidth = Math.max(1.5, r*.05); g.stroke();
   }
 
+  /* Rime (Schritt 106): Eiskristalle, die langsam um den Körper kreisen,
+     dazu ein kalter Schimmer knapp außerhalb von r. Zeit statt Zufall. */
+  if (F === "frost" && fancy && r > 6){
+    const n = 8, tt = Game.t;
+    g.save(); g.translate(x, y);
+    g.beginPath(); g.arc(0, 0, r*1.08, 0, 7);
+    g.strokeStyle = hexA(pal.air, .30 + .10*Math.sin(tt*2.2)); g.lineWidth = Math.max(1.2, r*.05); g.stroke();
+    for (let i=0;i<n;i++){
+      const a = i*(6.2832/n) + tt*.35, d = r*(1.28 + .10*Math.sin(tt*1.6 + i));
+      const kx = Math.cos(a)*d, ky = Math.sin(a)*d, k = Math.max(2.2, r*.11);
+      g.save(); g.translate(kx, ky); g.rotate(tt*.8 + i);
+      g.beginPath();
+      for (let j=0;j<6;j++){ const b = j*1.0472; j ? g.lineTo(Math.cos(b)*k, Math.sin(b)*k) : g.moveTo(Math.cos(b)*k, Math.sin(b)*k); }
+      g.closePath();
+      g.fillStyle = hexA(i % 2 ? pal.hot : pal.air, .42); g.fill();
+      g.strokeStyle = hexA(pal.air, .7); g.lineWidth = 1; g.stroke();
+      g.restore();
+    }
+    g.restore();
+  }
+
   /* Singularity: Lichtbeugung am Rand. Echte Verzerrung wäre zu teuer —
      tangentiale Bögen in wechselnder Höhe erzeugen den Einsteinring. */
   if (F === "warp" && fancy && r > 10){
@@ -4503,8 +4535,11 @@ requestAnimationFrame(loop);
    ===================================================================== */
 /* Seit Schritt 79 sind „Designs" und „Errungenschaften" Reiter im
    Startbildschirm und keine eigenen Bildschirme mehr. */
+/* Jeder Schleier, den `show()` wechselt, muss hier stehen — sonst bleibt er
+   hinter dem nächsten offen (so geschehen mit dem Bonusfenster, 16.09.2026). */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
-               "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil"];
+               "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil",
+               "hilfeVeil","bonusVeil"];
 
 
 const SET_UI = [
@@ -5346,40 +5381,92 @@ function paintBonus(){
   document.body.classList.toggle("bonusoffen", !!B.offen);
 
   const serie = B.serie || 0;
-  const naechster = B.offen ? Math.min(7, serie + 1) : serie;
+  /* Die Reihe läuft im Kreis (Schritt 106): nach Tag 7 folgt Tag 1. */
+  const naechster = B.offen ? (serie % 7) + 1 : serie;
+  const wochen = B.wochen || 0, ziel = B.ziel || 10;
   const reihe = bonusReihe();
-  const perlen = reihe.map((b, i) => {
+  const perlen = (gross) => reihe.map((b, i) => {
     const nr = i + 1;
     const zustand = nr <= serie && !B.offen ? "done"
                   : nr < naechster ? "done"
                   : nr === naechster ? "next" : "";
     const wert = b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
-    return `<i class="bead ${zustand}" title="${esc(bonusText(b))}"><small>${nr}</small>` +
-           `<span class="bb">${bonusBild(b)}</span><b>${wert}</b></i>`;
+    return `<i class="bead ${zustand}" title="${esc(bonusText(b))}">` +
+           (gross ? `<small>${nr}</small>` : "") +
+           `<span class="bb">${bonusBild(b)}</span>` + (gross ? `<b>${wert}</b>` : "") + `</i>`;
   }).join("");
 
-  let unten;
-  if (B.offen){
-    unten = `<button class="holen" id="bonusGo">` +
-            `${esc(t("b_get2", naechster, bonusText(reihe[naechster-1])))}</button>`;
-  } else {
-    unten = `<p class="recline"><span>${esc(t("b_next"))}</span></p>`;
-  }
-  box.innerHTML = `<h2>${esc(t("b_title"))}<em>${esc(t("b_tag", Math.max(1, naechster)))}</em></h2>` +
-                  `<div class="konsBlock"><div class="beads">${perlen}</div>${unten}</div>`;
+  /* Klein im Hangar (Thomas, 16.09.2026: „nur noch ein kleines Feld, nicht
+     ein Viertel des Bildschirms"): eine Zeile — Titel, Tag, Woche, Perlen
+     nur als Bildchen, Knopf. Groß gibt es die Reihe einmal am Tag im
+     Fenster `#bonusVeil`. */
+  box.classList.add("klein");
+  const wochenText = t("b_woche", wochen, ziel);
+  const knopfText = B.offen ? esc(t("b_holen")) : "";
+  box.innerHTML = `<h2>${esc(t("b_title"))}<em>${esc(t("b_tag", Math.max(1, naechster)))} · <small class="wochen">${esc(wochenText)}</small></em></h2>` +
+                  `<div class="konsBlock"><div class="beads">${perlen(false)}</div>` +
+                  (B.offen ? `<button class="holen" id="bonusGo">${knopfText}</button>`
+                           : `<p class="recline"><span>${esc(t("b_next"))}</span></p>`) + `</div>`;
 
-  const knopf = $("bonusGo");
-  if (knopf) knopf.addEventListener("click", async () => {
-    knopf.disabled = true;
+  const holen = async (knopf) => {
+    if (knopf) knopf.disabled = true;
     const e = gast ? Gast.bonusHolen() : await Konto.bonusHolen();
     if (e.ok){
-      const b = { ore: e.ore, xp: e.xp, boost: e.boost, ehre: e.ehre };
-      toast(t("b_got2", e.tag, bonusText(b.boost ? {boost:b.boost} : b.xp ? {xp:b.xp} : b.ehre ? {ehre:b.ehre} : {ore:b.ore})));
-      paintPurse(); buildBoost();
+      const b = e.boost ? {boost:e.boost} : e.xp ? {xp:e.xp} : e.ehre ? {ehre:e.ehre} : {ore:e.ore};
+      /* Strahlend in der Mitte (Thomas) — statt der kleinen Zeile unten. */
+      lohnZeigen(bonusText(b), t("b_got3", e.tag), bonusBild(b));
+      if (e.eis) setTimeout(() => lohnZeigen("Rime", t("b_eis_da"), ""), 2300);
+      paintPurse(); buildBoost(); buildGrid();
     }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
+    bonusVeilZu();
     paintBonus();
-  });
+  };
+  const knopf = $("bonusGo");
+  if (knopf) knopf.addEventListener("click", () => holen(knopf));
+
+  /* Einmal am Tag groß (Thomas): beim ersten Öffnen des Hangars mit offenem
+     Bonus erscheint das Fenster; danach nur noch die kleine Zeile. */
+  const heute = Gast.heute();
+  let gezeigt = 0; try { gezeigt = +localStorage.getItem("talumi.bonusGezeigt") || 0; } catch(_){}
+  if (B.offen && gezeigt !== heute && !$("startVeil").hidden){
+    try { localStorage.setItem("talumi.bonusGezeigt", String(heute)); } catch(_){}
+    bonusVeilAuf(perlen(true), naechster, reihe[naechster - 1], wochenText, wochen, ziel, holen);
+  }
+}
+
+/* Das große Bonusfenster (Schritt 106) — einmal am Tag. */
+function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen){
+  const v = $("bonusVeil");
+  if (!v) return;
+  $("bonusVeilSub").textContent = t("b_get2", tag, bonusText(heute));
+  $("bonusVeilBeads").innerHTML = perlen;
+  $("bonusVeilWochen").textContent = wochenText + " · " + t("b_eis", ziel);
+  const go = $("bonusVeilGo");
+  go.disabled = false;
+  go.onclick = () => holen(go);
+  $("bonusVeilSpaeter").onclick = bonusVeilZu;
+  show("bonusVeil");
+}
+function bonusVeilZu(){
+  const v = $("bonusVeil");
+  if (v && !v.hidden) show("startVeil");
+}
+
+/* Belohnung strahlend in der Mitte des Schirms (Schritt 106). Kurz, groß,
+   von selbst wieder weg — kein Klick nötig. */
+let lohnWecker = 0;
+function lohnZeigen(text, unter, bild){
+  const el = $("lohnGlanz");
+  if (!el) return;
+  $("lohnText").textContent = text;
+  $("lohnSub").textContent = unter || "";
+  $("lohnBild").innerHTML = bild || "";
+  el.hidden = false;
+  el.classList.remove("an"); void el.offsetWidth; el.classList.add("an");
+  try { Sound.levelUp(); } catch(_){}
+  clearTimeout(lohnWecker);
+  lohnWecker = setTimeout(() => { el.hidden = true; el.classList.remove("an"); }, 2200);
 }
 
 function buildRecords(){
@@ -5568,9 +5655,9 @@ async function pick(s){
     if (Konto.angemeldet()) Konto.einstellen({skin: s.id});
     return;
   }
-  if (s.sonder === "werben"){
+  if (s.sonder){
     kaufLeisteAus();
-    note(t("sk_werben_note"), "warn");
+    note(t("sk_" + s.sonder + "_note"), "warn");
     return;
   }
   if (s.lv){
@@ -6283,10 +6370,11 @@ const Konto = {
 
   async bonusHolen(){
     const a = await this.ruf("/konto/bonus", {});
-    if (a.status === 200){ this.uebernehmen(a); this.bonus = {offen:false, serie:a.tag};
+    if (a.status === 200){ this.uebernehmen(a);
+                           this.bonus = {offen:false, serie:a.tag, wochen:a.wochen || 0, ziel:10};
                            erfolgeMelden(a);
                            return { ok:true, tag:a.tag, ore:a.ore || 0, xp:a.xp || 0,
-                                    boost:a.boost || 0, ehre:a.ehre || 0 }; }
+                                    boost:a.boost || 0, ehre:a.ehre || 0, wochen:a.wochen || 0, eis:!!a.eis }; }
     return { fehler: a.fehler || "netz" };
   },
 
@@ -7375,7 +7463,7 @@ const MenueHimmel = {
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
   MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
-           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil"],
+           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil","bonusVeil"],
   sichtbar(){
     if (Game.running) return false;
     if (document.hidden) return false;

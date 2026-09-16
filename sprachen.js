@@ -830,6 +830,18 @@ const LANGS104 = {
 };
 for (const c in LANGS104) Object.assign(LANGS[c], LANGS104[c]);
 
+/* Tagesbonus klein, Wochenreihe, Belohnung in der Mitte, Design Rime (Schritt 106). */
+const LANGS106 = {
+  en:{b_holen:"Collect", b_spaeter:"Later", b_woche:"week {0} of {1}", b_eis:"after {0} weeks: the design Rime", b_got3:"Day {0} collected", b_eis_da:"Ten weeks — the design is yours", sk_wochen:"10 weeks of daily bonus", sk_wochen_note:"Rime is only earned by collecting the daily bonus for ten full weeks."},
+  de:{b_holen:"Abholen", b_spaeter:"Später", b_woche:"Woche {0} von {1}", b_eis:"nach {0} Wochen: das Design Rime", b_got3:"Tag {0} abgeholt", b_eis_da:"Zehn Wochen — das Design gehört dir", sk_wochen:"10 Wochen Tagesbonus", sk_wochen_note:"Rime gibt es nur für zehn volle Wochen Tagesbonus."},
+  es:{b_holen:"Recoger", b_spaeter:"Más tarde", b_woche:"semana {0} de {1}", b_eis:"tras {0} semanas: el diseño Rime", b_got3:"Día {0} recogido", b_eis_da:"Diez semanas — el diseño es tuyo", sk_wochen:"10 semanas de bono diario", sk_wochen_note:"Rime solo se gana recogiendo el bono diario diez semanas completas."},
+  pt:{b_holen:"Recolher", b_spaeter:"Mais tarde", b_woche:"semana {0} de {1}", b_eis:"após {0} semanas: o design Rime", b_got3:"Dia {0} recolhido", b_eis_da:"Dez semanas — o design é teu", sk_wochen:"10 semanas de bónus diário", sk_wochen_note:"O Rime só se ganha com dez semanas completas de bónus diário."},
+  fr:{b_holen:"Récupérer", b_spaeter:"Plus tard", b_woche:"semaine {0} sur {1}", b_eis:"après {0} semaines : le design Rime", b_got3:"Jour {0} récupéré", b_eis_da:"Dix semaines — le design est à vous", sk_wochen:"10 semaines de bonus quotidien", sk_wochen_note:"Rime ne s'obtient qu'avec dix semaines complètes de bonus quotidien."},
+  tr:{b_holen:"Al", b_spaeter:"Sonra", b_woche:"{1} haftadan {0}.", b_eis:"{0} hafta sonra: Rime tasarımı", b_got3:"{0}. gün alındı", b_eis_da:"On hafta — tasarım senin", sk_wochen:"10 hafta günlük bonus", sk_wochen_note:"Rime yalnızca on tam hafta günlük bonusla kazanılır."},
+  ru:{b_holen:"Забрать", b_spaeter:"Позже", b_woche:"неделя {0} из {1}", b_eis:"через {0} недель: дизайн Rime", b_got3:"День {0} получен", b_eis_da:"Десять недель — дизайн ваш", sk_wochen:"10 недель ежедневного бонуса", sk_wochen_note:"Rime даётся только за десять полных недель ежедневного бонуса."}
+};
+for (const c in LANGS106) Object.assign(LANGS[c], LANGS106[c]);
+
 /* Kaufleiste im Laden (Schritt 67; Geldkauf seit Schritt 101 zurückgebaut). */
 const LANGS23 = {
   en:{kauf_wahl:"{0} — {1} Ore", kauf_ore:"Buy for {0} Ore"},

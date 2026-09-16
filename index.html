@@ -301,6 +301,37 @@
      color:var(--gruen-hell);font-size:13px;font-weight:600}
   #bonusBox .holen:hover:not(:disabled){background:rgba(61,220,132,.22)}
   #bonusBox .recline{padding:0;font-size:12px}
+  /* Klein (Schritt 106): eine Zeile, Perlen nur als Bildchen. */
+  #bonusBox.klein .konsBlock{display:flex;align-items:center;gap:10px;padding:8px 12px}
+  #bonusBox.klein .beads{margin:0;flex:1 1 auto;min-width:0;gap:3px}
+  #bonusBox.klein .bead{height:26px;gap:0;border-radius:6px}
+  #bonusBox.klein .bead .bb,#bonusBox.klein .bead .bb svg{width:14px;height:14px}
+  #bonusBox.klein .holen{width:auto;flex:0 0 auto;padding:0 14px;height:32px}
+  #bonusBox.klein .recline{flex:0 0 auto;white-space:nowrap}
+  #bonusBox.klein h2 em .wochen{font-size:11px;letter-spacing:0;text-transform:none;color:var(--paper-2)}
+  /* Das große Bonusfenster */
+  .bonusKarte{max-width:min(560px,100%);text-align:center}
+  .bonusKarte .beads.gross{gap:6px;margin:0}
+  .bonusKarte .beads.gross .bead{height:64px}
+  .bonusKarte #bonusVeilGo{margin-top:16px;width:100%;
+     border:1px solid rgba(61,220,132,.5);background:rgba(61,220,132,.13);color:var(--gruen-hell);font-weight:600}
+  .bonusKarte #bonusVeilGo:hover:not(:disabled){background:rgba(61,220,132,.22)}
+  /* Belohnung strahlend in der Mitte */
+  #lohnGlanz{position:fixed;inset:0;z-index:21;display:grid;place-items:center;pointer-events:none}
+  #lohnGlanz[hidden]{display:none}
+  #lohnGlanz .glanz{display:grid;justify-items:center;gap:6px;padding:26px 40px;border-radius:22px;
+     color:var(--brass-hell);text-align:center;
+     background:radial-gradient(ellipse at 50% 50%, rgba(233,176,99,.32), rgba(233,176,99,.10) 45%, transparent 72%);
+     opacity:0;transform:scale(.7)}
+  #lohnGlanz.an .glanz{animation:lohnGlanz 2.2s ease-out forwards}
+  #lohnGlanz .glanz b{font-family:var(--disp);font-size:44px;line-height:1.05;
+     text-shadow:0 0 28px rgba(233,176,99,.85),0 0 60px rgba(233,176,99,.45)}
+  #lohnGlanz .glanz small{font-size:13px;color:var(--paper);letter-spacing:.14em;text-transform:uppercase}
+  #lohnGlanz .glanz span svg,#lohnGlanz .glanz span .bx{width:34px;height:34px;color:var(--brass-hell);
+     font-family:var(--disp);font-size:30px;font-style:normal;font-weight:700}
+  @keyframes lohnGlanz{0%{opacity:0;transform:scale(.7)}14%{opacity:1;transform:scale(1.06)}
+     24%{transform:scale(1)}78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.15)}}
+  @media (prefers-reduced-motion:reduce){ #lohnGlanz.an .glanz{animation:none;opacity:1;transform:none} }
 
   /* Die drei Schritte für iPhone und iPad. Zahlen in Messing, damit man
      auf einen Blick sieht, dass es eine Reihenfolge ist. */
@@ -2573,6 +2604,22 @@
 
     <button id="hilfeClose" data-i18n="back">Zurück</button>
   </div>
+</div>
+
+<!-- Tagesbonus, einmal am Tag groß (Schritt 106) -->
+<div class="veil" id="bonusVeil" hidden>
+  <div class="card bonusKarte">
+    <h1 style="font-size:34px;margin-bottom:4px" data-i18n="b_title">Täglicher Bonus</h1>
+    <p class="sub" id="bonusVeilSub" style="margin:0 0 14px"></p>
+    <div class="beads gross" id="bonusVeilBeads"></div>
+    <p class="hinweis" id="bonusVeilWochen" style="margin:10px 0 0;color:var(--brass)"></p>
+    <button id="bonusVeilGo" data-i18n="b_holen">Abholen</button>
+    <button class="quiet" id="bonusVeilSpaeter" data-i18n="b_spaeter">Später</button>
+  </div>
+</div>
+<!-- Belohnung strahlend in der Mitte (Schritt 106) -->
+<div id="lohnGlanz" hidden aria-live="polite">
+  <div class="glanz"><span id="lohnBild"></span><b id="lohnText"></b><small id="lohnSub"></small></div>
 </div>
 
 <script src="sprachen.js"></script>
