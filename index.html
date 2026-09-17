@@ -731,7 +731,7 @@
     .modes button[aria-pressed=true] span{display:block}
     /* Erklärtexte, die man einmal liest und danach nie wieder braucht.
        Der Platz gehört hier dem, was man tatsächlich bedient. */
-    #nameNote,#boostNote,#controls{display:none}
+    #boostNote,#controls{display:none}
     /* Der Startknopf bleibt stehen, während der Rest der Spalte scrollt.
        Ohne das hing er auf dem kleinsten Telefon (667×375) je nach Sprache
        bis zu fünfzehn Punkte unter der Kante — auf Spanisch, weil zwei
@@ -1209,6 +1209,7 @@
   .konsSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line);
        align-items:center;justify-content:center;gap:10px}
   .konsSp > label{margin:0}
+  .konsSp.l #controls{margin:0}
 
   /* Ein Abschnitt: Überschrift **über** dem Kasten, wie im Entwurf — nicht
      darin. Rechts in der Überschrift steht in Messing, was zählt („Tag 4 von
@@ -1277,6 +1278,13 @@
      einer schmalen Spalte kleiner macht. Mit fester Höhe war er auf 667 × 375
      ein Ei (16.09.2026, Bildschirmfoto). */
   #heldCanvas{display:block;width:360px;height:auto;max-width:100%}
+  /* Die Bühne (Schritt 118): das 3D-Modell auf `#heldGL`, darüber der
+     Designschmuck auf `#heldCanvas`. Die Bühne ist so groß wie die obere
+     Fläche — alle Größenregeln für `#heldCanvas` gelten damit für beide. */
+  .heldBuehne{position:relative;max-width:100%;line-height:0}
+  #heldGL{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+  #heldGL[hidden]{display:none}
+  #heldCanvas{position:relative;z-index:1}
   .konsWerte{display:flex;gap:26px;justify-content:center}
   .konsWerte div{text-align:center}
   .konsWerte b{display:block;font-family:var(--disp);font-size:21px;font-weight:700;
@@ -1335,6 +1343,40 @@
        font-size:12.5px}
   .konsSp.r .seg button[aria-pressed=true]{background:rgba(233,176,99,.12);
        border-color:rgba(233,176,99,.5);color:var(--brass-hell)}
+
+  /* --- Der Hangar am Rechner (Schritt 118) --------------------------
+     Thomas: „die gesamte Menüseite am PC-Bildschirm optimieren, viel
+     stimmiger". Nur für breite **und** hohe Schirme; die Regeln für
+     Telefone weiter unten bleiben unberührt. Die Mitte ist eine Bühne:
+     Name und Stufe oben, das Modell so groß, wie die Höhe hergibt, die
+     Werte und die Kachelreihe unten — nichts schwimmt mehr in der Spalte. */
+  @media (min-width:1100px) and (min-height:700px){
+    .konsPane.drei{grid-template-columns:340px minmax(0,1fr) 340px}
+    .konsSp{padding:22px 24px;gap:16px}
+    .konsSp.m{gap:0;justify-content:space-between;padding:24px 24px 22px;
+         background:radial-gradient(ellipse 62% 52% at 50% 46%, rgba(233,176,99,.055), transparent 70%)}
+    .konsName{margin:0}
+    .konsName b{font-size:36px;letter-spacing:.01em}
+    .konsName span{display:inline-block;margin-top:9px;padding:4px 13px;border-radius:99px;
+         border:1px solid rgba(233,176,99,.32);background:rgba(233,176,99,.08);
+         color:var(--brass);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+    /* So groß, wie die Höhe hergibt: bei 1080 Punkten 600, bei 900 rund 420. */
+    #heldCanvas{width:clamp(250px, calc(100vh - 480px), 600px)}
+    #heldCanvas{width:clamp(250px, calc(100dvh - 480px), 600px)}
+    .heldBuehne{margin:6px 0}
+    .konsWerte{gap:0;margin-bottom:16px}
+    .konsWerte div{padding:0 26px}
+    .konsWerte div+div{border-left:1px solid var(--line)}
+    .konsWerte b{font-size:24px}
+    .konsSp.m .strip{gap:9px}
+    .konsSp.m .strip button{width:64px;height:80px;border-radius:13px}
+    .konsSp.m .strip canvas{width:40px;height:40px}
+    .konsSp.m .strip button[aria-pressed=true]{box-shadow:0 0 0 1px var(--brass), 0 0 22px rgba(233,176,99,.32)}
+    .konsSp.m .strip .more{width:64px;height:80px}
+    /* Was nur erklärt, rückt an den unteren Rand seiner Spalte. */
+    .konsSp.l #controls{margin-top:auto}
+    .konsSp.r #powText{margin-top:auto;font-size:11.5px;opacity:.75}
+  }
 
   /* --- Designs, Errungenschaften, Statistik ---------------------- */
   .konsPane.eine{padding:20px 22px}
@@ -2354,17 +2396,22 @@
         <div class="konsSek" id="bonusBox" hidden></div>
         <div class="konsSek" id="naechstBox"></div>
         <div class="konsSek" id="freundBox"></div>
-        <p class="foot" id="controls" style="margin:0"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
+        <p class="foot" id="controls"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
           No lasting advantages for sale. Every design can be earned by playing.</p>
       </div>
 
       <div class="konsSp m">
         <div class="konsName"><b id="heldName">—</b><span id="heldStufe"></span></div>
-        <!-- Der eigene Körper, gezeichnet von `body()` — derselben Funktion,
-             die ihn im Spiel zeichnet. Kein Schaubild, sondern das, was man
-             gleich steuert, mit der eigenen Design und der eigenen
-             Bestmasse. -->
-        <canvas id="heldCanvas" width="660" height="660"></canvas>
+        <!-- Der eigene Körper: seit Schritt 118 als 3D-Modell (`Held3D` in
+             spiel.js) auf `#heldGL`, darüber auf `#heldCanvas` das, was das
+             Design außerhalb des Kreises trägt (`designSchmuck()`, derselbe
+             Code wie im Spiel). Ohne WebGL zeichnet `body()` wie bisher auf
+             `#heldCanvas`. Gezeigt wird das gewählte Design mit der eigenen
+             Bestmasse — kein geschöntes Schaubild. -->
+        <div class="heldBuehne">
+          <canvas id="heldGL" width="880" height="880" hidden></canvas>
+          <canvas id="heldCanvas" width="880" height="880"></canvas>
+        </div>
         <div class="konsWerte">
           <div><b id="bestNum">0</b><span data-i18n="bestmass">best mass</span></div>
           <div><b id="runNum">0</b><span data-i18n="rec_runs">rounds</span></div>
@@ -2383,13 +2430,10 @@
         <div class="modes" id="modes"></div>
         </div>
 
+        <!-- Kein Namensfeld mehr (Schritt 118, Thomas: „das kann weg"). Der
+             Name steht mittig über dem Körper und wird in den Einstellungen
+             geändert — mit Konto alle 30 Tage, der Server prüft. -->
         <div class="rGrp">
-        <label class="konsH" for="name" data-i18n="designation">Name</label>
-        <input type="text" id="name" maxlength="14" placeholder="Choose a player name" data-i18n-ph="namepick"
-               autocomplete="off" autocapitalize="off" spellcheck="false">
-        <p class="hintline" id="nameNote" data-i18n="namerule">Name rule</p>
-        <p class="hintline" id="nameKonto" data-i18n="namekonto" hidden>With an account you change your name in Settings.</p>
-
         <label class="konsH" data-i18n="boost">Start bonus</label>
         <div class="seg" id="boostPick"></div>
         <p class="hintline" id="boostNote" data-i18n="boostnote">Open space only.</p>

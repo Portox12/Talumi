@@ -1067,13 +1067,11 @@ const Gast = {
     const w = this.NAMENSWORTE[(Math.random() * this.NAMENSWORTE.length) | 0];
     return (w + " " + (10 + ((Math.random() * 990) | 0))).slice(0, NAME_MAX);
   },
+  /* Seit Schritt 118 gibt es kein Namensfeld im Hangar mehr (Thomas: „das
+     kann weg"). Der Gast bekommt beim ersten Besuch einen Vorschlag und
+     ändert ihn in den Einstellungen. */
   nameEinsetzen(){
-    try {
-      const feld = document.getElementById("name");
-      if (!feld || feld.value.trim()) return;
-      if (!this.name) this.name = this.nameVorschlag();
-      feld.value = this.name;
-    } catch(_){}
+    if (!this.name) this.name = this.nameVorschlag();
   },
   sichern(){
     try {
@@ -1088,9 +1086,6 @@ const Gast = {
         owned: [...Profile.owned], skin: Profile.skin
       };
       if (!mitKonto){
-        const feld = document.getElementById("name");
-        const n = feld ? cleanName(feld.value).trim() : "";
-        if (n) this.name = n;
         if (this.name) d.name = this.name;
         d.bonus = this.bonus;
         d.gutschein = this.gutschein;
@@ -3570,6 +3565,37 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   /* ---- 7. Stufe VI: was kein anderes Design hat -----------------------
      Alles außerhalb oder durchscheinend darüber. Der Kreis bleibt. */
 
+  designSchmuck(g, x, y, r, pal, F, M, fancy);
+
+  if (st >= 4){
+    for (let i=0;i<3;i++){
+      const a = Game.t*(.35+i*.14) + i*2.1, d = r*(1.75+i*.22);
+      g.beginPath();
+      g.arc(x+Math.cos(a)*d, y+Math.sin(a)*d*.42, Math.max(2, r*.07), 0, 7);
+      g.fillStyle = pal.air; g.fill();
+    }
+  }
+
+  /* ---- 8. Rand: heller und kräftiger mit dem Rang --------------------- */
+  g.beginPath(); g.arc(x,y,r,0,7);
+  g.strokeStyle = mine ? hexA(pal.air,.55) : hexA(pal.air, .10 + T*.085);
+  g.lineWidth = Math.max(1, r*(.035 + T*.008)); g.stroke();
+
+  if (label && r > 9){
+    g.font = `600 ${Math.max(9, r*.3)}px Georgia, serif`;
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.fillStyle = TH().label;
+    g.fillText(label, x, y);
+  }
+}
+
+/* Was ein Design außerhalb des Kreises trägt (Halo, Feuer, Strahlen, Frost,
+   Beugung, Prisma, Stacheln, Splitter). Aus `body()` herausgezogen (Schritt
+   118), weil das 3D-Modell im Hangar (`Held3D`) dieselben Effekte über
+   seine Kugel legt — eine Stelle, zwei Bilder. Alles hier bleibt außerhalb
+   von `r` oder durchscheinend darüber; der Kreis selbst wird hier nie
+   gezeichnet. */
+function designSchmuck(g, x, y, r, pal, F, M, fancy){
   // Halo: gegenläufiger Ring weit außen, dazu ein wanderndes Licht
   if (F === "halo" && fancy && r > 10){
     g.save(); g.translate(x, y); g.rotate(-Game.t*.22);
@@ -3710,27 +3736,8 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
       g.fillStyle = hexA(pal.air,.45); g.fill();
     }
   }
-  if (st >= 4){
-    for (let i=0;i<3;i++){
-      const a = Game.t*(.35+i*.14) + i*2.1, d = r*(1.75+i*.22);
-      g.beginPath();
-      g.arc(x+Math.cos(a)*d, y+Math.sin(a)*d*.42, Math.max(2, r*.07), 0, 7);
-      g.fillStyle = pal.air; g.fill();
-    }
-  }
-
-  /* ---- 8. Rand: heller und kräftiger mit dem Rang --------------------- */
-  g.beginPath(); g.arc(x,y,r,0,7);
-  g.strokeStyle = mine ? hexA(pal.air,.55) : hexA(pal.air, .10 + T*.085);
-  g.lineWidth = Math.max(1, r*(.035 + T*.008)); g.stroke();
-
-  if (label && r > 9){
-    g.font = `600 ${Math.max(9, r*.3)}px Georgia, serif`;
-    g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillStyle = TH().label;
-    g.fillText(label, x, y);
-  }
 }
+
 /* =====================================================================
    ERRUNGENSCHAFTEN
 
@@ -4734,31 +4741,39 @@ function applySetting(key){
    danach nur in den Einstellungen, alle 30 Tage (`NAME_SPERRE_TAGE` im
    Server). Im Hangar ist das Feld für Konten deshalb nur noch Anzeige;
    Gäste tippen dort weiter ihren Namen. */
-function nameFeldLage(){
-  const feld = $("name"), note = $("nameNote"), konto = $("nameKonto");
-  if (!feld) return;
-  const an = istAngemeldet();
-  feld.readOnly = an;
-  if (an && Konto.profil.name) feld.value = Konto.profil.name;
-  if (note) note.hidden = an;
-  if (konto) konto.hidden = !an;
+/* Der Name, unter dem man spielt — die **eine** Stelle dafür (Schritt 118).
+   Mit Konto kommt er aus dem Profil, sonst vom Gast. Das Namensfeld im
+   Hangar ist weg: Der Name steht mittig über dem Körper und wird nur in
+   den Einstellungen geändert (Konto: alle 30 Tage, der Server prüft). */
+function spielerName(){
+  if (istAngemeldet() && Konto.profil.name) return Konto.profil.name;
+  return Gast.name || "";
 }
 function nameZeileBauen(box){
-  const p = Konto.profil;
-  const seit = Number(p.nameSeit) || 0, frei = seit + 30 * 86400000, gesperrt = seit > 0 && Date.now() < frei;
+  const an = istAngemeldet();
+  const p = an ? Konto.profil : { name: Gast.name };
+  const seit = an ? (Number(p.nameSeit) || 0) : 0, frei = seit + 30 * 86400000, gesperrt = seit > 0 && Date.now() < frei;
   const wrap = document.createElement("div");
   wrap.className = "opt"; wrap.dataset.key = "name";
   wrap.innerHTML = `<div><b>${esc(t("s_name"))}</b><small>${esc(gesperrt ? t("s_name_note", new Date(frei).toLocaleDateString(lang)) : t("namerule"))}</small></div>` +
     `<div class="nameWechsel"><input type="text" id="setName" maxlength="14" value="${esc(p.name || "")}" autocomplete="off" autocapitalize="off" spellcheck="false" ${gesperrt ? "disabled" : ""}>` +
     `<button type="button" id="setNameGo" ${gesperrt ? "disabled" : ""}>${esc(t("s_name_go"))}</button></div>`;
   box.appendChild(wrap);
+  guardName($("setName"));
   const go = $("setNameGo");
   if (go) go.addEventListener("click", async () => {
     const n = cleanName($("setName").value).trim();
-    if (!n || n === Konto.profil.name) return;
+    if (!n || n === spielerName()) return;
     go.disabled = true;
+    if (!an){
+      /* Gast: der Name gehört dem Browser, keine Sperre — er steht in
+         keiner Rangliste und kann niemanden verwechseln. */
+      Gast.name = n.slice(0, NAME_MAX); Gast.sichern();
+      Game.name = Gast.name; toast(t("s_name_ok")); heldMalen(); buildSettings();
+      return;
+    }
     const e = await Konto.einstellen({ name: n });
-    if (e.ok){ toast(t("s_name_ok")); Game.name = Konto.profil.name; nameFeldLage(); heldMalen(); }
+    if (e.ok){ toast(t("s_name_ok")); Game.name = Konto.profil.name; heldMalen(); }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
     buildSettings();
   });
@@ -4780,7 +4795,7 @@ function buildSettings(){
   const box = $("setList");
   box.innerHTML = "";
   fassungZeigen();
-  if (istAngemeldet()) nameZeileBauen(box);
+  nameZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
     if (row.key === "music" && !MUSIK_AKTIV) continue;
@@ -5125,43 +5140,689 @@ function buildMonde(){
    nicht mehr. Die gezeigte Masse ist die eigene Bestmasse (mindestens so
    viel, dass man etwas sieht) — damit wächst das Bild mit dem Fortschritt. */
 function heldMalen(){
-  const c = $("heldCanvas");
+  const c = $("heldCanvas"), gl3 = $("heldGL");
   if (!c) return;
-  const g = c.getContext("2d");
   const S = c.width;
-  g.clearRect(0, 0, S, S);
   /* Die echte Bestmasse, nicht eine geschönte Untergrenze. Das Bild ist
      damit selbst eine Fortschrittsanzeige: Wer noch nichts gespielt hat,
      sieht ein Staubkorn und liest „hier draußen ist noch nichts kleiner als
      du". Ein Anfänger, dem das Menü eine Stufe vorspielt, die er nicht hat,
      lernt daraus nur, dass die Anzeige nichts bedeutet. */
   const masse = Math.max(30, Profile.best || 0);
-  const saveT = Game.t; Game.t = 1.2;
-  MENUE_VOLL = true;
   /* Monde nur, wenn die Liga gewählt ist — im Freien Raum zählen sie nicht,
      und das Bild soll zeigen, was man dort sehen wird (Thomas, 16.09.). */
   const monde = modeId === "liga" && Profile.monde && Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
   /* Platz für alles, was ein Design außerhalb von r zeichnet (Schritt 113,
-     Thomas: „rechts und links fehlen ein paar Millimeter"): Ringe reichen bis
-     2,05 r, die Lufthülle bis 1,35 r, Monde bis etwa 1,5 r. Der Radius
-     richtet sich nach der Stufe, damit ein Staubkorn nicht winzig wird. */
+     Thomas: „rechts und links fehlen ein paar Millimeter"): `heldAnteil()`
+     rechnet aus Stufe, Rang, Designschmuck und Monden, wie viel Rand nötig ist. */
   const stufe = stageOf(masse);
-  let anteil = stufe >= 4 ? 0.235 : stufe === 3 ? 0.35 : 0.40;
-  if (monde) anteil = Math.min(anteil, 0.32);
-  const R = S * anteil;
-  if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2, true);
-  try { body(g, S/2, S/2, R, masse, skin, 0, "", true); } catch(_){}
-  if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2);
-  MENUE_VOLL = false;
-  Game.t = saveT;
+  const R = S * heldAnteil(stufe, skin, monde);
 
-  setze("heldName", istAngemeldet() ? Konto.profil.name
-        : (cleanName($("name") ? $("name").value : "") || t("k_guest")));
+  /* Seit Schritt 118 als 3D-Modell (`Held3D`); ohne WebGL wie bisher als
+     Scheibe von `body()`. */
+  if (gl3 && Held3D.moeglich(gl3)){
+    gl3.hidden = false;
+    Held3D.zeigen({ pal: skin, masse, stufe, monde, R, S });
+  } else {
+    if (gl3) gl3.hidden = true;
+    const g = c.getContext("2d");
+    g.clearRect(0, 0, S, S);
+    const saveT = Game.t; Game.t = 1.2;
+    MENUE_VOLL = true;
+    if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2, true);
+    try { body(g, S/2, S/2, R, masse, skin, 0, "", true); } catch(_){}
+    if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2);
+    MENUE_VOLL = false;
+    Game.t = saveT;
+  }
+
+  setze("heldName", spielerName() || t("k_guest"));
   const st = stageOf(masse);
   /* „Stufe 4 — Welt" wie im Entwurf, nicht der ganze Erklärsatz: Der steht
      im Spiel über der Stufenanzeige, wo er gebraucht wird. */
   setze("heldStufe", t("k_stufe", st + 1, t("st" + st)));
 }
+
+/* Wie groß der Körper auf der Fläche steht: so, dass alles hineinpasst, was
+   Design, Stufe, Rang und Monde außerhalb von r zeichnen (Ringe bis 2,05 r,
+   Halo bis 2,1 r, Strahlen bis 1,9 r, Monde bis 1,7 r). Vorher waren es
+   drei feste Zahlen nach Stufe, und Sunflare ragte bei Stufe 1 aus dem Bild. */
+function heldAnteil(stufe, pal, monde){
+  const T = pal.tier || 1, F = pal.trait || "plain";
+  let weit = stufe >= 4 ? 2.05 : stufe >= 3 ? 1.35 : 1.0;
+  weit = Math.max(weit, T >= 6 ? 1.95 : T >= 5 ? 1.70 : T >= 4 ? 1.42 : T >= 3 ? 1.26 : 1);
+  const schmuck = { halo:2.1, strahlen:1.9, feuer:1.75, shards:1.72, frost:1.45, warp:1.32, spikes:1.18, prism:1.1 };
+  weit = Math.max(weit, schmuck[F] || 1);
+  if (monde) weit = Math.max(weit, 1.7);
+  return Math.min(.40, .49 / weit);
+}
+
+/* =====================================================================
+   DER KÖRPER IM HANGAR ALS 3D-MODELL (Schritt 118)
+
+   Thomas am 17.09.2026: „das aktuell ausgewählte Design, das in der Mitte
+   des Menüs erscheint, als prunkvolles 3D-Modell". Bis v97 zeichnete
+   `body()` den Körper im Hangar als Scheibe — dieselbe Funktion wie im
+   Spiel. Jetzt steht dort eine beleuchtete Kugel in WebGL:
+
+   - Die Oberfläche entsteht aus **denselben Farben und derselben
+     Materialart** wie im Spiel (`SKINS`: rock, dark, hot, air, mat) und
+     würfelt mit `saat()`/`wuerfel()` — gleiche Kennung, gleiches Muster,
+     nie `Math.random()`.
+   - **Eine Lichtquelle**, links oben wie `LICHT`.
+   - Ringe ab Stufe „Welt", mit dem Schatten des Körpers darauf; die Monde
+     als kleine Kugeln auf ihrer Bahn (nur in der Spielart Aufstieg, wie
+     bisher). Rang und Lufthülle als Schein dahinter.
+   - Was ein Design **außerhalb** des Kreises trägt (Halo, Feuer, Strahlen,
+     Frost, Beugung, Prisma), legt `designSchmuck()` als zweite Fläche
+     darüber — derselbe Code wie im Spiel, keine zweite Wahrheit.
+
+   Was gleich bleibt: die echte Bestmasse bestimmt die Stufe. Das Bild ist
+   weiter eine Fortschrittsanzeige, nur eine, die sich dreht. Ohne WebGL
+   zeichnet `heldMalen()` wie bisher mit `body()`.
+
+   Kein fremdes Skript: alles hier ist roher WebGL-Code — drei kleine
+   Programme (Kugel, Ring, Schein), keine Bibliothek.
+   ===================================================================== */
+const Held3D = {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  /* Wächter: Kostet ein Bild im Mittel mehr als 45 ms (Software-Zeichnung
+     ohne Grafikkarte, sehr alte Geräte), bleibt das Modell stehen — ein
+     stehendes Bild ist besser als ein Menü, das ruckelt. Gemessen: ohne
+     Grafikkarte im Prüfstand 250 ms je Bild, mit 2 ms. */
+  kosten: 0, bilder: 0, stehen: false,
+
+  /* Materialart → wie die Kugel Licht nimmt. `amb` ist die Resthelligkeit
+     der Schattenseite (dieselbe Rangfolge wie der Terminator in `body()`:
+     Staub am dunkelsten, Glas und Kristall nie schwarz), `spec`/`shine` der
+     Glanzpunkt, `fres` der Lichtsaum am Rand in der Luftfarbe, `puls` das
+     Glühen aus den Spalten. */
+  MAT: {
+    fels:    { amb:.15, spec:.10, shine:14, fres:.30, fpow:3.0, puls:0 },
+    staub:   { amb:.12, spec:.04, shine:8,  fres:.26, fpow:3.2, puls:0 },
+    eis:     { amb:.24, spec:.75, shine:64, fres:.55, fpow:2.5, puls:0 },
+    metall:  { amb:.16, spec:.95, shine:38, fres:.40, fpow:3.0, puls:0 },
+    glut:    { amb:.18, spec:.16, shine:18, fres:.45, fpow:3.0, puls:.95 },
+    energie: { amb:.30, spec:.25, shine:24, fres:.75, fpow:2.2, puls:1.0 },
+    kristall:{ amb:.28, spec:.85, shine:48, fres:.60, fpow:2.4, puls:.35 },
+    glas:    { amb:.30, spec:1.0, shine:96, fres:.75, fpow:2.2, puls:0 },
+    gas:     { amb:.24, spec:.12, shine:12, fres:.85, fpow:2.0, puls:0 },
+    perle:   { amb:.32, spec:.60, shine:30, fres:.80, fpow:2.0, puls:0 },
+    schlund: { amb:.04, spec:0,   shine:1,  fres:0,   fpow:1,   puls:0, schlund:1 }
+  },
+  /* Lichtrichtung im Raum: links oben wie `LICHT`, dazu ein Anteil zum
+     Betrachter, damit die Lichtseite nicht nur eine Sichel ist. */
+  LICHT: [-.42, .46, .78],
+
+  VS: `
+    attribute vec3 aPos; attribute vec2 aUv;
+    uniform mat3 uRot; uniform vec3 uLage; uniform float uGr;
+    varying vec3 vN; varying vec2 vUv; varying vec3 vP;
+    void main(){
+      vec3 p = uRot * aPos;
+      vN = p; vUv = aUv; vP = p;
+      gl_Position = vec4(uLage.xy + p.xy * uGr, uLage.z - p.z * uGr * 0.4, 1.0);
+    }`,
+  FS_KUGEL: `
+    precision mediump float;
+    varying vec3 vN; varying vec2 vUv;
+    uniform sampler2D uTex; uniform vec3 uLicht, uHot, uAir;
+    uniform float uAmb, uSpec, uShine, uFres, uFpow, uPuls, uZeit, uSchlund;
+    void main(){
+      vec4 t = texture2D(uTex, vUv);
+      vec3 N = normalize(vN); vec3 V = vec3(0.0, 0.0, 1.0); vec3 L = normalize(uLicht);
+      float nl = dot(N, L);
+      float diff = clamp(nl, 0.0, 1.0);
+      float wrap = clamp((nl + 0.22) / 1.22, 0.0, 1.0);
+      vec3 H = normalize(L + V);
+      float spec = pow(clamp(dot(N, H), 0.0, 1.0), uShine) * uSpec * (0.25 + 0.75 * diff);
+      float nv = clamp(dot(N, V), 0.0, 1.0);
+      float fres = pow(1.0 - nv, uFpow);
+      vec3 col = t.rgb * (uAmb + (1.0 - uAmb) * wrap) * (1.0 + 0.30 * diff * diff);
+      col += spec * mix(vec3(1.0), uAir, 0.35);
+      col += uAir * fres * uFres * (0.40 + 0.60 * clamp(nl * 0.5 + 0.5, 0.0, 1.0));
+      col += uHot * t.a * uPuls;
+      if (uSchlund > 0.0){
+        /* Ein Loch, das trotzdem Eindruck macht: pechschwarzer Kern, der
+           Lichtring genau am Rand, wandernde Beugungsbögen. */
+        float a = atan(N.y, N.x);
+        float ring = pow(1.0 - nv, 6.0) * (0.80 + 0.20 * sin(a * 9.0 + uZeit * 0.8));
+        col = mix(col, uHot, clamp(ring * 1.8 * uSchlund, 0.0, 1.0));
+        col += uAir * pow(1.0 - nv, 16.0) * uSchlund;
+      }
+      gl_FragColor = vec4(col, 1.0);
+    }`,
+  FS_RING: `
+    precision mediump float;
+    varying vec3 vP; varying vec2 vUv;
+    uniform sampler2D uTex; uniform vec3 uLicht; uniform float uAlpha;
+    void main(){
+      vec4 t = texture2D(uTex, vec2(vUv.x, 0.5));
+      vec3 L = normalize(uLicht);
+      float entlang = dot(vP, L);
+      float quer = length(vP - L * entlang);
+      float schatten = entlang < 0.0 ? mix(0.22, 1.0, smoothstep(0.92, 1.10, quer)) : 1.0;
+      float a = t.a * uAlpha;
+      gl_FragColor = vec4(t.rgb * schatten * a, a);
+    }`,
+  VS_SCHEIN: `
+    attribute vec2 aPos; varying vec2 vXy;
+    void main(){ vXy = aPos; gl_Position = vec4(aPos, 0.999, 1.0); }`,
+  FS_SCHEIN: `
+    precision mediump float;
+    varying vec2 vXy;
+    uniform float uR, uHalo, uRang, uRangWeit, uSchein; uniform vec3 uAir, uHot;
+    void main(){
+      float d = length(vXy) / uR;
+      float a1 = uHalo * 0.30 * (1.0 - smoothstep(0.90, 1.35, d));
+      float a2 = uRang * (1.0 - smoothstep(0.95, uRangWeit, d));
+      float a3 = uSchein * (1.0 - smoothstep(0.80, 2.6, d));
+      vec3 c = uAir * (a1 + a3) + uHot * a2;
+      gl_FragColor = vec4(c, a1 + a2 + a3);
+    }`,
+
+  moeglich(canvas){
+    if (this.ok !== null && this.canvas === canvas) return this.ok;
+    try {
+      const gl = canvas.getContext("webgl", { alpha:true, antialias:true, premultipliedAlpha:true})
+              || canvas.getContext("experimental-webgl", { alpha:true, antialias:true, premultipliedAlpha:true});
+      if (!gl) throw new Error("kein WebGL");
+      this.gl = gl; this.canvas = canvas;
+      this.bauen();
+      canvas.addEventListener("webglcontextlost", e => {
+        e.preventDefault(); this.ok = false; this.laeuft = false;
+        try { heldMalen(); } catch(_){}
+      });
+      this.ok = true;
+    } catch(_){ this.ok = false; }
+    return this.ok;
+  },
+
+  programm(vs, fs){
+    const gl = this.gl;
+    const bau = (art, quelle) => {
+      const s = gl.createShader(art);
+      gl.shaderSource(s, quelle); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const p = gl.createProgram();
+    gl.attachShader(p, bau(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, bau(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    const u = {}, a = {};
+    const nu = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < nu; i++){ const n = gl.getActiveUniform(p, i).name; u[n] = gl.getUniformLocation(p, n); }
+    const na = gl.getProgramParameter(p, gl.ACTIVE_ATTRIBUTES);
+    for (let i = 0; i < na; i++){ const n = gl.getActiveAttrib(p, i).name; a[n] = gl.getAttribLocation(p, n); }
+    return { p, u, a };
+  },
+
+  bauen(){
+    const gl = this.gl;
+    this.prog.kugel  = this.programm(this.VS, this.FS_KUGEL);
+    this.prog.ring   = this.programm(this.VS, this.FS_RING);
+    this.prog.schein = this.programm(this.VS_SCHEIN, this.FS_SCHEIN);
+
+    /* Kugel: Breiten- und Längengrade, Texturkoordinaten wie eine Weltkarte. */
+    const SEG = 72, RINGE = 44, pos = [], uv = [], idx = [];
+    for (let i = 0; i <= RINGE; i++){
+      const v = i / RINGE, phi = v * Math.PI, y = Math.cos(phi), rr = Math.sin(phi);
+      for (let j = 0; j <= SEG; j++){
+        const u = j / SEG, th = u * 6.2831853;
+        pos.push(rr * Math.cos(th), y, rr * Math.sin(th));
+        uv.push(u, 1 - v);
+      }
+    }
+    for (let i = 0; i < RINGE; i++) for (let j = 0; j < SEG; j++){
+      const a = i * (SEG + 1) + j, b = a + SEG + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+    this.form.kugel = this.formBauen(pos, uv, idx);
+
+    /* Ring: eine flache Scheibe mit Loch, von 1,45 r bis 2,05 r wie die
+       drei Ringe in `body()`. Die Texturkoordinate läuft von innen nach
+       außen. */
+    const RS = 160, IN = 1.45, AUS = 2.05, rp = [], ru = [], ri = [];
+    for (let j = 0; j <= RS; j++){
+      const th = j / RS * 6.2831853, c = Math.cos(th), s = Math.sin(th);
+      rp.push(IN * c, 0, IN * s, AUS * c, 0, AUS * s);
+      ru.push(0, 0, 1, 0);
+    }
+    for (let j = 0; j < RS; j++){ const a = j * 2; ri.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    this.form.ring = this.formBauen(rp, ru, ri);
+
+    /* Schein: ein Viereck über die ganze Fläche. */
+    const q = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, q);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    this.form.quad = q;
+
+    this.ringTex = this.ringTextur();
+  },
+
+  formBauen(pos, uv, idx){
+    const gl = this.gl;
+    const bp = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bp);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(pos), gl.STATIC_DRAW);
+    const bu = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bu);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(uv), gl.STATIC_DRAW);
+    const bi = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bi);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+    return { pos: bp, uv: bu, idx: bi, n: idx.length };
+  },
+
+  /* Farbe „#rrggbb" → [r,g,b] in 0…1 */
+  rgb(hex){
+    const n = parseInt(hex.slice(1), 16);
+    return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255];
+  },
+
+  /* --- Die Oberfläche eines Designs als Weltkarte (2:1) ---------------
+     Gezeichnet mit dem 2D-Zeichner, dann als Bild auf die Kugel gelegt.
+     Zwei Flächen: die Farbe und das Glühen (für Glut, Energie, Kristall);
+     das Glühen wandert in den Alphakanal, den der Shader mit `hot`
+     einfärbt. Nahe den Polen werden Formen waagerecht gestreckt, sonst
+     drängen sie sich auf der Kugel dort zusammen. */
+  textur(pal){
+    const gl = this.gl;
+    const alt = this.texturen.get(pal.id);
+    if (alt) return alt;
+    /* Höchstens sechs Karten im Speicher — mehr braucht niemand, der im
+       Hangar Designs durchprobiert, und jede kostet zwei Megabyte. */
+    if (this.texturen.size >= 6){
+      const [k, v] = this.texturen.entries().next().value;
+      gl.deleteTexture(v); this.texturen.delete(k);
+    }
+    const W = Settings.lowPower ? 512 : 1024, H = W / 2;
+    const A = document.createElement("canvas"); A.width = W; A.height = H;
+    const E = document.createElement("canvas"); E.width = W; E.height = H;
+    const ga = A.getContext("2d"), ge = E.getContext("2d");
+    const w = wuerfel(saat(pal.id + "|3d"));
+    const art = pal.mat || "fels";
+    const rock = pal.rock, dark = pal.dark, air = pal.air, hot = pal.hot;
+    const hell = mischen(rock, .18);
+    ga.fillStyle = rock; ga.fillRect(0, 0, W, H);
+    ge.fillStyle = "#000"; ge.fillRect(0, 0, W, H);
+
+    /* Eine Form an (u, v) in Kartenmaßen, an den Polen gestreckt, am
+       linken und rechten Rand fortgesetzt, damit keine Naht entsteht. */
+    const streck = v => 1 / Math.max(.22, Math.cos((v - .5) * Math.PI));
+    const oval = (g, u, v, rx, ry, mal) => {
+      const f = streck(v), x = u * W, y = v * H;
+      for (const dx of [0, -W, W]){
+        if (x + dx + rx * f < -4 || x + dx - rx * f > W + 4) continue;
+        g.save(); g.translate(x + dx, y); g.scale(f, 1);
+        mal(g, rx, ry); g.restore();
+      }
+    };
+    const weich = (g, u, v, r, farbe, a) => oval(g, u, v, r, r, (g2, rx) => {
+      const gr = g2.createRadialGradient(0, 0, 0, 0, 0, rx);
+      gr.addColorStop(0, hexA(farbe, a)); gr.addColorStop(1, hexA(farbe, 0));
+      g2.fillStyle = gr; g2.beginPath(); g2.arc(0, 0, rx, 0, 7); g2.fill();
+    });
+    /* Ein Weg über die Karte, wie ein Riss: unregelmäßig, gabelt sich. */
+    const weg = (u, v, schritte, laenge) => {
+      let a = w() * 6.2832;
+      const p = [[u * W, v * H]];
+      for (let k = 0; k < schritte; k++){
+        a += (w() - .5) * 1.1;
+        const l = laenge * (.6 + w() * .8) * W;
+        const [x, y] = p[p.length - 1];
+        const y2 = Math.max(H * .04, Math.min(H * .96, y + Math.sin(a) * l));
+        p.push([x + Math.cos(a) * l * streck(y2 / H), y2]);
+      }
+      return p;
+    };
+    const zug = (g, p, farbe, a, lw) => {
+      g.strokeStyle = farbe[0] === "#" ? hexA(farbe, a) : farbe;
+      g.lineWidth = lw; g.lineCap = "round"; g.lineJoin = "round";
+      for (const dx of [0, -W, W]){
+        g.beginPath(); g.moveTo(p[0][0] + dx, p[0][1]);
+        for (let i = 1; i < p.length; i++) g.lineTo(p[i][0] + dx, p[i][1]);
+        g.stroke();
+      }
+    };
+
+    /* Grundton: weiche Flecken, damit die Fläche nicht wie lackiert wirkt. */
+    for (let i = 0; i < 70; i++)
+      weich(ga, w(), .06 + w() * .88, W * (.03 + w() * .09), w() < .5 ? dark : hell, .10 + w() * .10);
+
+    if (art === "fels"){
+      /* Krater: dunkles Becken, heller Wall rundum, Schatten unten rechts. */
+      for (let i = 0; i < 34; i++){
+        const u = w(), v = .08 + w() * .84, r = W * (.008 + w() * .026), tief = .5 + w() * .5;
+        oval(ga, u, v, r, r, (g, rx) => {
+          g.beginPath(); g.arc(0, 0, rx, 0, 7); g.fillStyle = hexA(dark, .42 * tief); g.fill();
+          g.beginPath(); g.arc(0, 0, rx * .97, 0, 7); g.strokeStyle = hexA(air, .22 * tief); g.lineWidth = Math.max(1, rx * .18); g.stroke();
+          g.beginPath(); g.arc(0, 0, rx * .70, .6, 2.6); g.strokeStyle = hexA(dark, .35 * tief); g.lineWidth = Math.max(1, rx * .16); g.stroke();
+        });
+      }
+    }
+    if (art === "staub"){
+      for (let i = 0; i < 40; i++) weich(ga, w(), .06 + w() * .88, W * (.02 + w() * .05), dark, .22 + w() * .14);
+      for (let i = 0; i < 12; i++) weich(ga, w(), .1 + w() * .8, W * (.06 + w() * .10), hell, .08);
+    }
+    if (art === "eis"){
+      for (let i = 0; i < 14; i++) weich(ga, w(), .08 + w() * .84, W * (.04 + w() * .08), air, .12 + w() * .08);
+      for (let i = 0; i < 34; i++) zug(ga, weg(w(), .08 + w() * .84, 5 + (w() * 9 | 0), .02 + w() * .03), dark, .45, 1 + w() * 2);
+    }
+    if (art === "metall"){
+      /* Gebürstet: viele feine Striche entlang der Breitengrade. */
+      for (let i = 0; i < 190; i++){
+        const y = w() * H, k = w();
+        ga.strokeStyle = hexA(k < .5 ? air : dark, .04 + w() * .10);
+        ga.lineWidth = .8 + w() * 1.8;
+        ga.beginPath(); ga.moveTo(0, y); ga.lineTo(W, y + (w() - .5) * H * .03); ga.stroke();
+      }
+      for (let i = 0; i < 12; i++){
+        const x = w() * W, y = w() * H, l = W * (.08 + w() * .3);
+        ga.strokeStyle = hexA(air, .18 + w() * .14); ga.lineWidth = 1;
+        ga.beginPath(); ga.moveTo(x, y); ga.lineTo(x + l, y + (w() - .5) * H * .02); ga.stroke();
+      }
+    }
+    if (art === "glut" || art === "energie"){
+      ga.fillStyle = hexA(dark, art === "glut" ? .46 : .30); ga.fillRect(0, 0, W, H);
+      /* Das Spaltennetz glüht: erst breit und schwach (der Schein im
+         Gestein), dann schmal und hell (die Spalte selbst). */
+      const wege = [];
+      for (let i = 0; i < 18; i++){
+        const p = weg(w(), .1 + w() * .8, 7 + (w() * 8 | 0), .018 + w() * .025);
+        wege.push(p);
+        if (w() < .7 && p.length > 4){
+          const ab = p[2 + (w() * (p.length - 3) | 0)];
+          wege.push(weg(ab[0] / W, ab[1] / H, 3 + (w() * 4 | 0), .015 + w() * .02));
+        }
+      }
+      for (const p of wege) zug(ge, p, "rgba(255,255,255,.30)", 1, W * .012);
+      for (const p of wege) zug(ge, p, "rgba(255,255,255,1)", 1, W * .0035);
+      for (const p of wege) zug(ga, p, dark, .5, W * .006);
+      if (art === "energie") for (let i = 0; i < 12; i++) weich(ge, w(), .1 + w() * .8, W * (.04 + w() * .07), "#ffffff", .32);
+    }
+    if (art === "kristall"){
+      /* Facetten: ein verschobenes Raster, jede Fläche mit eigener
+         Helligkeit, harte Kanten dazwischen — das ist der Schliff. */
+      const CX = 18, CY = 9, cw = W / CX, ch = H / CY;
+      const ecke = (i, j) => [i * cw + (w() - .5) * cw * .7, j * ch + (w() - .5) * ch * .7];
+      const ecken = [];
+      for (let j = 0; j <= CY; j++){ ecken.push([]); for (let i = 0; i <= CX; i++) ecken[j].push(ecke(i, j)); }
+      for (let j = 0; j < CY; j++) for (let i = 0; i < CX; i++){
+        const p = [ecken[j][i], ecken[j][i + 1], ecken[j + 1][i + 1], ecken[j + 1][i]];
+        const h = w();
+        ga.beginPath(); ga.moveTo(p[0][0], p[0][1]); for (let k = 1; k < 4; k++) ga.lineTo(p[k][0], p[k][1]); ga.closePath();
+        ga.fillStyle = h > .5 ? `rgba(255,255,255,${(.04 + (h - .5) * .5).toFixed(3)})` : hexA(dark, .10 + (.5 - h) * .5);
+        ga.fill(); ga.strokeStyle = hexA(air, .24); ga.lineWidth = Math.max(1, W * .0012); ga.stroke();
+      }
+      for (let i = 0; i < 40; i++) weich(ge, w(), .1 + w() * .8, W * (.02 + w() * .05), "#ffffff", .18);
+    }
+    if (art === "glas"){
+      ga.fillStyle = hexA(dark, .26); ga.fillRect(0, 0, W, H);
+      for (let i = 0; i < 8; i++) oval(ga, w(), .15 + w() * .7, W * (.10 + w() * .12), H * (.06 + w() * .08), (g, rx, ry) => {
+        const gr = g.createRadialGradient(0, 0, 0, 0, 0, rx);
+        gr.addColorStop(0, hexA(air, .07)); gr.addColorStop(1, hexA(air, 0));
+        g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.fill();
+      });
+    }
+    if (art === "gas" || art === "perle"){
+      /* Bänder mit welligen Kanten, dazu ein oder zwei Stürme. */
+      let v = 0;
+      while (v < 1){
+        const h = .03 + w() * .07, kraft = .16 + w() * .32;
+        const amp = H * (.006 + w() * .012), k = 2 + (w() * 4 | 0), ph = w() * 6.28;
+        const amp2 = H * (.006 + w() * .012), k2 = 2 + (w() * 4 | 0), ph2 = w() * 6.28;
+        const y0 = v * H, y1 = Math.min(H, (v + h) * H);
+        ga.beginPath(); ga.moveTo(0, y0);
+        for (let x = 0; x <= W; x += 8) ga.lineTo(x, y0 + amp * Math.sin(x / W * 6.2832 * k + ph));
+        for (let x = W; x >= 0; x -= 8) ga.lineTo(x, y1 + amp2 * Math.sin(x / W * 6.2832 * k2 + ph2));
+        ga.closePath();
+        ga.fillStyle = art === "perle"
+          ? `hsla(${Math.round((v * 720 + 300) % 360)} 70% 72% / ${(kraft * .6).toFixed(3)})`
+          : hexA(w() < .5 ? air : dark, kraft);
+        ga.fill();
+        v += h + .01 + w() * .03;
+      }
+      for (let i = 0; i < 2; i++) oval(ga, w(), .32 + w() * .36, W * (.03 + w() * .035), H * (.03 + w() * .03), (g, rx, ry) => {
+        const gr = g.createRadialGradient(0, 0, 0, 0, 0, rx);
+        gr.addColorStop(0, hexA(hot, .42)); gr.addColorStop(.6, hexA(air, .18)); gr.addColorStop(1, hexA(air, 0));
+        g.fillStyle = gr; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.fill();
+      });
+    }
+    if (art === "schlund"){
+      ga.fillStyle = "#050612"; ga.fillRect(0, 0, W, H);
+    }
+
+    /* Farbe aus der einen Fläche, Glühen aus der anderen — von Hand
+       zusammengesetzt, damit der Alphakanal nicht als Durchsichtigkeit
+       gelesen wird (der Browser würde die Farbe dort sonst verwerfen). */
+    const ca = ga.getImageData(0, 0, W, H).data, ce = ge.getImageData(0, 0, W, H).data;
+    const px = new Uint8Array(W * H * 4);
+    for (let i = 0; i < W * H; i++){
+      px[i * 4] = ca[i * 4]; px[i * 4 + 1] = ca[i * 4 + 1]; px[i * 4 + 2] = ca[i * 4 + 2]; px[i * 4 + 3] = ce[i * 4];
+    }
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, W, H, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    this.texturen.set(pal.id, tex);
+    return tex;
+  },
+
+  /* Die Ringe als Streifen von innen nach außen: drei Bänder wie in
+     `body()` (1,5 r, 1,66 r, 1,82 r), dazwischen dünner Dunst, und eine
+     feine Körnung, damit sie nicht wie gemalt aussehen. Farbe kommt je
+     Bild als `air` dazu — die Karte ist weiß. */
+  ringTextur(){
+    const gl = this.gl, N = 512, px = new Uint8Array(N * 4);
+    const w = wuerfel(saat("ringe"));
+    for (let i = 0; i < N; i++){
+      const r = 1.45 + i / (N - 1) * .60;
+      let a = .05 * (1 - Math.abs((r - 1.75) / .30));
+      for (const [c, br, k] of [[1.52, .05, .40], [1.66, .045, .30], [1.82, .035, .20], [1.95, .05, .10]])
+        a += k * Math.exp(-((r - c) / br) * ((r - c) / br));
+      a *= .78 + .22 * w();
+      a *= 1 - Math.max(0, (r - 1.98) / .07);
+      const A = Math.max(0, Math.min(255, Math.round(a * 255)));
+      px[i * 4] = px[i * 4 + 1] = px[i * 4 + 2] = 255; px[i * 4 + 3] = A;
+    }
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, N, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tex;
+  },
+
+  /* Ein Mond ist eine einfarbige Kugel; Licht und Saum macht der Shader. */
+  mondTextur(art){
+    if (this.mondTex[art]) return this.mondTex[art];
+    const gl = this.gl, M = MONDE[art], c = this.rgb(M.farbe);
+    const tex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+                  new Uint8Array([c[0] * 255, c[1] * 255, c[2] * 255, 0]));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    this.mondTex[art] = tex;
+    return tex;
+  },
+
+  /* --- Drehmatrizen (3×3, spaltenweise, wie GLSL sie will) ----------- */
+  rotX(a){ const c = Math.cos(a), s = Math.sin(a); return [1,0,0, 0,c,s, 0,-s,c]; },
+  rotY(a){ const c = Math.cos(a), s = Math.sin(a); return [c,0,-s, 0,1,0, s,0,c]; },
+  rotZ(a){ const c = Math.cos(a), s = Math.sin(a); return [c,s,0, -s,c,0, 0,0,1]; },
+  mal(A, B){
+    const R = new Array(9);
+    for (let c = 0; c < 3; c++) for (let r = 0; r < 3; r++)
+      R[c * 3 + r] = A[r] * B[c * 3] + A[3 + r] * B[c * 3 + 1] + A[6 + r] * B[c * 3 + 2];
+    return R;
+  },
+
+  /* Zeigen — von `heldMalen()` bei jeder Änderung gerufen. Malt sofort ein
+     Bild (Prüfstände und „Bewegung reduzieren" sehen damit etwas) und
+     lässt dann die Schleife laufen, solange der Hangar zu sehen ist. */
+  zeigen(stand){
+    this.stand = stand;
+    this.bild();
+    if (this.ruhig()) return;
+    if (!this.laeuft){ this.laeuft = true; this.zuletzt = 0; this.raf = requestAnimationFrame(t => this.schleife(t)); }
+  },
+  ruhig(){
+    return this.stehen || Settings.lowPower || (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  },
+  sichtbar(){
+    const sv = document.getElementById("startVeil"), ps = document.getElementById("paneStart");
+    return !!sv && !sv.hidden && !!ps && !ps.hidden && !document.hidden && !Game.running;
+  },
+  schleife(jetzt){
+    if (!this.laeuft) return;
+    if (!this.sichtbar() || this.ruhig()){ this.laeuft = false; this.zuletzt = 0; return; }
+    /* Auf Tippgeräten dreißig Bilder je Sekunde — mehr sieht bei dieser
+       Drehung niemand, und der Akku dankt es. */
+    if (isTouch && this.zuletzt && jetzt - this.zuletzt < 30){ this.raf = requestAnimationFrame(t => this.schleife(t)); return; }
+    const dt = this.zuletzt ? Math.min(.1, (jetzt - this.zuletzt) / 1000) : 0;
+    this.zuletzt = jetzt; this.zeit += dt;
+    const vor = performance.now();
+    try { this.bild(); } catch(_){ this.laeuft = false; return; }
+    this.kosten = this.kosten * .7 + (performance.now() - vor) * .3;
+    if (++this.bilder > 6 && this.kosten > 45){ this.stehen = true; this.laeuft = false; return; }
+    this.raf = requestAnimationFrame(t => this.schleife(t));
+  },
+  weiter(){ if (this.ok && this.stand && !this.laeuft && this.sichtbar()) this.zeigen(this.stand); },
+
+  bild(){
+    const gl = this.gl, st = this.stand;
+    if (!gl || !st) return;
+    const pal = st.pal, S = st.S, R = st.R, M = this.MAT[pal.mat] || this.MAT.fels;
+    const gr = 2 * R / S;              // Radius in Bildkoordinaten (−1…1)
+    const T = pal.tier || 1, zeit = this.zeit;
+    const air = this.rgb(pal.air), hot = this.rgb(pal.hot);
+
+    gl.viewport(0, 0, S, S);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+    /* 1. Schein dahinter: Lufthülle ab Protoplanet, Rangglühen, und ein
+       leiser Lichthof, der die Kugel vom Fenster löst. */
+    {
+      const P = this.prog.schein;
+      gl.useProgram(P.p);
+      gl.disable(gl.DEPTH_TEST);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.form.quad);
+      gl.enableVertexAttribArray(P.a.aPos);
+      gl.vertexAttribPointer(P.a.aPos, 2, gl.FLOAT, false, 0, 0);
+      const puls = T >= 6 ? .30 + .14 * Math.sin(zeit * 2.2) : T >= 5 ? .26 + .12 * Math.sin(zeit * 3) : T >= 4 ? .17 : T >= 3 ? .09 : 0;
+      const weit = T >= 6 ? 1.95 : T >= 5 ? 1.70 : T >= 4 ? 1.42 : 1.26;
+      gl.uniform1f(P.u.uR, gr);
+      gl.uniform1f(P.u.uHalo, st.stufe >= 3 ? 1 : 0);
+      gl.uniform1f(P.u.uRang, puls);
+      gl.uniform1f(P.u.uRangWeit, weit);
+      gl.uniform1f(P.u.uSchein, .11);
+      gl.uniform3fv(P.u.uAir, air);
+      gl.uniform3fv(P.u.uHot, hot);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+
+    /* Lage im Raum: Achse leicht geneigt, der Körper dreht sich langsam. */
+    const neigung = this.mal(this.rotZ(-.20), this.rotX(.305));
+    const rot = this.mal(neigung, this.rotY(zeit * .22));
+
+    /* 2. Die Kugel. */
+    const K = this.prog.kugel;
+    gl.useProgram(K.p);
+    gl.enable(gl.DEPTH_TEST); gl.depthMask(true);
+    /* Die Dreiecke der Kugel laufen im Uhrzeigersinn — ohne diese Zeile
+       sortiert WebGL die Vorderseite aus, und man sieht die Innenseite. */
+    gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);
+    const kugel = (form, tex, rotM, lage, groesse, mat, farbeAir, farbeHot) => {
+      gl.bindBuffer(gl.ARRAY_BUFFER, form.pos);
+      gl.enableVertexAttribArray(K.a.aPos); gl.vertexAttribPointer(K.a.aPos, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, form.uv);
+      gl.enableVertexAttribArray(K.a.aUv); gl.vertexAttribPointer(K.a.aUv, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, form.idx);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.uniform1i(K.u.uTex, 0);
+      gl.uniformMatrix3fv(K.u.uRot, false, rotM);
+      gl.uniform3fv(K.u.uLage, lage);
+      gl.uniform1f(K.u.uGr, groesse);
+      gl.uniform3fv(K.u.uLicht, this.LICHT);
+      gl.uniform3fv(K.u.uAir, farbeAir); gl.uniform3fv(K.u.uHot, farbeHot);
+      gl.uniform1f(K.u.uAmb, mat.amb); gl.uniform1f(K.u.uSpec, mat.spec); gl.uniform1f(K.u.uShine, mat.shine);
+      gl.uniform1f(K.u.uFres, mat.fres); gl.uniform1f(K.u.uFpow, mat.fpow);
+      gl.uniform1f(K.u.uPuls, mat.puls ? mat.puls * (.78 + .22 * Math.sin(zeit * 1.7)) : 0);
+      gl.uniform1f(K.u.uZeit, zeit);
+      gl.uniform1f(K.u.uSchlund, mat.schlund ? (pal.wucht || 1) : 0);
+      gl.drawElements(gl.TRIANGLES, form.n, gl.UNSIGNED_SHORT, 0);
+    };
+    kugel(this.form.kugel, this.textur(pal), rot, [0, 0, 0], gr, M, air, hot);
+
+    /* 3. Monde: dieselbe Bahn wie `mondeMalen()` (Drittel je Platz, Neigung
+       und Umlauf je Art), nur dass die Tiefe jetzt echt ist — wer hinten
+       ist, verschwindet hinter der Kugel von selbst. */
+    if (st.monde){
+      const mr = .16, bahn = 1.32 + mr;
+      st.monde.slice(0, 3).forEach((art, i) => {
+        const B = MOND_BAHN[art]; if (!B) return;
+        const wnk = i * 2.094 + B.phase * .25 + (zeit + 1.2) * (6.283 / B.umlauf);
+        const sw = Math.sin(wnk), cw = Math.cos(wnk);
+        const x = cw * bahn, y = sw * bahn * B.neig, z = -sw * bahn * (1 - B.neig);
+        const MM = MONDE[art];
+        const mmat = { amb: .22, spec: art === "eis" ? .7 : .3, shine: 24, fres: .5, fpow: 2.4, puls: art === "glut" ? .6 : 0 };
+        kugel(this.form.kugel, this.mondTextur(art), this.mal(neigung, this.rotY(zeit * .5 + i)),
+              [x * gr, y * gr, -z * gr * .4], gr * mr, mmat, this.rgb(MM.schein), this.rgb(art === "glut" ? MM.schein : MM.kern));
+      });
+    }
+
+    /* 4. Die Ringe ab Stufe „Welt" — durchscheinend, deshalb zuletzt, mit
+       Tiefenprüfung, aber ohne Tiefe zu schreiben. */
+    if (st.stufe >= 4){
+      const P = this.prog.ring, form = this.form.ring;
+      gl.useProgram(P.p);
+      gl.disable(gl.CULL_FACE); gl.depthMask(false);
+      gl.bindBuffer(gl.ARRAY_BUFFER, form.pos);
+      gl.enableVertexAttribArray(P.a.aPos); gl.vertexAttribPointer(P.a.aPos, 3, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, form.uv);
+      gl.enableVertexAttribArray(P.a.aUv); gl.vertexAttribPointer(P.a.aUv, 2, gl.FLOAT, false, 0, 0);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, form.idx);
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, this.ringTex);
+      gl.uniform1i(P.u.uTex, 0);
+      gl.uniformMatrix3fv(P.u.uRot, false, this.mal(neigung, this.rotY(zeit * .05)));
+      gl.uniform3fv(P.u.uLage, [0, 0, 0]);
+      gl.uniform1f(P.u.uGr, gr);
+      gl.uniform3fv(P.u.uLicht, this.LICHT);
+      gl.uniform1f(P.u.uAlpha, 1);
+      /* Ringfarbe: die Karte ist weiß, eingefärbt wird über die
+         Farbmaske — billiger als eine Karte je Design. */
+      gl.blendColor(air[0], air[1], air[2], 1);
+      gl.blendFunc(gl.CONSTANT_COLOR, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawElements(gl.TRIANGLES, form.n, gl.UNSIGNED_SHORT, 0);
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      gl.depthMask(true);
+    }
+
+    /* 5. Darüber, auf der zweiten Fläche: was das Design außerhalb des
+       Kreises trägt — derselbe Code wie im Spiel. */
+    const c2 = document.getElementById("heldCanvas");
+    if (c2){
+      const g = c2.getContext("2d");
+      g.clearRect(0, 0, c2.width, c2.height);
+      const saveT = Game.t; Game.t = zeit + 1.2;
+      try { designSchmuck(g, S / 2, S / 2, R, pal, pal.trait || "plain", merkmale(pal), true); } catch(_){}
+      Game.t = saveT;
+    }
+  }
+};
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Held3D.weiter(); });
 
 /* „Nächste Errungenschaften": die drei, die am nächsten dran sind.
    Erfunden ist daran nichts — die Schwellen stehen in `ERFOLG_TEXT`, der
@@ -5229,7 +5890,6 @@ function show(id){
     /* Der Clankampf ist keine Wahl im Hangar (Schritt 109): Zurueck im
        Hangar steht wieder die Liga, sonst bliebe „clan" als Spielart. */
     if (modeId === "clan"){ modeId = "liga"; buildModes(); }
-    nameFeldLage();
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
@@ -5410,7 +6070,22 @@ function onlineZeigen(){
   const rand = () => {
     kopf.classList.toggle("schiebbar", kopf.scrollWidth - kopf.clientWidth - kopf.scrollLeft > 2);
   };
+  /* Sitzt der Block fest am Bildrand (`position:fixed`), wird er aus der
+     Kopfzeile herausgehoben und hängt direkt am Startbildschirm. Die
+     Kopfzeile ist dort ein schiebbarer Streifen (`overflow-x:auto`), und
+     Safari auf dem iPhone schneidet feste Kinder eines solchen Streifens an
+     dessen Kante ab — der Knopf liegt aber ganz außerhalb und war deshalb
+     auf Telefonen unsichtbar (Thomas, 17.09.2026), während jeder
+     Rechner-Browser ihn zeigte. Am Rechner gehört er in die Mitte der
+     Kopfzeile und kommt dorthin zurück. */
+  const veil = kopf.parentElement, danach = kopf.querySelector(".konsG.r");
+  const ort = () => {
+    const fest = getComputedStyle(start).position === "fixed";
+    if (fest && start.parentElement === kopf) veil.insertBefore(start, kopf.nextSibling);
+    else if (!fest && start.parentElement !== kopf) kopf.insertBefore(start, danach);
+  };
   const setzen = () => {
+    ort();
     const b = Math.ceil(start.getBoundingClientRect().width);
     if (b > 0) kopf.style.setProperty("--start-breite", b + "px");
     rand();
@@ -5421,6 +6096,12 @@ function onlineZeigen(){
      wird stattdessen nach jeder Breitenänderung und beim Schieben geprüft. */
   if (typeof ResizeObserver === "function") new ResizeObserver(setzen).observe(start);
   window.addEventListener("resize", setzen);
+  /* Zusätzlich auf die Formatgrenzen selbst hören: Beim Drehen des Telefons
+     kommt das Größenereignis nicht überall verlässlich vor dem neuen Stil. */
+  if (typeof matchMedia === "function") for (const q of ["(max-height:640px)", "(max-width:900px)", "(min-width:640px)"]) {
+    const m = matchMedia(q);
+    if (m.addEventListener) m.addEventListener("change", setzen); else if (m.addListener) m.addListener(setzen);
+  }
   kopf.addEventListener("scroll", rand, { passive: true });
   setzen();
   requestAnimationFrame(rand);
@@ -5617,7 +6298,7 @@ function addFriend(){
   const raw = $("friendName").value;
   const name = cleanName(raw).trim();
   if (!name) return friendNote(t("fr_type"), "warn");
-  if (name.toLowerCase() === cleanName($("name").value).trim().toLowerCase())
+  if (name.toLowerCase() === spielerName().trim().toLowerCase())
     return friendNote(t("fr_own"), "warn");
   if (Profile.friends.some(f => f.toLowerCase() === name.toLowerCase()))
     return friendNote(t("fr_already", name), "warn");
@@ -6192,7 +6873,12 @@ function buildStrip(){
     nm.className = "nm"; nm.textContent = offen ? s.label : Profile.requirement(s);
     b.appendChild(nm);
     b.addEventListener("click", () => {
-      if (offen){ skin = s; buildStrip(); }
+      if (offen){
+        /* Wie `pick()`: merken, sonst ist die Wahl nach dem Neuladen weg. */
+        skin = s; Profile.skin = s.id; Gast.sichern();
+        if (Konto.angemeldet()) Konto.einstellen({ skin: s.id });
+        buildStrip(); heldMalen();
+      }
       else { reiter("haut"); pick(s); }
     });
     strip.appendChild(b);
@@ -6488,7 +7174,6 @@ $("acctForm").addEventListener("submit", async e => {
    Anmeldebonus wird nicht von allein abgeholt — er soll ein sichtbarer
    Knopf sein, keine Zahl, die unbemerkt hochspringt. */
 function nachAnmeldung(){
-  if (Konto.profil && Konto.profil.name) $("name").value = Konto.profil.name;
   paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank();
   show("startVeil");
   toast(t("k_hello", Konto.profil ? Konto.profil.name : ""));
@@ -6581,11 +7266,7 @@ addEventListener("keydown", e => {
 
 /* Eingaben sofort säubern, damit niemand einen untippbaren Namen wählt */
 function guardName(input, note){
-  /* Die Regel steht erst da, wenn sie jemanden betrifft. Vorher ist sie ein
-     Absatz, der jedem im Weg steht, der sie schon kennt — im Startbildschirm
-     hat sie die Bestenliste aus dem Bild geschoben. */
-  const hinweis = $(note);
-  if (hinweis && note === "nameNote") hinweis.hidden = true;
+  if (!input) return;
   input.addEventListener("input", () => {
     const before = input.value, after = cleanName(before);
     if (after !== before){
@@ -6595,28 +7276,8 @@ function guardName(input, note){
     }
   });
 }
-guardName($("name"), "nameNote");
 setTimeout(() => { if (!Konto.gemerkt()) Gast.nameEinsetzen(); }, 0);
 guardName($("friendName"));
-
-/* Der Name eines angemeldeten Spielers gehört auf den Server: Im
-   Onlinebetrieb nimmt der Server den Namen aus dem Profil, nicht aus der
-   Beitrittsnachricht. Ohne diesen Aufruf könnte man den Namen im Menü ändern
-   und würde im Spiel weiter unter dem alten auftreten — ohne Hinweis, warum.
-   `change` statt `input`: sonst geht bei jedem Tastendruck eine Anfrage los. */
-$("name").addEventListener("change", async () => {
-  if (!Konto.angemeldet()) return;
-  const n = cleanName($("name").value).trim();
-  if (!n || n === Konto.profil.name) return;
-  const e = await Konto.einstellen({name: n});
-  if (e.ok){ $("name").value = Konto.profil.name; Game.name = Konto.profil.name; heldMalen(); }
-  else {
-    $("name").value = Konto.profil.name;
-    /* Der Server sagt, warum — ein Feld, das sich stumm zurücksetzt, sieht
-       aus wie ein Fehler im Spiel. */
-    toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
-  }
-});
 
 $("friendsBtn").addEventListener("click", () => {
   buildFriends(); friendNote(""); show("friendsVeil");
@@ -6692,7 +7353,7 @@ function verbindenDannStarten(name, knopf){
 
 startBtn.addEventListener("click", () => {
   Sound.unlock();                       // Nutzergeste: erst hier darf Ton starten
-  const name = $("name").value.trim().slice(0,14);
+  const name = spielerName().trim().slice(0,14);
   if (!Konto.angemeldet()) Gast.sichern();
   /* Jede Runde beginnt mit dem Versuch, online zu spielen. Erst wenn das
      scheitert, setzt `verbindenDannStarten` den Rückfall. */
@@ -7630,7 +8291,7 @@ async function titelRangLaden(meine){
   const liste = Array.isArray(a.liste) ? a.liste : [];
   if (!liste.length){ box.innerHTML = ""; return rangHinweis(t("titel_leer", t("titel_name"))); }
   const ichKonto = istAngemeldet() ? Konto.profil.id : -1;
-  const ichName = (Game.name || $("name").value || "").toLowerCase();
+  const ichName = (Game.name || spielerName() || "").toLowerCase();
   box.innerHTML = liste.map(e => {
     const ich = e.id ? +e.id === ichKonto : (!istAngemeldet() && String(e.name).toLowerCase() === ichName);
     const zusatz = e.laufend ? `<small style="color:#f2c14e">♛</small>`
