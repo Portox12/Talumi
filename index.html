@@ -1930,7 +1930,7 @@
        passt, wird geschoben — nie überdeckt. `kopfPlatz()` setzt dazu
        `.schiebbar`, solange rechts noch etwas verborgen ist; der Verlauf
        zeigt es an. */
-    .konsKopf{right:calc(14px + var(--start-breite, 176px) + 10px);padding-right:0}
+    .konsKopf{right:calc(14px + env(safe-area-inset-right) + var(--start-breite, 176px) + 10px);padding-right:0}
     /* Der Verlauf ist ein **klebendes** Pseudoelement, keine Maske: Eine
        Maske auf der Kopfzeile machte sie zum Bezugsrahmen des fixierten
        Startblocks — der wanderte dann in den Streifen und verschwand

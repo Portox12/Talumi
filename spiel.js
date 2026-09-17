@@ -4788,10 +4788,20 @@ let fassungText = "";
 function fassungZeigen(){
   const el = $("setFassung");
   if (!el) return;
-  if (fassungText){ el.textContent = fassungText; return; }
+  /* Dahinter der Zustand des 3D-Modells — die eine Zeile, die Thomas
+     vorlesen kann, wenn es auf einem Gerät nicht erscheint. */
+  const drei = () => {
+    try {
+      if (Held3D.ok === false) return " · 3D: aus — " + (Held3D.grund || "unbekannt");
+      if (Held3D.ok && Held3D.ruhig()) return " · 3D: an, steht still (Sparmodus, schwache Grafik oder „Bewegung reduzieren“)";
+      if (Held3D.ok) return " · 3D: an";
+    } catch(_){}
+    return "";
+  };
+  if (fassungText){ el.textContent = fassungText + drei(); return; }
   fetch("sw.js", { cache: "no-store" }).then(r => r.text()).then(txt => {
     const m = txt.match(/VERSION = "(v\d+)"/);
-    if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText; }
+    if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText + drei(); }
   }).catch(() => {});
 }
 function buildSettings(){
@@ -5152,20 +5162,27 @@ function heldMalen(){
      du". Ein Anfänger, dem das Menü eine Stufe vorspielt, die er nicht hat,
      lernt daraus nur, dass die Anzeige nichts bedeutet. */
   const masse = Math.max(30, Profile.best || 0);
+  /* **Gezeigt** wird das Design immer als Welt — mit Ringen (Thomas,
+     17.09.2026: „das Design soll als Welt angezeigt werden"). Der Hangar ist
+     das Schaufenster des Designs; den echten Fortschritt nennt weiter die
+     Plakette darunter („Stufe 2 — Geröll") und die Bestmasse. Damit ist die
+     frühere Regel „keine geschönte Mindestmasse" für das **Bild** aufgehoben,
+     für die **Zahlen** gilt sie weiter. */
+  const schauMasse = Math.max(masse, STAGES[STAGES.length - 1].at);
   /* Monde nur, wenn die Liga gewählt ist — im Freien Raum zählen sie nicht,
      und das Bild soll zeigen, was man dort sehen wird (Thomas, 16.09.). */
   const monde = modeId === "liga" && Profile.monde && Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
   /* Platz für alles, was ein Design außerhalb von r zeichnet (Schritt 113,
      Thomas: „rechts und links fehlen ein paar Millimeter"): `heldAnteil()`
      rechnet aus Stufe, Rang, Designschmuck und Monden, wie viel Rand nötig ist. */
-  const stufe = stageOf(masse);
+  const stufe = stageOf(schauMasse);
   const R = S * heldAnteil(stufe, skin, monde);
 
   /* Seit Schritt 118 als 3D-Modell (`Held3D`); ohne WebGL wie bisher als
      Scheibe von `body()`. */
   if (gl3 && Held3D.moeglich(gl3)){
     gl3.hidden = false;
-    Held3D.zeigen({ pal: skin, masse, stufe, monde, R, S });
+    Held3D.zeigen({ pal: skin, masse: schauMasse, stufe, monde, R, S });
   } else {
     if (gl3) gl3.hidden = true;
     const g = c.getContext("2d");
@@ -5173,7 +5190,7 @@ function heldMalen(){
     const saveT = Game.t; Game.t = 1.2;
     MENUE_VOLL = true;
     if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2, true);
-    try { body(g, S/2, S/2, R, masse, skin, 0, "", true); } catch(_){}
+    try { body(g, S/2, S/2, R, schauMasse, skin, 0, "", true); } catch(_){}
     if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2);
     MENUE_VOLL = false;
     Game.t = saveT;
@@ -5321,7 +5338,7 @@ const Held3D = {
       float d = length(vXy) / uR;
       float a1 = uHalo * 0.30 * (1.0 - smoothstep(0.90, 1.35, d));
       float a2 = uRang * (1.0 - smoothstep(0.95, uRangWeit, d));
-      float a3 = uSchein * (1.0 - smoothstep(0.80, 2.6, d));
+      float a3 = uSchein * (1.0 - smoothstep(0.80, 2.6, d)) * (1.0 - smoothstep(0.70, 0.98, length(vXy)));
       vec3 c = uAir * (a1 + a3) + uHot * a2;
       gl_FragColor = vec4(c, a1 + a2 + a3);
     }`,
@@ -5329,17 +5346,25 @@ const Held3D = {
   moeglich(canvas){
     if (this.ok !== null && this.canvas === canvas) return this.ok;
     try {
-      const gl = canvas.getContext("webgl", { alpha:true, antialias:true, premultipliedAlpha:true})
-              || canvas.getContext("experimental-webgl", { alpha:true, antialias:true, premultipliedAlpha:true});
-      if (!gl) throw new Error("kein WebGL");
+      /* Mehrere Anläufe: Manche Rechner geben mit Kantenglättung keinen
+         Zusammenhang her, manche nur die neuere Fassung. Scheitert alles,
+         steht der Grund in `grund` und ist in den Einstellungen neben der
+         Fassung zu lesen — sonst bleibt „am PC kein 3D" ein Rätsel
+         (Thomas, 17.09.2026). */
+      let gl = null;
+      for (const [art, glatt] of [["webgl",true],["webgl",false],["experimental-webgl",false],["webgl2",false]]){
+        try { gl = canvas.getContext(art, { alpha:true, antialias:glatt, premultipliedAlpha:true }); } catch(_){ gl = null; }
+        if (gl) break;
+      }
+      if (!gl) throw new Error("Browser gibt kein WebGL her (Hardwarebeschleunigung aus?)");
       this.gl = gl; this.canvas = canvas;
       this.bauen();
       canvas.addEventListener("webglcontextlost", e => {
-        e.preventDefault(); this.ok = false; this.laeuft = false;
+        e.preventDefault(); this.ok = false; this.laeuft = false; this.grund = "Grafikzusammenhang verloren";
         try { heldMalen(); } catch(_){}
       });
-      this.ok = true;
-    } catch(_){ this.ok = false; }
+      this.ok = true; this.grund = "";
+    } catch(e){ this.ok = false; this.grund = String(e && e.message || e).slice(0, 140); }
     return this.ok;
   },
 
@@ -5614,6 +5639,7 @@ const Held3D = {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     this.texturen.set(pal.id, tex);
+    this.gebaut = true;   // dieses Bild zählt für die Bremse nicht mit
     return tex;
   },
 
@@ -5695,8 +5721,19 @@ const Held3D = {
     this.zuletzt = jetzt; this.zeit += dt;
     const vor = performance.now();
     try { this.bild(); } catch(_){ this.laeuft = false; return; }
-    this.kosten = this.kosten * .7 + (performance.now() - vor) * .3;
-    if (++this.bilder > 6 && this.kosten > 45){ this.stehen = true; this.laeuft = false; return; }
+    /* Die Bremse misst nur das **Zeichnen**. Bis v100 zählte auch das Bild
+       mit, in dem eine Oberfläche neu gerechnet wird (einmal je Design, am
+       Rechner 1024 × 512 Punkte) — ein Designwechsel reichte dann, und das
+       Modell blieb für immer stehen (Thomas, 17.09.2026: „am PC nicht in
+       3D"). Jetzt zählen solche Bilder nicht, und stehen bleibt es erst
+       nach zwanzig langsamen Bildern in Folge. */
+    const ms = performance.now() - vor;
+    if (this.gebaut){ this.gebaut = false; }
+    else {
+      this.kosten = this.kosten * .7 + ms * .3;
+      this.langsam = ms > 45 ? (this.langsam || 0) + 1 : 0;
+      if (++this.bilder > 6 && this.langsam >= 20){ this.stehen = true; this.laeuft = false; return; }
+    }
     this.raf = requestAnimationFrame(t => this.schleife(t));
   },
   weiter(){ if (this.ok && this.stand && !this.laeuft && this.sichtbar()) this.zeigen(this.stand); },
