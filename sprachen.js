@@ -1328,3 +1328,51 @@ const LANGS115 = {
   ru:{s_fps:"Показывать кадры/с", s_fps_h:"Маленькое число слева внизу: кадров в секунду. Зелёный — плавно, красный — рывки.", s_eco_kurz:"эконом"}
 };
 for (const c in LANGS115) Object.assign(LANGS[c], LANGS115[c]);
+
+/* Problem melden (17.09.2026), alle sieben Sprachen — testkonto-runde.js
+   verlangt, dass jede Sprache dieselben Bausteine trägt wie Englisch. */
+const LANGS119 = {
+  en:{md_knopf:"Report a problem", md_kopf:"Report a problem", md_erkl:"A bug, an unfair player or an idea? Write to us — a human reads every message.",
+      md_ph:"What happened? The more precise, the better.", md_mail:"Your e-mail for a reply (optional)",
+      md_hinweis:"Sent by e-mail to the Talumi team, together with your player name, game version and device type. Not stored on the game server.",
+      md_senden:"Send", md_kurz:"Please write at least a sentence.", md_mailfalsch:"That e-mail address does not look right.",
+      md_oft:"Too many messages right now. Please try again later.", md_fehl:"Could not send. Please try again later.",
+      md_danke:"Thank you — your message is on its way.", md_a_fehler:"Bug", md_a_spieler:"Player", md_a_idee:"Idea", md_a_sonstiges:"Other"},
+  de:{md_knopf:"Problem melden", md_kopf:"Problem melden", md_erkl:"Ein Fehler, ein unfairer Spieler oder eine Idee? Schreib uns — jede Nachricht liest ein Mensch.",
+      md_ph:"Was ist passiert? Je genauer, desto besser.", md_mail:"Deine E-Mail für eine Antwort (freiwillig)",
+      md_hinweis:"Geht als E-Mail an das Talumi-Team, zusammen mit Spielername, Spielfassung und Gerätetyp. Wird auf dem Spielserver nicht gespeichert.",
+      md_senden:"Absenden", md_kurz:"Bitte schreib mindestens einen Satz.", md_mailfalsch:"Die E-Mail-Adresse sieht nicht richtig aus.",
+      md_oft:"Gerade zu viele Meldungen. Bitte später noch einmal.", md_fehl:"Senden hat nicht geklappt. Bitte später noch einmal.",
+      md_danke:"Danke — deine Nachricht ist unterwegs.", md_a_fehler:"Fehler", md_a_spieler:"Spieler", md_a_idee:"Idee", md_a_sonstiges:"Sonstiges"},
+  es:{md_knopf:"Informar de un problema", md_kopf:"Informar de un problema", md_erkl:"¿Un error, un jugador tramposo o una idea? Escríbenos: una persona lee cada mensaje.",
+      md_ph:"¿Qué ha pasado? Cuanto más preciso, mejor.", md_mail:"Tu correo para la respuesta (opcional)",
+      md_hinweis:"Se envía por correo al equipo de Talumi junto con tu nombre de jugador, la versión del juego y el tipo de dispositivo. No se guarda en el servidor del juego.",
+      md_senden:"Enviar", md_kurz:"Escribe al menos una frase, por favor.", md_mailfalsch:"La dirección de correo no parece correcta.",
+      md_oft:"Demasiados mensajes ahora mismo. Inténtalo más tarde.", md_fehl:"No se pudo enviar. Inténtalo más tarde.",
+      md_danke:"Gracias: tu mensaje está en camino.", md_a_fehler:"Error", md_a_spieler:"Jugador", md_a_idee:"Idea", md_a_sonstiges:"Otro"},
+  pt:{md_knopf:"Relatar um problema", md_kopf:"Relatar um problema", md_erkl:"Um erro, um jogador desleal ou uma ideia? Escreva para nós — uma pessoa lê cada mensagem.",
+      md_ph:"O que aconteceu? Quanto mais preciso, melhor.", md_mail:"Seu e-mail para a resposta (opcional)",
+      md_hinweis:"Enviado por e-mail à equipe do Talumi com seu nome de jogador, a versão do jogo e o tipo de aparelho. Não fica guardado no servidor do jogo.",
+      md_senden:"Enviar", md_kurz:"Escreva pelo menos uma frase, por favor.", md_mailfalsch:"O endereço de e-mail não parece correto.",
+      md_oft:"Mensagens demais agora. Tente mais tarde.", md_fehl:"Não foi possível enviar. Tente mais tarde.",
+      md_danke:"Obrigado — sua mensagem está a caminho.", md_a_fehler:"Erro", md_a_spieler:"Jogador", md_a_idee:"Ideia", md_a_sonstiges:"Outro"},
+  fr:{md_knopf:"Signaler un problème", md_kopf:"Signaler un problème", md_erkl:"Un bug, un joueur déloyal ou une idée ? Écris-nous — chaque message est lu par une personne.",
+      md_ph:"Que s'est-il passé ? Plus c'est précis, mieux c'est.", md_mail:"Ton e-mail pour la réponse (facultatif)",
+      md_hinweis:"Envoyé par e-mail à l'équipe Talumi avec ton nom de joueur, la version du jeu et le type d'appareil. Rien n'est conservé sur le serveur de jeu.",
+      md_senden:"Envoyer", md_kurz:"Écris au moins une phrase, s'il te plaît.", md_mailfalsch:"L'adresse e-mail ne semble pas correcte.",
+      md_oft:"Trop de messages pour l'instant. Réessaie plus tard.", md_fehl:"Envoi impossible. Réessaie plus tard.",
+      md_danke:"Merci — ton message est en route.", md_a_fehler:"Bug", md_a_spieler:"Joueur", md_a_idee:"Idée", md_a_sonstiges:"Autre"},
+  tr:{md_knopf:"Sorun bildir", md_kopf:"Sorun bildir", md_erkl:"Bir hata, haksız bir oyuncu ya da bir fikir mi? Bize yaz — her mesajı bir insan okur.",
+      md_ph:"Ne oldu? Ne kadar ayrıntılı, o kadar iyi.", md_mail:"Yanıt için e-postan (isteğe bağlı)",
+      md_hinweis:"Oyuncu adın, oyun sürümü ve cihaz türüyle birlikte e-postayla Talumi ekibine gönderilir. Oyun sunucusunda saklanmaz.",
+      md_senden:"Gönder", md_kurz:"Lütfen en az bir cümle yaz.", md_mailfalsch:"E-posta adresi doğru görünmüyor.",
+      md_oft:"Şu an çok fazla mesaj var. Lütfen sonra tekrar dene.", md_fehl:"Gönderilemedi. Lütfen sonra tekrar dene.",
+      md_danke:"Teşekkürler — mesajın yolda.", md_a_fehler:"Hata", md_a_spieler:"Oyuncu", md_a_idee:"Fikir", md_a_sonstiges:"Diğer"},
+  ru:{md_knopf:"Сообщить о проблеме", md_kopf:"Сообщить о проблеме", md_erkl:"Ошибка, нечестный игрок или идея? Напиши нам — каждое сообщение читает человек.",
+      md_ph:"Что случилось? Чем точнее, тем лучше.", md_mail:"Твой e-mail для ответа (необязательно)",
+      md_hinweis:"Отправляется по e-mail команде Talumi вместе с именем игрока, версией игры и типом устройства. На игровом сервере не хранится.",
+      md_senden:"Отправить", md_kurz:"Напиши, пожалуйста, хотя бы одно предложение.", md_mailfalsch:"Адрес e-mail выглядит неверно.",
+      md_oft:"Сейчас слишком много сообщений. Попробуй позже.", md_fehl:"Не удалось отправить. Попробуй позже.",
+      md_danke:"Спасибо — сообщение уже в пути.", md_a_fehler:"Ошибка", md_a_spieler:"Игрок", md_a_idee:"Идея", md_a_sonstiges:"Другое"}
+};
+for (const c in LANGS119) Object.assign(LANGS[c], LANGS119[c]);

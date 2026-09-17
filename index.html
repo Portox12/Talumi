@@ -1116,6 +1116,18 @@
      pointer-events:none}
   button.marke svg{pointer-events:none}
   .pwaKnopf[hidden]{display:none}
+  /* Meldefenster */
+  #meldeVeil[hidden]{display:none}
+  #meldeText{width:100%;box-sizing:border-box;min-height:110px;resize:vertical;margin:10px 0 8px;padding:12px 14px;
+       border-radius:12px;border:1px solid var(--line-hell);background:var(--plate);color:var(--paper);
+       font:inherit;font-size:15px;line-height:1.4}
+  #meldeMail{width:100%;box-sizing:border-box;margin:0 0 8px}
+  #meldeArt{margin-top:8px;flex-wrap:wrap}
+  .meldeKnopf{margin-top:12px;width:auto;padding:0 16px;min-height:40px;font-size:13px}
+  body.touch .meldeKnopf{min-height:44px}
+  .meldeKnopf[hidden],#setMelden[hidden]{display:none}
+  /* Flaches Telefon: das Textfeld niedriger, damit „Absenden“ ohne langes Schieben erreichbar ist. */
+  @media (max-height:470px){ #meldeText{min-height:64px} #meldeVeil h1{font-size:24px!important} }
   /* Zahnrad: quadratisch, am Tippgerät 44 Punkte (Regel weiter unten greift
      über `body.touch`), das Zeichen in Messing wie beim Installieren-Knopf. */
   .konsNav.zahnrad{display:inline-grid;place-items:center;padding:0;width:40px;flex:0 0 auto}
@@ -1622,8 +1634,12 @@
        „Freundschaftsspiel“ 99, „Friendly match“ nur 79. Eine Anordnung, die
        auf Englisch aufgeht, geht auf Russisch nicht auf — das ist hier der
        Regelfall, nicht der Einzelfall. Gemessen, nicht geschätzt. */
-    .konsPane.drei{grid-template-columns:minmax(0,1fr) minmax(0,290px) minmax(0,225px)}
-    .konsSp.m{grid-column:1;grid-row:2;order:0;
+    /* Reihenfolge seit v102 (Thomas, 17.09.2026): **Startbonus links, der
+       Körper mit Namen mittig, die Spielart rechts.** Vorher stand der
+       Körper links. Die Breiten der beiden Randspalten sind die gemessenen
+       von oben; die Mitte bekommt den Rest. */
+    .konsPane.drei{grid-template-columns:minmax(0,225px) minmax(0,1fr) minmax(0,290px)}
+    .konsSp.m{grid-column:2;grid-row:2;order:0;align-items:center;
          border:0;border-right:1px solid var(--line);
          justify-content:flex-start;gap:8px}
     /* Die Spalte selbst verschwindet als Kasten; ihre beiden Gruppen werden
@@ -1635,8 +1651,8 @@
        Das ist die Grenze, unter der auf einem Telefon nichts mehr lesbar
        ist. */
     .rGrp > label{line-height:1.2;font-size:11px}
-    .rGrp:first-of-type{grid-column:2;grid-row:2;border-right:1px solid var(--line)}
-    .rGrp:last-of-type{grid-column:3;grid-row:2}
+    .rGrp:first-of-type{grid-column:3;grid-row:2}
+    .rGrp:last-of-type{grid-column:1;grid-row:2;border-right:1px solid var(--line)}
     .rGrp > label{margin:0}
     /* Faktor über den Preis statt daneben: So bleibt der Knopf eine Zeile
        hoch, auch wenn die Spalte nur 215 Punkte breit ist. */
@@ -1948,6 +1964,29 @@
     .konsStart{height:44px;top:10px}
     #startBtn{padding:0 18px;font-size:14px}
     .konsFenster{bottom:12px}
+  }
+
+  /* Der Körper steht seit v102 in der Mitte und darf den Platz nutzen: so
+     groß, wie die Höhe hergibt, statt fester Stufen (92/104/126/168). Die
+     205 Punkte sind Kopfzeile, Reiter, Name und Ränder — gemessen mit
+     scrollall.js, der Reiter darf nicht scrollen. Steht bewusst **nach**
+     allen festen Stufen. */
+  @media (max-height:470px) and (min-width:640px){
+    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 260px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 260px), 300px);height:auto}
+  }
+  /* Schmale Telefone (667 breit): Die Randspalten geben der Mitte Platz ab,
+     sonst bleibt für den Körper ein Streifen von 97 Punkten. Seit Schritt
+     109 stehen nur zwei kurze Spielarten im Menü — die 290 Punkte waren für
+     „Freundschaftsspiel" bemessen. */
+  @media (max-height:470px) and (min-width:640px) and (max-width:720px){
+    .konsPane.drei{grid-template-columns:minmax(0,214px) minmax(0,1fr) minmax(0,224px)}
+  }
+  /* Bis 420 Punkte Höhe stehen unter dem Körper weder Werte noch Kacheln —
+     dort darf er 55 Punkte mehr haben. */
+  @media (max-height:420px) and (min-width:640px){
+    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 205px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 205px), 300px);height:auto}
   }
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -2547,6 +2586,7 @@
     <div id="setList" class="setlist"></div>
     <p class="foot" data-i18n="setnote">These live in this session.</p>
     <p class="foot" id="setFassung" style="margin-top:4px;opacity:.7"></p>
+    <button class="quiet" id="setMelden" data-i18n="md_knopf" hidden>Report a problem</button>
     <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
     <button id="setClose" data-i18n="back">Back</button>
   </div>
@@ -2683,6 +2723,9 @@
       <p class="sub" id="endText"></p>
       <div id="endRecap"></div>
       <div id="endZiel"></div>
+      <!-- Problem melden (17.09.2026): unter der Zusammenfassung. Erscheint
+           nur, wenn der Server die Meldestelle anbietet (`/health`). -->
+      <button class="quiet meldeKnopf" id="endMelden" data-i18n="md_knopf" hidden>Report a problem</button>
     </div>
     <div class="col">
       <div id="endGains"></div>
@@ -2698,6 +2741,23 @@
 </div>
 
 <!-- Recht -->
+<!-- Meldefenster: eine Nachricht an den Support. Wird als Mail weitergeleitet
+     und nicht gespeichert. Die Antwortadresse ist freiwillig. -->
+<div class="veil" id="meldeVeil" hidden>
+  <div class="card">
+    <h1 style="font-size:30px" data-i18n="md_kopf">Report a problem</h1>
+    <p class="sub" data-i18n="md_erkl">Bug, unfair player or an idea — write us.</p>
+    <div class="seg" id="meldeArt"></div>
+    <textarea id="meldeText" maxlength="1500" rows="5" data-i18n-ph="md_ph" placeholder="What happened?"></textarea>
+    <input type="email" id="meldeMail" maxlength="120" autocomplete="email" autocapitalize="off" spellcheck="false"
+           data-i18n-ph="md_mail" placeholder="Your e-mail for a reply (optional)">
+    <p class="foot" data-i18n="md_hinweis">Sent by e-mail to the Talumi team together with your player name, game version and device type. Not stored on the game server.</p>
+    <p class="hintline" id="meldeNote" aria-live="polite"></p>
+    <button id="meldeSenden" data-i18n="md_senden">Send</button>
+    <button class="quiet" id="meldeZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
 <div class="veil" id="legalVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="fair">Fair play</h1>

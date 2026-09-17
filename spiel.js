@@ -4682,7 +4682,7 @@ requestAnimationFrame(loop);
    hinter dem nächsten offen (so geschehen mit dem Bonusfenster, 16.09.2026). */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
                "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil",
-               "hilfeVeil","bonusVeil"];
+               "hilfeVeil","bonusVeil","meldeVeil"];
 
 
 const SET_UI = [
@@ -7268,6 +7268,51 @@ for (const a in FREMD_KNOPF){
   if (el) el.addEventListener("click", () => fremdAnmelden(a));
 }
 $("endShop").addEventListener("click", ladenOeffnen);
+
+/* ---- Problem melden (17.09.2026) -------------------------------------
+   Ein Fenster, eine Nachricht, ein Versand. Der Server leitet sie als Mail
+   weiter und speichert nichts. Was hier mitgeht (Name, Runde, Fassung), ist
+   für den Server eine Behauptung — er benennt Konten selbst aus der Sitzung. */
+let meldeZurueck = "startVeil", meldeArtJetzt = "fehler", meldeRunde = "";
+function meldeOeffnen(){
+  const offen = VEILS.map(id => $(id)).find(v => v && !v.hidden);
+  meldeZurueck = offen && offen.id !== "meldeVeil" ? offen.id : "startVeil";
+  /* Was über die Runde bekannt ist — hilft beim Nachstellen eines Fehlers. */
+  try {
+    meldeRunde = meldeZurueck === "endVeil"
+      ? [modeId, ($("endText") && $("endText").textContent || "").slice(0, 120)].join(" · ")
+      : "aus dem Menü";
+  } catch(_){ meldeRunde = ""; }
+  const box = $("meldeArt"); box.innerHTML = "";
+  for (const a of ["fehler", "spieler", "idee", "sonstiges"]){
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = t("md_a_" + a);
+    b.setAttribute("aria-pressed", a === meldeArtJetzt ? "true" : "false");
+    b.addEventListener("click", () => { meldeArtJetzt = a; for (const x of box.children) x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    box.appendChild(b);
+  }
+  try { fassungZeigen(); } catch(_){}
+  $("meldeNote").textContent = ""; $("meldeSenden").disabled = false;
+  show("meldeVeil");
+}
+for (const id of ["endMelden", "setMelden"]) if ($(id)) $(id).addEventListener("click", meldeOeffnen);
+$("meldeZu").addEventListener("click", () => show(meldeZurueck));
+$("meldeSenden").addEventListener("click", async () => {
+  const text = $("meldeText").value.trim(), email = $("meldeMail").value.trim(), note = $("meldeNote");
+  if (text.length < 10){ note.textContent = t("md_kurz"); return; }
+  if (email && !/^[^ @]+@[^ @]+[.][A-Za-z]{2,}$/.test(email)){ note.textContent = t("md_mailfalsch"); return; }
+  const knopf = $("meldeSenden"); knopf.disabled = true; note.textContent = "…";
+  const a = await Konto.ruf("/konto/melden", { text, email, art: meldeArtJetzt, name: spielerName() || "",
+                                               runde: meldeRunde, fassung: fassungText || "", sprache: lang });
+  if (a && a.ok){
+    $("meldeText").value = ""; note.textContent = t("md_danke");
+    setTimeout(() => { if (!$("meldeVeil").hidden) show(meldeZurueck); }, 1600);
+  } else {
+    knopf.disabled = false;
+    note.textContent = a && a.status === 429 ? t("md_oft") : a && a.fehler === "zu_kurz" ? t("md_kurz")
+                     : a && a.fehler === "email_ungueltig" ? t("md_mailfalsch") : t("md_fehl");
+  }
+});
 $("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); reiter("start"); });
 
 /* Die Reiterleiste. Ein Klick wechselt den Inhalt des Fensters — niemand
@@ -7717,6 +7762,9 @@ const Konto = {
   async anklopfen(){
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
+    /* Meldestelle: Knöpfe nur, wenn der Server sie anbietet. */
+    this.melden = a.status === 200 && !!a.melden;
+    for (const id of ["endMelden", "setMelden"]){ const k = document.getElementById(id); if (k) k.hidden = !this.melden; }
     /* Zahl der Menschen im Betrieb — nur Menschen, `/health` zählt NPCs
        getrennt. Sie auf dem Startbildschirm zu zeigen ist das einzige
        Zeichen dort, dass gerade jemand spielt. */
@@ -8802,7 +8850,7 @@ const MenueHimmel = {
      hat. Das durch ein Sternenfeld zu ersetzen hieße, dem Spieler die
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
-  MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil",
+  MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil","meldeVeil",
            "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil","bonusVeil"],
   sichtbar(){
     if (Game.running) return false;
