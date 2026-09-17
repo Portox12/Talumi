@@ -2686,11 +2686,13 @@ function endeOnline(d){
   Game.kills = d.kills || 0;
   if (d.sek) Game.t = d.sek;
   if (d.abbruch){ Game.result = t("net_lost"); Game.killer = null; }
+  /* Selbst beendet (v104): kein Fresser, kein Todeston, eigene Zeile. */
+  if (d.aufgabe){ Game.aufgabe = true; Game.killer = null; }
   /* Spielart (Schritt 105): Sieg, Platz, Zonentod und Rundenende kommen vom
      Server; `finish` liest sie aus `Net.ergebnis`. */
   Net.ergebnis = d.ende !== undefined ? d : null;
   Game.won = !!d.gewonnen; Game.placed = d.platz || 0; Game.zoneDeath = !!d.zone;
-  finish(!!d.ende);
+  finish(!!d.ende || !!d.aufgabe);
 }
 
 function finish(timeUp){
@@ -2735,8 +2737,13 @@ function finish(timeUp){
       Game.result = t("r_placed", Game.placed, MODE().rivals + 1);
     }
   } else if (timeUp){
-    Game.result = t("r_timeup");
+    Game.result = Game.aufgabe ? "" : t("r_timeup");
   }
+  /* Überschrift: „Zerstreut" stimmt nicht, wenn man selbst beendet hat. */
+  { const kopf = document.querySelector("#endVeil h1");
+    if (kopf) kopf.textContent = Game.aufgabe ? t("q_ende").replace(/[.。]$/, "") : t("scattered"); }
+  Game.aufgabe = false;
+  offeneRundeWeg();
 
   /* Belohnung. Produktiv rechnet der Server das aus den von ihm
      simulierten Werten — nie aus Zahlen, die der Client mitschickt. */
@@ -4798,10 +4805,23 @@ function fassungZeigen(){
     } catch(_){}
     return "";
   };
-  if (fassungText){ el.textContent = fassungText + drei(); return; }
+  /* App-Modus (v104): Thomas sah auf dem iPhone in der gespeicherten App eine
+     Browserleiste (zurück, Adresse, Teilen, Neu laden). Von hier aus lässt
+     sich nicht sehen, warum — diese Angabe sagt es: „App: nein" heißt, das
+     Symbol öffnet nur Safari (dann neu zum Home-Bildschirm hinzufügen, mit
+     „Als Web-App öffnen"); „App: ja" mit Leiste heißt, iOS hält die Adresse
+     für fremd — dann zeigt die Adresse dahinter, welche es ist. */
+  const app = () => {
+    try {
+      const ja = (typeof matchMedia === "function" && (matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches))
+              || navigator.standalone === true;
+      return " · App: " + (ja ? "ja" : "nein") + " · " + location.host + location.pathname;
+    } catch(_){ return ""; }
+  };
+  if (fassungText){ el.textContent = fassungText + drei() + app(); return; }
   fetch("sw.js", { cache: "no-store" }).then(r => r.text()).then(txt => {
     const m = txt.match(/VERSION = "(v\d+)"/);
-    if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText + drei(); }
+    if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText + drei() + app(); }
   }).catch(() => {});
 }
 function buildSettings(){
@@ -5737,6 +5757,38 @@ const Held3D = {
     this.raf = requestAnimationFrame(t => this.schleife(t));
   },
   weiter(){ if (this.ok && this.stand && !this.laeuft && this.sichtbar()) this.zeigen(this.stand); },
+
+  /* Standbild eines beliebigen Designs als 3D-Modell (v104, Thomas: die
+     Bonus-Designs „als HD 3D Modell", Klick zeigt sie groß). Es gibt nur
+     **eine** WebGL-Fläche (`#heldGL`); sie wird für einen Augenblick mit dem
+     fremden Design bemalt, abfotografiert und sofort wieder mit dem eigenen
+     Stand gezeichnet — im selben Durchlauf, zu sehen ist davon nichts.
+     Gezeigt wird wie im Hangar die Stufe Welt mit Ringen. Ohne WebGL: null,
+     der Aufrufer nimmt dann das gemalte Bildchen. */
+  fotos: {},
+  foto(pal){
+    if (!pal) return null;
+    if (this.fotos[pal.id]) return this.fotos[pal.id];
+    const glc = document.getElementById("heldGL"), c2 = document.getElementById("heldCanvas");
+    if (!glc || !c2 || !this.moeglich(glc)) return null;
+    const alt = this.stand, altZeit = this.zeit;
+    let url = null;
+    try {
+      const S = glc.width;
+      this.stand = { pal, masse: STAGES[STAGES.length - 1].at, stufe: STAGES.length - 1, monde: null,
+                     R: S * heldAnteil(STAGES.length - 1, pal, null), S };
+      this.zeit = 2.4;
+      this.bild();
+      const aus = document.createElement("canvas"); aus.width = aus.height = S;
+      const g = aus.getContext("2d");
+      g.drawImage(glc, 0, 0); g.drawImage(c2, 0, 0);
+      url = aus.toDataURL("image/png");
+    } catch(_){ url = null; }
+    this.stand = alt; this.zeit = altZeit;
+    try { if (alt) this.bild(); else { c2.getContext("2d").clearRect(0, 0, c2.width, c2.height); } } catch(_){}
+    if (url) this.fotos[pal.id] = url;
+    return url;
+  },
 
   bild(){
     const gl = this.gl, st = this.stand;
@@ -6758,11 +6810,17 @@ function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen, offen
     const karte = (id, wann) => {
       const d = SKINS.find(k => k.id === id); if (!d) return "";
       const hat = Profile.owned.has(id);
-      return `<div class="ziel${hat ? " hat" : ""}">${ikonBild(null, id)}<b>${esc(d.label)}</b>` +
-             `<small>${esc(hat ? t("b_besitz") : wann)}</small></div>`;
+      /* Als 3D-Modell (v104). Ohne WebGL bleibt das gemalte Bildchen. */
+      const foto = Held3D.foto(d);
+      const bild = foto ? `<img class="ik hd" alt="" src="${foto}">` : ikonBild(null, id);
+      const unter = hat ? t("b_besitz") : wann;
+      return `<button type="button" class="ziel${hat ? " hat" : ""}" data-gross="${esc(id)}" data-unter="${esc(unter)}">${bild}<b>${esc(d.label)}</b>` +
+             `<small>${esc(unter)}</small></button>`;
     };
     ansporn.innerHTML = `<p class="hinweis" style="margin:12px 0 6px">${esc(t("b_ansporn"))}</p>` +
       `<div class="ziele">${karte("sunflare", t("b_nach7"))}${karte("rime", t("b_nach10w", ziel))}</div>`;
+    for (const k of ansporn.querySelectorAll("[data-gross]"))
+      k.addEventListener("click", () => designGross(k.dataset.gross, k.dataset.unter));
   }
   const go = $("bonusVeilGo");
   go.hidden = !offen;
@@ -6771,7 +6829,27 @@ function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen, offen
   $("bonusVeilSpaeter").onclick = bonusVeilZu;
   show("bonusVeil");
 }
+/* Ein Design groß ansehen (v104): das 3D-Standbild über dem Fenster, Tipp
+   irgendwohin schließt. Kein eigener Schleier in `VEILS` — es liegt **über**
+   dem Bonusfenster und lässt es stehen. */
+function designGross(id, unter){
+  const d = SKINS.find(k => k.id === id), el = document.getElementById("designGross");
+  if (!d || !el) return;
+  const foto = Held3D.foto(d);
+  document.getElementById("designGrossBild").innerHTML = foto ? `<img alt="" src="${foto}">` : ikonBild(null, id);
+  document.getElementById("designGrossName").textContent = d.label;
+  document.getElementById("designGrossUnter").textContent = unter || "";
+  el.hidden = false;
+}
+(function(){
+  const el = document.getElementById("designGross");
+  if (!el) return;
+  el.addEventListener("click", () => { el.hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !el.hidden) el.hidden = true; });
+})();
+
 function bonusVeilZu(){
+  const gross = document.getElementById("designGross"); if (gross) gross.hidden = true;
   const v = $("bonusVeil");
   if (v && !v.hidden) show("startVeil");
 }
@@ -7268,6 +7346,73 @@ for (const a in FREMD_KNOPF){
   if (el) el.addEventListener("click", () => fremdAnmelden(a));
 }
 $("endShop").addEventListener("click", ladenOeffnen);
+
+/* ---- Runde beenden (v104) ----------------------------------------------
+   Thomas am 17.09.2026: ein kleiner, kaum sichtbarer Knopf, der die Runde
+   beendet — und wer die App mitten in der Runde schließt, soll nicht leer
+   ausgehen. Drei Fälle:
+   - Knopf, online: `Net.send("quit")`; der Server beendet und rechnet ab wie
+     bei einem Tod, die Antwort läuft durch den gewohnten Weg (`endeOnline`).
+     Bleibt sie aus, beendet der Client nach 1,5 s selbst.
+   - Knopf, lokal: `finish(true)` mit eigener Ergebniszeile.
+   - App geschlossen: Konten rechnet der **Server** beim Verbindungsabbruch ab
+     (server.js, `beiTrennung`). Gäste haben ihren Fortschritt im Browser —
+     für sie merkt sich `offeneRundeMerken()` den Stand, sobald die Seite in
+     den Hintergrund geht, und `offeneRundeEinloesen()` schreibt ihn beim
+     nächsten Start gut. Kehrt die Seite lebend zurück, verfällt der Merker
+     mit dem normalen Rundenende (`finish`). */
+const OFFEN_KEY = "talumi.offeneRunde";
+function offeneRundeWeg(){ try { localStorage.removeItem(OFFEN_KEY); } catch(_){} }
+function offeneRundeMerken(){
+  if (!Game.running || Konto.angemeldet()) return;
+  if (!(MODE().rewards > 0 || MODE().online)) return;           // Übungsrunden zahlen nie
+  if (Game.t < 20) return;                                       // dieselbe Mindestzeit wie im Server
+  try { localStorage.setItem(OFFEN_KEY, JSON.stringify({ peak: Math.round(peak), kills: Game.kills | 0,
+        sek: Math.floor(Game.t), online: !!MODE().online, xp: Math.round(Game.xpRun || 0), zeit: Date.now() })); } catch(_){}
+}
+function offeneRundeEinloesen(){
+  let m = null;
+  try { m = JSON.parse(localStorage.getItem(OFFEN_KEY) || "null"); } catch(_){}
+  offeneRundeWeg();
+  if (!m || Konto.angemeldet() || Game.running) return;
+  const p = Math.max(0, Math.min(5e6, +m.peak || 0)), k = Math.max(0, Math.min(5000, +m.kills || 0));
+  if (p < 31 || Date.now() - (+m.zeit || 0) > 7 * 86400000) return;
+  /* Dieselben Teile wie in `finish()`, ohne Ziele, Sieg und Happy Hour. */
+  const st = stageOf(p);
+  let ore = Math.round(p / 30) + k * 2 + STAGE_BONUS.slice(0, st + 1).reduce((a, x) => a + x, 0);
+  if (p > Profile.best){ ore += Math.round(ore * 0.5); Profile.best = Math.round(p); }
+  Profile.ore += ore;
+  const R = Profile.rec;
+  R.runs++; R.mass = Math.max(R.mass, Math.round(p)); R.kills = Math.max(R.kills, k); R.time = Math.max(R.time, +m.sek || 0);
+  if (m.online && !(+m.xp > 0)) Profile.addXp(Math.round(p * 0.6));   // offline kam das XP schon unterwegs
+  Gast.sichern();
+  try { paintPurse(); heldMalen(); } catch(_){}
+  toast(t("q_gut", ore));
+}
+(function quitKnopf(){
+  const k = document.getElementById("quitBtn"), frage = document.getElementById("quitFrage");
+  if (!k) return;
+  let wecker = 0;
+  const ruhe = () => { clearTimeout(wecker); k.classList.remove("frage"); if (frage) frage.hidden = true; };
+  k.addEventListener("click", e => {
+    e.preventDefault(); e.stopPropagation();
+    if (!Game.running) return;
+    if (!k.classList.contains("frage")){
+      k.classList.add("frage"); if (frage) frage.hidden = false;
+      wecker = setTimeout(ruhe, 3500);
+      return;
+    }
+    ruhe();
+    if (Game.online && Net.connected){
+      Net.send("quit");
+      setTimeout(() => { if (Game.running){ Game.aufgabe = true; Game.killer = null; finish(true); } }, 1500);
+    } else { Game.aufgabe = true; Game.killer = null; finish(true); }
+  });
+  /* Tippen auf den Knopf darf nicht als Steuerung ins Spielfeld durchfallen. */
+  for (const art of ["pointerdown", "touchstart", "mousedown"]) k.addEventListener(art, e => e.stopPropagation(), { passive: true });
+})();
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") offeneRundeMerken(); });
+window.addEventListener("pagehide", offeneRundeMerken);
 
 /* ---- Problem melden (17.09.2026) -------------------------------------
    Ein Fenster, eine Nachricht, ein Versand. Der Server leitet sie als Mail
@@ -8059,6 +8204,7 @@ const Net = {
     if (m.t === "dead"){
       this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0,
                   ende: !!m.ende, gewonnen: !!m.gewonnen, platz: +m.platz || 0, zone: !!m.zone,
+                  aufgabe: !!m.aufgabe,
                   tms: Array.isArray(m.tms) ? m.tms : null, koerper: +m.koerper || 0};
       /* Der Fresser kommt mit der Todesnachricht — ein „eat"-Ereignis im
          Zustand erreicht den Gefressenen nicht mehr. */
@@ -9070,3 +9216,7 @@ const PWA = {
   },
 };
 PWA.start();
+
+/* Abgebrochene Gastrunde gutschreiben (v104) — erst, wenn die gemerkte
+   Sitzung eine Chance hatte: Ein Konto bekommt seine Abrechnung vom Server. */
+setTimeout(() => { try { offeneRundeEinloesen(); } catch(_){} }, 2500);

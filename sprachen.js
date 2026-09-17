@@ -1376,3 +1376,15 @@ const LANGS119 = {
       md_danke:"Спасибо — сообщение уже в пути.", md_a_fehler:"Ошибка", md_a_spieler:"Игрок", md_a_idee:"Идея", md_a_sonstiges:"Другое"}
 };
 for (const c in LANGS119) Object.assign(LANGS[c], LANGS119[c]);
+
+/* Runde beenden und abgebrochene Runden (v104). */
+const LANGS120 = {
+  en:{q_knopf:"End round", q_frage:"End round? Tap again", q_ende:"Round ended.", q_gut:"Interrupted round credited: {0} Ore"},
+  de:{q_knopf:"Runde beenden", q_frage:"Runde beenden? Noch mal tippen", q_ende:"Runde beendet.", q_gut:"Abgebrochene Runde gutgeschrieben: {0} Ore"},
+  es:{q_knopf:"Terminar ronda", q_frage:"¿Terminar ronda? Toca otra vez", q_ende:"Ronda terminada.", q_gut:"Ronda interrumpida abonada: {0} Ore"},
+  pt:{q_knopf:"Encerrar rodada", q_frage:"Encerrar rodada? Toque de novo", q_ende:"Rodada encerrada.", q_gut:"Rodada interrompida creditada: {0} Ore"},
+  fr:{q_knopf:"Terminer la manche", q_frage:"Terminer la manche ? Touche encore", q_ende:"Manche terminée.", q_gut:"Manche interrompue créditée : {0} Ore"},
+  tr:{q_knopf:"Turu bitir", q_frage:"Tur bitsin mi? Tekrar dokun", q_ende:"Tur bitti.", q_gut:"Yarıda kalan tur yazıldı: {0} Ore"},
+  ru:{q_knopf:"Закончить раунд", q_frage:"Закончить раунд? Нажми ещё раз", q_ende:"Раунд окончен.", q_gut:"Прерванный раунд зачтён: {0} Ore"}
+};
+for (const c in LANGS120) Object.assign(LANGS[c], LANGS120[c]);
