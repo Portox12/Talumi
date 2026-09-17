@@ -7237,10 +7237,14 @@ $("endMenu").addEventListener("click", () => { paintPurse(); show("startVeil"); 
    verlässt dabei den Startbildschirm, und es gibt nichts zu schließen. */
 for (const b of document.querySelectorAll("#konsReiter button[data-reiter]"))
   b.addEventListener("click", () => reiter(b.dataset.reiter));
-$("legalBtn").addEventListener("click", () => show("legalVeil"));
-$("legalBtn2").addEventListener("click", () => show("legalVeil"));
-$("legalClose").addEventListener("click", () =>
-  show(Game.name ? "startVeil" : "accountVeil"));
+/* „Zurück" führt dorthin, woher man kam: vom Anmeldebildschirm dorthin, aus
+   den Einstellungen (dort steht der Knopf seit dem 17.09.2026) zurück in die
+   Einstellungen. Vorher hing das an `Game.name` — das ist im Hangar leer,
+   und ein Gast landete nach „Rechtliches" auf dem Anmeldebildschirm. */
+let legalZurueck = "accountVeil";
+$("legalBtn").addEventListener("click", () => { legalZurueck = "accountVeil"; show("legalVeil"); });
+$("legalBtn2").addEventListener("click", () => { legalZurueck = "setVeil"; show("legalVeil"); });
+$("legalClose").addEventListener("click", () => show(legalZurueck));
 /* Sofort weiter: Kein Umweg über den Startbildschirm, gleicher Modus,
    gleicher Name. Reibung nach dem Tod ist der häufigste Abbruchgrund. */
 /* Schritt 95: „Nochmal spielen" rief im Onlinemodus `start()` direkt auf.

@@ -1121,6 +1121,16 @@
   .konsNav.zahnrad{display:inline-grid;place-items:center;padding:0;width:40px;flex:0 0 auto}
   .konsNav.zahnrad svg{width:20px;height:20px;color:var(--brass);display:block}
   body.touch .konsNav.zahnrad{width:44px;min-width:44px}
+  /* Im schiebbaren Streifen rückt die rechte Gruppe (Büchlein, Zahnrad,
+     Sprache) an den rechten Rand — was an Platz übrig ist, liegt dann als
+     Luft zwischen „Ranglisten" und den Zeichen. */
+  .konsKopf > .konsG.r{margin-left:auto}
+  /* Kleine Telefone quer (iPhone SE, 667 breit): Der Schriftzug weicht, die
+     Kugel bleibt als Marke — dann passt die Kopfzeile ohne Schieben. */
+  @media (max-height:640px) and (max-width:720px){
+    .konsMarke b{display:none}
+    .konsMarke{margin-right:4px}
+  }
   @media (max-width:1100px){
     .pwaKnopf span{display:none}
     .pwaKnopf{padding:0 12px;gap:0}
@@ -2365,12 +2375,18 @@
            jeder, und die übrigen Knöpfe bekommen den Platz des Wortes. Der
            Name steht für Vorleseprogramme und als Hinweis beim Überfahren
            im Knopf (`data-i18n-name`). -->
+<!-- Spielanleitung als Büchlein (Thomas, 17.09.2026), gleich gebaut wie
+           das Zahnrad. „Rechtliches" steht dafür am Ende der Einstellungen. -->
+      <button class="konsNav zahnrad" id="hilfeBtn" data-i18n-name="hilfe" aria-label="How to play" title="How to play">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 6.5C10.4 5.2 8.2 4.6 5.4 4.6c-.9 0-1.7.1-2.4.2v13.4c.7-.1 1.5-.2 2.4-.2 2.8 0 5 .6 6.6 1.9m0-13.4c1.6-1.3 3.8-1.9 6.6-1.9.9 0 1.7.1 2.4.2v13.4c-.7-.1-1.5-.2-2.4-.2-2.8 0-5 .6-6.6 1.9m0-13.4v13.4"/>
+        </svg>
+      </button>
       <button class="konsNav zahnrad" id="settingsBtn" data-i18n-name="settings" aria-label="Settings" title="Settings">
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <path fill="currentColor" fill-rule="evenodd" d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.01-1.58ZM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2Z"/>
         </svg>
       </button>
-      <button class="konsNav" id="legalBtn2" data-i18n="legal">Legal</button>
       <button class="konsNav" id="langBtn" aria-haspopup="menu" aria-expanded="false">EN</button>
     </div>
   </div>
@@ -2531,7 +2547,7 @@
     <div id="setList" class="setlist"></div>
     <p class="foot" data-i18n="setnote">These live in this session.</p>
     <p class="foot" id="setFassung" style="margin-top:4px;opacity:.7"></p>
-    <button class="quiet" id="hilfeBtn" data-i18n="hilfe">Spielanleitung</button>
+    <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
     <button id="setClose" data-i18n="back">Back</button>
   </div>
 </div>
