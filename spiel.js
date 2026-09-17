@@ -545,6 +545,9 @@ function applyLang(){
   try { document.documentElement.lang = lang; } catch(_){}
   const nodes = document.querySelectorAll ? document.querySelectorAll("[data-i18n]") : [];
   for (const el of nodes) el.textContent = t(el.dataset.i18n);
+  // Knöpfe, die nur ein Zeichen zeigen (Zahnrad): Name für Vorleser und Maus
+  const nms = document.querySelectorAll ? document.querySelectorAll("[data-i18n-name]") : [];
+  for (const el of nms) { const n = t(el.dataset.i18nName); el.setAttribute("aria-label", n); el.title = n; }
   // Platzhalter in Eingabefeldern brauchen eine eigene Runde
   const phs = document.querySelectorAll ? document.querySelectorAll("[data-i18n-ph]") : [];
   for (const el of phs) el.placeholder = t(el.dataset.i18nPh);
