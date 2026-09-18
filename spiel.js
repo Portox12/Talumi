@@ -869,6 +869,13 @@ const STAGE_BONUS = [0, 4, 14, 50, 170];
    Grund: Auf einer beliebigen Tastatur der Welt muss der Name eingebbar sein. */
 const NAME_MAX = 14;
 const NAME_OK = /^[A-Za-z0-9 ._-]*$/;
+/* Namen, die mit dem Wort „NPC" beginnen, sind Computergegnern vorbehalten
+   (v105) — hier nur die Vorprüfung, damit der Hinweis gleich kommt.
+   Verbindlich prüft der Server (konten.js `npcName`, server.js `gastName`).
+   `ohneNpc` streicht das Wort vorn wie `gastName` — für Gastnamen, die vor
+   v105 gespeichert wurden. */
+const npcName = n => /^npc(?![a-z0-9])/i.test(String(n || ""));
+const ohneNpc = n => String(n || "").replace(/^(?:npc(?![a-z0-9])[ ._-]*)+/i, "").trim();
 function cleanName(raw){
   return String(raw)
     .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue")
@@ -1021,7 +1028,12 @@ const Gast = {
         .filter(Boolean).slice(0, 50);
     const gew = SKINS.find(x => x.id === r.skin);
     if (gew && Profile.owned.has(gew.id)){ Profile.skin = gew.id; skin = gew; }
-    if (typeof r.name === "string") this.name = cleanName(r.name).trim().slice(0, NAME_MAX);
+    /* Ein Gastname von vor v105, der mit „NPC" beginnt, verliert das Wort
+       hier wie am Server (`gastName`) — sonst sähe sich der Gast selbst als
+       „NPC Bob", alle anderen als „Bob". Bleibt nichts, kommt über
+       `nameEinsetzen()` ein Vorschlag. Gespeichert wird beim nächsten
+       `sichern()`; bis dahin putzt jedes Laden von Neuem. */
+    if (typeof r.name === "string") this.name = ohneNpc(cleanName(r.name).trim()).slice(0, NAME_MAX);
     if (r.bonus && typeof r.bonus === "object")
       this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)), wochen: zahl(r.bonus.wochen, 9999) };
     this.gutschein = [2, 3].includes(r.gutschein) ? r.gutschein : 0;
@@ -1368,7 +1380,7 @@ const Musik = {
 };
 
 /* =====================================================================
-   3) WORLD
+   3) WELT
    ===================================================================== */
 /* Balance, nachgerechnet statt geraten.
    Vorher: Aufnahme wuchs mit m^0.31, Schwund linear mit m ab 300 — ab dort
@@ -1382,27 +1394,35 @@ const Musik = {
    Arenen: gleiche Startmasse, gleiche Pulsarlage auf beiden Hälften. Auf der
    offenen Karte wäre ein verabredetes Spiel unfair, weil Startposition und
    Trümmerlage zufällig sind. */
+/* Karte als A4 im Querformat (17.09.2026): Breite und Höhe im Verhältnis
+   √2 : 1 mit derselben Fläche wie ein Quadrat der Kante `kante` — dieselbe
+   Rundung wie `WELT_B`/`WELT_H` in `sim.js`, damit Rückfallwert und Server
+   übereinstimmen. Die gespiegelten Arenen (Clan, Royale, Freundschaft)
+   bleiben quadratisch. */
+function a4(kante){
+  return {wb: Math.round(kante*Math.pow(2,.25)), wh: Math.round(kante/Math.pow(2,.25))};
+}
 const MODES = {
   open: {
     label:"Open space", blurb:"Free-for-all on the full map. Full rewards.",
-    world:9000, debris:4200, rivals:40, pulsars:42, start:24,
+    ...a4(9000), debris:4200, rivals:40, pulsars:42, start:24,
     teams:false, mirror:false, time:0, rewards:1
   },
   /* Seit Schritt 105 online (Server rechnet Zone, Uhr, Mannschaften); die
      Werte hier gelten nur noch für den lokalen Rückfall. */
   clan: {
     label:"Clan battle", blurb:"Two clans, mirrored arena, five minutes. Highest clan mass wins.",
-    world:5200, debris:1500, rivals:18, pulsars:14, start:40,
+    wb:5200, wh:5200, debris:1500, rivals:18, pulsars:14, start:40,
     teams:true, mirror:true, time:300, rewards:1, online:true
   },
   royale: {
     label:"Battle royale", blurb:"Everyone starts equal, the field closes in. Last body standing wins.",
-    world:6000, debris:2000, rivals:24, pulsars:20, start:50,
+    wb:6000, wh:6000, debris:2000, rivals:24, pulsars:20, start:50,
     teams:false, mirror:false, time:330, rewards:1, royale:true, online:true
   },
   friendly: {
     label:"Friendly match", blurb:"Mirrored arena, everyone starts equal. Practice — no rewards.",
-    world:4200, debris:1000, rivals:10, pulsars:10, start:60,
+    wb:4200, wh:4200, debris:1000, rivals:10, pulsars:10, start:60,
     teams:false, mirror:true, time:240, rewards:0
   },
   /* Onlinebetrieb. Alle Zahlen stehen hier bei null: Trümmer, Pulsare und
@@ -1412,16 +1432,17 @@ const MODES = {
      dass sich jeder sein Guthaben selbst schreibt. */
   online: {
     label:"Open space", blurb:"Real players on an authoritative server.",
-    /* `world` ist hier nur der Rückfallwert, falls die Begrüßung ihn nicht
-       mitbringt — maßgeblich ist `Net.world` vom Server (siehe `start()`). */
-    world:14142, debris:0, rivals:0, pulsars:0, start:24,
+    /* `wb`/`wh` sind hier nur der Rückfallwert (Vorgabe des Servers,
+       16818 × 11892) — maßgeblich sind `Net.weltB`/`Net.weltH` aus der
+       Begrüßung (siehe `start()`). */
+    ...a4(14142), debris:0, rivals:0, pulsars:0, start:24,
     teams:false, mirror:false, time:0, rewards:0, online:true
   },
   /* Liga (Schritt 108): online wie der Freie Raum, aber Level und Monde
      zählen, und stärkere Beute bringt mehr — der Server rechnet das. */
   liga: {
     label:"League", blurb:"Levels and moons count. Stronger prey pays more.",
-    world:14142, debris:0, rivals:0, pulsars:0, start:24,
+    ...a4(14142), debris:0, rivals:0, pulsars:0, start:24,
     teams:false, mirror:false, time:0, rewards:0, online:true, liga:true
   }
 };
@@ -1447,7 +1468,9 @@ let ersatz = false;
 const MODE_ID = () => (ersatz && (modeId === "online" || modeId === "liga")) ? "open" : modeId;
 const MODE = () => MODES[MODE_ID()];
 
-let WORLD = 9000, DEBRIS = 4200;
+/* Kartenbreite und -höhe der laufenden Runde. Müssen vor `seedStars()`
+   stehen, das schon beim Laden läuft. */
+let WELT_B = 9000, WELT_H = 9000, DEBRIS = 4200;
 const PELLET = 3;
 const MAX_CELLS = 16;
 const DECAY_FROM = 1200, DECAY_RATE = 0.0009;
@@ -1467,21 +1490,22 @@ const RIVALS = ["Vesta","Kepler","Nyx","Erebus","Ceres","Pallas","Tycho","Rhea",
                 "Ariel","Miranda","Dione","Tethys","Iapetus","Phoebe","Enceladus",
                 "Mimas","Triton"];
 
-/* Schrumpfplan: Zeit in Sekunden, Radius als Anteil der Kartenbreite.
+/* Schrumpfplan: Zeit in Sekunden, Radius als Anteil der kürzeren Kartenkante.
    Bewusst mit Pausen — dauerhaftes Schrumpfen nimmt jede Verschnaufpause und
    fühlt sich zäh an. Zwischen den Stufen kann man sich neu aufstellen. */
 const ZONE_PLAN = [[0,.48],[40,.48],[80,.36],[110,.36],[145,.26],[170,.26],
                    [205,.17],[225,.17],[260,.09],[285,.09],[315,.035]];
 function zoneRadius(t){
   const P = ZONE_PLAN;
-  if (t <= P[0][0]) return WORLD*P[0][1];
+  const kante = Math.min(WELT_B, WELT_H);
+  if (t <= P[0][0]) return kante*P[0][1];
   for (let i=1;i<P.length;i++){
     if (t <= P[i][0]){
       const [t0,r0] = P[i-1], [t1,r1] = P[i];
-      return WORLD*(r0 + (r1-r0)*((t-t0)/(t1-t0)));
+      return kante*(r0 + (r1-r0)*((t-t0)/(t1-t0)));
     }
   }
-  return WORLD*P[P.length-1][1];
+  return kante*P[P.length-1][1];
 }
 /* Nächste Schrumpfstufe, für die Anzeige */
 function zoneNext(t){
@@ -1562,8 +1586,8 @@ function safeSpawn(mass, x0, x1, inside){
   let best = null, bestScore = -Infinity;
   for (let i=0;i<48;i++){
     const x = rnd(x0, x1);
-    const y = inside ? rnd(WORLD*.5-inside, WORLD*.5+inside) : rnd(WORLD*.08, WORLD*.92);
-    if (inside && Math.hypot(x-WORLD/2, y-WORLD/2) > inside) continue;
+    const y = inside ? rnd(WELT_H*.5-inside, WELT_H*.5+inside) : rnd(WELT_H*.08, WELT_H*.92);
+    if (inside && Math.hypot(x-WELT_B/2, y-WELT_H/2) > inside) continue;
     let score = Infinity;
     for (const r of Game.rivals){
       if (r.m < mass*1.5) continue;             // Kleinere sind keine Gefahr
@@ -1573,7 +1597,7 @@ function safeSpawn(mass, x0, x1, inside){
       score = Math.min(score, Math.hypot(p.x-x, p.y-y) - PULSAR_R*1.5);
     if (score > bestScore){ bestScore = score; best = {x, y}; }
   }
-  return best || {x:(x0+x1)/2, y:WORLD/2};
+  return best || {x:(x0+x1)/2, y:WELT_H/2};
 }
 
 /* Pulsare: das Hindernis. Kleine Körper gleiten hindurch und können sich
@@ -1602,8 +1626,8 @@ const pulsarMax = () => MODE().pulsars + 14;
 const PULSAR_MASS = Math.round((PULSAR_R/4)*(PULSAR_R/4));   // ≈ 169
 const FEAST_CELLS = 12, FEAST_BACK = 18;
 const newPulsar = (x,y) => ({
-  x: x !== undefined ? x : rnd(300, WORLD-300),
-  y: y !== undefined ? y : rnd(300, WORLD-300),
+  x: x !== undefined ? x : rnd(300, WELT_B-300),
+  y: y !== undefined ? y : rnd(300, WELT_H-300),
   vx:0, vy:0, spin: rnd(0, 6.28), fed:0
 });
 let peak = 0;
@@ -1630,7 +1654,7 @@ const decayOf  = m => m > DECAY_FROM ? DECAY_RATE : 0;
    deshalb dort dunklere, warme Körner. */
 const newDebris = () => {
   const d = TH().dust;
-  return {x:rnd(0,WORLD), y:rnd(0,WORLD), m:1,
+  return {x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:1,
     c:`hsl(${rnd(d.h[0],d.h[1])} ${rnd(d.s[0],d.s[1])}% ${rnd(d.l[0],d.l[1])}%)`,
     r:rnd(2.6,4.4)};
 };
@@ -1639,9 +1663,12 @@ const newCell = (x,y,m) => ({x,y,m,vx:0,vy:0,name:Game.name,merge:0,mine:true});
    sie fressen sich nicht gegenseitig, verschmelzen wieder und zählen auf der
    Rangliste als ein Körper, genau wie beim Spieler. */
 let GID = 1;
+/* Lokale Rivalen sind Computergegner wie die des Servers und tragen deshalb
+   ebenfalls das Kürzel [NPC] (v105). `tag` wandert beim Teilen und beim
+   Zerlegen am Pulsar per `Object.assign` in jedes Stück mit. */
 const newRival = name => {
   const tier = rivalTier();
-  return {x:rnd(0,WORLD), y:rnd(0,WORLD), m:rnd(20,300), name,
+  return {x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:rnd(20,300), name, tag:"NPC",
     gid: GID++, vx:0, vy:0, merge:0,
     aggr: rnd(.15,.85),                       // Angriffslust, je Rivale anders
     mood:Math.random(), goal:null, retarget:0, tint:rnd(-30,36),
@@ -1651,8 +1678,8 @@ const bodyCount = () => new Set(Game.rivals.map(r => r.gid)).size;
 
 let stars = [];
 const seedStars = () => {
-  stars = Array.from({length: Math.round(WORLD*WORLD/(Settings.lowPower ? 260000 : ECO ? 180000 : 110000))}, () => ({
-    x:rnd(0,WORLD), y:rnd(0,WORLD), r:rnd(.5,1.5), a:rnd(.15,.7), d:rnd(.25,.7)}));
+  stars = Array.from({length: Math.round(WELT_B*WELT_H/(Settings.lowPower ? 260000 : ECO ? 180000 : 110000))}, () => ({
+    x:rnd(0,WELT_B), y:rnd(0,WELT_H), r:rnd(.5,1.5), a:rnd(.15,.7), d:rnd(.25,.7)}));
 };
 seedStars();
 
@@ -1666,8 +1693,13 @@ function start(name){
   /* Online bestimmt der Server die Weltgröße und schickt sie in `welcome`.
      Sie hier aus der eigenen Tabelle zu nehmen, hieße: Ändert jemand die
      Karte am Server, zeichnet der Client weiter die alte Grenze — sichtbar
-     als Rand, an dem nichts mehr ist, oder als Rand, über den man hinausläuft. */
-  WORLD = (M.online && Net.world) ? Net.world : M.world;
+     als Rand, an dem nichts mehr ist, oder als Rand, über den man hinausläuft.
+     Seit der A4-Karte kommen Breite und Höhe getrennt (`Net.weltB/weltH`).
+     Nur bei `Game.online`, nicht bei `M.online`: Der lokale Rückfall von
+     Royale und Clankampf (`ersatz`) trägt ebenfalls `online:true` und hätte
+     sonst die Größe einer früheren Serververbindung geerbt. */
+  if (Game.online && Net.weltB && Net.weltH){ WELT_B = Net.weltB; WELT_H = Net.weltH; }
+  else { WELT_B = M.wb; WELT_H = M.wh; }
   DEBRIS = M.debris;
   seedStars();
 
@@ -1681,8 +1713,8 @@ function start(name){
   Game.pulsars = [];
   if (M.mirror){
     for (let i=0;i<M.pulsars;i+=2){
-      const x = rnd(WORLD*.12, WORLD*.88), y = rnd(WORLD*.12, WORLD*.5);
-      Game.pulsars.push(newPulsar(x, y), newPulsar(WORLD-x, WORLD-y));
+      const x = rnd(WELT_B*.12, WELT_B*.88), y = rnd(WELT_H*.12, WELT_H*.5);
+      Game.pulsars.push(newPulsar(x, y), newPulsar(WELT_B-x, WELT_H-y));
     }
   } else {
     for (let i=0;i<M.pulsars;i++) Game.pulsars.push(newPulsar());
@@ -1695,8 +1727,8 @@ function start(name){
       r.team = i % 2 ? 2 : 1;                 // 1 = eigener Clan, 2 = Gegner
       r.m = M.start * rnd(.9, 1.6);
       const side = r.team === 1 ? .25 : .75;
-      r.x = WORLD*side + rnd(-WORLD*.12, WORLD*.12);
-      r.y = rnd(WORLD*.15, WORLD*.85);
+      r.x = WELT_B*side + rnd(-WELT_B*.12, WELT_B*.12);
+      r.y = rnd(WELT_H*.15, WELT_H*.85);
     } else if (M.mirror){
       r.m = M.start * rnd(.8, 1.4);           // niemand startet im Vorteil
     }
@@ -1710,14 +1742,14 @@ function start(name){
 
   /* Im Royale müssen alle in den Kreis, sonst stirbt die halbe Karte sofort. */
   if (Game.royale){
-    const c = WORLD/2;
+    const cx = WELT_B/2, cy = WELT_H/2;
     for (const r of Game.rivals){
       const a = rnd(0,6.283), d = Math.sqrt(Math.random())*Game.zoneR*.88;
-      r.x = c + Math.cos(a)*d; r.y = c + Math.sin(a)*d;
+      r.x = cx + Math.cos(a)*d; r.y = cy + Math.sin(a)*d;
       r.m = M.start * rnd(.92, 1.12);        // alle starten praktisch gleich
     }
     Game.pulsars = Game.pulsars.filter(p =>
-      Math.hypot(p.x-c, p.y-c) < Game.zoneR*.9);
+      Math.hypot(p.x-cx, p.y-cy) < Game.zoneR*.9);
   }
 
   Game.teams = M.teams;
@@ -1749,10 +1781,10 @@ function start(name){
     }
   }
 
-  const spot = M.teams ? safeSpawn(M.start, WORLD*.06, WORLD*.32)
-             : Game.royale ? safeSpawn(M.start, WORLD*.5-Game.zoneR*.8,
-                                                WORLD*.5+Game.zoneR*.8, Game.zoneR*.85)
-                           : safeSpawn(M.start, WORLD*.08, WORLD*.92);
+  const spot = M.teams ? safeSpawn(M.start, WELT_B*.06, WELT_B*.32)
+             : Game.royale ? safeSpawn(M.start, WELT_B*.5-Game.zoneR*.8,
+                                                WELT_B*.5+Game.zoneR*.8, Game.zoneR*.85)
+                           : safeSpawn(M.start, WELT_B*.08, WELT_B*.92);
   Game.cells = [newCell(spot.x, spot.y, startMass)];
   Game.safe = SAFE_TIME;
   Game.running = true; Game.t = 0; Game.kills = 0; peak = 0;
@@ -1875,7 +1907,7 @@ const mergeDelay = m => clamp(8 + Math.sqrt(m)*0.35, 8, 24);
 function centre(){
   let x=0,y=0,m=0;
   for (const c of Game.cells){ x+=c.x*c.m; y+=c.y*c.m; m+=c.m; }
-  return m ? [x/m,y/m,m] : [WORLD/2,WORLD/2,0];
+  return m ? [x/m,y/m,m] : [WELT_B/2,WELT_H/2,0];
 }
 
 /* Eigenbewegung, allein stehend. Der Onlinebetrieb braucht sie zur
@@ -1995,6 +2027,15 @@ function ring(x, y, max, colour){
   Game.rings.push({x, y, r: max*0.2, max, life:1, colour});
 }
 
+/* Ein Körper geht, ohne gefressen zu sein (online: ein NPC macht einem
+   neuen Menschen Platz, v105): ein matter Ring an jedem seiner Stücke, dort,
+   wo sie zuletzt gezeichnet wurden. Bewusst nicht Messing (das heißt
+   „gefressen") und nicht die Pulsarfarbe. */
+function wegblenden(gid){
+  for (const r of Game.rivals)
+    if (r.gid === gid) ring(r.x, r.y, radiusOf(r.m) * 1.7, TH().paper2);
+}
+
 /* Zerreißen an einem Pulsar. Beim Spieler in viele Stücke, beim Gegner
    als harter Massenverlust — Gegner sind Einzelkörper. */
 function shatter(cell){
@@ -2032,20 +2073,20 @@ function shatter(cell){
    Trümmer: mit 40 Rivalen und 4200 Trümmern wären das 170 000 Abstände pro
    Bild. Jetzt nur noch die Felder, die der Körper wirklich überdeckt. */
 const Grid = {
-  size:300, cols:0, cells:null,
+  size:300, cols:0, rows:0, cells:null,
   /* Trümmer bewegen sich nie. Trotzdem wurde das Gitter bisher in JEDEM Bild
      komplett neu aufgebaut — 1.225 Felder leeren und 4.200 Einträge schreiben,
      sechzigmal pro Sekunde, für nichts. Jetzt einmal bauen und beim Ersetzen
      eines Trümmerstücks nur dessen Feld umtragen. */
   rebuild(list){
-    const cols = Math.ceil(WORLD/this.size), n = cols*cols;
-    this.cols = cols;
+    const cols = Math.ceil(WELT_B/this.size), rows = Math.ceil(WELT_H/this.size), n = cols*rows;
+    this.cols = cols; this.rows = rows;
     this.cells = Array.from({length:n}, () => []);
     for (let i=0;i<list.length;i++) this.put(list[i], i);
   },
   feld(o){
     const cx = clamp(Math.floor(o.x/this.size), 0, this.cols-1);
-    const cy = clamp(Math.floor(o.y/this.size), 0, this.cols-1);
+    const cy = clamp(Math.floor(o.y/this.size), 0, this.rows-1);
     return cy*this.cols + cx;
   },
   put(o, i){
@@ -2065,9 +2106,9 @@ const Grid = {
     if (k >= 0) b.splice(k, 1);
   },
   near(x, y, r, fn){
-    const s = this.size, c = this.cols;
+    const s = this.size, c = this.cols, zr = this.rows;
     const x0 = clamp(Math.floor((x-r)/s),0,c-1), x1 = clamp(Math.floor((x+r)/s),0,c-1);
-    const y0 = clamp(Math.floor((y-r)/s),0,c-1), y1 = clamp(Math.floor((y+r)/s),0,c-1);
+    const y0 = clamp(Math.floor((y-r)/s),0,zr-1), y1 = clamp(Math.floor((y+r)/s),0,zr-1);
     for (let gy=y0; gy<=y1; gy++)
       for (let gx=x0; gx<=x1; gx++){
         const b = this.cells[gy*c+gx];
@@ -2090,10 +2131,10 @@ function bound(o, dt){
   const k = Math.min(1, (dt || 1/60)*7);
   if (o.x < lim)        o.x += (lim-o.x)*k;
   if (o.y < lim)        o.y += (lim-o.y)*k;
-  if (o.x > WORLD-lim)  o.x += (WORLD-lim-o.x)*k;
-  if (o.y > WORLD-lim)  o.y += (WORLD-lim-o.y)*k;
-  o.x = clamp(o.x, -r*0.6, WORLD+r*0.6);      // harte Notbremse
-  o.y = clamp(o.y, -r*0.6, WORLD+r*0.6);
+  if (o.x > WELT_B-lim) o.x += (WELT_B-lim-o.x)*k;
+  if (o.y > WELT_H-lim) o.y += (WELT_H-lim-o.y)*k;
+  o.x = clamp(o.x, -r*0.6, WELT_B+r*0.6);     // harte Notbremse
+  o.y = clamp(o.y, -r*0.6, WELT_H+r*0.6);
 }
 
 function rivalSplit(r, t){
@@ -2153,7 +2194,7 @@ function rivalShatter(r, px, py){
    „flieh oder friss" in einem Radius von 480 — Teilungsangriffe kamen nie vor,
    und wer floh, rannte sich in die Ecke. */
 function rivalGoal(r){
-  const cx = WORLD/2, cy = WORLD/2;
+  const cx = WELT_B/2, cy = WELT_H/2;
 
   if (Game.royale && Math.hypot(r.x-cx, r.y-cy) > Game.zoneR*.86)
     return {x:cx, y:cy};
@@ -2268,16 +2309,15 @@ function feierHtml({ level = 0, namen = [], rang = -1 } = {}){
             (namen.length ? `<span>${esc(t("f_frei", namen.join(", ")))}</span>` : "") + `</div>`;
   }
   if (rang >= 0){
-    html += `<div class="feier rang"><small>${esc(t("f_rang"))}</small><canvas width="192" height="112" data-stufe="${rang}"></canvas>` +
+    html += `<div class="feier rang"><small>${esc(t("f_rang"))}</small><canvas width="192" height="112" data-stufe="${clamp(rang, 0, RANG_MAX)}"></canvas>` +
             `<b>${esc(t("rk" + clamp(rang, 0, RANG_MAX)))}</b></div>`;
   }
   return html;
 }
 function feierMalen(){
-  for (const c of document.querySelectorAll(".feier canvas[data-stufe]")){
-    const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height);
-    abzeichen(g, 0, 0, +c.dataset.stufe, 112);
-  }
+  /* In Gerätepunkten (96 × 56, auf flachen Schirmen 72 × 42 CSS) — siehe
+     abzeichenLeinwand(). */
+  for (const c of document.querySelectorAll(".feier canvas[data-stufe]")) abzeichenLeinwand(c, +c.dataset.stufe);
 }
 
 /* Lage einmal zusammenfassen und alle Hinweise dagegen prüfen. Läuft 2,5-mal
@@ -2368,7 +2408,7 @@ function step(dt){
 
   if (Game.royale){
     Game.zoneR = zoneRadius(Game.t);
-    const cx = WORLD/2, cy = WORLD/2;
+    const cx = WELT_B/2, cy = WELT_H/2;
     // Außerhalb zehrt es an der Masse — schnell genug, um zu drängen
     for (const c of Game.cells)
       if (Math.hypot(c.x-cx, c.y-cy) > Game.zoneR){
@@ -2506,7 +2546,7 @@ function step(dt){
     Game.pulsarBack.splice(i,1);
     if (Game.royale){
       const a = rnd(0,6.283), d = Math.sqrt(Math.random())*Game.zoneR*.8;
-      Game.pulsars.push(newPulsar(WORLD/2 + Math.cos(a)*d, WORLD/2 + Math.sin(a)*d));
+      Game.pulsars.push(newPulsar(WELT_B/2 + Math.cos(a)*d, WELT_H/2 + Math.sin(a)*d));
     } else Game.pulsars.push(newPulsar());
   }
 
@@ -2519,8 +2559,8 @@ function step(dt){
     p.x += p.vx*dt; p.y += p.vy*dt;
     if (p.schuss > 0){ p.schuss -= dt; p.vx *= Math.exp(-.5*dt); p.vy *= Math.exp(-.5*dt); }
     else { p.vx *= Math.exp(-1.6*dt); p.vy *= Math.exp(-1.6*dt); }
-    p.x = clamp(p.x, PULSAR_R, WORLD-PULSAR_R);
-    p.y = clamp(p.y, PULSAR_R, WORLD-PULSAR_R);
+    p.x = clamp(p.x, PULSAR_R, WELT_B-PULSAR_R);
+    p.y = clamp(p.y, PULSAR_R, WELT_H-PULSAR_R);
     for (let i=Game.shed.length-1;i>=0;i--){
       const s = Game.shed[i];
       if (Math.hypot(p.x-s.x, p.y-s.y) > PULSAR_R) continue;
@@ -2631,7 +2671,7 @@ function step(dt){
         /* Wer zuletzt zubeißt, ist der Täter. Zusätzlich festhalten, in
            welchem Zustand man war — daraus wird später die Lehre. */
         Game.lostPieces++;
-        Game.killer = {name:r.name, m:r.m, mine:c.m,
+        Game.killer = {name:mitMarke(r.name, true), m:r.m, mine:c.m,
                        left: Game.cells.filter(x => x.m > 0).length - 1,
                        sinceSplit: Game.t - Game.lastSplit,
                        team: Game.teams ? r.team : 0};
@@ -2739,9 +2779,18 @@ function finish(timeUp){
   } else if (timeUp){
     Game.result = Game.aufgabe ? "" : t("r_timeup");
   }
-  /* Überschrift: „Zerstreut" stimmt nicht, wenn man selbst beendet hat. */
+  /* Überschrift: „Zerstreut" stimmt nicht, wenn man selbst beendet hat.
+     `q_ende` sind seit v105 zwei Sätze („Runde beendet. Dein Körper bleibt
+     noch 5 Sekunden stehen."): Der erste ist die Überschrift, der zweite
+     steht darunter — nur nach einer Onlinerunde, denn nur dort bleibt der
+     Körper auf dem Feld (der Server hält ihn nach dem Beenden noch fünf
+     Sekunden). */
   { const kopf = document.querySelector("#endVeil h1");
-    if (kopf) kopf.textContent = Game.aufgabe ? t("q_ende").replace(/[.。]$/, "") : t("scattered"); }
+    const saetze = t("q_ende").match(/^(.+?[.。!?])\s+(.+)$/);
+    if (kopf) kopf.textContent = Game.aufgabe
+      ? (saetze ? saetze[1] : t("q_ende")).replace(/[.。]$/, "") : t("scattered");
+    if (Game.aufgabe && saetze && Game.online)
+      Game.result = saetze[2] + (Game.result ? " " + Game.result : ""); }
   Game.aufgabe = false;
   offeneRundeWeg();
 
@@ -2991,7 +3040,7 @@ function finish(timeUp){
 /* =====================================================================
    4) RENDER
    ===================================================================== */
-const cam = {x:WORLD/2, y:WORLD/2, z:1};
+const cam = {x:WELT_B/2, y:WELT_H/2, z:1};
 
 /* Gefahr außerhalb des Bildes (Schritt 103). Thomas: „Spieler gar nicht auf
    meinem Bildschirm ersichtlich, aber so groß, dass er sich beim Teilen auf
@@ -3822,44 +3871,48 @@ function erfolgeMelden(a){
 }
 
 /* =====================================================================
-   RANGABZEICHEN
+   RANGABZEICHEN — „Klare Ikonen"
 
-   Dreizehn Stufen, gezeichnet als Pfade — keine Bilddateien, passend zum
-   Grundsatz „nichts von außen". Die Stufen unterscheiden sich an der **Form**
-   (Winkel, schmale Balken, breite Balken, Sterne), nicht nur an der Anzahl:
-   In Spielgröße — rund 26 × 15 Bildpunkte — ist eine Form auf einen Blick
-   lesbar, drei gezählte Striche nicht.
+   Thomas' Wahl vom 18.09.2026 („Die Ikonen-Abzeichen-Empfehlung ist super.
+   Die nehmen wir."). Das Abzeichen wächst wie der eigene Körper im Spiel;
+   die **Klasse** ist ein Körper, die **Stufe** darin zählen gefüllte
+   Fassungen in einer kleinen Reihe darunter:
+
+      0– 2  Staubkorn mit Schweif            1–3 Goldsteine von 3
+      3– 5  Geröll, ein schräger Brocken     1–3 Goldsteine von 3
+      6– 8  Glutkern mit leuchtenden Rissen  1–3 Goldsteine von 3
+      9–11  Urplanet, blau mit Lufthülle     1–3 Goldsteine von 3
+     12–14  Welt mit Messingring und Mond    1–3 Goldsteine von 3
+     15–18  Sonne (Landesbeste)              1–4 Rubine von 4
+        19  Sonnenkrone mit Rubin (Großadmiral, je Land einer), ohne Reihe
+
+   Gezeichnet als Pfade, keine Bilddateien („nichts von außen"), mit einer
+   Lichtquelle links oben wie `LICHT`. Drei Größenstufen: unter 24 px die
+   Spielgröße (Namenszeile, 15 px — kräftige Formen, keine Feinheiten), ab
+   24 px Ranglistengröße mit Schattenflanken und Glanz, ab 40 px zusätzlich
+   Messingdrähte und gefasste Steine. Die Vorlage mit allen Größen liegt in
+   `Talumi-Zwischenstand/abzeichen-entwuerfe/runde2/abz-ikon.js`.
 
    Die Rangnamen stehen in `sprachen.js`, hier nur die Gestaltung.
    ===================================================================== */
 
-const RANG_STIL = [
-  {art:"winkel", n:1, farbe:"#c08f5c", rand:"#8a6440", grund:"#1c1510"},  // Kadett
-  {art:"winkel", n:2, farbe:"#c08f5c", rand:"#8a6440", grund:"#1c1510"},  // Fähnrich
-  {art:"balken", n:1, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
-  {art:"balken", n:2, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
-  {art:"balken", n:3, breit:false, farbe:"#d3d9df", rand:"#8d949b", grund:"#1c1510"},
-  {art:"balken", n:1, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
-  {art:"balken", n:2, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
-  {art:"balken", n:3, breit:true,  farbe:"#d8a75f", rand:"#b88a44", grund:"#1c1510"},
-  {art:"stern",  n:1, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},  // Kommodore
-  {art:"stern",  n:2, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},
-  {art:"stern",  n:3, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},
-  {art:"stern",  n:4, farbe:"#f1d38c", rand:"#d8a75f", grund:"#221a12"},  // Admiral
-  {art:"gross",  n:1, farbe:"#f1d38c", rand:"#d8a75f", grund:"#2a1f12"}   // Großadmiral
-];
-const RANG_MAX = RANG_STIL.length - 1;
+/* Höchste Stufe der Leiter (0 = Kadett … 19 = Großadmiral). Sie muss die
+   des Servers sein, sonst deckelt der Client einen echten Rang weg —
+   `testkonto-runde.js` vergleicht sie bei jedem Lauf mit OBERE_RAENGE. */
+const RANG_MAX = 19;
 
 /* Bedingungen der Ränge — **Spiegel** von `EHRE_SCHWELLE` und `OBERE_RAENGE`
    in server.js, nur zum Anzeigen. `testkonto-runde.js` vergleicht beide bei
-   jedem Lauf; vergeben wird ausschließlich dort. */
-const RANG_SCHWELLE = [0, 25, 100, 300, 750, 1600, 3200, 6000];
+   jedem Lauf; vergeben wird ausschließlich dort. RANG_SCHWELLE muss reines
+   JSON bleiben (keine Kommentare, kein 10_000), RANG_OBEN Feld für Feld in
+   derselben Reihenfolge wie im Server. */
+const RANG_SCHWELLE = [0, 25, 60, 100, 180, 300, 480, 750, 1100, 1600, 2300, 3200, 4500, 6000, 8000];
 const RANG_OBEN = [
-  { stufe: 8,  anteil: 0.10, plaetze: 0, minEhre:  10000 },
-  { stufe: 9,  anteil: 0.03, plaetze: 0, minEhre:  20000 },
-  { stufe: 10, anteil: 0.01, plaetze: 0, minEhre:  40000 },
-  { stufe: 11, anteil: 0,    plaetze: 5, minEhre:  80000 },
-  { stufe: 12, anteil: 0,    plaetze: 1, minEhre: 150000 }
+  { stufe: 15, anteil: 0.10, plaetze: 0, minEhre:  10000 },
+  { stufe: 16, anteil: 0.03, plaetze: 0, minEhre:  20000 },
+  { stufe: 17, anteil: 0.01, plaetze: 0, minEhre:  40000 },
+  { stufe: 18, anteil: 0,    plaetze: 5, minEhre:  80000 },
+  { stufe: 19, anteil: 0,    plaetze: 1, minEhre: 150000 }
 ];
 function rangBedingung(stufe){
   if (stufe < RANG_SCHWELLE.length)
@@ -3869,111 +3922,517 @@ function rangBedingung(stufe){
   const ehre = o.minEhre.toLocaleString(lang);
   if (o.plaetze === 1) return t("rg_erster", ehre);
   if (o.plaetze) return t("rg_plaetze", o.plaetze, ehre);
-  return t("rg_anteil", Math.round(o.anteil * 100), ehre);
+  /* Heute sind alle Anteile ganze Prozent (10, 3, 1). Käme einmal ein
+     Bruchteil dazu (0,5 %), stünde mit Math.round „1 %" oder „0 %" da —
+     deshalb mit bis zu einer Nachkommastelle in der Schreibweise der
+     Sprache; ganze Zahlen bleiben ohne Komma. */
+  const pct = Math.round(o.anteil * 1000) / 10;
+  return t("rg_anteil", pct.toLocaleString(lang, { maximumFractionDigits: 1 }), ehre);
 }
 /* Alle Ränge untereinander, der eigene hervorgehoben. Auch für Gäste: Wer
    sieht, was es zu erreichen gibt, hat einen Grund für ein Konto. */
 function buildRaenge(){
   const box = $("rangListe");
   if (!box) return;
-  const meiner = istAngemeldet() && Number.isInteger(Konto.profil.rang) ? Konto.profil.rang : -1;
+  /* Gedeckelt wie Plakette und Rangtafel — sonst hebt ein Client, der eine
+     höhere Stufe bekommt, als er kennt, gar keine Zeile hervor. */
+  const meiner = istAngemeldet() && Number.isInteger(Konto.profil.rang) ? clamp(Konto.profil.rang, 0, RANG_MAX) : -1;
+  const stufen = Array.from({ length: RANG_MAX + 1 }, (_, i) => i);
   box.innerHTML = `<h2>${esc(t("rg_head"))}</h2><p class="hinweis" style="margin:0 0 6px">${esc(t("rg_sub"))}</p>` +
-    RANG_STIL.map((_, i) =>
+    stufen.map(i =>
       `<div class="rangZeile${i === meiner ? " du" : ""}"><canvas width="96" height="56"></canvas>` +
       `<div><b>${esc(t("rk" + i))}${i === meiner ? " · " + esc(t("rg_du")) : ""}</b>` +
       `<small>${esc(rangBedingung(i))}</small></div></div>`).join("");
-  box.querySelectorAll("canvas").forEach((c, i) => {
-    const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height); abzeichen(g, 0, 0, i, 56);
-  });
+  box.querySelectorAll("canvas").forEach((c, i) => abzeichenLeinwand(c, i));
 }
-/* Seitenverhältnis der Plakette, 48 × 28 aus dem Entwurf. */
+/* Seitenverhältnis des Kastens, 48 × 28 aus dem Entwurf. */
 const ABZEICHEN_V = 48/28;
 const abzeichenBreite = h => h * ABZEICHEN_V;
 
-function stern(g, x, y, r){
+/* Maße in Einheiten einer 28 hohen Kiste (u = h/28), 48 Einheiten breit.
+   Jeder Körper: dünne dunkle Kante (Umriss auf jedem Grund), darin Emaille
+   mit Verlauf und ab Ranglistengröße ein feiner Messingdraht als Fassung.
+   Eine Lichtquelle links oben für alles. Klasse = Körper, Stufe = gefüllte
+   Fassungen in der Reihe darunter. */
+const abz_TAU = Math.PI * 2;
+const abz_KANTE = "#0b0806";
+const abz_LICHT = -Math.PI * .75;
+
+function abz_kante(g, ol){
+  g.lineJoin = "round"; g.lineCap = "round";
+  g.lineWidth = ol * 2; g.strokeStyle = abz_KANTE; g.stroke();
+}
+
+/* Kugelverlauf: hell links oben, dunkel rechts unten. */
+function abz_kugel(g, cx, cy, r, hell, grund, dunkel){
+  const v = g.createRadialGradient(cx - r * .42, cy - r * .46, r * .06, cx - r * .12, cy - r * .12, r * 1.18);
+  v.addColorStop(0, hell); v.addColorStop(.5, grund); v.addColorStop(1, dunkel);
+  return v;
+}
+
+/* Messing als Verlauf über ein Rechteck (links oben hell). */
+function abz_messing(g, x0, y0, x1, y1){
+  const v = g.createLinearGradient(x0, y0, x1, y1);
+  v.addColorStop(0, "#fff1c4"); v.addColorStop(.45, "#e2ac52"); v.addColorStop(1, "#8c5a20");
+  return v;
+}
+
+/* Sichel auf der Schattenseite (Scheibe minus verschobene Scheibe). */
+function abz_sichel(g, cx, cy, r, d){
+  const phi = Math.acos(clamp(d / (2 * r), 0, 1)), t = abz_LICHT;
+  const bx = cx + Math.cos(t) * d, by = cy + Math.sin(t) * d;
   g.beginPath();
-  for (let i = 0; i < 10; i++){
-    const a = -Math.PI/2 + i * Math.PI/5;
-    const rr = i % 2 ? r * .42 : r;
-    i ? g.lineTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr)
-      : g.moveTo(x + Math.cos(a)*rr, y + Math.sin(a)*rr);
+  g.arc(cx, cy, r, t + phi, t + abz_TAU - phi);
+  g.arc(bx, by, r, t + Math.PI + phi, t + Math.PI - phi, true);
+  g.closePath();
+}
+
+function abz_glanz(g, cx, cy, r, fein){
+  g.beginPath();
+  if (fein) g.ellipse(cx - r * .38, cy - r * .42, r * .27, r * .14, -Math.PI / 4, 0, abz_TAU);
+  else g.arc(cx - r * .38, cy - r * .38, r * .24, 0, abz_TAU);
+  g.fillStyle = "rgba(255,255,255,.9)"; g.fill();
+}
+
+/* Messingdraht als Fassung einer Kugel (nur ab Ranglistengröße). */
+function abz_draht(g, cx, cy, r, w){
+  g.beginPath(); g.arc(cx, cy, r - w / 2, 0, abz_TAU);
+  g.strokeStyle = abz_messing(g, cx - r, cy - r, cx + r, cy + r);
+  g.lineWidth = w; g.stroke();
+}
+
+/* Eine ganze Kugel: Kante, Verlauf, Schattensichel, Glanz, Draht. */
+function abz_ball(g, cx, cy, r, f, ol, fein, gross, u){
+  g.beginPath(); g.arc(cx, cy, r, 0, abz_TAU);
+  abz_kante(g, ol);
+  g.fillStyle = abz_kugel(g, cx, cy, r, f[0], f[1], f[2]); g.fill();
+  if (f[3]){ abz_sichel(g, cx, cy, r, r * .66); g.fillStyle = f[3]; g.fill(); }
+  abz_glanz(g, cx, cy, r, fein);
+  if (gross) abz_draht(g, cx, cy, r, .8 * u);
+}
+
+/* Radius einer Ellipse (Halbachsen A, B) in Richtung a. */
+function abz_ell(A, B, a){
+  const c = Math.cos(a) / A, s = Math.sin(a) / B;
+  return 1 / Math.sqrt(c * c + s * s);
+}
+
+/* Strahlenkranz als ein Pfad: n Zacken ab a0, Spitze auf lang(a), Kerbe auf ri. */
+function abz_zacken(g, cx, cy, n, a0, lang, ri){
+  for (let k = 0; k < 2 * n; k++){
+    const a = a0 + k * Math.PI / n, q = k % 2 ? ri : lang(a);
+    const px = cx + Math.cos(a) * q, py = cy + Math.sin(a) * q;
+    if (k) g.lineTo(px, py); else g.moveTo(px, py);
   }
   g.closePath();
 }
 
-/* Zeichnet das Abzeichen der Stufe `stufe` mit der Höhe `h`.
-   (`x`, `y`) ist die linke obere Ecke, alles in Bildschirmpunkten. */
-function abzeichen(g, x, y, stufe, h){
-  const s = RANG_STIL[clamp(Math.round(stufe), 0, RANG_MAX)];
-  const b = abzeichenBreite(h), r = h * .22;
-
-  // Plakette
+/* Schattenflanke jedes Strahls (die vom Licht abgewandte). */
+function abz_zackenSchatten(g, cx, cy, n, a0, lang, ri){
   g.beginPath();
-  if (g.roundRect) g.roundRect(x, y, b, h, r);
-  else g.rect(x, y, b, h);
-  g.fillStyle = s.grund; g.fill();
-  g.strokeStyle = s.rand; g.lineWidth = Math.max(1, h * .06); g.stroke();
+  const h = Math.PI / n;
+  for (let i = 0; i < n; i++){
+    const a = a0 + i * 2 * h, q = lang(a);
+    const b = Math.cos(a - h - abz_LICHT) < Math.cos(a + h - abz_LICHT) ? a - h : a + h;
+    g.moveTo(cx, cy);
+    g.lineTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q);
+    g.lineTo(cx + Math.cos(b) * ri, cy + Math.sin(b) * ri);
+    g.closePath();
+  }
+}
 
-  g.save();
-  g.fillStyle = s.farbe; g.strokeStyle = s.rand;
-  g.lineWidth = Math.max(.8, h * .045);
-  const mx = x + b/2, my = y + h/2;
+function abz_kranz(g, cx, cy, n, a0, lang, ri, hell, dunkel, ol, fein){
+  g.beginPath(); abz_zacken(g, cx, cy, n, a0, lang, ri);
+  abz_kante(g, ol);
+  g.fillStyle = hell; g.fill();
+  if (fein && dunkel){ abz_zackenSchatten(g, cx, cy, n, a0, lang, ri); g.fillStyle = dunkel; g.fill(); }
+}
 
-  if (s.art === "winkel"){
-    /* Winkel: die Spitze zeigt nach oben, wie ein Ärmelabzeichen. */
-    const dick = h * .15, weite = b * .30, hoch = h * .17;
-    for (let i = 0; i < s.n; i++){
-      const oy = my + (i - (s.n-1)/2) * (h * .30) + h * .04;
-      g.beginPath();
-      g.moveTo(mx - weite, oy + hoch);
-      g.lineTo(mx,         oy - hoch);
-      g.lineTo(mx + weite, oy + hoch);
-      g.lineTo(mx + weite, oy + hoch + dick);
-      g.lineTo(mx,         oy - hoch + dick);
-      g.lineTo(mx - weite, oy + hoch + dick);
-      g.closePath(); g.fill();
+/* Funkelstern mit eingezogenen Seiten (vier Spitzen). */
+function abz_funkel(g, cx, cy, l, w){
+  g.moveTo(cx, cy - l);
+  g.quadraticCurveTo(cx + w, cy - w, cx + l, cy);
+  g.quadraticCurveTo(cx + w, cy + w, cx, cy + l);
+  g.quadraticCurveTo(cx - w, cy + w, cx - l, cy);
+  g.quadraticCurveTo(cx - w, cy - w, cx, cy - l);
+  g.closePath();
+}
+
+/* Die Zählreihe: feste Fassungen auf einem flachen Bogen. Leer = dunkle
+   Fassung (in Spielgröße mattes Messing, damit die Reihe gleich breit
+   bleibt), gefüllt = Goldstein bzw. Rubin. Ab Hangargröße mit Messingring. */
+const abz_GOLD  = ["#ffffff", "#ffd45a", "#c27a18", "#ffd04e"];
+const abz_RUBIN = ["#ffe0e6", "#ff4f70", "#8a0f2e", "#ff5c7c"];
+function abz_reihe(g, cx, ry, n, plaetze, pa, pr, ol, fein, gross, stein, bogen){
+  const xs = [], ys = [];
+  for (let i = 0; i < plaetze; i++){
+    const t = i - (plaetze - 1) / 2;
+    xs.push(cx + t * pa);
+    ys.push(ry - bogen * (t * t - (plaetze % 2 ? 0 : .25)));
+  }
+  const kreise = (a, b, rr) => { for (let i = a; i < b; i++){ g.moveTo(xs[i] + rr, ys[i]); g.arc(xs[i], ys[i], rr, 0, abz_TAU); } };
+  g.beginPath(); kreise(0, plaetze, pr);
+  abz_kante(g, ol);
+  if (gross){
+    /* Messingfassung um jeden Platz, darin Stein oder dunkle Mulde. */
+    g.fillStyle = abz_messing(g, cx - pa * plaetze / 2, ry - pr, cx + pa * plaetze / 2, ry + pr); g.fill();
+    const ri = pr * .66;
+    g.beginPath(); kreise(n, plaetze, ri);
+    g.fillStyle = "#1c130b"; g.fill();
+    for (let i = 0; i < n; i++){
+      g.beginPath(); g.arc(xs[i], ys[i], ri, 0, abz_TAU);
+      g.fillStyle = abz_kugel(g, xs[i], ys[i], ri, stein[0], stein[1], stein[2]); g.fill();
     }
-  } else if (s.art === "balken"){
-    const bw = s.breit ? b * .62 : b * .52;
-    const bh = s.breit ? h * .17 : h * .09;
-    const luft = s.breit ? h * .11 : h * .13;
-    const gesamt = s.n * bh + (s.n - 1) * luft;
-    for (let i = 0; i < s.n; i++){
-      const oy = my - gesamt/2 + i * (bh + luft);
-      g.beginPath();
-      if (g.roundRect) g.roundRect(mx - bw/2, oy, bw, bh, bh * .35);
-      else g.rect(mx - bw/2, oy, bw, bh);
-      g.fill();
-      if (s.breit) g.stroke();
+    g.beginPath();
+    for (let i = 0; i < n; i++){ const hx = xs[i] - ri * .38, hy = ys[i] - ri * .4; g.moveTo(hx + ri * .26, hy); g.arc(hx, hy, ri * .26, 0, abz_TAU); }
+    g.fillStyle = "#ffffff"; g.fill();
+  } else if (fein){
+    g.fillStyle = "#3a2b18"; g.fill();
+    g.strokeStyle = "#8a6a3a"; g.lineWidth = pr * .34; g.stroke();
+    for (let i = 0; i < n; i++){
+      g.beginPath(); g.arc(xs[i], ys[i], pr, 0, abz_TAU);
+      g.fillStyle = abz_kugel(g, xs[i], ys[i], pr, stein[0], stein[1], stein[2]); g.fill();
     }
-  } else if (s.art === "stern"){
-    /* Bis zu vier Sterne: eine Reihe, bei vier zwei über zwei — sonst werden
-       sie in Spielgröße zu klein, um noch Sterne zu sein. */
-    const reihen = s.n === 4 ? [[0,1],[2,3]] : [[...Array(s.n).keys()]];
-    const rr = s.n === 4 ? h * .19 : h * .26;
-    reihen.forEach((reihe, ri) => {
-      const oy = my + (ri - (reihen.length-1)/2) * (rr * 2.1);
-      reihe.forEach((_, ci) => {
-        const ox = mx + (ci - (reihe.length-1)/2) * (rr * 2.2);
-        stern(g, ox, oy, rr); g.fill();
-      });
-    });
   } else {
-    /* Großadmiral: ein großer Stern zwischen zwei Bögen — eine Form, die
-       sonst nirgends vorkommt. Es gibt ihn je Land nur einmal. */
-    stern(g, mx, my, h * .30); g.fill();
-    g.lineWidth = Math.max(1, h * .085);
-    /* Radius knapp unter der halben Plakettenhöhe: Mit dem größeren Radius
-       standen die Bögen oben und unten über den Rand hinaus. */
-    for (const seite of [-1, 1]){
-      g.beginPath();
-      g.arc(mx, my, h * .44, seite > 0 ? -1.0 : Math.PI - 1.0,
-                             seite > 0 ?  1.0 : Math.PI + 1.0);
-      g.stroke();
+    g.fillStyle = "#4e3a22"; g.fill();
+    g.beginPath(); kreise(0, n, pr);
+    g.fillStyle = stein[3]; g.fill();
+  }
+}
+
+/* Zeichnet das Abzeichen der Stufe `stufe` (0–RANG_MAX, gerundet und
+   gedeckelt) mit der Höhe `h`. (`x`, `y`) ist die linke obere Ecke, alles in
+   Bildschirmpunkten; nichts reicht über den Kasten `abzeichenBreite(h)` × `h`
+   hinaus (ein Rechteck schneidet ab 24 px die weichen Höfe ab, darunter nur
+   Kantenglättung). Jede Änderung am Zeichenzustand steht zwischen save()
+   und restore() — sonst gälten Farbe und Strichstärke danach für den Namen
+   in der Namenszeile. Kein Zufall: dieselbe Stufe sieht immer gleich aus.
+   `testkonto-runde.js` zeichnet alle Stufen in sieben Größen (15–112 px)
+   in eine Attrappe und prüft Kasten, save/restore, Zahlen und
+   Wiederholbarkeit, dazu Vorrat und Menü-Leinwände.
+
+   Die Größenstufen hängen an `h` in **Gerätepunkten**: Leinwände im Menü
+   nie fest groß zeichnen und im CSS verkleinern, sondern über
+   `abzeichenLeinwand()` — sonst kommt die feine Fassung verkleinert an. */
+function abzeichen(g, x, y, stufe, h){
+  if (!(h > 0)) return;
+  const s = clamp(Math.round(stufe) || 0, 0, RANG_MAX);
+  const u = h / 28, W = abzeichenBreite(h);
+  const cx = x + W / 2, cy = y + h / 2;
+  const fein = h >= 24, gross = h >= 40;
+  const ol = fein ? Math.max(.9, .3 + .62 * u) : .5 + .95 * u;
+
+  /* Zählreihe unten; der Körper darüber. In Spielgröße darf der Körper ein
+     Stück hinter die Reihe reichen (sonst wäre er winzig), ab 28 px bleibt
+     ein sichtbarer Abstand. */
+  const pr = gross ? 1.6 * u + .4 : fein ? 1.7 * u + .5 : 3.05 * u;
+  const pa = fein ? pr * 2.7 + ol : 8.7 * u;
+  const ry = fein ? y + h - ol - pr - .35 * u : cy + 9.1 * u;
+  const rTop = ry - pr - ol;
+  const top = y + ol;
+  const bot = fein ? rTop - Math.max(1.2, 1.3 * u) : rTop + 4.6 * u;
+  const R = (bot - top) / 2, by = (bot + top) / 2;     // Außenradius mit Kante, Mitte
+  const bogen = fein ? .8 * u : 0;
+  const reihe = (n, plaetze, stein) => abz_reihe(g, cx, ry, n, plaetze, pa, pr, ol, fein, gross, stein || abz_GOLD, bogen);
+  g.save();
+  /* Ab Ranglistengröße gibt es weiche Höfe – die Kiste schneidet sie sicher ab.
+     In Spielgröße halten die Maße alles innen bis auf Bruchteile eines
+     Bildpunkts (Kante der Reihe 0,02 px, Strahlen der Stufe 18 0,15 px);
+     auch die schneidet sie ab, damit der Kasten für jede Größe gilt. */
+  g.beginPath(); g.rect(x, y, W, h); g.clip();
+
+  if (s <= 2){
+    /* Klasse 1 – Staubkorn mit Schweif. Der Schweif zeigt vom Licht weg
+       (nach rechts unten), ist in der Mitte am breitesten, läuft spitz aus
+       und verblasst dabei ganz – der Kopf bleibt das Hellste. */
+    const rk = R * (fein ? .56 : .66) - ol, hx = cx - (fein ? 10 : 9.4) * u, hy = by - .6 * u;
+    const tx = cx + (fein ? 21.5 : 17.5) * u - ol, ty = by + 2.2 * u;
+    const th = Math.atan2(ty - hy, tx - hx), dx = Math.cos(th), dy = Math.sin(th);
+    const nx = Math.sin(th), ny = -Math.cos(th);            // Normale nach oben
+    const mx = hx + (tx - hx) * .42, my = hy + (ty - hy) * .42;
+    if (fein){
+      /* Warme Hülle um den Kopf. */
+      const hr = rk + 3.2 * u, hof = g.createRadialGradient(hx, hy, rk * .8, hx, hy, hr);
+      hof.addColorStop(0, "rgba(255,196,120,.5)"); hof.addColorStop(1, "rgba(255,196,120,0)");
+      g.beginPath(); g.arc(hx, hy, hr, 0, abz_TAU); g.fillStyle = hof; g.fill();
     }
+    g.beginPath();
+    g.arc(hx, hy, rk, th + Math.PI / 2, th - Math.PI / 2 + abz_TAU);
+    g.quadraticCurveTo(mx + nx * rk * 1.5, my + ny * rk * 1.5, tx, ty);
+    g.quadraticCurveTo(mx - nx * rk * 1.4, my - ny * rk * 1.4, hx - nx * rk, hy - ny * rk);
+    g.closePath();
+    const ax = hx - dx * rk, ay = hy - dy * rk;
+    const kv = g.createLinearGradient(ax, ay, tx, ty);
+    kv.addColorStop(0, "rgba(11,8,6,1)"); kv.addColorStop(.4, "rgba(11,8,6,.75)"); kv.addColorStop(.8, "rgba(11,8,6,0)");
+    g.lineJoin = "round"; g.lineWidth = ol * 2; g.strokeStyle = kv; g.stroke();
+    const sv = g.createLinearGradient(ax, ay, tx, ty);
+    /* In Spielgröße ist der Schweif dunkler und durchsichtiger, damit der
+       helle Kopf davor klar heraussticht. */
+    sv.addColorStop(0, fein ? "rgba(255,236,200,1)" : "rgba(214,160,100,.95)");
+    sv.addColorStop(.35, fein ? "rgba(222,166,98,.85)" : "rgba(176,118,64,.62)");
+    sv.addColorStop(.75, "rgba(160,104,56,.24)"); sv.addColorStop(1, "rgba(140,90,50,0)");
+    g.fillStyle = sv; g.fill();
+    if (fein){
+      /* Drei helle Staubfäden, die nach hinten auslaufen. */
+      g.beginPath();
+      for (const f of [.7, 0, -.62]){
+        g.moveTo(hx + dx * rk * .4 + nx * rk * f * .75, hy + dy * rk * .4 + ny * rk * f * .75);
+        g.quadraticCurveTo(mx + nx * rk * f * 1.05, my + ny * rk * f * 1.05, tx - dx * 5 * u + nx * rk * f * .3, ty - dy * 5 * u + ny * rk * f * .3);
+      }
+      const fv = g.createLinearGradient(hx, hy, tx, ty);
+      fv.addColorStop(0, "rgba(255,244,220,.9)"); fv.addColorStop(.85, "rgba(255,244,220,0)");
+      g.strokeStyle = fv; g.lineWidth = .7 * u; g.lineCap = "round"; g.stroke();
+    }
+    g.beginPath(); g.arc(hx, hy, rk, 0, abz_TAU);
+    g.fillStyle = fein ? abz_kugel(g, hx, hy, rk, "#fffaf0", "#e2ac6c", "#7a4c22")
+                       : abz_kugel(g, hx, hy, rk, "#ffffff", "#f4cc8e", "#9a6430");
+    g.fill();
+    abz_glanz(g, hx, hy, rk, fein);
+    if (gross) abz_draht(g, hx, hy, rk, .8 * u);
+    reihe(s + 1, 3);
+  } else if (s <= 5){
+    /* Klasse 2 – Brocken: länglicher, schräg liegender Asteroid (Kartoffel-
+       form) mit Kratern – bewusst kein runder Mond. Der Pfad wird im
+       gedrehten Rahmen gebaut, Verlauf und Glanz aber ungedreht gefüllt,
+       damit das Licht links oben bleibt. */
+    const DREH = -.4, RY = (R - ol) / 1.08, RX = RY * 1.42, bx = cx, bY = by;
+    const F = [1.0, .88, .97, .84, 1.0, .9, .95, .86];
+    const p = i => { const a = .3 + (i % 8) * abz_TAU / 8, q = F[i % 8]; return [Math.cos(a) * RX * q, Math.sin(a) * RY * q]; };
+    const dreh = () => { g.save(); g.translate(bx, bY); g.rotate(DREH); };
+    dreh();
+    g.beginPath();
+    let a = p(0), b = p(1);
+    g.moveTo((a[0] + b[0]) / 2, (a[1] + b[1]) / 2);
+    for (let i = 1; i <= 8; i++){ a = p(i); b = p(i + 1); g.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); }
+    g.closePath();
+    g.restore();
+    abz_kante(g, ol);
+    g.fillStyle = abz_kugel(g, bx, bY, RY * 1.2, "#f6f8fb", "#a9b0bc", "#4b525f"); g.fill();
+    if (gross){ g.strokeStyle = abz_messing(g, bx - RX, bY - RY, bx + RX, bY + RY); g.lineWidth = .8 * u; g.stroke(); }
+    /* Krater: Mulde dunkel, Rand unten rechts hell (Licht von links oben). */
+    const K = [[.3, -.1, .3], [-.44, .26, .24], [-.02, .56, .15]];
+    const kz = fein ? 3 : 2;
+    dreh();
+    g.beginPath();
+    for (let i = 0; i < kz; i++){ const [kx, kyy, kr] = K[i]; const X = kx * RX, Y = kyy * RY, r = kr * RY; g.moveTo(X + r, Y); g.ellipse(X, Y, r, r * .8, 0, 0, abz_TAU); }
+    g.restore();
+    g.fillStyle = "#6a717e"; g.fill();
+    if (fein){
+      dreh();
+      g.beginPath();
+      const a0 = -.2 - DREH, a1 = 1.9 - DREH;
+      for (let i = 0; i < kz; i++){ const [kx, kyy, kr] = K[i]; const X = kx * RX, Y = kyy * RY, r = kr * RY; g.moveTo(X + Math.cos(a0) * r, Y + Math.sin(a0) * r * .8); g.ellipse(X, Y, r, r * .8, 0, a0, a1); }
+      g.restore();
+      g.strokeStyle = "#f2f4f7"; g.lineWidth = .6 * u; g.stroke();
+    }
+    abz_glanz(g, bx - RY * .25, bY - RY * .05, RY, fein);
+    reihe(s - 2, 3);
+  } else if (s <= 8){
+    /* Klasse 3 – Glutkern: dunkles Gestein, innen glüht es durch die Risse. */
+    const r = (R - ol) * (fein ? .94 : .92), bx = cx, bY = by + (R - ol - r) * (fein ? .5 : .2);
+    /* Glutschein um den Kern – auch in Spielgröße, er ist das Kennzeichen. */
+    const hr = r + ol + (fein ? 1.8 : 1.5) * u;
+    const hof = g.createRadialGradient(bx, bY, r * .8, bx, bY, hr);
+    hof.addColorStop(0, fein ? "rgba(255,120,40,.5)" : "rgba(255,130,50,.6)"); hof.addColorStop(1, "rgba(255,120,40,0)");
+    g.beginPath(); g.arc(bx, bY, hr, 0, abz_TAU); g.fillStyle = hof; g.fill();
+    g.beginPath(); g.arc(bx, bY, r, 0, abz_TAU);
+    abz_kante(g, ol);
+    g.fillStyle = fein ? abz_kugel(g, bx, bY, r, "#c09c8c", "#62403a", "#221414")
+                       : abz_kugel(g, bx, bY, r, "#e8b08a", "#8a3e22", "#2c1210");
+    g.fill();
+    const glut = g.createRadialGradient(bx + r * .32, bY + r * .36, 0, bx + r * .32, bY + r * .36, r * 1.15);
+    glut.addColorStop(0, "rgba(255,150,40,.95)"); glut.addColorStop(.55, "rgba(236,78,20,.6)"); glut.addColorStop(1, "rgba(200,40,10,0)");
+    g.fillStyle = glut; g.fill();
+    /* Risse: ein Stamm von links oben nach rechts unten, zwei Äste. */
+    const P = (px, py) => [bx + px * r, bY + py * r];
+    g.beginPath();
+    let q = P(-.62, -.3); g.moveTo(q[0], q[1]);
+    for (const [px, py] of [[-.22, -.08], [.02, .28], [.38, .36], [.66, .62]]){ q = P(px, py); g.lineTo(q[0], q[1]); }
+    q = P(-.22, -.08); g.moveTo(q[0], q[1]); q = P(.05, -.42); g.lineTo(q[0], q[1]); q = P(.42, -.55); g.lineTo(q[0], q[1]);
+    q = P(.02, .28); g.moveTo(q[0], q[1]); q = P(-.2, .66); g.lineTo(q[0], q[1]);
+    g.lineJoin = "round"; g.lineCap = "round";
+    if (fein){
+      g.strokeStyle = "#ff7a1c"; g.lineWidth = 1.7 * u; g.stroke();
+      g.strokeStyle = "#ffe7a0"; g.lineWidth = .7 * u; g.stroke();
+    } else { g.strokeStyle = "#ffd36a"; g.lineWidth = Math.max(1, 1.5 * u); g.stroke(); }
+    abz_glanz(g, bx, bY, r, fein);
+    if (gross) abz_draht(g, bx, bY, r, .8 * u);
+    reihe(s - 5, 3);
+  } else if (s <= 11){
+    /* Klasse 4 – Urplanet: saphirblau, Wolkenbänder, leuchtende Lufthülle. */
+    const luft = fein ? 1.6 * u : .8 * u;
+    const r = R - ol - luft, bx = cx, bY = by + (fein ? 0 : .2 * u);
+    const hof = g.createRadialGradient(bx, bY, r, bx, bY, r + ol + luft * 1.6);
+    hof.addColorStop(0, "rgba(150,215,255,.95)"); hof.addColorStop(.5, "rgba(120,190,255,.5)"); hof.addColorStop(1, "rgba(120,190,255,0)");
+    g.beginPath(); g.arc(bx, bY, r + ol + luft * 1.6, 0, abz_TAU); g.fillStyle = hof; g.fill();
+    g.beginPath(); g.arc(bx, bY, r, 0, abz_TAU);
+    abz_kante(g, ol);
+    g.fillStyle = abz_kugel(g, bx, bY, r, "#e2f3ff", "#3d86dc", "#122e66"); g.fill();
+    g.save(); g.clip();
+    g.translate(bx, bY); g.rotate(-.35);
+    g.beginPath();
+    g.ellipse(-r * .1, -r * .3, r * 1.1, r * .16, 0, 0, abz_TAU);
+    if (fein) { g.moveTo(r * 1.1, r * .32); g.ellipse(0, r * .32, r * 1.1, r * .12, 0, 0, abz_TAU); }
+    g.fillStyle = "rgba(235,246,255,.62)"; g.fill();
+    g.restore();
+    /* Lufthülle als heller Saum innen am Rand. */
+    g.beginPath(); g.arc(bx, bY, r - .45 * u, 0, abz_TAU);
+    g.strokeStyle = "rgba(190,232,255,.9)"; g.lineWidth = fein ? .9 * u : .7; g.stroke();
+    abz_glanz(g, bx, bY, r, fein);
+    reihe(s - 8, 3);
+  } else if (s <= 14){
+    /* Klasse 5 – Welt: blaugrauer Planet mit schrägem Messingring und Mond,
+       dahinter warmes Glühen – wie das Talumi-Zeichen. */
+    const r = R * .9 - ol, bx = cx, bY = by + .3 * u;
+    const rx = 18.6 * u, rry = 5 * u, dreh = -.3, bw = (fein ? 2.3 : 2.6) * u;
+    if (fein){
+      const hof = g.createRadialGradient(bx, bY, r * .7, bx, bY, r + 4 * u);
+      hof.addColorStop(0, "rgba(255,166,80,.75)"); hof.addColorStop(1, "rgba(255,150,70,0)");
+      g.beginPath(); g.arc(bx, bY, r + 4 * u, 0, abz_TAU); g.fillStyle = hof; g.fill();
+    }
+    const ring = vorne => {
+      g.beginPath();
+      if (vorne) g.ellipse(bx, bY, rx, rry, dreh, 0, Math.PI);
+      else g.ellipse(bx, bY, rx, rry, dreh, Math.PI, abz_TAU);
+      g.lineCap = "round";
+      g.strokeStyle = abz_KANTE; g.lineWidth = bw + ol * 2; g.stroke();
+      g.strokeStyle = fein ? abz_messing(g, bx - rx, bY - rry * 2, bx + rx, bY + rry * 2) : "#e3ac50"; g.lineWidth = bw; g.stroke();
+      if (fein){ g.strokeStyle = "#5c3a14"; g.lineWidth = bw * .22; g.stroke(); }
+    };
+    ring(false);
+    abz_ball(g, bx, bY, r, ["#eef4fa", "#8198b2", "#2a3a50", null], ol, fein, gross, u);
+    ring(true);
+    if (fein){
+      /* Ein Mond auf dem vorderen Ring. */
+      const a = Math.PI * .28, mxx = bx + Math.cos(dreh) * rx * Math.cos(a) - Math.sin(dreh) * rry * Math.sin(a);
+      const myy = bY + Math.sin(dreh) * rx * Math.cos(a) + Math.cos(dreh) * rry * Math.sin(a);
+      const mr = 1.7 * u;
+      g.beginPath(); g.arc(mxx, myy, mr, 0, abz_TAU); abz_kante(g, ol * .8);
+      g.fillStyle = abz_kugel(g, mxx, myy, mr, "#ffffff", "#f1e3c6", "#a8906a"); g.fill();
+    }
+    reihe(s - 11, 3);
+  } else if (s <= 18){
+    /* Klasse 6 – Sonne (Landesbeste): Goldkern in Messingfassung, doppelter
+       Strahlenkranz, der zur Seite hin lang wird und über der Reihe bleibt.
+       Vier Fassungen mit Rubinen; mit jeder Stufe wachsen die Strahlen. */
+    const n = s - 14, bx = cx, bY = by + (fein ? .4 * u : .2 * u);
+    const rc = R * .58, A = (19.6 + .7 * n) * u, B = R * 1.02;
+    const unten = bot - (fein ? bogen * 2.2 : 0);
+    const lang = f => a => {
+      let q = abz_ell(A * f, B * f, a);
+      const sn = Math.sin(a);
+      if (sn > .05) q = Math.min(q, (unten - bY) / sn);
+      if (sn < -.05) q = Math.min(q, (bY - top) / -sn);
+      return q;
+    };
+    const zk = fein ? 12 : 8;
+    if (fein){
+      const hof = g.createRadialGradient(bx, bY, rc * .6, bx, bY, rc + 5 * u);
+      hof.addColorStop(0, "rgba(255,200,90,.7)"); hof.addColorStop(1, "rgba(255,200,90,0)");
+      g.beginPath(); g.arc(bx, bY, rc + 5 * u, 0, abz_TAU); g.fillStyle = hof; g.fill();
+      abz_kranz(g, bx, bY, zk, Math.PI / zk, lang(.7), rc * .95, "#fff4c8", "#e7b95a", ol * .8, fein);
+    }
+    abz_kranz(g, bx, bY, zk, 0, lang(1), rc * .92, "#ffcb48", "#d8801c", ol, fein);
+    const kr = rc - ol;
+    g.beginPath(); g.arc(bx, bY, kr, 0, abz_TAU);
+    abz_kante(g, ol);
+    const kern = g.createRadialGradient(bx - kr * .3, bY - kr * .32, kr * .05, bx, bY, kr);
+    kern.addColorStop(0, "#ffffff"); kern.addColorStop(.35, "#fff2a6"); kern.addColorStop(.75, "#ffc53c"); kern.addColorStop(1, "#e7861a");
+    g.fillStyle = kern; g.fill();
+    if (fein) abz_draht(g, bx, bY, kr, (gross ? 1.1 : 1) * u);
+    reihe(n, 4, abz_RUBIN);
+  } else {
+    /* Stufe 19 – Sonnenkrone: zwei Strahlenlagen füllen die ganze Kiste,
+       Goldfassung, darin ein geschliffener Rubin mit Funkelstern. Die
+       einzige Stufe ohne Reihe. */
+    const top2 = y + ol, unten = y + h - ol;
+    const A1 = Math.min(23.2 * u, 24 * u - ol - .3), B1 = (h / 2 - ol - .2);
+    const lang = (fA, fB) => a => abz_ell(A1 * fA, B1 * fB, a);
+    const RH = 8.2 * u;
+    if (fein){
+      const hof = g.createRadialGradient(cx, cy, RH * .6, cx, cy, RH + 7 * u);
+      hof.addColorStop(0, "rgba(255,190,80,.75)"); hof.addColorStop(1, "rgba(255,190,80,0)");
+      g.beginPath(); g.arc(cx, cy, RH + 7 * u, 0, abz_TAU); g.fillStyle = hof; g.fill();
+      abz_kranz(g, cx, cy, 12, Math.PI / 12, lang(.9, .98), RH, "#ff9f1c", "#c9600c", ol, fein);
+    }
+    abz_kranz(g, cx, cy, fein ? 12 : 8, 0, lang(1, fein ? .9 : 1), RH, fein ? "#fff0b4" : "#ffdc62", "#ecae40", ol, fein);
+    /* Goldfassung. */
+    g.beginPath(); g.arc(cx, cy, RH - ol * .5, 0, abz_TAU);
+    abz_kante(g, ol * .8);
+    g.fillStyle = fein ? abz_messing(g, cx - RH, cy - RH, cx + RH, cy + RH) : "#e8ae4a"; g.fill();
+    /* Rubin: Achteck, Tafel heller, Facetten zum Licht hin hell. */
+    const rr = RH - (fein ? 2.1 : 1.8) * u;
+    const ecke = (k, q) => { const a = Math.PI / 8 + k * Math.PI / 4; return [cx + Math.cos(a) * q, cy + Math.sin(a) * q]; };
+    g.beginPath();
+    if (fein){ for (let k = 0; k < 8; k++){ const [px, py] = ecke(k, rr); if (k) g.lineTo(px, py); else g.moveTo(px, py); } g.closePath(); }
+    else g.arc(cx, cy, rr, 0, abz_TAU);                 // in Spielgröße ist das Achteck ein Kreis
+    abz_kante(g, ol * .5);
+    g.fillStyle = fein ? "#c81d44" : abz_kugel(g, cx, cy, rr, "#ffb3c2", "#e0264c", "#7a0a24"); g.fill();
+    if (fein){
+      /* Facetten: jede zweite Kronenfacette heller oder dunkler je nach Licht. */
+      for (let k = 0; k < 8; k++){
+        const [x1, y1] = ecke(k, rr), [x2, y2] = ecke(k + 1, rr), [x3, y3] = ecke(k + 1, rr * .55), [x4, y4] = ecke(k, rr * .55);
+        const am = Math.PI / 8 + (k + .5) * Math.PI / 4, l = Math.cos(am - abz_LICHT);
+        g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.lineTo(x3, y3); g.lineTo(x4, y4); g.closePath();
+        g.fillStyle = l > .5 ? "#ff7d95" : l > -.2 ? "#e0304f" : "#7e0c26"; g.fill();
+      }
+      g.beginPath();
+      for (let k = 0; k < 8; k++){ const [px, py] = ecke(k, rr * .55); if (k) g.lineTo(px, py); else g.moveTo(px, py); }
+      g.closePath();
+      g.fillStyle = "#ff5a78"; g.fill();
+    }
+    /* Funkelstern auf der Tafel. */
+    g.beginPath(); abz_funkel(g, cx - (fein ? 1 : 0) * u, cy - (fein ? 1 : 0) * u, (fein ? 5.2 : 5.6) * u, .6 * u);
+    g.fillStyle = "#ffffff"; g.fill();
   }
   g.restore();
 }
+
+/* Leinwände im Menü (Hangar, Rangübersicht, Rangtafel, Aufstiegsbanner)
+   zeichnen in den Gerätepunkten, in denen sie wirklich erscheinen: Höhe =
+   CSS-Höhe × Pixelverhältnis. Die Größenstufen oben hängen an `h`. Bis zur
+   Prüfung vom 18.09.2026 zeichneten sie fest mit 56 und wurden im CSS auf
+   48 × 28 oder im Hangar auf 31 × 18 verkleinert — auf einem Bildschirm
+   mit Verhältnis 1 kam dann die feine 56er-Fassung halbiert oder gedrittelt
+   an, und die Zählreihe (genau die Stufe) verschwamm zu Pünktchen. Jetzt
+   bekommt 48 × 28 bei Verhältnis 1 die 28er, bei 2 die 56er, und der
+   Hangar am Handy 18 × Verhältnis. Die Leinwand merkt sich die Stufe in
+   `data-abz`; ändern sich Fenstergröße (andere CSS-Größe) oder
+   Pixelverhältnis (Zoom, anderer Bildschirm), malt
+   `abzeichenLeinwaendeNeu()` nach — nur die, deren Größe sich geändert hat. */
+function abzeichenLeinwand(c, stufe, nurWennNoetig){
+  if (!c || !c.getContext) return;
+  const s = clamp(Math.round(stufe) || 0, 0, RANG_MAX);
+  let css = 0;
+  try { css = parseFloat(getComputedStyle(c).height); } catch(_){}
+  if (!(css > 0)) css = c.clientHeight || 28;
+  const dpr = devicePixelRatio > 0 ? devicePixelRatio : 1;
+  const h = Math.max(1, Math.round(css * dpr));
+  const w = Math.max(1, Math.ceil(abzeichenBreite(h) - 1e-6));
+  if (nurWennNoetig && c.width === w && c.height === h && c.dataset.abz === String(s)) return;
+  c.dataset.abz = String(s);
+  if (c.width !== w) c.width = w;       // setzt die Leinwand zurück
+  if (c.height !== h) c.height = h;
+  const g = c.getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, w, h);
+  abzeichen(g, 0, 0, s, h);
+}
+function abzeichenLeinwaendeNeu(){
+  for (const c of document.querySelectorAll("canvas[data-abz]")){
+    try { abzeichenLeinwand(c, +c.dataset.abz, true); } catch(_){}
+  }
+}
+try { addEventListener("resize", abzeichenLeinwaendeNeu); } catch(_){}
+/* Ein anderes Pixelverhältnis bei gleicher Fenstergröße (Fenster auf einen
+   anderen Bildschirm gezogen) meldet kein resize — dafür die Medienabfrage,
+   die nach jedem Wechsel für das neue Verhältnis neu gestellt wird. */
+(function verhaeltnisWache(){
+  try {
+    matchMedia("(resolution: " + devicePixelRatio + "dppx)")
+      .addEventListener("change", () => { abzeichenLeinwaendeNeu(); verhaeltnisWache(); }, { once: true });
+  } catch(_){}
+})();
 
 /* =====================================================================
    NAMENSZEILE
@@ -3989,6 +4448,40 @@ function abzeichen(g, x, y, stufe, h){
 
 const ZEILE_H = 15;                   // Höhe des Abzeichens in Bildpunkten
 const zeilen = [];                    // je Bild neu gefüllt
+
+/* Abzeichen der Namenszeile als fertige Bildchen. Die Ikonen-Abzeichen
+   haben Verläufe und viele Pfade; gemessen am 18.09.2026 (Headless-Chromium
+   ohne GPU, 2000 Aufrufe je Stufe, h = 15, DPR 1/1,5/2) kostet ein
+   abzeichen() mit Rastern 0,13–0,32 ms, ein drawImage des fertigen
+   Bildchens 0,005–0,012 ms. Bei vierzig Konten im Bild sind das bis zu
+   13 ms je Bild gegen 0,5 ms.
+   Das Bildchen hat die Auflösung des Geräts (Schlüssel Stufe|Höhe|DPR) und
+   wird auf ganze Gerätepunkte gesetzt, damit es 1:1 und scharf liegt. Nur
+   die Namenszeile nimmt den Vorrat; die Leinwände im Menü zeichnen direkt. */
+const ABZ_VORRAT = new Map();
+function abzeichenBild(stufe, h, dpr){
+  const s = clamp(Math.round(stufe) || 0, 0, RANG_MAX);
+  const schluessel = s + "|" + h + "|" + dpr;
+  let c = ABZ_VORRAT.get(schluessel);
+  if (c) return c;
+  /* Ein DPR-Wechsel (Sparstufe, Zoom) legt neue Bildchen an — die alten
+     dürfen dann gehen. */
+  if (ABZ_VORRAT.size >= 4 * (RANG_MAX + 1)) ABZ_VORRAT.clear();
+  c = document.createElement("canvas");
+  c.width = Math.max(1, Math.ceil(abzeichenBreite(h) * dpr));
+  c.height = Math.max(1, Math.ceil(h * dpr));
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  abzeichen(g, 0, 0, s, h);
+  ABZ_VORRAT.set(schluessel, c);
+  return c;
+}
+/* Wie abzeichen(g, x, y, stufe, h), aber aus dem Vorrat. `g` steht dabei
+   unter setTransform(dpr, 0, 0, dpr, 0, 0) wie in zeilenZeichnen. */
+function abzeichenAusVorrat(g, x, y, stufe, h, dpr){
+  const c = abzeichenBild(stufe, h, dpr);
+  g.drawImage(c, Math.round(x * dpr) / dpr, Math.round(y * dpr) / dpr, c.width / dpr, c.height / dpr);
+}
 
 /* Steckt der Körper unter einem Pulsar? Dann verschwindet auch seine Zeile —
    sonst verriete sie genau das Versteck, das der Pulsar bietet. */
@@ -4057,7 +4550,7 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
     g.fillStyle = TH().label; g.fill();
 
     let ox = cx;
-    if (hatAbz){ abzeichen(g, ox, cy - ZEILE_H/2, z.rang, ZEILE_H);
+    if (hatAbz){ abzeichenAusVorrat(g, ox, cy - ZEILE_H/2, z.rang, ZEILE_H, DPR);
                  ox += abzeichenBreite(ZEILE_H) + ZEILE_H * .32; }
     if (stufe){
       g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
@@ -4162,7 +4655,7 @@ function draw(){
   ctx.translate(VW/2 + ruettelX, VH/2 + ruettelY);
   ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
   ctx.strokeStyle = TH().border; ctx.lineWidth = 4;
-  ctx.strokeRect(0,0,WORLD,WORLD);
+  ctx.strokeRect(0,0,WELT_B,WELT_H);
 
   /* Alles außerhalb des Kreises einfärben: Rechteck über den sichtbaren
      Bereich, dann den Kreis gegen den Uhrzeigersinn als Loch hineinlegen.
@@ -4174,7 +4667,7 @@ function draw(){
      Das Rechteck folgt jetzt dem Sichtfeld statt festen Weltgrenzen, sonst
      endet die Einfärbung bei kleinem Zoom sichtbar im Nichts. */
   if (Game.royale && Game.zoneR > 0){
-    const cx = WORLD/2, cy = WORLD/2;
+    const cx = WELT_B/2, cy = WELT_H/2;
     ctx.beginPath();
     ctx.rect(view.x0-600, view.y0-600,
              (view.x1-view.x0)+1200, (view.y1-view.y0)+1200);
@@ -4311,9 +4804,12 @@ function draw(){
     const meins = groesstes(Game.cells);
     if (meins && !unterPulsar(meins.x, meins.y, radiusOf(meins.m))){
       traeger.add(meins);
+      /* Das eigene Clan-Kürzel wie bei den anderen: nicht in der Liga
+         (Kennung `online`, dort schickt der Server keins), und nie „NPC". */
+      const eigenTag = istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : null;
       zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name, eigen:true,
                    titel: Game.online && Net.kt > 0 && Net.kt === Net.you,
-                   tag: istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : null,
+                   tag: eigenTag && modeId !== "online" && String(eigenTag).toUpperCase() !== "NPC" ? eigenTag : null,
                    level:Profile.level,
                    rang: istAngemeldet() && Number.isInteger(Konto.profil.rang)
                          ? Konto.profil.rang : null});
@@ -4332,9 +4828,12 @@ function draw(){
       : o.pal ? o.pal
       : Game.teams ? teamPal(o.team) : RIVAL_PAL;
     /* Wer eine Zeile unter sich hat, trägt keinen Namen mehr im Kreis —
-       sonst stünde er zweimal da. */
+       sonst stünde er zweimal da. Die übrigen Stücke eines NPC (geteilt,
+       oder das größte unter einem Pulsar) tragen das Kürzel im Kreis mit
+       (v105) — sonst stünde dort ein NPC ohne Kennzeichnung. */
     const label = Settings.labels === "off" || traeger.has(o) ? ""
-      : (Settings.labels === "lead" && mine && o !== lead) ? "" : o.name;
+      : (Settings.labels === "lead" && mine && o !== lead) ? ""
+      : !mine && o.tag === "NPC" ? mitMarke(o.name, true) : o.name;
     /* Monde (Schritt 108): Bahn außerhalb von r, hintere Hälfte vor dem
        Körper, vordere danach. Eigene nur in der Liga. */
     const rWelt = radiusOf(o.m);
@@ -4579,7 +5078,7 @@ function paintBoard(gm){
     const byGid = new Map();
     for (const r of Game.rivals){
       const e = byGid.get(r.gid);
-      if (e) e.m += r.m; else byGid.set(r.gid, {name:r.name, m:r.m});
+      if (e) e.m += r.m; else byGid.set(r.gid, {name:mitMarke(r.name, true), m:r.m});
     }
     list = [...byGid.values()];
     if (gm > 0) list.push({name:Game.name, m:gm, me:true});
@@ -4609,7 +5108,7 @@ function paintBoard(gm){
   let titelZeile = "";
   if (Game.online && Net.kt > 0 && !zeigen.some(z => z.e.titel)){
     const w = Net.kt === Net.you ? {n: Game.name} : Net.wer.get(Net.kt);
-    titelZeile = `<div class="row"><span><b style="color:#f2c14e">♛</b> ${esc((w && w.n) || "?")}</span>` +
+    titelZeile = `<div class="row"><span><b style="color:#f2c14e">♛</b> ${esc((w && mitMarke(w.n, w.b)) || "?")}</span>` +
                  `<span>${dauerText(Net.kts)}</span></div>`;
   }
   $("board").innerHTML = zeigen.map(({e,rang}) =>
@@ -4759,13 +5258,21 @@ function spielerName(){
   if (istAngemeldet() && Konto.profil.name) return Konto.profil.name;
   return Gast.name || "";
 }
+/* Rückmeldung der Namenszeile (v105). Vorher kam sie über `toast()` — und
+   ein Toast erscheint nur während einer Runde: In den Einstellungen sah man
+   weder „geändert" noch einen Fehler, beim NPC-Namen passierte scheinbar
+   gar nichts. Jetzt steht die Meldung in der Zeile selbst, an der Stelle
+   des Hinweises. `nameMeldung` überlebt genau einen Neuaufbau. */
+let nameMeldung = null;
 function nameZeileBauen(box){
   const an = istAngemeldet();
   const p = an ? Konto.profil : { name: Gast.name };
   const seit = an ? (Number(p.nameSeit) || 0) : 0, frei = seit + 30 * 86400000, gesperrt = seit > 0 && Date.now() < frei;
+  const m = nameMeldung; nameMeldung = null;
+  const hinweis = m ? m.text : gesperrt ? t("s_name_note", new Date(frei).toLocaleDateString(lang)) : t("namerule");
   const wrap = document.createElement("div");
   wrap.className = "opt"; wrap.dataset.key = "name";
-  wrap.innerHTML = `<div><b>${esc(t("s_name"))}</b><small>${esc(gesperrt ? t("s_name_note", new Date(frei).toLocaleDateString(lang)) : t("namerule"))}</small></div>` +
+  wrap.innerHTML = `<div><b>${esc(t("s_name"))}</b><small id="setNameNote" role="status"${m && m.warn ? ' class="warn"' : ""}>${esc(hinweis)}</small></div>` +
     `<div class="nameWechsel"><input type="text" id="setName" maxlength="14" value="${esc(p.name || "")}" autocomplete="off" autocapitalize="off" spellcheck="false" ${gesperrt ? "disabled" : ""}>` +
     `<button type="button" id="setNameGo" ${gesperrt ? "disabled" : ""}>${esc(t("s_name_go"))}</button></div>`;
   box.appendChild(wrap);
@@ -4774,17 +5281,23 @@ function nameZeileBauen(box){
   if (go) go.addEventListener("click", async () => {
     const n = cleanName($("setName").value).trim();
     if (!n || n === spielerName()) return;
+    if (npcName(n)){
+      /* Ohne Neuaufbau: Das Getippte bleibt im Feld und lässt sich verbessern. */
+      const note = $("setNameNote");
+      if (note){ note.textContent = t("e_name_npc"); note.className = "warn"; }
+      return;
+    }
     go.disabled = true;
     if (!an){
       /* Gast: der Name gehört dem Browser, keine Sperre — er steht in
          keiner Rangliste und kann niemanden verwechseln. */
       Gast.name = n.slice(0, NAME_MAX); Gast.sichern();
-      Game.name = Gast.name; toast(t("s_name_ok")); heldMalen(); buildSettings();
+      Game.name = Gast.name; nameMeldung = {text: t("s_name_ok")}; heldMalen(); buildSettings();
       return;
     }
     const e = await Konto.einstellen({ name: n });
-    if (e.ok){ toast(t("s_name_ok")); Game.name = Konto.profil.name; heldMalen(); }
-    else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
+    if (e.ok){ nameMeldung = {text: t("s_name_ok")}; Game.name = Konto.profil.name; heldMalen(); }
+    else nameMeldung = {text: t(KONTO_FEHLER[e.fehler] || "e_net"), warn: true};
     buildSettings();
   });
 }
@@ -5184,10 +5697,11 @@ function heldMalen(){
   const masse = Math.max(30, Profile.best || 0);
   /* **Gezeigt** wird das Design immer als Welt — mit Ringen (Thomas,
      17.09.2026: „das Design soll als Welt angezeigt werden"). Der Hangar ist
-     das Schaufenster des Designs; den echten Fortschritt nennt weiter die
-     Plakette darunter („Stufe 2 — Geröll") und die Bestmasse. Damit ist die
-     frühere Regel „keine geschönte Mindestmasse" für das **Bild** aufgehoben,
-     für die **Zahlen** gilt sie weiter. */
+     das Schaufenster des Designs; den echten Fortschritt nennen das Level
+     über dem Körper und die Bestmasse darunter (die Plakette „Stufe 2 —
+     Geröll" ist seit v105 durch das Level ersetzt). Damit ist die frühere
+     Regel „keine geschönte Mindestmasse" für das **Bild** aufgehoben, für
+     die **Zahlen** gilt sie weiter. */
   const schauMasse = Math.max(masse, STAGES[STAGES.length - 1].at);
   /* Monde nur, wenn die Liga gewählt ist — im Freien Raum zählen sie nicht,
      und das Bild soll zeigen, was man dort sehen wird (Thomas, 16.09.). */
@@ -5214,13 +5728,12 @@ function heldMalen(){
     if (monde) mondeMalen(g, S/2, S/2, R, monde, 1.2);
     MENUE_VOLL = false;
     Game.t = saveT;
+    try { heldBaender(g); } catch(_){}
   }
 
   setze("heldName", spielerName() || t("k_guest"));
-  const st = stageOf(masse);
-  /* „Stufe 4 — Welt" wie im Entwurf, nicht der ganze Erklärsatz: Der steht
-     im Spiel über der Stufenanzeige, wo er gebraucht wird. */
-  setze("heldStufe", t("k_stufe", st + 1, t("st" + st)));
+  /* Level und Rang über und unter dem Körper schreibt `paintPurse()` —
+     die läuft auch beim Sprachwechsel, diese Funktion nicht. */
 }
 
 /* Wie groß der Körper auf der Fläche steht: so, dass alles hineinpasst, was
@@ -5235,6 +5748,52 @@ function heldAnteil(stufe, pal, monde){
   weit = Math.max(weit, schmuck[F] || 1);
   if (monde) weit = Math.max(weit, 1.7);
   return Math.min(.40, .49 / weit);
+}
+
+/* Level- und Rangzeile ragen in den durchsichtigen Rand der Bühne (v105).
+   Bei schlichten Designs liegt dort nichts. Strahlen (Sunflare), Flammen
+   (Inferno) und der Halo-Ring drehen sich aber bis an den Rand und liefen
+   hinter Abzeichen und Schrift durch — unruhig und schlecht lesbar. Deshalb
+   wird der Schmuck auf der oberen Fläche (`#heldCanvas`) dort weich
+   ausgeblendet, wo die Zeilen **tatsächlich** liegen: gemessen, nicht
+   angenommen, denn die Überlappung hängt an Bildschirmgröße und Anordnung.
+   Kein Umbau der Anordnung — die Höhen sind knapp gerechnet, und ein
+   kleinerer Körper nur für die oberen Designs widerspräche der Leiter.
+   Die Kugel auf `#heldGL` bleibt unberührt, Kreis und Rand auf r liegen
+   weit innerhalb. Nur Anzeige im Hangar; im Spiel und auf den Fotos der
+   Bonus-Designs (`Held3D.foto`) wird nichts ausgeblendet. */
+function heldBaender(g){
+  const c = g.canvas, S = c.height;
+  const cr = c.getBoundingClientRect();
+  if (cr.height < 1) return;
+  const weich = .07 * S;                  // Übergang: 7 % der Bühne
+  const lage = id => {
+    const el = document.getElementById(id);
+    if (!el || el.hidden) return null;
+    const r = el.getBoundingClientRect();
+    return r.height > 0 ? r : null;
+  };
+  g.save();
+  g.globalCompositeOperation = "destination-out";
+  const lv = lage("heldLevel");
+  if (lv){
+    const y = (lv.bottom - cr.top) / cr.height * S;
+    if (y > 0){
+      const v = g.createLinearGradient(0, y, 0, y + weich);
+      v.addColorStop(0, "rgba(0,0,0,1)"); v.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = v; g.fillRect(0, 0, c.width, y + weich);
+    }
+  }
+  const rg = lage("heldRang");
+  if (rg){
+    const y = (rg.top - cr.top) / cr.height * S;
+    if (y < S){
+      const v = g.createLinearGradient(0, y - weich, 0, y);
+      v.addColorStop(0, "rgba(0,0,0,0)"); v.addColorStop(1, "rgba(0,0,0,1)");
+      g.fillStyle = v; g.fillRect(0, y - weich, c.width, S - y + weich);
+    }
+  }
+  g.restore();
 }
 
 /* =====================================================================
@@ -5778,7 +6337,7 @@ const Held3D = {
       this.stand = { pal, masse: STAGES[STAGES.length - 1].at, stufe: STAGES.length - 1, monde: null,
                      R: S * heldAnteil(STAGES.length - 1, pal, null), S };
       this.zeit = 2.4;
-      this.bild();
+      this.bild(true);
       const aus = document.createElement("canvas"); aus.width = aus.height = S;
       const g = aus.getContext("2d");
       g.drawImage(glc, 0, 0); g.drawImage(c2, 0, 0);
@@ -5790,7 +6349,9 @@ const Held3D = {
     return url;
   },
 
-  bild(){
+  /* `foto`: Bild für `foto()` — dann ohne die ausgeblendeten Bänder unter
+     Level- und Rangzeile (`heldBaender`), die gehören nur in den Hangar. */
+  bild(foto){
     const gl = this.gl, st = this.stand;
     if (!gl || !st) return;
     const pal = st.pal, S = st.S, R = st.R, M = this.MAT[pal.mat] || this.MAT.fels;
@@ -5911,6 +6472,7 @@ const Held3D = {
       const saveT = Game.t; Game.t = zeit + 1.2;
       try { designSchmuck(g, S / 2, S / 2, R, pal, pal.trait || "plain", merkmale(pal), true); } catch(_){}
       Game.t = saveT;
+      if (!foto) try { heldBaender(g); } catch(_){}
     }
   }
 };
@@ -5982,6 +6544,10 @@ function show(id){
     /* Der Clankampf ist keine Wahl im Hangar (Schritt 109): Zurueck im
        Hangar steht wieder die Liga, sonst bliebe „clan" als Spielart. */
     if (modeId === "clan"){ modeId = "liga"; buildModes(); }
+    /* `paintPurse()` auch hier (v105): Level und Rang stehen jetzt beim
+       Körper. Ein Rang aus einer Errungenschaft im Clanmenü oder in den
+       Einstellungen kam bisher erst mit der nächsten Runde ins Bild. */
+    paintPurse();
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
@@ -5991,24 +6557,36 @@ function show(id){
   Musik.ducken(false);
 }
 
-/* Zahlenleiste im Reiter und die drei Werte unter dem Körper.
+/* Ore und Ehre im Reiter, Level über dem Körper, Rang darunter und die drei
+   Werte unter dem Körper.
    Seit Schritt 79 gibt es die Werte nur noch **einmal** im Bild. Vorher
    standen dieselben vier Zahlen zweimal in der Seite (Startbildschirm und
-   Laden), und jede Änderung musste an zwei Stellen gepflegt werden. */
+   Laden), und jede Änderung musste an zwei Stellen gepflegt werden.
+   Level und Rang stehen seit v105 **hier** und nicht in `heldMalen()`:
+   `applyLang()` ruft nur diese Funktion — Text aus `heldMalen()` bliebe
+   nach der Sprachwahl in der Kopfzeile in der alten Sprache stehen. */
 function setze(id, text){ const el = $(id); if (el) el.textContent = text; }
 
 function paintPurse(){
   const need = Profile.xpNeeded(Profile.level);
-  setze("lvNum", Profile.level);
-  setze("xpText", Profile.level >= MAX_LEVEL
-    ? t("maxlevel") : Profile.xp.toLocaleString(lang) + " / " + need.toLocaleString(lang));
+  const oben = Profile.level >= MAX_LEVEL;
+  const anteil = oben ? 1 : clamp(Profile.xp/need, 0, 1);
+  /* Level zwischen Name und Körper (v105) — für Gäste wie für Konten. Die
+     XP-Zahlen zeigt nur der Rechner; die Leiste steht überall. */
+  setze("heldLevelText", t("levelreq", Profile.level));
+  setze("heldXpText", oben ? t("maxlevel")
+    : Profile.xp.toLocaleString(lang) + " / " + need.toLocaleString(lang) + " XP");
+  const bar = $("heldXpBar");
+  if (bar) bar.style.width = anteil*100 + "%";
+  const leiste = $("heldXp");
+  if (leiste){
+    leiste.setAttribute("aria-valuenow", String(Math.round(anteil*100)));
+    leiste.setAttribute("aria-valuetext", $("heldXpText") ? $("heldXpText").textContent : "");
+  }
   setze("oreNum", Profile.ore.toLocaleString(lang));
   setze("bestNum", Profile.best.toLocaleString(lang));
   setze("runNum", (Profile.rec.runs || 0).toLocaleString(lang));
   setze("hautNum", Profile.owned.size + " / " + SKINS_ZAHL);
-  const bar = $("xpBar");
-  if (bar) bar.style.width = (Profile.level >= MAX_LEVEL ? 1
-    : clamp(Profile.xp/need, 0, 1))*100 + "%";
 
   /* Ehre gibt es ausschließlich aus Onlinerunden, die der Server gerechnet
      hat. Ohne Konto steht dort keine Null, sondern nichts. */
@@ -6017,19 +6595,27 @@ function paintPurse(){
     const hat = istAngemeldet() && Number.isFinite(+Konto.profil.ehre);
     zeile.hidden = !hat;
     if (hat) setze("ehreNum", (+Konto.profil.ehre).toLocaleString(lang));
-    /* Das Rangabzeichen neben der Ehre — dasselbe, das im Spiel neben dem
-       Namen steht, gezeichnet von `abzeichen()`. */
-    const abz = $("ehreAbz");
-    if (abz){
-      const stufe = hat && Number.isInteger(Konto.profil.rang) ? clamp(Konto.profil.rang, 0, RANG_MAX) : null;
-      abz.hidden = stufe === null;
-      if (stufe !== null){
-        try {
-          const g = abz.getContext("2d");
-          g.clearRect(0, 0, abz.width, abz.height);
-          abzeichen(g, 0, 0, stufe, abz.height);
-        } catch(_){}
-      }
+  }
+
+  /* Rangabzeichen und Rangname unter dem Körper (v105) — dasselbe
+     Abzeichen, das im Spiel neben dem Namen steht, gezeichnet von
+     `abzeichen()`. Nur mit Konto und Rang; Gäste haben keinen, und dann
+     steht dort nichts (nicht „Kadett"). Gedeckelt wie überall, damit ein
+     Rang, den dieser Client noch nicht kennt, nicht ins Leere greift. */
+  const rangZeile = $("heldRang");
+  if (rangZeile){
+    const stufe = istAngemeldet() && Number.isInteger(Konto.profil.rang)
+      ? clamp(Konto.profil.rang, 0, RANG_MAX) : null;
+    rangZeile.hidden = stufe === null;
+    if (stufe !== null){
+      const name = t("rk" + stufe);
+      setze("heldRangName", name);
+      /* Gekürzte Namen („Capitão de mar e…") ganz beim Darüberfahren. */
+      const nm = $("heldRangName");
+      if (nm) nm.title = name;
+      /* In Gerätepunkten: 48 × 28 am Rechner, 31 × 18 auf flachen und
+         mittelbreiten Schirmen — siehe abzeichenLeinwand(). */
+      try { abzeichenLeinwand($("heldAbz"), stufe); } catch(_){}
     }
   }
 }
@@ -6080,12 +6666,8 @@ function paintRank(){
     `<div><b>${esc(t("rk" + stufe))}</b>` +
     `<small>${esc(ehre.toLocaleString(lang))} ${esc(t("ehre"))}</small></div></div>` +
     `<p class="hinweis">${esc(t("ehrewie"))}</p>`;
-  const c = box.querySelector("canvas");
-  const g = c.getContext("2d");
-  g.clearRect(0, 0, c.width, c.height);
-  /* Doppelt so groß gezeichnet wie angezeigt — auf einem Bildschirm mit
-     hoher Auflösung sieht das Abzeichen sonst weich aus. */
-  abzeichen(g, 0, 0, stufe, 56);
+  /* In Gerätepunkten (48 × 28 CSS) — siehe abzeichenLeinwand(). */
+  abzeichenLeinwand(box.querySelector("canvas"), stufe);
 }
 
 function preview(canvas, pal){
@@ -7272,6 +7854,7 @@ $("acctForm").addEventListener("submit", async e => {
   if (anlegen && $("acctPw2") && $("acctPw2").value !== pw)
     return kontoMeldung(t("e_pwmatch"), "warn");
   if (anlegen && !name)         return kontoMeldung(t("e_name"), "warn");
+  if (anlegen && npcName(cleanName(name).trim())) return kontoMeldung(t("e_name_npc"), "warn");
 
   Konto.laeuft = true;
   $("acctGo").disabled = true;
@@ -7998,6 +8581,9 @@ const Konto = {
     if (!this.angemeldet()) return { fehler: "kein_konto" };
     const a = await this.ruf("/konto/clan/" + was, daten || {});
     if (a.status === 200 && a.profil) this.uebernehmen(a);
+    /* Gründen/Beitreten zählt sofort als Errungenschaft; ihre Ehre kann
+       einen Rang bringen. Beides meldet der Server in `erfolge`/`rangNeu`. */
+    if (a.status === 200) erfolgeMelden(a);
     return a.status === 200 ? a : { fehler: a.fehler || "netz" };
   },
   async clanListe(pfad){
@@ -8031,24 +8617,35 @@ function landAusSprache(){
   return null;
 }
 
-/* Computergegner des Servers tragen ein Kürzel vor dem Namen („NPC Vesta").
-   Sie sollen nie als echte Mitspieler durchgehen — weder im Kreis noch in
-   der Bestenliste noch auf dem Bildschirm „gefressen von". */
-/* Seit Schritt 98 ohne „NPC“-Vorsatz (Thomas' Vorgabe). Computergegner
-   erkennt man am fehlenden Rangabzeichen; `b` bleibt in den Daten. */
-const mitMarke = (name, bot) => name;
+/* Computergegner tragen das Kürzel [NPC] (v105, Thomas: „NPCs im Clan: NPC
+   sollten. Dadurch sind sie erkennbar." — nimmt Schritt 98 zurück). Sie
+   sollen nie als echte Mitspieler durchgehen, in keiner Spielart.
+
+   Zwei Wege, nie beide an einer Stelle — sonst stünde „[NPC] [NPC] Vesta":
+   - Die **Namenszeile** über dem Körper zeigt es als Kürzel in Messing
+     (`t` = "NPC", gesetzt in `steckbrief()` aus `b`; lokal in `newRival`).
+     Der Name selbst bleibt dafür ohne Vorsatz.
+   - **Texte** (Rangliste im Spiel, „gefressen von", Titan-Zeile, Titel-
+     Meldung) setzen es über `mitMarke()` vor den Namen.
+   Erkannt wird ein NPC nur am Merkmal `b` des Servers bzw. daran, dass er
+   ein lokaler Rivale ist — nie am Namen. */
+const mitMarke = (name, bot) => bot ? "[NPC] " + name : name;
 
 /* Was der Server über einen Mitspieler schickt, in die Form bringen, in der
    der Client damit arbeitet. `l` (Level) und `r` (Rang) kommen nur für
    angemeldete Konten — bei Gästen und Computergegnern fehlen sie, und dann
    zeigt die Namenszeile nur den Namen. */
 function steckbrief(e){
-  const w = { n: mitMarke(String(e.n || "?"), e.b), s: String(e.s || "basalt") };
+  const w = { n: String(e.n || "?"), s: String(e.s || "basalt") };
   if (Number.isInteger(e.l)) w.l = e.l;
   if (Number.isInteger(e.r)) w.r = e.r;
   if (e.b) w.b = 1;
   if (Number.isInteger(e.tm)) w.tm = e.tm;
   if (typeof e.t === "string" && e.t) w.t = e.t;
+  /* [NPC] nur aus `b`: Ein Computergegner trägt es immer, ein Mensch nie —
+     auch wenn ein Server ihm ein solches Kürzel schickte. */
+  if (e.b) w.t = "NPC";
+  else if (w.t && w.t.toUpperCase() === "NPC") delete w.t;
   if (Array.isArray(e.mo)){ const mo = e.mo.filter(a => MONDE[a]).slice(0, 3); if (mo.length) w.mo = mo; }
   return w;
 }
@@ -8117,7 +8714,7 @@ const Net = {
      `debNeu` merkt sich, ob seit dem letzten Bild etwas anders ist — dann
      baut der Client die Zeichenliste neu, sonst behält er sie. */
   deb:new Map(), debNeu:true,
-  world:0,                       // Weltgröße, kommt mit „welcome" vom Server
+  weltB:0, weltH:0,              // Kartenbreite und -höhe, kommen mit „welcome" vom Server
   top:[],
   tot:null,
   lohn:null, profil:null, stand:null, aufgestiegen:0, neueSkins:[],  // Abrechnung vom Server
@@ -8133,6 +8730,9 @@ const Net = {
     this.deb.clear(); this.debNeu = true;
     this.top = []; this.platz = 0; this.tot = null; this.you = 0; this.seq = 0;
     this.modus = "online"; this.team = 0; this.zeit = 0; this.zone = 0; this.rest = 0;
+    /* Nie die Größe einer früheren Verbindung behalten — ein älterer Server
+       (Rückweg über zurueck.sh) schickt nur `world`. */
+    this.weltB = 0; this.weltH = 0;
     this.lebende = 0; this.tms = null; this.koerper = 0; this.ergebnis = null;
     this.kt = 0; this.kts = 0;
     const url = serverUrl();
@@ -8175,8 +8775,13 @@ const Net = {
     if (m.t === "welcome"){
       this.you = +m.you || 0;
       this.rate = +m.tick || 20;
-      /* Weltgröße vom Server. `start()` liest sie gleich aus. */
-      this.world = Math.max(1000, Math.min(40000, +m.world || 9000));
+      /* Weltgröße vom Server. `start()` liest sie gleich aus. Seit der
+         A4-Karte als Breite `wb` und Höhe `wh`; ein älterer Server schickt
+         nur `world` (Quadrat), dann gilt sie für beide Achsen. Deckel 60000:
+         TALUMI_WELT=40000 ergibt eine Breite von 47568. */
+      const lim = v => Math.max(1000, Math.min(60000, v));
+      const alt = +m.world || 9000;
+      this.weltB = lim(+m.wb || alt); this.weltH = lim(+m.wh || alt);
       /* Spielart (Schritt 105). */
       this.modus = typeof m.modus === "string" ? m.modus : "online";
       this.team = +m.team || 0; this.zeit = +m.zeit || 0; this.koerper = +m.koerper || 0;
@@ -8236,9 +8841,24 @@ const Net = {
 
     for (const e of (m.ev || [])){
       if (!e) continue;
+      /* Im Ereignis ist `t` die Art; das Kürzel reist als `kz` (v105,
+         sim.js `beitrittsEreignis`). Vorher las `steckbrief()` hier „join"
+         als Kürzel — wer nach einem selbst dazukam, trug „[join]". */
       if (e.t === "join" && typeof e.n === "string")
-        this.wer.set(+e.id, steckbrief(e));
-      if (e.t === "left") this.wer.delete(+e.id);
+        this.wer.set(+e.id, steckbrief(Object.assign({}, e, {t: e.kz})));
+      /* Weggang: Der Steckbrief bleibt noch eine halbe Sekunde. Der Körper
+         steht in den älteren Schnappschüssen (NET_DELAY) noch im Bild —
+         ohne Steckbrief zeichnete `fremdes()` ihn so lange als „?" in
+         Basalt. Geht ein NPC, ohne gefressen zu sein (`npc:1`, v105: ein
+         Mensch ist dazugekommen), blendet ein Ring ihn an seiner zuletzt
+         gezeichneten Stelle aus, statt dass er wortlos verschwindet. */
+      if (e.t === "left"){
+        const id = +e.id, w = this.wer.get(id);
+        if (w){
+          if (e.npc && w.b) wegblenden(id);
+          setTimeout(() => { if (this.wer.get(id) === w) this.wer.delete(id); }, 500);
+        }
+      }
       /* Aufstieg mitten in der Runde. Ohne dieses Ereignis trüge ein Spieler
          sein neues Abzeichen erst in der nächsten Runde. */
       if (e.t === "rang" && Number.isInteger(e.r)){
@@ -8246,7 +8866,9 @@ const Net = {
         if (w) w.r = e.r;
         if (+e.id === this.you){
           if (Konto.profil) Konto.profil.rang = e.r;
-          toast(t("rangneu", t("rk" + e.r)));
+          /* Gedeckelt wie überall: Schickt ein neuerer Server eine Stufe,
+             die dieser Client nicht kennt, stünde sonst „rk20" da. */
+          toast(t("rangneu", t("rk" + clamp(e.r, 0, RANG_MAX))));
           Sound.levelUp();
         }
       }
@@ -8262,7 +8884,7 @@ const Net = {
           ring(cx, cy, 260, "#f2c14e");
         } else if (+e.von === this.you && +e.id){
           const w = this.wer.get(+e.id);
-          toast(t("titel_weg", t("titel_name"), (w && w.n) || "?"));
+          toast(t("titel_weg", t("titel_name"), (w && mitMarke(w.n, w.b)) || "?"));
         }
       }
       if (e.t === "burst" && isFinite(e.x) && isFinite(e.y))
@@ -8274,7 +8896,7 @@ const Net = {
         const w = this.wer.get(+e.von);
         const oben = (Array.isArray(m.top) ? m.top : []).find(x => x && +x.id === +e.von);
         Game.killer = {
-          name: (w && w.n) || (oben && mitMarke(oben.n, oben.b)) || "?",
+          name: (w && mitMarke(w.n, w.b)) || (oben && mitMarke(oben.n, oben.b)) || "?",
           m: (oben && +oben.m) || 0,
           left: Math.max(0, Game.cells.length - 1),
           sinceSplit: Game.t - Game.lastSplit,
@@ -8377,11 +8999,10 @@ const Net = {
 
                          **Computergegner tragen kein Abzeichen** (Thomas,
                          13.09.2026: „Gäste und Computergegner: Zeile ohne
-                         Abzeichen, nur Level und Name"). Der Server schickt
-                         ihre Rangstufe trotzdem mit — sie steuert, wie gut
-                         ein NPC spielt, und wird an anderer Stelle gebraucht.
-                         Soll sie doch im Bild stehen, ist `!info.b &&` hier
-                         die einzige Änderung. */
+                         Abzeichen, nur Level und Name"). Ihren Rang schickt
+                         der Server seit Schritt 98 gar nicht mehr; erkennbar
+                         sind sie seit v105 am Kürzel [NPC] (`tag`). Die
+                         Abfrage hier bleibt als zweite Sicherung. */
                       lvl:info.l, rang: info.b ? undefined : info.r,
                       tag: typeof info.t === "string" ? info.t : null,
                       /* Mannschaft aus Sicht des Spielers: 1 = eigene, 2 = Gegner. */

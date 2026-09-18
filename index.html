@@ -250,8 +250,6 @@
   .purse .lv small{display:block;font-family:var(--sans);font-size:11px;color:var(--paper-2)}
   .purse .ore{font-family:var(--serif);font-size:19px;color:var(--brass);text-align:right}
   .purse .ore small{display:block;font-family:var(--sans);font-size:11px;color:var(--paper-2)}
-  .xpbar{height:3px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
-  .xpbar i{display:block;height:100%;background:var(--brass);width:0}
 
   /* Einstellungen */
   .about{margin-top:28px;border-top:1px solid var(--line);padding-top:18px}
@@ -377,6 +375,8 @@
   .opt > div{min-width:0}
   .opt b{font-weight:400;font-size:13.5px}
   .opt small{display:block;color:var(--paper-2);font-size:11px;margin-top:2px;line-height:1.35}
+  /* Fehler der Namenszeile (v105), dieselbe Farbe wie `.notice.warn`. */
+  .opt small.warn{color:var(--ember)}
   .seg{display:flex;gap:5px;flex:0 0 auto;flex-wrap:wrap}
   #langPick{margin-top:2px}
   /* Der Startbonus: Faktor und Preis übereinander. Auf breiten Schirmen
@@ -1223,9 +1223,6 @@
   @media (max-width:760px){
     #konsReiter button{padding:0 9px;font-size:13px}
     #konsReiter .konsW{gap:9px}
-    /* Der XP-Text („0 / 425 XP") weicht dem fünften Reiter; Leiste und
-       Level bleiben, die Zahl steht unter „Statistik". */
-    #konsReiter #xpText{display:none}
   }
   @media (max-width:420px){
     #konsReiter{padding:0 4px;gap:0}
@@ -1236,19 +1233,16 @@
        color:var(--paper-2);padding-right:4px;white-space:nowrap}
   .konsW b{color:var(--paper);font-weight:700;font-variant-numeric:tabular-nums}
   .konsW .ore b{color:var(--brass-hell);font-family:var(--disp);font-size:15px}
-  .konsW .xpbar{width:110px;height:6px;margin:0;display:inline-block;vertical-align:middle;
-       background:rgba(255,255,255,.13)}
-  .konsW .xpbar i{background:linear-gradient(90deg, var(--brass), var(--brass-hell))}
-  .konsW small{font-size:11.5px}
-  /* Level und Ehre „ein wenig hervorgehoben" (Thomas, 15.09.2026): eine
+  /* Ehre „ein wenig hervorgehoben" (Thomas, 15.09.2026): eine
      Messingplakette statt bloßer Zahl im Fließtext. Ore bleibt ohne Rahmen —
-     sonst wäre nichts mehr hervorgehoben. */
+     sonst wäre nichts mehr hervorgehoben. Level und Rangabzeichen standen
+     bis v104 ebenfalls hier; seit v105 stehen sie in der Mitte beim Körper
+     (`.heldLevel`, `.heldRang`). Die Reiterzeile lief damit mit Konto ab
+     1024 Punkten Breite über und wurde abgeschnitten. */
   .konsW .chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;
        border-radius:9px;background:rgba(233,176,99,.10);border:1px solid rgba(233,176,99,.32)}
   .konsW .chip b{font-family:var(--disp);font-size:16px;color:var(--brass-hell)}
   .konsW .chip[hidden]{display:none}
-  #ehreAbz{width:31px;height:18px;display:block}
-  #ehreAbz[hidden]{display:none}
 
   .konsPane{overflow:auto;min-height:0}
   /* `!important`, weil die Regeln für flache und schmale Schirme weiter
@@ -1258,8 +1252,16 @@
   .konsPane[hidden]{display:none!important}
   .konsPane.drei{display:grid;grid-template-columns:330px minmax(0,1fr) 320px;overflow:hidden}
   .konsSp{padding:20px;display:flex;flex-direction:column;gap:14px;overflow:auto;min-height:0}
+  /* `safe center` (v105): Läuft die Spalte über, wächst sie nur nach unten
+     und lässt sich dorthin scrollen. Mit bloßem `center` lag der Überhang
+     zur Hälfte **oben** — dort kommt kein Scrollen hin, und bei 1366 × 657
+     war der Name ganz abgeschnitten. Die erste Zeile ist der Rückfall für
+     Browser, die `safe` nicht kennen.
+     `--mg` ist der Abstand der Zeilen; Level- und Rangzeile rechnen ihre
+     Ränder danach (sie rücken dichter an Name und Körper als der Rest). */
   .konsSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line);
-       align-items:center;justify-content:center;gap:10px}
+       align-items:center;justify-content:center;justify-content:safe center;
+       --mg:10px;gap:var(--mg)}
   .konsSp > label{margin:0}
   .konsSp.l #controls{margin:0}
 
@@ -1322,10 +1324,47 @@
   .konsSek .rankrow.me i,.konsSek .rankrow.me b{color:var(--brass-hell)}
 
   /* --- Mitte: der eigene Körper ------------------------------------- */
-  .konsName{text-align:center;margin-bottom:-8px}
+  .konsName{text-align:center;margin:0}
   .konsName b{display:block;font-family:var(--disp);font-size:29px;font-weight:700;
        color:var(--paper);line-height:1.1}
-  .konsName span{font-size:13px;color:var(--paper-2)}
+  /* Das Level zwischen Name und Körper (v105): „Level 24" und eine schmale
+     XP-Leiste in einer Zeile. Messing, nie Grün: Grün ist der Startknopf.
+     Die Breite der Leiste steht in `width`, nicht in `flex-basis`: Die
+     Zeile ist nur so breit wie ihr Inhalt, und in diese Breite rechnet
+     Chrome eine `flex-basis` nicht ein — die Leiste schrumpfte damit überall
+     auf ihre 24 Punkte Mindestbreite (gemessen am Bildschirmfoto). */
+  .heldLevel{display:flex;align-items:center;justify-content:center;gap:8px;
+       max-width:100%;min-width:0;margin-top:calc(3px - var(--mg, 10px));
+       position:relative;z-index:2;
+       font-family:var(--disp);font-size:15px;font-weight:700;line-height:1.2;
+       color:var(--brass-hell);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .heldXp{flex:0 1 auto;width:64px;min-width:24px;height:5px;border-radius:99px;
+       background:rgba(255,255,255,.13);overflow:hidden}
+  .heldXp i{display:block;height:100%;width:0;
+       background:linear-gradient(90deg, var(--brass), var(--brass-hell))}
+  /* Die XP-Zahlen nur am Rechner (Block „Der Hangar am Rechner"). */
+  #heldXpText{display:none}
+  /* Rangabzeichen und Rangname unter dem Körper (v105), nur mit Konto.
+     Lange Rangnamen („Capitão de mar e guerra") werden gekürzt statt über
+     den Rand zu laufen. Keine Tippfläche — deshalb ein `div`.
+     Level- und Rangzeile ragen ein Stück in die Bühne hinein: Die Fläche
+     ist quadratisch, der Körper mit Ringen und Schein füllt senkrecht aber
+     nur ihr mittleres Drittel bis Zweidrittel — oben und unten bleibt rund
+     ein Fünftel durchsichtig. Ohne das Überlappen stand der Rang wie
+     losgelöst über den Werten. `z-index` legt beide Zeilen über die Bühne
+     (die liegt mit `z-index:1` sonst obenauf).
+     Frei ist dieser Rand nur bei schlichten Designs. Strahlen (Sunflare),
+     Flammen (Inferno) und der Halo-Ring drehen sich bis in ihn hinein;
+     `heldBaender()` in spiel.js blendet den Schmuck deshalb dort weich aus,
+     wo Level- und Rangzeile liegen — gemessen an der echten Lage, nicht an
+     diesen Zahlen. */
+  .heldRang{display:flex;align-items:center;justify-content:center;gap:8px;
+       max-width:100%;min-width:0;margin-top:calc(-12px - var(--mg, 10px));
+       position:relative;z-index:2}
+  .heldRang[hidden]{display:none}
+  #heldAbz{display:block;flex:0 0 auto;width:48px;height:28px}
+  #heldRangName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+       font-family:var(--disp);font-size:15px;font-weight:700;line-height:1.2;color:var(--paper)}
   /* `height:auto`: Der Kreis bleibt ein Kreis, auch wenn `max-width` ihn in
      einer schmalen Spalte kleiner macht. Mit fester Höhe war er auf 667 × 375
      ein Ei (16.09.2026, Bildschirmfoto). */
@@ -1333,7 +1372,9 @@
   /* Die Bühne (Schritt 118): das 3D-Modell auf `#heldGL`, darüber der
      Designschmuck auf `#heldCanvas`. Die Bühne ist so groß wie die obere
      Fläche — alle Größenregeln für `#heldCanvas` gelten damit für beide. */
-  .heldBuehne{position:relative;max-width:100%;line-height:0}
+  /* Schiebt ihren durchsichtigen oberen Rand 8 Punkte unter die Levelzeile
+     (siehe `.heldRang`). */
+  .heldBuehne{position:relative;max-width:100%;line-height:0;margin-top:calc(-8px - var(--mg, 10px))}
   #heldGL{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
   #heldGL[hidden]{display:none}
   #heldCanvas{position:relative;z-index:1}
@@ -1396,27 +1437,82 @@
   .konsSp.r .seg button[aria-pressed=true]{background:rgba(233,176,99,.12);
        border-color:rgba(233,176,99,.5);color:var(--brass-hell)}
 
+  /* --- Breite Fenster unterhalb der Bühne (v105) ----------------------
+     Ab 901 Punkten Breite und 641 Höhe, aber nicht breit **und** hoch
+     genug für den Block darunter (Laptopfenster wie 1366 × 657, Tablets
+     quer): Bis v104 war der Körper hier fest 360 Punkte groß, und die
+     Spalte lief über — bei 1366 × 657 um 62 Punkte, der Name war weg. Jetzt
+     so groß, wie die Höhe hergibt. Steht bewusst **vor** dem Block für den
+     Rechner, damit dessen Regel dort gewinnt. Gemessen, nicht geschätzt:
+     Unter 1280 Punkten Breite ist die Mitte schmal, und die Werte unter dem
+     Körper brechen auf zwei Zeilen um — deshalb dort 460 statt 432 (die
+     Zahlen sind Kopfzeile, Reiter, Name, Level, Rang, Werte, Kacheln und
+     Ränder, abzüglich dessen, was Level und Rang in die Bühne ragen; übrig
+     bleiben 4 bis 12 Punkte Reserve, je nach Sprache).
+     Unter 1100 Punkten laufen Werte und Kachelreihe außerdem seitlich über
+     die Spalte hinaus (901: 85, 961: 55, 1024: 23 Punkte). Das war in v104
+     genauso und ist hier nicht behoben. */
+  @media (min-width:901px) and (min-height:641px){
+    #heldCanvas{width:clamp(150px, calc(100vh - 460px), 360px)}
+    #heldCanvas{width:clamp(150px, calc(100dvh - 460px), 360px)}
+  }
+  @media (min-width:1280px) and (min-height:641px){
+    #heldCanvas{width:clamp(150px, calc(100vh - 432px), 360px)}
+    #heldCanvas{width:clamp(150px, calc(100dvh - 432px), 360px)}
+  }
+  /* Unter 1024 Punkten Breite ist die Mitte nur 160 bis 220 Punkte breit:
+     Mit dem großen Abzeichen wurde dort jeder zweite Rangname gekürzt
+     (901 × 700, gemessen über alle 20 Ränge und 7 Sprachen). */
+  @media (min-width:901px) and (max-width:1023px) and (min-height:641px){
+    #heldAbz{width:31px;height:18px}
+    #heldRangName{font-size:13px}
+    .heldRang{gap:6px}
+  }
+
   /* --- Der Hangar am Rechner (Schritt 118) --------------------------
      Thomas: „die gesamte Menüseite am PC-Bildschirm optimieren, viel
      stimmiger". Nur für breite **und** hohe Schirme; die Regeln für
      Telefone weiter unten bleiben unberührt. Die Mitte ist eine Bühne:
-     Name und Stufe oben, das Modell so groß, wie die Höhe hergibt, die
-     Werte und die Kachelreihe unten — nichts schwimmt mehr in der Spalte. */
+     Name und Level oben, das Modell so groß, wie die Höhe hergibt, mit dem
+     Rang darunter, die Werte und die Kachelreihe unten — nichts schwimmt
+     mehr in der Spalte. */
   @media (min-width:1100px) and (min-height:700px){
     .konsPane.drei{grid-template-columns:340px minmax(0,1fr) 340px}
     .konsSp{padding:22px 24px;gap:16px}
-    .konsSp.m{gap:0;justify-content:space-between;padding:24px 24px 22px;
+    /* Drei Gruppen statt gleicher Abstände (v105): Name und Level oben,
+       Körper mit Rang in der Mitte, Werte und Kacheln unten. Den freien
+       Platz nehmen die beiden `auto`-Ränder (Bühne oben, Werte oben) —
+       mit `space-between` rückte das Level so weit vom Namen weg wie der
+       Körper von den Werten. */
+    .konsSp.m{--mg:0px;justify-content:flex-start;padding:24px 24px 22px;
          background:radial-gradient(ellipse 62% 52% at 50% 46%, rgba(233,176,99,.055), transparent 70%)}
-    .konsName{margin:0}
     .konsName b{font-size:36px;letter-spacing:.01em}
-    .konsName span{display:inline-block;margin-top:9px;padding:4px 13px;border-radius:99px;
+    /* Das Level als Messingplakette — die Form der früheren Stufenplakette,
+       dazu die XP-Zahlen, die es nur hier gibt. */
+    .heldLevel{margin:9px 0 8px;padding:4px 14px;gap:10px;border-radius:99px;
          border:1px solid rgba(233,176,99,.32);background:rgba(233,176,99,.08);
-         color:var(--brass);font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-    /* So groß, wie die Höhe hergibt: bei 1080 Punkten 600, bei 900 rund 420. */
-    #heldCanvas{width:clamp(250px, calc(100vh - 480px), 600px)}
-    #heldCanvas{width:clamp(250px, calc(100dvh - 480px), 600px)}
-    .heldBuehne{margin:6px 0}
-    .konsWerte{gap:0;margin-bottom:16px}
+         color:var(--brass);font-size:12.5px;letter-spacing:.14em;text-transform:uppercase}
+    .heldXp{width:90px}
+    #heldXpText{display:inline;font-family:var(--sans);font-size:11.5px;font-weight:600;
+         letter-spacing:0;text-transform:none;color:var(--paper-2)}
+    /* So groß, wie die Höhe hergibt: bei 1080 Punkten 592, bei 900 rund 412.
+       Die 488 sind Kopfzeile, Reiter, Name, Level, Rang, Werte und Kacheln,
+       abzüglich dessen, was der Rang in die Bühne ragt — gemessen, die
+       Spalte darf nicht scrollen; bei 1280 × 700 bleiben 10 Punkte frei (bis
+       v104: 480 und mindestens 250, ohne Rangzeile; damit scrollte sie schon
+       bei 1100 × 700 und 1180 × 820). */
+    #heldCanvas{width:clamp(190px, calc(100vh - 488px), 600px)}
+    #heldCanvas{width:clamp(190px, calc(100dvh - 488px), 600px)}
+    .heldBuehne{margin:auto 0 0}
+    /* Der Rang rückt um ein Achtel der Bühnengröße in ihren durchsichtigen
+       unteren Rand — dieselbe Rechnung wie die Breite darüber. `100%` ist
+       hier die Spaltenbreite (Prozent-Ränder rechnen immer nach der
+       Breite), also genau das, was `max-width` der Bühne erlaubt: In einem
+       schmalen, hohen Fenster (1100 × 1000) ist die Bühne 316 Punkte groß,
+       nicht die 474 der Formel, und der Rang rückte sonst 19 % hinein. */
+    .heldRang{margin-top:calc(-.13 * min(clamp(190px, calc(100vh - 488px), 600px), 100%))}
+    .heldRang{margin-top:calc(-.13 * min(clamp(190px, calc(100dvh - 488px), 600px), 100%))}
+    .konsWerte{gap:0;margin:auto 0 16px;padding-top:10px}
     .konsWerte div{padding:0 26px}
     .konsWerte div+div{border-left:1px solid var(--line)}
     .konsWerte b{font-size:24px}
@@ -1428,6 +1524,15 @@
     /* Was nur erklärt, rückt an den unteren Rand seiner Spalte. */
     .konsSp.l #controls{margin-top:auto}
     .konsSp.r #powText{margin-top:auto;font-size:11.5px;opacity:.75}
+  }
+  /* Bühne mit schmaler Mitte (1100–1279 Punkte breit): Die Werte unter dem
+     Körper brechen dort auf drei Zeilen um und kosten 32 Punkte mehr —
+     gemessen bei 1100 × 700 und 1180 × 820, beide scrollten schon in v104. */
+  @media (min-width:1100px) and (max-width:1279px) and (min-height:700px){
+    #heldCanvas{width:clamp(150px, calc(100vh - 526px), 600px)}
+    #heldCanvas{width:clamp(150px, calc(100dvh - 526px), 600px)}
+    .heldRang{margin-top:calc(-.13 * min(clamp(150px, calc(100vh - 526px), 600px), 100%))}
+    .heldRang{margin-top:calc(-.13 * min(clamp(150px, calc(100dvh - 526px), 600px), 100%))}
   }
 
   /* --- Designs, Errungenschaften, Statistik ---------------------- */
@@ -1548,13 +1653,21 @@
     .konsSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
     #heldCanvas{width:200px;height:auto}
     .konsName b{font-size:22px}
+    /* Level und Rang kleiner (v105): Abzeichen 31 × 18 wie früher in der
+       Reiterzeile, der Rangname 12 Punkte — bei 13 passt „Capitão de mar e
+       guerra" in der 174 Punkte schmalen Mitte eines 667er-Telefons nicht
+       mehr, und gekürzt wird nur, was sonst überliefe. */
+    .heldLevel{font-size:13px;gap:7px}
+    .heldXp{width:46px}
+    #heldAbz{width:31px;height:18px}
+    #heldRangName{font-size:12px}
+    .heldRang{gap:6px}
     /* Schmal: sechs Kacheln passen nicht nebeneinander — schieben statt
        mittig abschneiden. */
     .konsSp.m .strip{justify-content:flex-start;overflow-x:auto;padding-bottom:5px;width:100%}
     .konsReiter{height:48px}
     .konsReiter button{height:48px;padding:0 13px;font-size:13px}
     .konsW{gap:10px;font-size:12px}
-    .konsW .xpbar{width:60px}
     /* Auf flachen Schirmen ohne Rahmen: Die Plakette kostete 18 Punkte
        Breite, und genau die fehlten bei 667 px auf Deutsch, Französisch und
        Russisch — die Zahlenleiste lief über den Rand (mobil.js, 16.09.). */
@@ -1591,8 +1704,9 @@
     .konsReiter button{padding:0 10px;font-size:12.5px;flex:0 0 auto}
     /* Die Zahlenleiste passt neben vier Reitern nicht mehr und wurde
        abgeschnitten. Sie verschwindet hier ganz: Ore steht im Reiter
-       „Designs", wo man es ausgibt, Level und Fortschritt unter
-       „Statistik". Eine halb sichtbare Zahl ist schlechter als keine. */
+       „Designs", wo man es ausgibt; Level und Rang stehen seit v105 ohnehin
+       in der Mitte beim Körper. Eine halb sichtbare Zahl ist schlechter als
+       keine. */
     .konsW{display:none}
   }
 
@@ -1666,7 +1780,7 @@
     .konsPane.drei{grid-template-columns:minmax(0,225px) minmax(0,1fr) minmax(0,290px)}
     .konsSp.m{grid-column:2;grid-row:2;order:0;align-items:center;
          border:0;border-right:1px solid var(--line);
-         justify-content:flex-start;gap:8px}
+         justify-content:flex-start;--mg:8px}
     /* Die Spalte selbst verschwindet als Kasten; ihre beiden Gruppen werden
        eigene Felder des Rasters. */
     .konsSp.r{display:contents}
@@ -1696,7 +1810,6 @@
        Körper wieder 168 Punkte groß in einem 188 Punkte hohen Fenster. */
     #startVeil #heldCanvas{width:168px;height:auto}
     .konsName b{font-size:19px;line-height:1.05}
-    .konsName span{font-size:11px}
     .konsWerte{gap:16px}
     .konsWerte b{font-size:16px}
     .konsWerte span{font-size:11px}
@@ -1793,7 +1906,7 @@
      „passt" und „scrollt" liegen — erkennbar bleibt er. */
   @media (max-height:400px) and (min-width:640px){
     #startVeil #heldCanvas{width:126px;height:auto}
-    .konsSp.m{gap:5px}
+    .konsSp.m{--mg:5px}
     body.bonusoffen #startVeil #bonusBox{margin-top:4px}
   }
   /* Noch flacher als ein iPhone SE im Querformat (375). Solche Geräte sind
@@ -1857,21 +1970,16 @@
      Reiterstreifen und der Streifen unter dem Startknopf. Zusammen sind das
      26 Punkte — auf einem 390 Punkte hohen Schirm ein Achtel des Fensters. */
   @media (max-height:470px){
-    /* Level und Ehre bleiben stehen — sie kosten in der Reiterzeile keine
-       zusätzliche Höhe (sie ist ohnehin 44 px hoch) und passen auf jeder
-       gängigen Handybreite ohne zu überlaufen, gemessen von 667 bis 932 px.
-       Nur die XP-Leiste wird schmaler, damit für lange Übersetzungen wie
-       Türkisch oder Russisch Luft bleibt. */
+    /* Ore und Ehre bleiben stehen — sie kosten in der Reiterzeile keine
+       zusätzliche Höhe (sie ist ohnehin 44 px hoch). Level und Rang stehen
+       seit v105 in der Mitte beim Körper. */
     .konsW{gap:10px}
-    .konsW .xpbar{width:52px}
     .konsKopf{top:10px;height:44px}
     .konsFenster{top:62px;bottom:70px;grid-template-rows:44px 1fr}
     .konsReiter{height:44px}
     .konsReiter button{height:44px}
 
     #heldCanvas{width:168px;height:auto}
-    /* Der Satz unter dem Namen steht im Spiel ohnehin über der Stufe. */
-    #heldStufe{display:none}
   }
 
 
@@ -1993,12 +2101,15 @@
 
   /* Der Körper steht seit v102 in der Mitte und darf den Platz nutzen: so
      groß, wie die Höhe hergibt, statt fester Stufen (92/104/126/168). Die
-     205 Punkte sind Kopfzeile, Reiter, Name und Ränder — gemessen mit
-     scrollall.js, der Reiter darf nicht scrollen. Steht bewusst **nach**
-     allen festen Stufen. */
+     195 Punkte (unten) sind Kopfzeile, Reiter, Name, Level, Rang und Ränder
+     — gemessen mit scrollall.js und dem Hangar-Prüfstand, der Reiter darf
+     nicht scrollen. Seit v105 stehen Level und Rang über und unter dem
+     Körper und ragen ein Stück in seine Fläche; bis v104 waren es 205 und
+     260 bei rund 50 Punkten Luft, jetzt bleiben 21 bis 27 (gemessen von
+     667 × 325 bis 932 × 430). Steht bewusst **nach** allen festen Stufen. */
   @media (max-height:470px) and (min-width:640px){
-    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 260px), 300px);height:auto}
-    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 260px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 250px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 250px), 300px);height:auto}
   }
   /* Schmale Telefone (667 breit): Die Randspalten geben der Mitte Platz ab,
      sonst bleibt für den Körper ein Streifen von 97 Punkten. Seit Schritt
@@ -2010,8 +2121,8 @@
   /* Bis 420 Punkte Höhe stehen unter dem Körper weder Werte noch Kacheln —
      dort darf er 55 Punkte mehr haben. */
   @media (max-height:420px) and (min-width:640px){
-    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 205px), 300px);height:auto}
-    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 205px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100vh - 195px), 300px);height:auto}
+    #startVeil #heldCanvas{width:clamp(92px, calc(100dvh - 195px), 300px);height:auto}
   }
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -2075,8 +2186,7 @@
        der Kontostreifen sind in diesem Moment nichts, was man bedient. Sie
        kommen zurück, sobald entschieden ist — also nach einem Tipp. */
     body.keks #startVeil h1,
-    body.keks #startVeil .purse,
-    body.keks #startVeil .xpbar{display:none}
+    body.keks #startVeil .purse{display:none}
 
   }
   /* Solange der Kasten steht, endet der Schleier dort, wo der Kasten beginnt
@@ -2262,7 +2372,7 @@
       <ul class="anmPunkte">
         <li data-i18n="a_pt1">Free, in the browser, no download.</li>
         <li data-i18n="a_pt2">Nothing on sale gives a lasting advantage.</li>
-        <li data-i18n="a_pt3">46 designs, thirteen ranks, four modes.</li>
+        <li data-i18n="a_pt3">46 designs, twenty ranks, four modes.</li>
       </ul>
       <p class="pow" id="anmOnline" hidden></p>
       <p class="pow happyZeile" id="anmHappy" hidden></p>
@@ -2371,7 +2481,7 @@
       <p><strong>Open space</strong> puts you on one field with everyone else in
         the room, with the server deciding what happened rather than any player's
         browser. A room holds 190 bodies; while fewer people are online, the
-        rest are computer-controlled rivals that say so in their name. Without a
+        rest are computer-controlled rivals that carry an [NPC] tag before their name. Without a
         connection the same round runs on your own device.
         <strong>Battle royale</strong> starts everyone equal and closes the
         field in stages until one body is left. <strong>Clan battle</strong>
@@ -2382,11 +2492,12 @@
       <h2>Accounts, honour and ranks</h2>
       <p>An account is free and needed only for online play; with one, your level,
         Ore and designs live on the server instead of the browser, so they survive a
-        cleared cache. <strong>Honour</strong> is paid only for swallowing another
-        account in an online round — never for a computer-controlled rival, and the
-        same opponent counts once a day — which is why it cannot be bought or sat
-        out. It carries thirteen ranks, from Cadet to Grand Admiral, shown as a
-        badge beside your name, and twenty-one achievements each pay it once.</p>
+        cleared cache. <strong>Honour</strong> is earned by swallowing another account
+        in an online round — never a computer-controlled rival, and the same
+        opponent counts once a day — from thirty-one achievements that each pay
+        it once, and a little from the daily bonus; it cannot be bought. It
+        carries twenty ranks, from Cadet to Grand Admiral, shown as a badge beside
+        your name.</p>
 
       <h2>What it does not do</h2>
       <p>No advertising interrupts a round, and nothing sold ever affects play.
@@ -2481,12 +2592,12 @@
               data-i18n="k_stat">Stats</button>
       <button type="button" data-reiter="monde" role="tab" aria-selected="false"
               data-i18n="k_monde" hidden>Moons</button>
+      <!-- Seit v105 nur noch Ore und Ehre: Level und XP stehen in der Mitte
+           zwischen Name und Körper, das Rangabzeichen mit Rangnamen unter
+           dem Körper (Thomas, 18.09.2026). -->
       <div class="konsW">
-        <span class="chip"><span data-i18n="level">Level</span> <b id="lvNum">1</b>
-          <span class="xpbar"><i id="xpBar"></i></span>
-          <small id="xpText">0 / 400 XP</small></span>
         <span class="ore"><b id="oreNum">0</b> Ore</span>
-        <span class="chip" id="ehreZeile" hidden><canvas id="ehreAbz" width="62" height="36" hidden></canvas><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
+        <span class="chip" id="ehreZeile" hidden><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
       </div>
     </div>
 
@@ -2505,7 +2616,18 @@
       </div>
 
       <div class="konsSp m">
-        <div class="konsName"><b id="heldName">—</b><span id="heldStufe"></span></div>
+        <div class="konsName"><b id="heldName">—</b></div>
+        <!-- Das Level zwischen Name und Körper (v105, Thomas: „das Level im
+             Hangar zwischen Spielername und Designbild"), für Gäste wie für
+             Konten. Ersetzt die Plakette „Stufe 5 — Welt". Die XP-Zahlen
+             stehen nur am Rechner da; geschrieben wird alles in
+             `paintPurse()`. Kein Knopf — sonst bräuchte die Zeile auf dem
+             Telefon 44 Punkte Höhe. -->
+        <div class="heldLevel" id="heldLevel">
+          <span id="heldLevelText">Level 1</span>
+          <span class="heldXp" id="heldXp" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="heldXpBar"></i></span>
+          <small id="heldXpText"></small>
+        </div>
         <!-- Der eigene Körper: seit Schritt 118 als 3D-Modell (`Held3D` in
              spiel.js) auf `#heldGL`, darüber auf `#heldCanvas` das, was das
              Design außerhalb des Kreises trägt (`designSchmuck()`, derselbe
@@ -2515,6 +2637,12 @@
         <div class="heldBuehne">
           <canvas id="heldGL" width="880" height="880" hidden></canvas>
           <canvas id="heldCanvas" width="880" height="880"></canvas>
+        </div>
+        <!-- Rangabzeichen und Rangname unter dem Körper (v105). Nur mit Konto
+             und Rang — Gäste haben keinen, und was es nicht gibt, steht
+             nicht da. Die Leinwand ist doppelt so groß wie die Anzeige. -->
+        <div class="heldRang" id="heldRang" hidden>
+          <canvas id="heldAbz" width="96" height="56"></canvas><span id="heldRangName"></span>
         </div>
         <div class="konsWerte">
           <div><b id="bestNum">0</b><span data-i18n="bestmass">best mass</span></div>
@@ -2596,7 +2724,7 @@
       <div class="konsStat">
         <div class="plate recbox" id="recBox"></div>
         <div class="plate recbox" id="rankBox" hidden></div>
-        <!-- Alle 13 Ränge mit ihren Bedingungen (Schritt 102). Für Gäste
+        <!-- Alle 20 Ränge mit ihren Bedingungen (Schritt 102; bis v104 13). Für Gäste
              lesbar — es ist die Antwort auf „was kann ich erreichen?". -->
         <div class="plate recbox" id="rangListe"></div>
         <!-- Freunde werben (Schritt 104): Code, Link, Stand. Nur mit Konto. -->
@@ -2856,7 +2984,7 @@
       <li><b>Clankampf</b> — zwei Mannschaften, fünf Minuten, die Mannschaft mit mehr Masse führt am Ende. Gegen Computergegner.</li>
       <li><b>Freundschaftsspiel</b> — reine Übung ohne Belohnung.</li>
     </ul>
-    <p>Computergegner sind am Namen zu erkennen — kein Mensch heißt so. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
+    <p>Computergegner tragen das Kürzel [NPC] vor dem Namen. Für jeden Menschen, der dazukommt, verschwindet einer. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
 
     <h2>Ore, XP und Level</h2>
     <ul>
@@ -2870,8 +2998,8 @@
 
     <h2>Ehre und Ränge</h2>
     <ul>
-      <li><b>Ehre</b> gibt es nur online und nur, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — keine Computergegner. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag.</li>
-      <li>Ehre bringt dich durch <b>13 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Kapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
+      <li><b>Ehre</b> verdienst du online, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — Computergegner zählen nicht. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag. Etwas Ehre steckt außerdem im Tagesbonus.</li>
+      <li>Ehre bringt dich durch <b>20 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Flottenkapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
       <li><b>Errungenschaften</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
       <li>Alle <b>28 Tage</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet, am Ende gibt es Ore nach Platz, dann beginnt alles von vorn.</li>
       <li><b>Clans:</b> Bis zu 30 Spieler, die Ehre aller Mitglieder zählt zusammen. Gründen oder beitreten über den Knopf <b>Clan</b>.</li>

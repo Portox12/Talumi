@@ -180,7 +180,7 @@ const LANGS14 = {
       k_or:"or", a_more:"More about the game",
       a_pt1:"Free, in the browser, nothing to download.",
       a_pt2:"Nothing on sale gives a lasting advantage.",
-      a_pt3:"46 designs, thirteen ranks, four modes.",
+      a_pt3:"46 designs, twenty ranks, four modes.",
       k_fremd_fehler:"That sign-in did not work. Try e-mail instead.",
       e_email:"That e-mail address does not look right.",
       e_pwshort:"The password needs at least 8 characters.",
@@ -211,7 +211,7 @@ const LANGS14 = {
       k_or:"oder", a_more:"Mehr über das Spiel",
       a_pt1:"Kostenlos, im Browser, nichts zu installieren.",
       a_pt2:"Nichts Käufliches bringt einen dauerhaften Vorteil.",
-      a_pt3:"46 Designs, dreizehn Ränge, vier Spielarten.",
+      a_pt3:"46 Designs, zwanzig Ränge, vier Spielarten.",
       k_fremd_fehler:"Diese Anmeldung hat nicht geklappt. Versuch es mit E-Mail.",
       e_email:"Diese E-Mail-Adresse sieht nicht richtig aus.",
       e_pwshort:"Das Passwort braucht mindestens 8 Zeichen.",
@@ -242,7 +242,7 @@ const LANGS14 = {
       k_or:"o", a_more:"Más sobre el juego",
       a_pt1:"Gratis, en el navegador, sin descargas.",
       a_pt2:"Nada de lo que se vende da ventaja duradera.",
-      a_pt3:"46 diseños, trece rangos, cuatro modos.",
+      a_pt3:"46 diseños, veinte rangos, cuatro modos.",
       k_fremd_fehler:"Ese acceso no funcionó. Prueba con el correo.",
       e_email:"Esa dirección de correo no parece correcta.",
       e_pwshort:"La contraseña necesita al menos 8 caracteres.",
@@ -273,7 +273,7 @@ const LANGS14 = {
       k_or:"ou", a_more:"Mais sobre o jogo",
       a_pt1:"Grátis, no navegador, sem instalar nada.",
       a_pt2:"Nada à venda dá vantagem duradoura.",
-      a_pt3:"46 designs, treze patentes, quatro modos.",
+      a_pt3:"46 designs, vinte patentes, quatro modos.",
       k_fremd_fehler:"Esse acesso não funcionou. Tente com o e-mail.",
       e_email:"Esse endereço de e-mail não parece correto.",
       e_pwshort:"A palavra-passe precisa de pelo menos 8 caracteres.",
@@ -304,7 +304,7 @@ const LANGS14 = {
       k_or:"ou", a_more:"En savoir plus sur le jeu",
       a_pt1:"Gratuit, dans le navigateur, rien à installer.",
       a_pt2:"Rien de ce qui est vendu ne donne un avantage durable.",
-      a_pt3:"46 designs, treize rangs, quatre modes.",
+      a_pt3:"46 designs, vingt rangs, quatre modes.",
       k_fremd_fehler:"Cette connexion n’a pas fonctionné. Essayez par e-mail.",
       e_email:"Cette adresse e-mail ne semble pas correcte.",
       e_pwshort:"Le mot de passe doit faire au moins 8 caractères.",
@@ -335,7 +335,7 @@ const LANGS14 = {
       k_or:"veya", a_more:"Oyun hakkında daha fazlası",
       a_pt1:"Ücretsiz, tarayıcıda, indirme yok.",
       a_pt2:"Satılan hiçbir şey kalıcı üstünlük vermez.",
-      a_pt3:"46 tasarım, on üç rütbe, dört mod.",
+      a_pt3:"46 tasarım, yirmi rütbe, dört mod.",
       k_fremd_fehler:"Bu giriş işe yaramadı. E-posta ile dene.",
       e_email:"Bu e-posta adresi doğru görünmüyor.",
       e_pwshort:"Parola en az 8 karakter olmalı.",
@@ -366,7 +366,7 @@ const LANGS14 = {
       k_or:"или", a_more:"Подробнее об игре",
       a_pt1:"Бесплатно, в браузере, ничего не нужно ставить.",
       a_pt2:"Ничто из продаваемого не даёт долгого преимущества.",
-      a_pt3:"46 дизайнов, тринадцать рангов, четыре режима.",
+      a_pt3:"46 дизайнов, двадцать рангов, четыре режима.",
       k_fremd_fehler:"Этот вход не сработал. Попробуйте по почте.",
       e_email:"Этот адрес почты выглядит неверно.",
       e_pwshort:"Пароль должен быть не короче 8 символов.",
@@ -614,62 +614,73 @@ const LANGS19 = {
 };
 for (const c in LANGS19) Object.assign(LANGS[c], LANGS19[c]);
 
-/* Ränge (Schritt 65). Dreizehn Stufen, rk0 bis rk12. Allgemeine
-   Marinebegriffe — die Gestaltung der Abzeichen ist eigen, die Bezeichnungen
-   sind es bewusst nicht: Sie sollen ohne Erklärung verständlich sein. */
+/* Ränge (Schritt 65). Seit v105 zwanzig Stufen, rk0 bis rk19 (vorher
+   dreizehn): Die alten Namen stehen an ihrer neuen Stelle (rk2 → rk3,
+   rk3 → rk5, rk4 → rk7, rk5 → rk9, rk6 → rk11, rk7 → rk13, rk8–rk12 →
+   rk15–rk19), die geraden Stufen 2 bis 14 sind neu dazwischen. Allgemeine
+   Marine- und Flottenbegriffe — die Gestaltung der Abzeichen ist eigen, die
+   Bezeichnungen sind es bewusst nicht: Sie sollen ohne Erklärung verständlich
+   sein. */
 const LANGS20 = {
-  en:{rk0:"Cadet", rk1:"Ensign", rk2:"Sub-Lieutenant", rk3:"Lieutenant",
-      rk4:"Lieutenant Commander", rk5:"Commander", rk6:"Captain",
-      rk7:"Senior Captain", rk8:"Commodore", rk9:"Rear Admiral",
-      rk10:"Vice Admiral", rk11:"Admiral", rk12:"Grand Admiral",
+  en:{rk0:"Cadet", rk1:"Ensign", rk2:"Senior Ensign", rk3:"Sub-Lieutenant",
+      rk4:"Flight Lieutenant", rk5:"Lieutenant", rk6:"Squadron Leader", rk7:"Lieutenant Commander",
+      rk8:"Wing Commander", rk9:"Commander", rk10:"Cruiser Commander", rk11:"Captain",
+      rk12:"Line Captain", rk13:"Senior Captain", rk14:"Fleet Captain", rk15:"Commodore",
+      rk16:"Rear Admiral", rk17:"Vice Admiral", rk18:"Admiral", rk19:"Grand Admiral",
       rang:"Rank", ehre:"Honour", rangneu:"Rank reached: {0}",
       ehredazu:"Honour earned", ehrekeine:"No honour this round.",
       ehrewie:"Honour comes from good hunting online: prey close to your own size, and each opponent counts once a day.",
       e_land:"Your country stays fixed for 30 days — the country ranking would be worthless otherwise."},
-  de:{rk0:"Kadett", rk1:"Fähnrich", rk2:"Leutnant", rk3:"Oberleutnant",
-      rk4:"Kapitänleutnant", rk5:"Korvettenkapitän", rk6:"Fregattenkapitän",
-      rk7:"Kapitän", rk8:"Kommodore", rk9:"Konteradmiral",
-      rk10:"Vizeadmiral", rk11:"Admiral", rk12:"Großadmiral",
+  de:{rk0:"Kadett", rk1:"Fähnrich", rk2:"Oberfähnrich", rk3:"Leutnant",
+      rk4:"Flugleutnant", rk5:"Oberleutnant", rk6:"Staffelführer", rk7:"Kapitänleutnant",
+      rk8:"Geschwaderführer", rk9:"Korvettenkapitän", rk10:"Kreuzerkapitän", rk11:"Fregattenkapitän",
+      rk12:"Linienkapitän", rk13:"Kapitän", rk14:"Flottenkapitän", rk15:"Kommodore",
+      rk16:"Konteradmiral", rk17:"Vizeadmiral", rk18:"Admiral", rk19:"Großadmiral",
       rang:"Rang", ehre:"Ehre", rangneu:"Rang erreicht: {0}",
       ehredazu:"Ehre verdient", ehrekeine:"Diese Runde ohne Ehre.",
       ehrewie:"Ehre gibt es für gute Jagd im Onlinebetrieb: Beute nahe der eigenen Größe, und jeder Gegner zählt einmal am Tag.",
       e_land:"Dein Land steht 30 Tage fest — sonst wäre die Landeswertung nichts wert."},
-  es:{rk0:"Cadete", rk1:"Alférez", rk2:"Subteniente", rk3:"Teniente",
-      rk4:"Capitán de corbeta", rk5:"Capitán de fragata", rk6:"Capitán de navío",
-      rk7:"Capitán superior", rk8:"Comodoro", rk9:"Contralmirante",
-      rk10:"Vicealmirante", rk11:"Almirante", rk12:"Gran Almirante",
+  es:{rk0:"Cadete", rk1:"Alférez", rk2:"Alférez superior", rk3:"Subteniente",
+      rk4:"Teniente de vuelo", rk5:"Teniente", rk6:"Teniente de navío", rk7:"Capitán de corbeta",
+      rk8:"Jefe de flotilla", rk9:"Capitán de fragata", rk10:"Capitán de crucero", rk11:"Capitán de navío",
+      rk12:"Capitán de línea", rk13:"Capitán superior", rk14:"Capitán de flota", rk15:"Comodoro",
+      rk16:"Contralmirante", rk17:"Vicealmirante", rk18:"Almirante", rk19:"Gran Almirante",
       rang:"Rango", ehre:"Honor", rangneu:"Rango alcanzado: {0}",
       ehredazu:"Honor ganado", ehrekeine:"Esta ronda sin honor.",
       ehrewie:"El honor viene de cazar bien en línea: presas cercanas a tu tamaño, y cada rival cuenta una vez al día.",
       e_land:"Tu país queda fijo 30 días — si no, la clasificación por país no valdría nada."},
-  pt:{rk0:"Cadete", rk1:"Aspirante", rk2:"Subtenente", rk3:"Tenente",
-      rk4:"Capitão-tenente", rk5:"Capitão de corveta", rk6:"Capitão de fragata",
-      rk7:"Capitão de mar e guerra", rk8:"Comodoro", rk9:"Contra-almirante",
-      rk10:"Vice-almirante", rk11:"Almirante", rk12:"Grão-almirante",
+  pt:{rk0:"Cadete", rk1:"Aspirante", rk2:"Guarda-marinha", rk3:"Subtenente",
+      rk4:"Tenente de voo", rk5:"Tenente", rk6:"Chefe de esquadrilha", rk7:"Capitão-tenente",
+      rk8:"Chefe de flotilha", rk9:"Capitão de corveta", rk10:"Capitão de cruzador", rk11:"Capitão de fragata",
+      rk12:"Capitão de linha", rk13:"Capitão de mar e guerra", rk14:"Capitão de frota", rk15:"Comodoro",
+      rk16:"Contra-almirante", rk17:"Vice-almirante", rk18:"Almirante", rk19:"Grão-almirante",
       rang:"Patente", ehre:"Honra", rangneu:"Patente alcançada: {0}",
       ehredazu:"Honra ganha", ehrekeine:"Esta ronda sem honra.",
       ehrewie:"A honra vem de boa caça online: presas perto do seu tamanho, e cada adversário conta uma vez por dia.",
       e_land:"O seu país fica fixo por 30 dias — senão a classificação por país não valeria nada."},
-  fr:{rk0:"Cadet", rk1:"Enseigne", rk2:"Sous-lieutenant", rk3:"Lieutenant",
-      rk4:"Capitaine de corvette", rk5:"Capitaine de frégate", rk6:"Capitaine de vaisseau",
-      rk7:"Capitaine supérieur", rk8:"Commodore", rk9:"Contre-amiral",
-      rk10:"Vice-amiral", rk11:"Amiral", rk12:"Grand amiral",
+  fr:{rk0:"Cadet", rk1:"Enseigne", rk2:"Enseigne supérieur", rk3:"Sous-lieutenant",
+      rk4:"Lieutenant de vol", rk5:"Lieutenant", rk6:"Chef d'escadrille", rk7:"Capitaine de corvette",
+      rk8:"Chef de flottille", rk9:"Capitaine de frégate", rk10:"Capitaine de croiseur", rk11:"Capitaine de vaisseau",
+      rk12:"Capitaine d'escadre", rk13:"Capitaine supérieur", rk14:"Capitaine de flotte", rk15:"Commodore",
+      rk16:"Contre-amiral", rk17:"Vice-amiral", rk18:"Amiral", rk19:"Grand amiral",
       rang:"Grade", ehre:"Honneur", rangneu:"Grade atteint : {0}",
       ehredazu:"Honneur gagné", ehrekeine:"Cette manche sans honneur.",
       ehrewie:"L'honneur vient d'une bonne chasse en ligne : une proie proche de votre taille, et chaque adversaire compte une fois par jour.",
       e_land:"Votre pays reste fixé 30 jours — sinon le classement par pays ne vaudrait rien."},
-  tr:{rk0:"Öğrenci", rk1:"Asteğmen", rk2:"Teğmen", rk3:"Üsteğmen",
-      rk4:"Yüzbaşı", rk5:"Binbaşı", rk6:"Yarbay",
-      rk7:"Albay", rk8:"Komodor", rk9:"Tuğamiral",
-      rk10:"Koramiral", rk11:"Oramiral", rk12:"Büyükamiral",
+  tr:{rk0:"Öğrenci", rk1:"Asteğmen", rk2:"Kıdemli Asteğmen", rk3:"Teğmen",
+      rk4:"Uçuş Teğmeni", rk5:"Üsteğmen", rk6:"Kıdemli Üsteğmen", rk7:"Yüzbaşı",
+      rk8:"Kıdemli Yüzbaşı", rk9:"Binbaşı", rk10:"Kruvazör Kaptanı", rk11:"Yarbay",
+      rk12:"Zırhlı Kaptanı", rk13:"Albay", rk14:"Kıdemli Albay", rk15:"Komodor",
+      rk16:"Tuğamiral", rk17:"Koramiral", rk18:"Oramiral", rk19:"Büyükamiral",
       rang:"Rütbe", ehre:"Şeref", rangneu:"Rütbeye ulaşıldı: {0}",
       ehredazu:"Kazanılan şeref", ehrekeine:"Bu turda şeref yok.",
       ehrewie:"Şeref, çevrimiçi iyi avdan gelir: kendi boyutuna yakın av, ve her rakip günde bir kez sayılır.",
       e_land:"Ülken 30 gün sabit kalır — yoksa ülke sıralaması hiçbir şey ifade etmezdi."},
-  ru:{rk0:"Кадет", rk1:"Мичман", rk2:"Лейтенант", rk3:"Старший лейтенант",
-      rk4:"Капитан-лейтенант", rk5:"Капитан 3 ранга", rk6:"Капитан 2 ранга",
-      rk7:"Капитан 1 ранга", rk8:"Коммодор", rk9:"Контр-адмирал",
-      rk10:"Вице-адмирал", rk11:"Адмирал", rk12:"Гранд-адмирал",
+  ru:{rk0:"Кадет", rk1:"Мичман", rk2:"Младший лейтенант", rk3:"Лейтенант",
+      rk4:"Командир звена", rk5:"Старший лейтенант", rk6:"Командир катера", rk7:"Капитан-лейтенант",
+      rk8:"Капитан корвета", rk9:"Капитан 3 ранга", rk10:"Капитан крейсера", rk11:"Капитан 2 ранга",
+      rk12:"Капитан линкора", rk13:"Капитан 1 ранга", rk14:"Капитан флота", rk15:"Коммодор",
+      rk16:"Контр-адмирал", rk17:"Вице-адмирал", rk18:"Адмирал", rk19:"Гранд-адмирал",
       rang:"Звание", ehre:"Честь", rangneu:"Получено звание: {0}",
       ehredazu:"Заработано чести", ehrekeine:"В этом заходе чести нет.",
       ehrewie:"Честь даётся за хорошую охоту в сети: добыча близкая к вашему размеру, и каждый соперник считается раз в день.",
@@ -796,13 +807,13 @@ for (const c in LANGS22b) Object.assign(LANGS[c], LANGS22b[c]);
 /* Rangübersicht und Spielanleitung (Schritt 102). Die Anleitung selbst steht
    nur auf Deutsch in index.html (Thomas: „heute alles nur deutsch"). */
 const LANGS102 = {
-  en:{hilfe:"How to play", rg_head:"Ranks", rg_sub:"Honour comes only online, account against account.", rg_start:"Everyone starts here", rg_ab:"from {0} honour", rg_anteil:"top {0} % of your country, from {1} honour", rg_plaetze:"top {0} of your country, from {1} honour", rg_erster:"the best of your country, from {0} honour", rg_du:"your rank"},
-  de:{hilfe:"Spielanleitung", rg_head:"Ränge", rg_sub:"Ehre gibt es nur online, Konto gegen Konto.", rg_start:"Hier beginnt jeder", rg_ab:"ab {0} Ehre", rg_anteil:"die besten {0} % deines Landes, ab {1} Ehre", rg_plaetze:"die {0} Besten deines Landes, ab {1} Ehre", rg_erster:"der Beste deines Landes, ab {0} Ehre", rg_du:"dein Rang"},
-  es:{hilfe:"Cómo se juega", rg_head:"Rangos", rg_sub:"El honor solo se gana en línea, cuenta contra cuenta.", rg_start:"Todos empiezan aquí", rg_ab:"desde {0} de honor", rg_anteil:"el {0} % mejor de tu país, desde {1} de honor", rg_plaetze:"los {0} mejores de tu país, desde {1} de honor", rg_erster:"el mejor de tu país, desde {0} de honor", rg_du:"tu rango"},
-  pt:{hilfe:"Como jogar", rg_head:"Patentes", rg_sub:"A honra só se ganha online, conta contra conta.", rg_start:"Todos começam aqui", rg_ab:"a partir de {0} de honra", rg_anteil:"os {0} % melhores do seu país, a partir de {1} de honra", rg_plaetze:"os {0} melhores do seu país, a partir de {1} de honra", rg_erster:"o melhor do seu país, a partir de {0} de honra", rg_du:"a sua patente"},
-  fr:{hilfe:"Comment jouer", rg_head:"Grades", rg_sub:"L'honneur ne se gagne qu'en ligne, compte contre compte.", rg_start:"Tout le monde commence ici", rg_ab:"à partir de {0} d'honneur", rg_anteil:"les {0} % meilleurs de votre pays, à partir de {1} d'honneur", rg_plaetze:"les {0} meilleurs de votre pays, à partir de {1} d'honneur", rg_erster:"le meilleur de votre pays, à partir de {0} d'honneur", rg_du:"votre grade"},
-  tr:{hilfe:"Nasıl oynanır", rg_head:"Rütbeler", rg_sub:"Onur yalnızca çevrimiçi, hesap hesaba karşı kazanılır.", rg_start:"Herkes buradan başlar", rg_ab:"{0} onurdan itibaren", rg_anteil:"ülkenin en iyi % {0}'i, {1} onurdan itibaren", rg_plaetze:"ülkenin en iyi {0} oyuncusu, {1} onurdan itibaren", rg_erster:"ülkenin en iyisi, {0} onurdan itibaren", rg_du:"senin rütben"},
-  ru:{hilfe:"Как играть", rg_head:"Звания", rg_sub:"Честь даётся только онлайн, учётная запись против учётной записи.", rg_start:"Здесь начинают все", rg_ab:"от {0} чести", rg_anteil:"лучшие {0} % вашей страны, от {1} чести", rg_plaetze:"{0} лучших вашей страны, от {1} чести", rg_erster:"лучший в своей стране, от {0} чести", rg_du:"ваше звание"}
+  en:{hilfe:"How to play", rg_head:"Ranks", rg_sub:"Honour comes from hunting other accounts online, from achievements and from the daily bonus.", rg_start:"Everyone starts here", rg_ab:"from {0} honour", rg_anteil:"top {0} % of your country, from {1} honour", rg_plaetze:"top {0} of your country, from {1} honour", rg_erster:"the best of your country, from {0} honour", rg_du:"your rank"},
+  de:{hilfe:"Spielanleitung", rg_head:"Ränge", rg_sub:"Ehre bringen die Jagd auf andere Konten im Onlinespiel, Errungenschaften und der Tagesbonus.", rg_start:"Hier beginnt jeder", rg_ab:"ab {0} Ehre", rg_anteil:"die besten {0} % deines Landes, ab {1} Ehre", rg_plaetze:"die {0} Besten deines Landes, ab {1} Ehre", rg_erster:"der Beste deines Landes, ab {0} Ehre", rg_du:"dein Rang"},
+  es:{hilfe:"Cómo se juega", rg_head:"Rangos", rg_sub:"El honor se gana cazando otras cuentas en línea, con logros y con el bono diario.", rg_start:"Todos empiezan aquí", rg_ab:"desde {0} de honor", rg_anteil:"el {0} % mejor de tu país, desde {1} de honor", rg_plaetze:"los {0} mejores de tu país, desde {1} de honor", rg_erster:"el mejor de tu país, desde {0} de honor", rg_du:"tu rango"},
+  pt:{hilfe:"Como jogar", rg_head:"Patentes", rg_sub:"A honra vem da caça a outras contas online, das conquistas e do bónus diário.", rg_start:"Todos começam aqui", rg_ab:"a partir de {0} de honra", rg_anteil:"os {0} % melhores do seu país, a partir de {1} de honra", rg_plaetze:"os {0} melhores do seu país, a partir de {1} de honra", rg_erster:"o melhor do seu país, a partir de {0} de honra", rg_du:"a sua patente"},
+  fr:{hilfe:"Comment jouer", rg_head:"Grades", rg_sub:"L'honneur vient de la chasse aux autres comptes en ligne, des succès et du bonus quotidien.", rg_start:"Tout le monde commence ici", rg_ab:"à partir de {0} d'honneur", rg_anteil:"les {0} % meilleurs de votre pays, à partir de {1} d'honneur", rg_plaetze:"les {0} meilleurs de votre pays, à partir de {1} d'honneur", rg_erster:"le meilleur de votre pays, à partir de {0} d'honneur", rg_du:"votre grade"},
+  tr:{hilfe:"Nasıl oynanır", rg_head:"Rütbeler", rg_sub:"Şeref, çevrimiçi diğer hesapları avlamaktan, başarımlardan ve günlük bonustan gelir.", rg_start:"Herkes buradan başlar", rg_ab:"{0} şereften itibaren", rg_anteil:"ülke sıralamasında ilk %{0}, {1} şereften itibaren", rg_plaetze:"ülkenin en iyi {0} oyuncusu, {1} şereften itibaren", rg_erster:"ülkenin en iyisi, {0} şereften itibaren", rg_du:"senin rütben"},
+  ru:{hilfe:"Как играть", rg_head:"Звания", rg_sub:"Честь приносят охота на другие учётные записи онлайн, достижения и ежедневный бонус.", rg_start:"Здесь начинают все", rg_ab:"от {0} чести", rg_anteil:"лучшие {0} % вашей страны, от {1} чести", rg_plaetze:"{0} лучших вашей страны, от {1} чести", rg_erster:"лучший в своей стране, от {0} чести", rg_du:"ваше звание"}
 };
 for (const c in LANGS102) Object.assign(LANGS[c], LANGS102[c]);
 
@@ -1052,13 +1063,13 @@ for (const c in LANGS32) Object.assign(LANGS[c], LANGS32[c]);
 
 /* Schritt 99: Konsole nach dem Entwurf B. */
 const LANGS33 = {
-  en:{k_stufe:"Stage {0} — {1}", b_tag:"Day {0} of 7", k_all:"all", namepick:"Choose a player name", e_name_gesperrt:"Your name can be changed once every 30 days."},
-  de:{k_stufe:"Stufe {0} — {1}", b_tag:"Tag {0} von 7", k_all:"alle", namepick:"Wähle einen Spielernamen", e_name_gesperrt:"Der Name lässt sich nur alle 30 Tage ändern."},
-  es:{k_stufe:"Etapa {0} — {1}", b_tag:"Día {0} de 7", k_all:"todas", namepick:"Elige un nombre de jugador", e_name_gesperrt:"El nombre solo se puede cambiar cada 30 días."},
-  pt:{k_stufe:"Fase {0} — {1}", b_tag:"Dia {0} de 7", k_all:"todas", namepick:"Escolha um nome de jogador", e_name_gesperrt:"O nome só pode ser alterado a cada 30 dias."},
-  fr:{k_stufe:"Stade {0} — {1}", b_tag:"Jour {0} sur 7", k_all:"tout", namepick:"Choisissez un nom de joueur", e_name_gesperrt:"Le nom ne peut être changé que tous les 30 jours."},
-  tr:{k_stufe:"Aşama {0} — {1}", b_tag:"{0}. gün / 7", k_all:"tümü", namepick:"Bir oyuncu adı seç", e_name_gesperrt:"Ad yalnızca 30 günde bir değiştirilebilir."},
-  ru:{k_stufe:"Стадия {0} — {1}", b_tag:"День {0} из 7", k_all:"все", namepick:"Выберите имя игрока", e_name_gesperrt:"Имя можно менять раз в 30 дней."}
+  en:{b_tag:"Day {0} of 7", k_all:"all", namepick:"Choose a player name", e_name_gesperrt:"Your name can be changed once every 30 days."},
+  de:{b_tag:"Tag {0} von 7", k_all:"alle", namepick:"Wähle einen Spielernamen", e_name_gesperrt:"Der Name lässt sich nur alle 30 Tage ändern."},
+  es:{b_tag:"Día {0} de 7", k_all:"todas", namepick:"Elige un nombre de jugador", e_name_gesperrt:"El nombre solo se puede cambiar cada 30 días."},
+  pt:{b_tag:"Dia {0} de 7", k_all:"todas", namepick:"Escolha um nome de jogador", e_name_gesperrt:"O nome só pode ser alterado a cada 30 dias."},
+  fr:{b_tag:"Jour {0} sur 7", k_all:"tout", namepick:"Choisissez un nom de joueur", e_name_gesperrt:"Le nom ne peut être changé que tous les 30 jours."},
+  tr:{b_tag:"{0}. gün / 7", k_all:"tümü", namepick:"Bir oyuncu adı seç", e_name_gesperrt:"Ad yalnızca 30 günde bir değiştirilebilir."},
+  ru:{b_tag:"День {0} из 7", k_all:"все", namepick:"Выберите имя игрока", e_name_gesperrt:"Имя можно менять раз в 30 дней."}
 };
 for (const c in LANGS33) Object.assign(LANGS[c], LANGS33[c]);
 
@@ -1379,12 +1390,25 @@ for (const c in LANGS119) Object.assign(LANGS[c], LANGS119[c]);
 
 /* Runde beenden und abgebrochene Runden (v104). */
 const LANGS120 = {
-  en:{q_knopf:"End round", q_frage:"End round? Tap again", q_ende:"Round ended.", q_gut:"Interrupted round credited: {0} Ore"},
-  de:{q_knopf:"Runde beenden", q_frage:"Runde beenden? Noch mal tippen", q_ende:"Runde beendet.", q_gut:"Abgebrochene Runde gutgeschrieben: {0} Ore"},
-  es:{q_knopf:"Terminar ronda", q_frage:"¿Terminar ronda? Toca otra vez", q_ende:"Ronda terminada.", q_gut:"Ronda interrumpida abonada: {0} Ore"},
-  pt:{q_knopf:"Encerrar rodada", q_frage:"Encerrar rodada? Toque de novo", q_ende:"Rodada encerrada.", q_gut:"Rodada interrompida creditada: {0} Ore"},
-  fr:{q_knopf:"Terminer la manche", q_frage:"Terminer la manche ? Touche encore", q_ende:"Manche terminée.", q_gut:"Manche interrompue créditée : {0} Ore"},
-  tr:{q_knopf:"Turu bitir", q_frage:"Tur bitsin mi? Tekrar dokun", q_ende:"Tur bitti.", q_gut:"Yarıda kalan tur yazıldı: {0} Ore"},
-  ru:{q_knopf:"Закончить раунд", q_frage:"Закончить раунд? Нажми ещё раз", q_ende:"Раунд окончен.", q_gut:"Прерванный раунд зачтён: {0} Ore"}
+  en:{q_knopf:"End round", q_frage:"End round? Tap again", q_ende:"Round ended. Your body stays on the field for 5 more seconds.", q_gut:"Interrupted round credited: {0} Ore"},
+  de:{q_knopf:"Runde beenden", q_frage:"Runde beenden? Noch mal tippen", q_ende:"Runde beendet. Dein Körper bleibt noch 5 Sekunden stehen.", q_gut:"Abgebrochene Runde gutgeschrieben: {0} Ore"},
+  es:{q_knopf:"Terminar ronda", q_frage:"¿Terminar ronda? Toca otra vez", q_ende:"Ronda terminada. Tu cuerpo sigue en el campo 5 segundos más.", q_gut:"Ronda interrumpida abonada: {0} Ore"},
+  pt:{q_knopf:"Encerrar rodada", q_frage:"Encerrar rodada? Toque de novo", q_ende:"Rodada encerrada. Seu corpo fica no campo por mais 5 segundos.", q_gut:"Rodada interrompida creditada: {0} Ore"},
+  fr:{q_knopf:"Terminer la manche", q_frage:"Terminer la manche ? Touche encore", q_ende:"Manche terminée. Ton corps reste encore 5 secondes sur le terrain.", q_gut:"Manche interrompue créditée : {0} Ore"},
+  tr:{q_knopf:"Turu bitir", q_frage:"Tur bitsin mi? Tekrar dokun", q_ende:"Tur bitti. Cismin 5 saniye daha alanda kalır.", q_gut:"Yarıda kalan tur yazıldı: {0} Ore"},
+  ru:{q_knopf:"Закончить раунд", q_frage:"Закончить раунд? Нажми ещё раз", q_ende:"Раунд окончен. Твоё тело останется на поле ещё 5 секунд.", q_gut:"Прерванный раунд зачтён: {0} Ore"}
 };
 for (const c in LANGS120) Object.assign(LANGS[c], LANGS120[c]);
+
+/* Namen mit „NPC" vorn sind Computergegnern vorbehalten (v105) — sie tragen
+   das Kürzel [NPC]. Hinweis bei der Registrierung und in den Einstellungen. */
+const LANGS_NPC = {
+  en:{e_name_npc:"Names may not start with “NPC” — only computer opponents are called that."},
+  de:{e_name_npc:"Namen dürfen nicht mit „NPC“ beginnen — so heißen nur Computergegner."},
+  es:{e_name_npc:"Los nombres no pueden empezar por «NPC»: así solo se llaman los rivales de la máquina."},
+  pt:{e_name_npc:"Os nomes não podem começar por «NPC» — assim só se chamam os rivais do computador."},
+  fr:{e_name_npc:"Un nom ne peut pas commencer par « NPC » — seuls les rivaux informatiques s’appellent ainsi."},
+  tr:{e_name_npc:"İsimler “NPC” ile başlayamaz — bu ad yalnızca bilgisayar rakiplerine ait."},
+  ru:{e_name_npc:"Имя не может начинаться с «NPC» — так называют только компьютерных соперников."}
+};
+for (const c in LANGS_NPC) Object.assign(LANGS[c], LANGS_NPC[c]);
