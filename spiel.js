@@ -7273,7 +7273,10 @@ function buildFriends(){
     const row = document.createElement("div");
     row.className = "friend";
     const label = document.createElement("div");
-    label.innerHTML = `${esc(name)}<small>${t("friendspending")}</small>`;
+    /* Kein Hinweis mehr unter jedem Namen: Der alte Satz „Einladungen und
+       Online-Status kommen mit dem Server“ war seit dem Server falsch (Thomas,
+       18.09.2026). Was die Liste tut, steht einmal unten im Fenster. */
+    label.textContent = name;
     const del = document.createElement("button");
     del.type = "button"; del.textContent = t("remove");
     del.addEventListener("click", () => {
