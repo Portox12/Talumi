@@ -565,6 +565,13 @@ function applyLang(){
   if (lb){ lb.textContent = lang.toUpperCase(); lb.setAttribute("aria-label", t("language") + ": " + (LANGNAMES[lang] || lang)); }
   if ($("friendList")) buildFriends();
   if ($("setList") && !$("setVeil").hidden) buildSettings();
+  /* Monatsnamen im Geburtsdatum in der neuen Sprache (18.09.2026). */
+  try { gebFelderFuellen(); } catch(_){}
+  try { if (!document.getElementById("acctLandRow").hidden) landFeldFuellen(); } catch(_){}
+  /* Sprache umgestellt, während ein Konto angemeldet ist (v106): dem
+     Server nachmelden, damit Neuigkeiten in dieser Sprache kommen. Beim
+     ersten Aufruf gibt es `Konto` noch nicht — daher die Klammer. */
+  try { Konto.spracheMelden(); } catch(_){}
 }
 
 /* Zwei Paletten in Erdtönen. Die Farben stehen an einer Stelle, weil sie
@@ -1089,6 +1096,7 @@ const Gast = {
     if (!this.name) this.name = this.nameVorschlag();
   },
   sichern(){
+    if (this.nichtSichern) return;   // gerade abgemeldet — siehe Abmelden-Knopf
     try {
       /* Freunde gehören immer dem Browser, auch mit Konto — also werden sie
          auch dann fortgeschrieben, der Rest nur ohne Sitzung. */
@@ -1113,6 +1121,94 @@ const Gast = {
 };
 Gast.laden();
 Werben.ausAdresse();
+
+/* ---- Umfrage und Bewertungsbitte (v106) ------------------------------
+   Thomas' Entscheidungen vom 18.09.2026:
+   - „Wie hast du von Talumi erfahren?" einmal, am **fünften Spieltag**
+     (Tag mit mindestens einer beendeten Runde), für Gäste und Konten.
+   - „Gefällt dir Talumi?" einmal überhaupt, nach einer Runde mit **neuer
+     Bestmasse**, frühestens am **dritten** Spieltag.
+   Beides erscheint nur im Hangar nach einer Runde, nie während einer, und
+   nie auf einem Spieleportal (dort kennt man die Antwort auf die erste
+   Frage, und Portale wollen keine eigenen Fenster; eine Bewertung dort
+   gibt es noch nicht, siehe `Bewertung`).
+
+   Gemerkt wird nur im Browser (`talumi.stimme`): Zahl der Spieltage, der
+   letzte, und ob schon gefragt wurde. Die Antwort geht **ohne Sitzung**
+   an den Server, der nur einen Zähler je Antwort hochzählt. Lässt sich im
+   Browser nichts speichern (privates Fenster), wird gar nicht gefragt —
+   sonst käme dieselbe Frage bei jedem Besuch wieder. */
+const BEWERTUNGSBITTE_WEB = false;
+const Stimme = {
+  KEY: "talumi.stimme",
+  d: null, speicher: false,
+  /* Seit dem letzten Besuch im Hangar ist eine Runde zu Ende gegangen —
+     bzw. eine davon hat eine neue Bestmasse gebracht. */
+  nachRunde: false, rekord: false,
+  laden(){
+    if (this.d) return this.d;
+    let r = null;
+    try { r = JSON.parse(localStorage.getItem(this.KEY) || "null"); this.speicher = true; }
+    catch(_){ this.speicher = false; }
+    const zahl = x => Math.max(0, Math.min(1e6, Math.floor(+x || 0)));
+    const ok = r && typeof r === "object";
+    this.d = { tage: ok ? zahl(r.tage) : 0, letzter: ok ? zahl(r.letzter) : 0,
+               quelle: !!(ok && r.quelle), gefallen: !!(ok && r.gefallen) };
+    return this.d;
+  },
+  sichern(){
+    try { localStorage.setItem(this.KEY, JSON.stringify(this.d)); this.speicher = true; }
+    catch(_){ this.speicher = false; }
+  },
+  rundeZuende(rekord){
+    const d = this.laden(), heute = Gast.heute();
+    if (d.letzter !== heute){ d.letzter = heute; d.tage++; this.sichern(); }
+    this.nachRunde = true;
+    if (rekord) this.rekord = true;
+  },
+  /* Was jetzt zu fragen wäre: "gefallen", "quelle" oder null. Beides an
+     einem Besuch wäre eines zu viel — die Bewertungsbitte geht vor, weil
+     sie an diesem einen Moment hängt; die Umfrage wartet bis zur nächsten
+     Runde. */
+  faellig(){
+    const d = this.laden();
+    if (!this.speicher || Portal.name) return null;
+    /* Bewertungsbitte auf der Webseite aus (Thomas, 18.09.2026): Google
+       verbietet eine Vorfrage („Gefällt dir …?") vor der Bewertungskarte, und
+       auf talumi.io gibt es nichts zu bewerten. In der Store-App kommt
+       stattdessen die eingebaute Store-Bewertung nach einer Bestleistung,
+       ohne Vorfrage — dann `Bewertung` anschließen und das hier ersetzen. */
+    if (BEWERTUNGSBITTE_WEB && this.rekord && !d.gefallen && d.tage >= 3) return "gefallen";
+    if (!d.quelle && d.tage >= 5) return "quelle";
+    return null;
+  },
+  /* Anonym: kein Sitzungsschlüssel, keine Kennung, nur Art und Antwort.
+     Ohne `keepalive` — das verträgt sich in manchen Browsern nicht mit der
+     Vorabfrage, die eine JSON-Anfrage an einen anderen Server auslöst, und
+     die Seite bleibt nach dem Tipp ohnehin offen. */
+  senden(art, wert){
+    try {
+      fetch(kontoBasis() + "/umfrage", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ art, wert }), credentials: "omit"
+      }).catch(() => {});
+    } catch(_){}
+  }
+};
+
+/* Bewertung im App Store, bei Google Play oder auf einem Spieleportal
+   (v106). **Hier einhängen, sobald es sie gibt** — die native Hülle (etwa
+   „requestReview" unter iOS oder die In-App-Bewertung von Google Play) oder
+   eine Bewertungsfunktion im Portal-SDK. Gibt `true` zurück, wenn die
+   Bewertung dort angestoßen wurde; dann entfällt „Teile Talumi". Heute
+   gibt es keine davon, also immer `false`. */
+const Bewertung = {
+  imStore(){ return false; }
+};
+
+/* Ein Link aus einer Mail (#ok= / #nl= / #ab=), der während einer Runde
+   ankam, wartet bis zum Hangar — während einer Runde erscheint nichts. */
+let ankerWartet = false;
 
 /* =====================================================================
    2b) SOUND
@@ -2864,6 +2960,15 @@ function finish(timeUp){
     }
   }
   Gast.sichern();
+  /* Spieltag und Bestmasse für Umfrage und Bewertungsbitte (v106). Eine
+     neue Bestmasse zählt nur, wo sie auch festgehalten wird: in einer
+     bezahlten Gastrunde oder in einer Onlinerunde, die der Server für ein
+     Konto abgerechnet hat — nicht im Freundschaftsspiel. Gezeigt wird
+     hier nichts; die Karte kommt erst im Hangar (`nachRundeKarte`). */
+  try {
+    const serverRekord = !!(Net.lohn && Net.profil && Net.lohn.teile && Net.lohn.teile.rekord > 0);
+    Stimme.rundeZuende(serverRekord || (beat && (paid || !!(Net.lohn && Net.profil))));
+  } catch(_){}
 
   const total = Math.max(1, Game.killer ? Game.killer.mine : peak);
   const k = Game.killer;
@@ -5188,7 +5293,10 @@ requestAnimationFrame(loop);
    hinter dem nächsten offen (so geschehen mit dem Bonusfenster, 16.09.2026). */
 const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
                "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil",
-               "hilfeVeil","bonusVeil","meldeVeil"];
+               "hilfeVeil","bonusVeil","meldeVeil","agbVeil",
+               /* Ausbau v106: Widerruf, Seite hinter den Mail-Links,
+                  Umfrage und Bewertungsbitte. */
+               "widerrufVeil","ankerVeil","umfrageVeil","bewertVeil"];
 
 
 const SET_UI = [
@@ -5337,11 +5445,201 @@ function fassungZeigen(){
     if (m){ fassungText = "Talumi " + m[1]; el.textContent = fassungText + drei() + app(); }
   }).catch(() => {});
 }
+/* Der Widerruf der Mail-Einwilligung (v106). Steht nur bei einem Konto: Ohne
+   Konto gibt es keine Adresse, an die etwas ginge. Ein Schalter, kein
+   Formular — der Widerruf muss so einfach sein wie die Einwilligung
+   (Art. 7 Abs. 3 DSGVO). Er meldet erst um, wenn der Server bestätigt hat;
+   ein Schalter, der umspringt und dann doch nichts bewirkt, wäre eine
+   Einwilligung, die niemand nachvollziehen kann.
+
+   Seit dem Ausbau v106 ist Einschalten zugleich die Einwilligung — der
+   Hinweis darunter nennt deshalb dasselbe wie das Kästchen bei der
+   Registrierung (was, wer zählt, ab 16, abschaltbar, Datenschutz). Und er
+   sagt, wo das Double-Opt-In steht: Neuigkeiten gehen erst hinaus, wenn
+   der Link in der Bestätigungsmail geklickt ist (`Konto.profil.nl`,
+   "bestaetigt" | "offen" | "aus"; die Antwort auf das Einschalten sagt
+   genauer, welche Mail unterwegs ist). */
+const NL_TEXT = { bestaetigt: "s_nl_best", mail_gesendet: "s_nl_mail",
+                  adresse_unbestaetigt: "s_nl_adr", offen: "s_nl_offen" };
+function nlZustand(){
+  const p = Konto.profil;
+  if (!p || !p.mailOk) return "aus";
+  const n = typeof p.nl === "string" ? p.nl : "";
+  if (n === "bestaetigt") return n;
+  if (Konto.nlLetzt === "mail_gesendet" || Konto.nlLetzt === "adresse_unbestaetigt") return Konto.nlLetzt;
+  /* Versand am Server aus (kein Brevo-Schlüssel): Es ist keine Mail
+     unterwegs, also auch kein „klick auf den Link". */
+  if (Konto.nlLetzt === "versand_aus") return "";
+  if (n === "offen") return p.emailOk ? "offen" : "adresse_unbestaetigt";
+  return NL_TEXT[n] ? n : "";
+}
+let mailMeldung = null;
+function mailZeileBauen(box){
+  if (!istAngemeldet() || !Konto.profil) return;
+  /* Unter dem Einwilligungsalter des Landes (oder Alter noch nicht
+     angegeben) gibt es keine Einwilligung — also auch keinen Schalter
+     (`mailDarf` rechnet der Server). Ist sie doch an, bleibt er zum
+     Abschalten. */
+  if (Konto.profil.mailDarf === false && !Konto.profil.mailOk) return;
+  const wrap = document.createElement("div");
+  wrap.className = "opt"; wrap.dataset.key = "mailOk";
+  const an = !!Konto.profil.mailOk;
+  const stand = nlZustand();
+  /* Der Stand steht in einer eigenen Zeile unter dem Hinweis. Eine Meldung
+     aus dem letzten Tipp (Fehler, „gesendet") geht einmal vor. */
+  let standZeile = "";
+  if (mailMeldung) standZeile = `<small class="${mailMeldung.warn ? "warn" : ""}">${esc(mailMeldung.text)}</small>`;
+  else if (an && NL_TEXT[stand]) standZeile = `<small id="setNlStand">${esc(t(NL_TEXT[stand]))}</small>`;
+  mailMeldung = null;
+  /* Nur wenn die Adresse selbst noch unbestätigt ist: die Bestätigungsmail
+     noch einmal anfordern (sie schaltet die Neuigkeiten mit frei). */
+  const neuSchicken = an && stand === "adresse_unbestaetigt" && Konto.versand;
+  wrap.innerHTML = `<div><b>${esc(t("s_mail"))}</b><small id="setMailNote">${esc(t("s_mail_h"))} ` +
+    `<a href="datenschutz.html#mail" target="_blank" rel="noopener">${esc(t("mail_ds"))}</a></small>` +
+    standZeile +
+    (neuSchicken ? `<button type="button" class="quiet setNlNeu" id="setNlNeu">${esc(t("s_nl_neu"))}</button>` : "") +
+    `</div><div class="seg" id="setMailSeg"></div>`;
+  box.appendChild(wrap);
+  const nochmal = $("setNlNeu");
+  if (nochmal) nochmal.addEventListener("click", async () => {
+    nochmal.disabled = true;
+    const e = await Konto.bestaetigungNeu();
+    mailMeldung = e.ok ? { text: t("s_nl_neu_ok") } : { text: t(KONTO_FEHLER[e.fehler] || "e_net"), warn: true };
+    buildSettings();
+  });
+  const seg = $("setMailSeg");
+  for (const [text, wert] of [[t("o_on"), true], [t("o_off"), false]]){
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = text;
+    b.setAttribute("aria-pressed", String(an === wert));
+    b.addEventListener("click", async () => {
+      if (an === wert) return;
+      for (const x of seg.querySelectorAll("button")) x.disabled = true;
+      const e = await Konto.mailEinstellen(wert);
+      if (e.fehler){
+        mailMeldung = { text: t(KONTO_FEHLER[e.fehler] || "e_net"), warn: true };
+        buildSettings();
+        return;
+      }
+      buildSettings();
+    });
+    seg.appendChild(b);
+  }
+}
+
+/* ---- Widerrufsfunktion nach § 356a BGB (v106) --------------------------
+   Nur für Konten, und nur während der Widerrufsfrist: Der Server schickt
+   im Profil `widerrufBis` (Ende der Frist, mit einem kleinen Puffer). Die
+   Gesetzesbegründung erlaubt die Funktion im angemeldeten Bereich, weil der
+   Vertrag nur mit einem Konto zustande kommt (BT-Drs. 21/1856, S. 38).
+   Gäste haben keinen Vertrag und sehen nichts davon. */
+function widerrufMoeglich(){
+  if (!istAngemeldet() || !Konto.profil) return false;
+  return Number(Konto.profil.widerrufBis) > Date.now();
+}
+function widerrufKnoepfe(){
+  const an = widerrufMoeglich();
+  const r = document.getElementById("setRecht"); if (r) r.hidden = !an;
+  const l = document.getElementById("legalWiderruf"); if (l) l.hidden = !an;
+}
+/* Datum in deutscher Zeit — maßgeblich ist der Eingang auf dem Server in
+   Deutschland, nicht die Uhr des Geräts. Ältere Browser ohne Zeitzonen
+   fallen auf die Ortszeit zurück. */
+function berlinZeit(ms, mitUhr){
+  const d = new Date(ms);
+  const tag = { day: "2-digit", month: "2-digit", year: "numeric" };
+  const uhr = { hour: "2-digit", minute: "2-digit" };
+  try {
+    return mitUhr ? d.toLocaleTimeString(lang, Object.assign({ timeZone: "Europe/Berlin" }, uhr))
+                  : d.toLocaleDateString(lang, Object.assign({ timeZone: "Europe/Berlin" }, tag));
+  } catch(_){
+    return mitUhr ? d.toLocaleTimeString(lang, uhr) : d.toLocaleDateString(lang, tag);
+  }
+}
+let wdZurueck = "setVeil";
+function widerrufOeffnen(){
+  if (!widerrufMoeglich()) return;
+  const offen = VEILS.map(id => $(id)).find(v => v && !v.hidden);
+  wdZurueck = offen && offen.id !== "widerrufVeil" ? offen.id : "setVeil";
+  const p = Konto.profil;
+  /* Vorausgefüllt, aber änderbar: Wer angemeldet ist, muss sich und den
+     Vertrag nicht erneut ausweisen (Erwägungsgrund 37 RL 2023/2673). */
+  $("wdName").value = p.name || "";
+  $("wdMail").value = p.email || "";
+  const seit = Number(p.erstellt || p.seit) || 0;
+  $("wdVertrag").textContent = t("wd_vertrag_t", p.name || "") +
+    (seit > 0 ? t("wd_vertrag_seit", berlinZeit(seit)) : "");
+  const note = $("wdNote"); note.textContent = ""; note.className = "hintline";
+  $("wdForm").hidden = false; $("wdFertig").hidden = true;
+  wdPruefen();
+  show("widerrufVeil");
+}
+/* „Widerruf bestätigen" ist gesperrt, bis Name und Adresse da sind — das
+   erlaubt die Begründung ausdrücklich; mehr wird nicht verlangt. */
+function wdPruefen(){
+  const ok = !!$("wdName").value.trim() && /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test($("wdMail").value.trim());
+  $("wdOk").disabled = !ok || Konto.laeuft;
+  return ok;
+}
+for (const id of ["setWiderruf", "legalWiderruf"]){
+  const k = document.getElementById(id);
+  if (k) k.addEventListener("click", widerrufOeffnen);
+}
+for (const id of ["wdName", "wdMail"]){
+  const f = document.getElementById(id);
+  if (f) f.addEventListener("input", wdPruefen);
+}
+if (document.getElementById("wdAbbr"))
+  document.getElementById("wdAbbr").addEventListener("click", () => show(wdZurueck));
+if (document.getElementById("wdForm")) document.getElementById("wdForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const note = $("wdNote");
+  if (!wdPruefen()){ note.textContent = t("wd_leer"); note.className = "hintline warn"; return; }
+  if (Konto.laeuft) return;
+  const name = $("wdName").value.trim(), email = $("wdMail").value.trim();
+  Konto.laeuft = true; $("wdOk").disabled = true;
+  note.textContent = t("k_wait"); note.className = "hintline";
+  const a = await Konto.widerrufen(name, email);
+  Konto.laeuft = false;
+  /* Nur was der Server angenommen hat, heißt „eingegangen". Scheitert es,
+     steht die Fehlermeldung da — nie eine Bestätigung, die keine ist. */
+  if (!a.ok){
+    /* `nicht_angemeldet`: Die Sitzung gilt nicht mehr — etwa weil ein
+       erster Versuch doch angekommen ist und das Konto schon gelöscht hat.
+       Dann nicht „nicht angekommen" behaupten, sondern auf die Mail
+       verweisen. */
+    note.textContent = t(a.fehler === "frist_abgelaufen" ? "wd_frist"
+                       : a.fehler === "nicht_angemeldet" ? "wd_weg"
+                       : a.fehler === "email_ungueltig" ? "e_email"
+                       : (a.fehler === "name_fehlt" || a.fehler === "email_fehlt") ? "wd_leer" : "wd_fehl");
+    note.className = "hintline warn";
+    wdPruefen();
+    return;
+  }
+  const zeit = Number(a.eingang) || Date.now();
+  $("wdFertigText").textContent = t("wd_danach", berlinZeit(zeit), berlinZeit(zeit, true), a.an || email);
+  $("wdForm").hidden = true; $("wdFertig").hidden = false;
+  /* Das Konto gibt es nicht mehr: Sitzung vergessen, sofort — auch wenn
+     das Fenster jetzt geschlossen wird, statt auf „Schließen" zu tippen. */
+  Konto.merken(null);
+  Konto.profil = null; Konto.stand = null; Konto.bonus = null;
+  /* Wie beim Abmelden (Fehler vom 18.09.2026): Ohne Sitzung schriebe
+     `Gast.sichern()` beim Verlassen der Seite die Werte des gelöschten
+     Kontos in den Gaststand — dann trüge der Gast Level und Ore eines
+     Kontos weiter, das es nicht mehr gibt. */
+  Gast.nichtSichern = true;
+  try { sessionStorage.setItem("talumi.abgemeldet", "1"); } catch(_){}
+});
+/* Neu laden wie beim Abmelden: Ein Fenster, das eben noch ein gelöschtes
+   Konto zeigte, darf dessen Fortschritt nicht weiter anzeigen. */
+if (document.getElementById("wdZu")) document.getElementById("wdZu").addEventListener("click", () => location.reload());
+
 function buildSettings(){
   const box = $("setList");
   box.innerHTML = "";
   fassungZeigen();
   nameZeileBauen(box);
+  mailZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
     if (row.key === "music" && !MUSIK_AKTIV) continue;
@@ -5433,7 +5731,15 @@ function buildSettings(){
     await Konto.abmelden();
     /* Zurück auf Anfang: Ein abgemeldetes Fenster darf den Fortschritt des
        Kontos nicht weiter anzeigen — sonst spielt man weiter und wundert
-       sich, dass nichts davon ankommt. */
+       sich, dass nichts davon ankommt.
+       Zwei Fehler, von Thomas am 18.09.2026 gemeldet („nach dem Abmelden
+       lande ich im Gastzugang"): (1) `Gast.sichern()` lief beim Neuladen
+       und schrieb die Kontowerte (Level, XP, Ore, Runden) in den Gaststand;
+       (2) mit diesen Runden galt man als wiederkehrender Gast und übersprang
+       das Anmeldefenster. Deshalb hier nichts mehr sichern und dem
+       nächsten Laden sagen, dass es die Anmeldung zeigen soll. */
+    Gast.nichtSichern = true;
+    try { sessionStorage.setItem("talumi.abgemeldet", "1"); } catch(_){}
     location.reload();
   });
   wrap.appendChild(text); wrap.appendChild(knopf);
@@ -5444,8 +5750,11 @@ function hideAll(){ VEILS.forEach(v => $(v).hidden = true); anmeldungLage(); }
    Dann darf hochkant kein Drehhinweis stehen, und ein Telefon im Querformat
    bekommt die Bitte, hochkant zu halten. */
 function anmeldungLage(){
-  const a = document.getElementById("accountVeil");
-  document.body.classList.toggle("anmeldung", !!a && !a.hidden);
+  /* Die Seite hinter einem Mail-Link (v106) zählt mit: Solche Links öffnet
+     man meist auf dem Telefon hochkant, und der Drehhinweis läge sonst
+     genau über dem Knopf „Bestätigen" bzw. „Abbestellen". */
+  const offen = id => { const v = document.getElementById(id); return !!v && !v.hidden; };
+  document.body.classList.toggle("anmeldung", offen("accountVeil") || offen("ankerVeil"));
 }
 /* ---- Reiter im Konsolenfenster (Schritt 79) ------------------------
    Vier Reiter statt vier Vollbildschirmen. Der Unterschied ist nicht nur
@@ -6551,7 +6860,15 @@ function show(id){
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
+    /* Nach einer Runde (v106): Umfrage oder Bewertungsbitte, falls fällig —
+       und ein Link aus einer Mail, der während der Runde kam. Mit kurzer
+       Verzögerung, damit der Hangar erst steht; `nachRundeKarte()` prüft
+       selbst, ob inzwischen ein anderes Fenster offen ist. */
+    if (Stimme.nachRunde || ankerWartet) setTimeout(nachRundeKarte, 650);
   }
+  /* Widerrufsknopf (v106) nur für Konten in der Frist — bei jedem Öffnen
+     neu entschieden, weil die Frist während einer Sitzung ablaufen kann. */
+  if (id === "setVeil" || id === "legalVeil") widerrufKnoepfe();
   /* Im Menü darf die Musik vorn stehen, im Spiel nicht: Dort verdeckt sie
      sonst die Töne, an denen man Gefahr erkennt. */
   Musik.ducken(false);
@@ -7434,6 +7751,9 @@ function bonusVeilZu(){
   const gross = document.getElementById("designGross"); if (gross) gross.hidden = true;
   const v = $("bonusVeil");
   if (v && !v.hidden) show("startVeil");
+  /* Erst der Bonus, dann die Nutzungsbedingungen — zwei Fenster übereinander
+     wären eines zu viel (v106). */
+  try { agbPruefen(); } catch(_){}
 }
 
 /* Belohnung strahlend in der Mitte des Schirms (Schritt 106). Kurz, groß,
@@ -7776,6 +8096,14 @@ if (Portal.name) setTimeout(() => { paintPurse(); buildGrid(); show("startVeil")
    haben); Anmelden bleibt über die Einstellungen erreichbar. Kommt jemand
    über einen Link aus einer Mail (Anker), geht der vor. */
 else setTimeout(() => {
+  /* Gerade abgemeldet: Anmeldefenster zeigen, nicht den Gast-Hangar. */
+  let abgemeldet = false;
+  try { abgemeldet = sessionStorage.getItem("talumi.abgemeldet") === "1";
+        sessionStorage.removeItem("talumi.abgemeldet"); } catch(_){}
+  /* Konto unter 13 gelöscht (18.09.2026): Hinweis im Anmeldefenster. */
+  try { if (sessionStorage.getItem("talumi.zuJung") === "1"){
+          sessionStorage.removeItem("talumi.zuJung"); kontoMeldung(t("jung_weg")); } } catch(_){}
+  if (abgemeldet) return;
   if (location.hash || Konto.gemerkt() || !((Profile.rec && Profile.rec.runs) > 0)) return;
   paintPurse(); buildGrid(); show("startVeil");
 }, 0);
@@ -7816,6 +8144,19 @@ const KONTO_FEHLER = {
   clan_unbekannt:      "e_clan_unbekannt",
   konto_unbekannt:     "e_konto_unbekannt",
   selbst:              "e_selbst",
+  /* Nutzungsbedingungen (v106): Das Häkchen fehlte, oder der Client hat eine
+     Fassung geschickt, die nicht die heutige ist (dann ist seine Fassung des
+     Spiels veraltet — und dann hat er einen anderen Text gezeigt, als gilt). */
+  agb_fehlt:       "e_agb",
+  agb_fassung:     "e_agb_alt",
+  /* Neuigkeiten einschalten ohne Adresse (Konto über Google/Facebook ohne
+     freigegebene E-Mail), v106-Ausbau. */
+  keine_email:     "e_keine_email",
+  /* Alter (18.09.2026). */
+  zu_jung:          "e_zu_jung",
+  geburt_ungueltig: "e_geb",
+  geburt_fehlt:     "e_geb",
+  zu_jung_mail:     "e_zu_jung_mail",
   netz:            "e_net"
 };
 
@@ -7825,22 +8166,221 @@ function kontoMeldung(text, art){
   n.className = "notice" + (art ? " " + art : "");
 }
 
-function kontoFormZeichnen(){
-  $("acctNameRow").hidden = !anlegen;
-  { const cr = $("acctCodeRow"); if (cr){ cr.hidden = !anlegen; const f = $("acctCode"); if (f && !f.value) f.value = Werben.gemerkt(); } }
-  $("acctPwHint").hidden = !anlegen;
-  if ($("acctPw2Row")){ $("acctPw2Row").hidden = !anlegen; if (!anlegen) $("acctPw2").value = ""; }
-  $("acctGo").textContent = t(anlegen ? "k_signup" : "k_signin");
-  $("acctSwap").textContent = t(anlegen ? "k_have" : "k_new");
-  $("acctPw").autocomplete = anlegen ? "new-password" : "current-password";
-  kontoMeldung("");
+/* ---- Geburtsdatum (Thomas, 18.09.2026) ---------------------------------
+   Unter 13 kein Konto (als Gast geht das ganze Spiel), 13–15 Konto ohne das
+   freiwillige Mail-Häkchen, ab 16 alles. Hier ist das nur Bequemlichkeit —
+   der Server rechnet selbst nach (`gebSauber`, `alterGenau` in konten.js)
+   und nimmt nur Monat und Jahr in die Datenbank. Zwei Stellen fragen: das
+   Anlegen-Formular (`acctGeb…`) und das Zustimmungsfenster für Konten ohne
+   Geburtsdatum (`agbGeb…`). */
+const GEB_FELDER = ["acctGeb", "agbGeb"];
+/* Alter der digitalen Einwilligung je Land (Art. 8 DSGVO) — nur für das
+   freiwillige Mail-Häkchen; unbekannte Länder 16. **Steht doppelt:** die
+   verbindliche Tabelle mit Quellen ist `MAIL_ALTER` in konten.js,
+   testkonten.js vergleicht beide. Das Land ist dasselbe, das die
+   Registrierung schickt (`landAusSprache()`). */
+const MAIL_ALTER = {
+  BE: 13, DK: 13, EE: 13, FI: 13, LV: 13, MT: 13, PT: 13, SE: 13, IS: 13, NO: 13, GB: 13, US: 13,
+  AT: 14, BG: 14, CY: 14, ES: 14, IT: 14, LT: 14,
+  CZ: 15, FR: 15, GR: 15, SI: 15,
+  DE: 16, HR: 16, HU: 16, IE: 16, LU: 16, NL: 16, PL: 16, RO: 16, SK: 16, LI: 16
+};
+function mailAlterFuer(land){ return MAIL_ALTER[String(land || "").toUpperCase()] || 16; }
+function gebFelderFuellen(){
+  const jahr = gebHeute().j;
+  let monate = null;
+  try {
+    const f = new Intl.DateTimeFormat(lang, { month: "short", timeZone: "UTC" });
+    monate = Array.from({ length: 12 }, (_, i) => f.format(new Date(Date.UTC(2000, i, 15))));
+  } catch(_){}
+  for (const vor of GEB_FELDER){
+    const listen = [
+      [vor + "T", "geb_t", Array.from({ length: 31 }, (_, i) => [i + 1, String(i + 1)])],
+      [vor + "M", "geb_m", Array.from({ length: 12 }, (_, i) => [i + 1, monate ? monate[i] : String(i + 1).padStart(2, "0")])],
+      [vor + "J", "geb_j", Array.from({ length: 101 }, (_, i) => [jahr - i, String(jahr - i)])]
+    ];
+    for (const [id, platz, werte] of listen){
+      const s = document.getElementById(id);
+      if (!s) continue;
+      const war = s.value;
+      s.innerHTML = "";
+      const leer = document.createElement("option");
+      leer.value = ""; leer.textContent = t(platz);
+      s.appendChild(leer);
+      for (const [w, text] of werte){
+        const o = document.createElement("option");
+        o.value = String(w); o.textContent = text;
+        s.appendChild(o);
+      }
+      s.value = war;
+    }
+  }
+}
+/* Heute in deutscher Zeit wie am Server; ohne Zeitzonen die Uhr des Geräts. */
+function gebHeute(){
+  const d = new Date();
+  try {
+    const p = {};
+    for (const x of new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Berlin",
+         year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(d)) p[x.type] = x.value;
+    if (p.year) return { j: Number(p.year), m: Number(p.month), t: Number(p.day) };
+  } catch(_){}
+  return { j: d.getFullYear(), m: d.getMonth() + 1, t: d.getDate() };
+}
+/* {t, m, j} aus den drei Feldern, oder null, solange eines fehlt oder das
+   Datum keines ist (31. Februar). */
+function gebLesen(vor){
+  const w = x => { const s = document.getElementById(vor + x); return s ? Number(s.value) || 0 : 0; };
+  const g = { t: w("T"), m: w("M"), j: w("J") };
+  if (!g.t || !g.m || !g.j) return null;
+  if (g.t > new Date(Date.UTC(g.j, g.m, 0)).getUTCDate()) return null;
+  const h = gebHeute();
+  if (g.j > h.j || (g.j === h.j && (g.m > h.m || (g.m === h.m && g.t > h.t)))) return null;
+  return g;
+}
+function gebAlter(g){
+  const h = gebHeute();
+  return h.j - g.j - ((h.m < g.m || (h.m === g.m && h.t < g.t)) ? 1 : 0);
+}
+/* Anlegen in zwei Schritten (18.09.2026, Thomas: „Spieler nicht mit
+   unnötigen Infos zumüllen"). Schritt 1: nur das Geburtsdatum — vorher
+   steht nirgends, ab welchem Alter es geht. Unter 13 geht es freundlich als
+   Gast weiter (`#acctJung` mit Knopf ins Spiel, keine Sackgasse); das merkt
+   sich der Tab (`talumi.gebNein`), damit „zurück und ein anderes Jahr" nicht
+   der naheliegende nächste Schritt ist. Schritt 2: Name, E-Mail, Passwort,
+   Land, Pflicht-Häkchen, das Mail-Häkchen nur, wenn Alter und Land es
+   erlauben, und der Datenschutz als Link. */
+let anlegenSchritt = 1;
+function gebNeinGemerkt(){ try { return sessionStorage.getItem("talumi.gebNein") === "1"; } catch(_){ return false; } }
+
+/* Länder für die Auswahl (ISO 3166-1), Namen in der Spielsprache über
+   `Intl.DisplayNames`; ohne das der Code. Vorbelegt aus der Browsersprache
+   (`landAusSprache`), änderbar; „keine Angabe" schickt kein Land. */
+const LAND_CODES = ("AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ " +
+  "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR " +
+  "GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG " +
+  "KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU " +
+  "MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW " +
+  "SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG " +
+  "US UY UZ VA VC VE VG VI VN VU WF WS XK YE YT ZA ZM ZW").split(" ");
+let landLangGefuellt = null;
+function landFeldFuellen(){
+  const s = document.getElementById("acctLand");
+  if (!s || landLangGefuellt === lang) return;
+  landLangGefuellt = lang;
+  /* Vorbelegt aus der Browsersprache; nennt die keine Region („de" statt
+     „de-DE"), aus der Spracheinstellung des Geräts. */
+  let vorschlag = landAusSprache();
+  if (!vorschlag) try {
+    vorschlag = (Intl.DateTimeFormat().resolvedOptions().locale || "").split("-").find(x => /^[A-Z]{2}$/.test(x)) || null;
+  } catch(_){}
+  /* Nur „de" ohne Region: geraten wird bloß, wo es die Mail-Grenze nicht
+     senkt (DE, TR, RU gelten mit 16) — bei „es" oder „pt" hieße ein Raten
+     Spanien/Portugal und damit 14 bzw. 13 auch für Lateinamerika. */
+  if (!vorschlag) try {
+    vorschlag = { de: "DE", tr: "TR", ru: "RU" }[String(navigator.language || "").slice(0, 2).toLowerCase()] || null;
+  } catch(_){}
+  const war = s.dataset.vorbelegt ? s.value : (vorschlag || "");
+  s.dataset.vorbelegt = "1";
+  let namen = null;
+  try { namen = new Intl.DisplayNames([lang], { type: "region" }); } catch(_){}
+  const liste = LAND_CODES.map(c => { let n = c; try { n = (namen && namen.of(c)) || c; } catch(_){} return [c, n]; });
+  try { const k = new Intl.Collator(lang); liste.sort((x, y) => k.compare(x[1], y[1])); } catch(_){}
+  s.innerHTML = "";
+  const leer = document.createElement("option");
+  leer.value = ""; leer.textContent = t("k_land_keins");
+  s.appendChild(leer);
+  for (const [c, n] of liste){
+    const o = document.createElement("option");
+    o.value = c; o.textContent = n; s.appendChild(o);
+  }
+  s.value = LAND_CODES.includes(war) ? war : "";
+}
+function landGewaehlt(){
+  const s = document.getElementById("acctLand");
+  return s && s.dataset.vorbelegt ? (s.value || null) : landAusSprache();
 }
 
-$("acctSwap").addEventListener("click", () => { anlegen = !anlegen; kontoFormZeichnen(); });
+/* Das Neuigkeiten-Häkchen erscheint nur im Schritt 2 und nur ab dem
+   Einwilligungsalter des Landes (13 bis 16); verschwindet es, wird es
+   abgehakt — ein Haken, den man nicht sieht, wäre keine Einwilligung. */
+function gebFormPruefen(){
+  const g = gebLesen("acctGeb");
+  const alter = g ? gebAlter(g) : -1;
+  const zeile = $("acctMailRow"), haken = $("acctMailOk");
+  const zeigen = anlegen && anlegenSchritt === 2 && alter >= mailAlterFuer(landGewaehlt());
+  if (zeile){ zeile.hidden = !zeigen; if (!zeigen && haken) haken.checked = false; }
+  const f = $("acctForm"); if (f) f.classList.toggle("mitMail", zeigen);
+}
+for (const x of ["T", "M", "J"]){
+  const s = document.getElementById("acctGeb" + x);
+  if (s) s.addEventListener("change", gebFormPruefen);
+}
+if (document.getElementById("acctLand")) document.getElementById("acctLand").addEventListener("change", gebFormPruefen);
+gebFelderFuellen();
+
+/* Auge am Passwortfeld: zeigt das Passwort, statt es zweimal zu verlangen. */
+if (document.getElementById("acctPwAuge")) document.getElementById("acctPwAuge").addEventListener("click", () => {
+  const f = $("acctPw"), k = $("acctPwAuge");
+  const zeigen = f.type === "password";
+  f.type = zeigen ? "text" : "password";
+  k.setAttribute("aria-pressed", String(zeigen));
+});
+if (document.getElementById("acctJungGast"))
+  document.getElementById("acctJungGast").addEventListener("click", () => $("guestBtn").click());
+
+function kontoFormZeichnen(){
+  const veil = $("accountVeil");
+  const s1 = anlegen && anlegenSchritt === 1, s2 = anlegen && anlegenSchritt === 2;
+  const jung = s1 && gebNeinGemerkt();
+  if (anlegen) veil.dataset.schritt = String(anlegenSchritt); else delete veil.dataset.schritt;
+  /* Unter 13 ist der große Gast-Knopf in `#acctJung` der Weg — der
+     gewöhnliche darunter wäre derselbe Knopf ein zweites Mal. */
+  veil.classList.toggle("jung", jung);
+  $("acctGebRow").hidden = !s1 || jung;
+  $("acctJung").hidden = !jung;
+  $("acctNameRow").hidden = !s2;
+  $("acctMailFeld").hidden = s1;
+  $("acctPwFeld").hidden = s1;
+  $("acctLandRow").hidden = !s2;
+  if (s2) landFeldFuellen();
+  /* Das Pflicht-Häkchen gibt es nur beim Anlegen. Beim Anmelden wäre es
+     sinnlos: Zugestimmt hat dieses Konto längst, und wer zu einer neuen
+     Fassung zustimmen muss, wird danach gefragt (`agbPruefen`). Der Haken
+     wird beim Wechsel zurückgesetzt — ein Häkchen, das von einem früheren
+     Versuch stehen bleibt, wäre keine bewusste Erklärung mehr. */
+  { const r = $("acctAgbRow"); if (r){ r.hidden = !s2;
+      for (const id of ["acctAgb", "acctMailOk"]){ const h = $(id); if (h) h.checked = false; } } }
+  /* Werbecode: kein sichtbares Feld mehr; ein Code aus dem Link reist mit. */
+  { const cr = $("acctCode"); if (cr && !cr.value) cr.value = Werben.gemerkt(); }
+  $("acctGo").hidden = jung;
+  $("acctGo").textContent = t(s1 ? "k_weiter" : anlegen ? "k_signup" : "k_signin");
+  $("acctSwap").textContent = t(anlegen ? "k_have" : "k_new");
+  $("acctPw").autocomplete = anlegen ? "new-password" : "current-password";
+  /* Die Passwortregel steht vorher da — als Platzhalter, ohne eigene Zeile. */
+  $("acctPw").placeholder = s2 ? t("k_pwhint") : "";
+  kontoMeldung("");
+  gebFormPruefen();
+}
+
+$("acctSwap").addEventListener("click", () => { anlegen = !anlegen; anlegenSchritt = 1; kontoFormZeichnen(); });
 
 $("acctForm").addEventListener("submit", async e => {
   e.preventDefault();
   if (Konto.laeuft) return;
+  /* Schritt 1 → 2: nur das Geburtsdatum. */
+  if (anlegen && anlegenSchritt === 1){
+    const g = gebLesen("acctGeb");
+    if (!g) return kontoMeldung(t("e_geb"), "warn");
+    if (gebAlter(g) < 13){
+      try { sessionStorage.setItem("talumi.gebNein", "1"); } catch(_){}
+      return kontoFormZeichnen();
+    }
+    anlegenSchritt = 2;
+    kontoFormZeichnen();
+    try { $("acctName").focus({ preventScroll: true }); } catch(_){}
+    return;
+  }
   const email = $("acctMail").value.trim();
   const pw    = $("acctPw").value;
   const name  = $("acctName").value.trim();
@@ -7848,13 +8388,14 @@ $("acctForm").addEventListener("submit", async e => {
   /* Was sich hier prüfen lässt, wird hier geprüft — das spart dem Spieler
      die Wartezeit auf eine Antwort, die ohnehin absehbar ist. Verbindlich
      prüft trotzdem der Server; diese Prüfung ist Bequemlichkeit, kein Schutz. */
+  if (anlegen && !name)         return kontoMeldung(t("e_name"), "warn");
+  if (anlegen && npcName(cleanName(name).trim())) return kontoMeldung(t("e_name_npc"), "warn");
   if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email))
     return kontoMeldung(t("e_email"), "warn");
   if (anlegen && pw.length < 8) return kontoMeldung(t("e_pwshort"), "warn");
-  if (anlegen && $("acctPw2") && $("acctPw2").value !== pw)
-    return kontoMeldung(t("e_pwmatch"), "warn");
-  if (anlegen && !name)         return kontoMeldung(t("e_name"), "warn");
-  if (anlegen && npcName(cleanName(name).trim())) return kontoMeldung(t("e_name_npc"), "warn");
+  if (anlegen && !gebLesen("acctGeb")){ anlegenSchritt = 1; kontoFormZeichnen(); return kontoMeldung(t("e_geb"), "warn"); }
+  if (anlegen && !($("acctAgb") && $("acctAgb").checked))
+    return kontoMeldung(t("e_agb"), "warn");
 
   Konto.laeuft = true;
   $("acctGo").disabled = true;
@@ -7878,7 +8419,99 @@ function nachAnmeldung(){
   paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank();
   show("startVeil");
   toast(t("k_hello", Konto.profil ? Konto.profil.name : ""));
+  agbPruefen();
 }
+
+/* ---- Nutzungsbedingungen (v106) ---------------------------------------
+   Gefragt wird genau ein Konto-Fall: eines, das einer älteren Fassung — oder
+   noch gar keiner — zugestimmt hat. Wer gerade ein Konto angelegt hat, hat
+   das Häkchen im Formular gesetzt und wird nicht noch einmal gefragt; Gäste
+   schließen keinen Vertrag und werden es auch nicht (für sie steht der
+   Hinweis neben „Als Gast spielen").
+
+   Das Fenster kommt erst, wenn der Hangar steht — nicht über den
+   Anmeldebildschirm. Und es kommt hinter dem Tagesbonus: Zwei Fenster
+   gleichzeitig wären eines zu viel, deshalb wartet es, solange ein anderer
+   Schleier offen ist, und `bonusVeilZu()` ruft es danach. */
+/* Seit dem 18.09.2026 auch für Konten ohne Geburtsdatum (von vorher, über
+   Google/Facebook): `gebOk:false` im Profil. Ein Server, der das Feld nicht
+   kennt, schickt es nicht — dann wird auch nicht gefragt. */
+function gebFehlt(){
+  return !!(istAngemeldet() && Konto.profil && Konto.profil.gebOk === false);
+}
+function agbNoetig(){
+  return !!(istAngemeldet() && Konto.profil &&
+            ((Number(Konto.profil.agb) || 0) < Konto.agbFassung || gebFehlt()));
+}
+
+function agbPruefen(){
+  if (!agbNoetig()) return;
+  /* Nicht über einen offenen Schleier legen (Tagesbonus, Aufstieg …) — der
+     würde sonst dahinter hängen bleiben. */
+  if (VEILS.some(id => { const v = $(id); return v && !v.hidden && id !== "startVeil"; })) return;
+  const h = $("agbHaken"); if (h) h.checked = false;
+  const n = $("agbNote"); if (n) n.textContent = "";
+  { const r = $("agbGebRow"); if (r) r.hidden = !gebFehlt(); }
+  { const k = $("agbKarte"), j = $("agbJung"); if (k) k.hidden = false; if (j) j.hidden = true; }
+  show("agbVeil");
+}
+
+/* Unter 13: erklären, dass es Konten erst ab 13 gibt, und nach Bestätigung
+   löschen. „Datum korrigieren" führt zurück — ein Tippfehler im Jahr soll
+   kein Konto kosten. */
+let agbJungGeb = null;
+function agbJungZeigen(g){
+  agbJungGeb = g;
+  $("agbKarte").hidden = true; $("agbJung").hidden = false;
+  const n = $("agbJungNote"); n.textContent = ""; n.className = "hintline";
+  $("agbJungOk").disabled = false;
+}
+
+if ($("agbGo")) $("agbGo").addEventListener("click", async () => {
+  const h = $("agbHaken"), n = $("agbNote");
+  const warn = s => { if (n){ n.textContent = t(s); n.className = "hintline warn"; } };
+  let geb = null;
+  if (gebFehlt()){
+    geb = gebLesen("agbGeb");
+    if (!geb) return warn("e_geb");
+    if (gebAlter(geb) < 13) return agbJungZeigen(geb);
+  }
+  if (!h || !h.checked) return warn("e_agb");
+  $("agbGo").disabled = true;
+  if (n){ n.textContent = t("k_wait"); n.className = "hintline"; }
+  const e = await Konto.agbAnnehmen(geb);
+  $("agbGo").disabled = false;
+  if (e.fehler === "zu_jung" && geb) return agbJungZeigen(geb);
+  if (e.fehler) return warn(KONTO_FEHLER[e.fehler] || "e_net");
+  show("startVeil");
+});
+if ($("agbJungZurueck")) $("agbJungZurueck").addEventListener("click", () => {
+  $("agbJung").hidden = true; $("agbKarte").hidden = false;
+});
+if ($("agbJungOk")) $("agbJungOk").addEventListener("click", async () => {
+  const n = $("agbJungNote");
+  if (!agbJungGeb || Konto.laeuft) return;
+  Konto.laeuft = true; $("agbJungOk").disabled = true;
+  n.textContent = t("k_wait"); n.className = "hintline";
+  const e = await Konto.zuJung(agbJungGeb);
+  Konto.laeuft = false;
+  if (e.fehler){ n.textContent = t(KONTO_FEHLER[e.fehler] || "e_net"); n.className = "hintline warn";
+                 $("agbJungOk").disabled = false; return; }
+  /* Wie beim Abmelden: nichts vom gelöschten Konto in den Gaststand
+     schreiben, neu laden, Anmeldefenster mit dem Hinweis zeigen — dort ist
+     „Als Gast spielen" der Weg ins Spiel. */
+  Konto.merken(null);
+  Konto.profil = null; Konto.stand = null; Konto.bonus = null;
+  Gast.nichtSichern = true;
+  try { sessionStorage.setItem("talumi.abgemeldet", "1");
+        sessionStorage.setItem("talumi.zuJung", "1"); } catch(_){}
+  location.reload();
+});
+
+/* „Später": Abschnitt 14 sagt bestehenden Konten zu, dass bis zur Zustimmung
+   das Gesetz gilt. Also wird weitergespielt und beim nächsten Start wieder
+   gefragt — nichts wird gemerkt, was das Fragen dauerhaft abstellt. */
+if ($("agbSpaeter")) $("agbSpaeter").addEventListener("click", () => show("startVeil"));
 
 /* Anmeldung über Google und Facebook (Schritt 88).
 
@@ -8002,12 +8635,20 @@ window.addEventListener("pagehide", offeneRundeMerken);
    weiter und speichert nichts. Was hier mitgeht (Name, Runde, Fassung), ist
    für den Server eine Behauptung — er benennt Konten selbst aus der Sitzung. */
 let meldeZurueck = "startVeil", meldeArtJetzt = "fehler", meldeRunde = "";
-function meldeOeffnen(){
+/* `wie` (v106, von der Bewertungsbitte): vorgewählte Art, Rückweg, eigene
+   Unterzeile und ein Vermerk statt der Rundenzeile. Als Klickziel bekommt
+   die Funktion das Ereignis — das hat ein `target` und wird übergangen. */
+function meldeOeffnen(wie){
+  const o = (wie && typeof wie === "object" && !("target" in wie)) ? wie : {};
   const offen = VEILS.map(id => $(id)).find(v => v && !v.hidden);
-  meldeZurueck = offen && offen.id !== "meldeVeil" ? offen.id : "startVeil";
+  meldeZurueck = o.zurueck || (offen && offen.id !== "meldeVeil" ? offen.id : "startVeil");
+  if (o.art) meldeArtJetzt = o.art;
+  { const sub = document.querySelector("#meldeVeil .sub");
+    if (sub) sub.textContent = t(o.sub || "md_erkl"); }
   /* Was über die Runde bekannt ist — hilft beim Nachstellen eines Fehlers. */
   try {
-    meldeRunde = meldeZurueck === "endVeil"
+    meldeRunde = o.runde ? String(o.runde)
+      : meldeZurueck === "endVeil"
       ? [modeId, ($("endText") && $("endText").textContent || "").slice(0, 120)].join(" · ")
       : "aus dem Menü";
   } catch(_){ meldeRunde = ""; }
@@ -8346,6 +8987,12 @@ const Konto = {
   /* Welche Fremdanmeldungen der Server anbietet (aus `/health`). Leer heißt:
      kein Knopf für Google oder Facebook. */
   oauth:[],
+  /* Geltende Fassung der Nutzungsbedingungen (aus `/health`, v106). Sie ist
+     die Zahl, die beim Anlegen eines Kontos mitgeht, und der Maßstab dafür,
+     ob ein vorhandenes Konto noch gefragt werden muss. Vorgabe 1: Antwortet
+     ein Server ohne dieses Feld (eine ältere Fassung), soll das Häkchen
+     trotzdem etwas Gültiges schicken. */
+  agbFassung:1,
   laeuft:false,
 
   merken(token){
@@ -8361,14 +9008,15 @@ const Konto = {
     try { return localStorage.getItem(KONTO_SCHLUESSEL); } catch(_){ return null; }
   },
 
-  async ruf(pfad, daten){
+  async ruf(pfad, daten, frist){
     const kopf = {};
     if (this.token) kopf["authorization"] = "Bearer " + this.token;
     if (daten) kopf["content-type"] = "application/json";
     /* Abbruch nach acht Sekunden: Ohne Frist hängt der Anmeldeknopf
-       unbegrenzt, wenn der Server nicht antwortet. */
+       unbegrenzt, wenn der Server nicht antwortet. `frist` (v106) nur für
+       den Widerruf, der auf den Mailversand wartet. */
     const stopp = new AbortController();
-    const wecker = setTimeout(() => stopp.abort(), 8000);
+    const wecker = setTimeout(() => stopp.abort(), frist || 8000);
     try {
       const a = await fetch(kontoBasis() + pfad, {
         method: daten ? "POST" : "GET",
@@ -8434,26 +9082,150 @@ const Konto = {
     const t = this.gemerkt();
     if (!t) return false;
     this.token = t;
-    const a = await this.ruf("/konto/ich");
-    if (a.status === 200){ this.uebernehmen(a); return true; }
+    /* Die Sprache reist in der Abfragezeichenfolge mit (v106): Der Server
+       merkt sich die Sprache der letzten Anmeldung für die Neuigkeiten und
+       übergeht, was nicht auf seiner Liste steht. Der Pfad bleibt derselbe —
+       der Server liest nur den Teil vor dem „?". */
+    const a = await this.ruf("/konto/ich?sprache=" + encodeURIComponent(lang));
+    if (a.status === 200){ this.uebernehmen(a); this.spracheGemeldet = lang; return true; }
     // 401 heißt: Sitzung abgelaufen oder zurückgezogen. Dann weg damit.
     if (a.status === 401) this.merken(null);
     else this.token = t;              // nur Netzstörung — Token behalten
     return false;
   },
 
-  async registrieren(email, passwort, name){
+  /* `geb` {t, m, j}: Geburtsdatum (18.09.2026); ohne Angabe aus dem
+     Formular. Der Server prüft es selbst und speichert nur Monat und Jahr. */
+  async registrieren(email, passwort, name, geb){
     const feld = $("acctCode");
+    const gebDa = geb || gebLesen("acctGeb");
+    const mailZeile = $("acctMailRow");
     const code = ((feld && feld.value.trim()) || Werben.gemerkt() || "").toUpperCase().slice(0, 12);
+    /* `agb` ist die Fassung der Nutzungsbedingungen, der gerade zugestimmt
+       wurde. Der Server nimmt nur seine eigene, heutige Fassung an — ein
+       Client mit einem veralteten Text kann damit kein Konto anlegen. */
+    /* `mailOk` ist die **freiwillige** Einwilligung in gestaltete Nachrichten.
+       Ohne Haken geht `false` hinaus, und die Registrierung gelingt genauso. */
+    /* `sprache` (v106): in dieser Sprache kommen Bestätigungsmail und
+       Neuigkeiten. */
+    const haken = $("acctMailOk");
     const a = await this.ruf("/konto/registrieren",
-      { email, passwort, name, land: landAusSprache(), code: code || undefined });
-    if (a.status === 200){ Werben.vergessen(); this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+      { email, passwort, name, land: landGewaehlt(), code: code || undefined,
+        agb: this.agbFassung, sprache: lang, geb: gebDa || undefined,
+        /* Nur ein sichtbares Häkchen zählt (unter 16 gibt es keines). */
+        mailOk: !!(haken && haken.checked && !(mailZeile && mailZeile.hidden)) });
+    if (a.status === 200){ Werben.vergessen(); this.merken(a.token); this.uebernehmen(a);
+                           this.spracheGemeldet = lang; return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Gestaltete E-Mails und Neuigkeiten an- oder abschalten (v106). Die
+     Antwort sagt neben `mailOk` auch, was mit den Neuigkeiten jetzt ist:
+     "bestaetigt", "mail_gesendet" (Bestätigungsmail mit `#nl=` ist
+     unterwegs), "adresse_unbestaetigt" (erst die Adresse bestätigen — der
+     Link schaltet die Neuigkeiten mit frei) oder "aus". */
+  nlLetzt: null,
+  async mailEinstellen(an){
+    /* `sprache`: in dieser Sprache kommt die Bestätigungsmail. */
+    const a = await this.ruf("/konto/mail", { an: !!an, sprache: lang });
+    if (a.status === 200){
+      this.uebernehmen(a);
+      if (this.profil){
+        if (typeof a.mailOk === "boolean") this.profil.mailOk = a.mailOk;
+        else if (!a.profil) this.profil.mailOk = !!an;
+        if (a.nl === "bestaetigt" || a.nl === "aus") this.profil.nl = a.nl;
+        else if (typeof a.nl === "string") this.profil.nl = "offen";
+      }
+      this.nlLetzt = typeof a.nl === "string" ? a.nl : null;
+      return { ok:true, nl: this.nlLetzt };
+    }
+    /* Auch ein Fehler kann den Stand ändern: Beim Einschalten ist die
+       Einwilligung schon gespeichert, wenn erst die Bestätigungsmail
+       scheitert (zu oft am Tag, Versanddienst). Dann zeigt der Schalter
+       „An" und darunter den Fehler — nicht „Aus", was nicht stimmte. */
+    if (a.profil) this.uebernehmen(a);
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Zustimmung für ein Konto, das es schon gab (v106). */
+  async agbAnnehmen(geb){
+    const a = await this.ruf("/konto/agb", { agb: this.agbFassung, geb: geb || undefined });
+    if (a.status === 200){ this.uebernehmen(a); return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Konto unter 13 löschen (18.09.2026) — nur nach der Erklärung im
+     Zustimmungsfenster, mit dem dort eingegebenen Datum. */
+  async zuJung(geb){
+    const a = await this.ruf("/konto/zu-jung", { bestaetigt: true, geb });
+    if (a.status === 200 && a.ok) return { ok:true };
     return { fehler: a.fehler || "netz" };
   },
 
   async anmelden(email, passwort){
-    const a = await this.ruf("/konto/anmelden", { email, passwort });
-    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); return { ok:true }; }
+    const a = await this.ruf("/konto/anmelden", { email, passwort, sprache: lang });
+    if (a.status === 200){ this.merken(a.token); this.uebernehmen(a); this.spracheGemeldet = lang; return { ok:true }; }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Sprache nachmelden, wenn sie im Spiel umgestellt wird (v106) — dann
+     kommen die Neuigkeiten in der Sprache, in der gespielt wird. Ein Server
+     ohne diesen Endpunkt antwortet 404; das bleibt folgenlos. */
+  spracheGemeldet: null,
+  spracheMelden(){
+    if (!this.angemeldet() || this.spracheGemeldet === lang) return;
+    this.spracheGemeldet = lang;
+    this.ruf("/konto/sprache", { sprache: lang }).catch(() => {});
+  },
+
+  /* Nach einem Link aus einer Mail (#ok=, #nl=, #ab=): den Stand des
+     angemeldeten Kontos neu holen, statt ihn zu raten. Der Link wirkt ohne
+     Anmeldung und kann einem anderen Konto gehören — trüge der Client hier
+     selbst „abbestellt" ein, zeigte der Schalter „Aus", während das eigene
+     Konto weiter Neuigkeiten bekommt (Review 18.09.2026). */
+  async profilNachladen(){
+    if (!this.angemeldet()) return;
+    try {
+      const a = await this.ruf("/konto/ich");
+      if (a.status === 200) this.uebernehmen(a);
+    } catch(_){}
+  },
+
+  /* Link `#nl=` aus der Bestätigungsmail (ohne Anmeldung). */
+  async nlBestaetigen(marke){
+    const a = await this.ruf("/konto/nl-bestaetigen", { marke });
+    if (a.status === 200 && !a.fehler){
+      this.nlLetzt = null;
+      await this.profilNachladen();
+      return { ok:true };
+    }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Link `#ab=` aus einer Neuigkeiten-Mail (ohne Anmeldung). Der Server
+     antwortet immer gleich — ob es die Marke gab, erfährt niemand. */
+  async nlAbmelden(marke){
+    const a = await this.ruf("/konto/nl-abmelden", { marke });
+    if (a.status === 200 && !a.fehler){
+      this.nlLetzt = null;
+      await this.profilNachladen();
+      return { ok:true };
+    }
+    return { fehler: a.fehler || "netz" };
+  },
+
+  /* Widerruf des Nutzungsvertrags (§ 356a BGB, v106). Mit den drei Angaben
+     aus dem Formular: Name, Adresse für die Eingangsbestätigung — der
+     Vertrag ist das Konto dieser Sitzung. Der Server hält den Eingang fest,
+     schickt die Eingangsbestätigung und löscht das Konto; erst dann kommt
+     `ok` zurück, mit `eingang` (Serverzeit) und `an` (Empfänger). */
+  async widerrufen(name, email){
+    /* 30 Sekunden statt acht: Der Server antwortet erst, wenn Konto gelöscht
+       und Eingangsbestätigung verschickt sind. Bräche der Client vorher ab,
+       stünde „nicht angekommen" da, obwohl der Widerruf eingegangen ist. */
+    const a = await this.ruf("/konto/widerruf", { bestaetigt: true, name, email, sprache: lang }, 30000);
+    if (a.status === 200 && a.ok) return { ok:true, eingang: Number(a.eingang) || 0,
+                                           an: typeof a.an === "string" ? a.an : "" };
     return { fehler: a.fehler || "netz" };
   },
 
@@ -8500,6 +9272,10 @@ const Konto = {
     /* Welche Fremdanmeldungen der Server anbietet. Ist keine eingerichtet,
        bleibt der ganze Streifen weg. */
     this.oauth = Array.isArray(a.oauth) ? a.oauth : [];
+    /* Geltende Fassung der Nutzungsbedingungen. Eine unsinnige Zahl wird
+       übergangen — dann bleibt die Vorgabe stehen, und der Server weist eine
+       falsche Zustimmung ohnehin ab. */
+    if (a.status === 200 && Number.isInteger(a.agb) && a.agb > 0) this.agbFassung = a.agb;
     /* Happy Hour (Schritt 100): Zeiten kommen vom Server, gerechnet wird
        hier nur die Anzeige. Gäste bekommen denselben Faktor auf ihr Ore. */
     this.happy = a.status === 200 && a.happy && typeof a.happy === "object"
@@ -8556,8 +9332,14 @@ const Konto = {
     if (a.status === 200){
       // Läuft auch ohne Anmeldung. Ist gerade jemand angemeldet, zieht die
       // Anzeige sofort nach, statt bis zum nächsten Neuladen falsch zu stehen.
-      if (this.profil) this.profil.emailOk = true;
-      return { ok:true };
+      /* `nl:true` (v106): Der Klick hat zugleich die Neuigkeiten bestätigt;
+         `nl:false`: es war der Link „nur Adresse", das Häkchen ist damit
+         zurückgenommen. Den Stand holt `profilNachladen` frisch vom Server,
+         statt ihn hier zu setzen — der Link kann einem **anderen** Konto
+         gehören als dem, das in diesem Browser angemeldet ist. */
+      if (typeof a.nl === "boolean") this.nlLetzt = null;
+      await this.profilNachladen();
+      return { ok:true, nl: a.nl };
     }
     return { fehler: a.fehler || "netz" };
   },
@@ -9444,9 +10226,9 @@ $("pwSetForm").addEventListener("submit", async e => {
   toast(t("p_done"));
 });
 
-/* Marke aus der Adresszeile. Sie steht im Anker (`#pw=` / `#ok=`), nicht in
-   der Abfragezeichenfolge: Ein Anker wird vom Browser nie an einen Server
-   geschickt und landet damit in keinem Zugriffsprotokoll.
+/* Marke aus der Adresszeile. Sie steht im Anker (`#pw=` / `#ok=` / `#nl=` /
+   `#ab=`), nicht in der Abfragezeichenfolge: Ein Anker wird vom Browser nie
+   an einen Server geschickt und landet damit in keinem Zugriffsprotokoll.
 
    Danach wird der Anker entfernt — sonst bleibt der Schlüssel zum Konto in
    der Adresszeile und im Verlauf stehen. */
@@ -9457,11 +10239,14 @@ async function markeAusAdresse(){
 
   const p = new URLSearchParams(anker);
   const neu = p.get("pw"), ok = p.get("ok");
+  /* v106: `#nl=` bestätigt die Neuigkeiten (nach dem Einschalten in den
+     Einstellungen), `#ab=` bestellt sie ab (Link in jeder Neuigkeiten-Mail). */
+  const nl = p.get("nl"), ab = p.get("ab");
   /* Rückweg von Google oder Facebook: Das fertige Sitzungstoken steht im
      Anker, nie in der Abfragezeichenfolge — ein Anker wird vom Browser nicht
      mitgeschickt und steht deshalb in keinem Serverprotokoll. */
   const tok = p.get("tok"), fremdFehler = p.get("oauth");
-  if (!neu && !ok && !tok && !fremdFehler) return false;
+  if (!neu && !ok && !tok && !fremdFehler && !nl && !ab) return false;
 
   try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
 
@@ -9496,18 +10281,165 @@ async function markeAusAdresse(){
 
   if (neu){ pwZeigen(neu); return true; }
 
-  const a = await Konto.bestaetigen(ok);
-  /* Läuft ohne Anmeldung: Wer den Link auf einem anderen Gerät öffnet, soll
-     die Adresse trotzdem bestätigen können. */
-  kontoMeldung(t(a.ok ? "p_confirmed" : "p_confirmbad"), a.ok ? "good" : "warn");
-  return false;
+  /* Adresse bestätigen, Neuigkeiten bestätigen oder abbestellen — alle drei
+     laufen ohne Anmeldung (wer den Link auf einem anderen Gerät öffnet, soll
+     es trotzdem können) und erst auf einen Tipp hin (`ankerZeigen`).
+     Ein Zusatz `nl=0` bzw. `nur=1` am Bestätigungslink heißt „nur die
+     Adresse" — dann steht das so im Text; entscheiden tut der Server anhand
+     der Marke. */
+  if (ok){ ankerZeigen("ok", ok, p.get("nl") === "0" || p.get("nur") === "1"); return true; }
+  if (ab){ ankerZeigen("ab", ab); return true; }
+  ankerZeigen("nl", nl);
+  return true;
 }
+
+/* Die Seite hinter einem Mail-Link (v106). Ein Knopf, eine Antwort. Erst
+   der Tipp schickt die Marke ab: Virenscanner in Firmenpostfächern öffnen
+   Links von selbst, und eine Bestätigung, die ein Scanner auslöst, wäre
+   keine Einwilligung (Double-Opt-In muss der Mensch auslösen). */
+let ankerZurueck = "accountVeil";
+function ankerZeigen(art, marke, nurAdresse){
+  const offen = VEILS.map(id => $(id)).find(v => v && !v.hidden);
+  if (offen && offen.id !== "ankerVeil") ankerZurueck = offen.id;
+  $("ankerKopf").textContent = t(art === "ok" ? "ak_ok_kopf" : art === "nl" ? "s_mail" : "ak_ab_kopf");
+  $("ankerText").textContent = t(art === "ok" ? (nurAdresse ? "ak_ok_nur" : "ak_ok_text")
+                                 : art === "nl" ? "ak_nl_text" : "ak_ab_text");
+  const note = $("ankerNote"); note.textContent = ""; note.className = "notice";
+  const go = $("ankerGo");
+  go.textContent = t(art === "ok" ? "ak_ok_knopf" : art === "nl" ? "ak_nl_knopf" : "ak_ab_knopf");
+  go.hidden = false; go.disabled = false;
+  go.onclick = async () => {
+    go.disabled = true;
+    note.textContent = t("k_wait"); note.className = "notice";
+    const a = art === "ok" ? await Konto.bestaetigen(marke)
+            : art === "nl" ? await Konto.nlBestaetigen(marke)
+            :                await Konto.nlAbmelden(marke);
+    const netz = !a.ok && (a.fehler === "netz" || !a.fehler);
+    let text;
+    if (art === "ok") text = a.ok ? (a.nl === true ? "p_confirmed_nl" : "p_confirmed") : netz ? "e_net" : "p_confirmbad";
+    else if (art === "nl") text = a.ok ? "ak_nl_ok" : netz ? "e_net" : "ak_nl_alt";
+    else text = a.ok ? "ak_ab_ok" : "ak_ab_fehl";
+    note.textContent = t(text);
+    note.className = "notice " + (a.ok ? "ok" : "warn");
+    /* Nach einer Netzstörung darf man es noch einmal versuchen; sonst ist
+       die Sache erledigt, und der Knopf verschwindet. */
+    if (a.ok || !netz) go.hidden = true; else go.disabled = false;
+    if (a.ok && istAngemeldet() && !$("setVeil").hidden) buildSettings();
+  };
+  show("ankerVeil");
+}
+if (document.getElementById("ankerZu")) document.getElementById("ankerZu").addEventListener("click", () => {
+  if (istAngemeldet()){ show("startVeil"); agbPruefen(); return; }
+  const ziel = ankerZurueck && ankerZurueck !== "ankerVeil" ? ankerZurueck : "accountVeil";
+  if (ziel === "startVeil"){ paintPurse(); buildGrid(); }
+  show(ziel);
+});
 
 /* Ändert sich nur der Anker, lädt der Browser die Seite **nicht** neu. Wer
    die Seite schon offen hat und dann den Link aus der Mail anklickt, sähe
-   sonst gar nichts passieren. */
-window.addEventListener("hashchange", () => { markeAusAdresse(); });
+   sonst gar nichts passieren. Während einer Runde erscheint aber nichts —
+   der Link wartet dann bis zum Hangar (`nachRundeKarte`). */
+window.addEventListener("hashchange", () => {
+  if (Game.running){ ankerWartet = true; return; }
+  markeAusAdresse();
+});
 
+/* ---- Nach einer Runde im Hangar (v106) -------------------------------
+   Erst ein Mail-Link, der während der Runde kam, dann Bewertungsbitte oder
+   Umfrage — nie zwei Fenster auf einmal, nie über ein anderes (Tagesbonus,
+   Nutzungsbedingungen, Großansicht eines Designs). Ist gerade eines offen,
+   bleibt die Karte fällig und kommt beim nächsten Hangar. */
+function nachRundeKarte(){
+  if (Game.running) return;
+  const start = $("startVeil");
+  if (!start || start.hidden) return;
+  if (VEILS.some(id => id !== "startVeil" && !$(id).hidden)) return;
+  for (const id of ["designGross", "lohnGlanz"]){
+    const el = document.getElementById(id);
+    if (el && !el.hidden) return;
+  }
+  if (ankerWartet){ ankerWartet = false; markeAusAdresse(); return; }
+  const art = Stimme.faellig();
+  Stimme.nachRunde = false; Stimme.rekord = false;
+  if (art === "gefallen") bewertungZeigen();
+  else if (art === "quelle") umfrageZeigen();
+}
+
+/* Die Umfrage. Gemerkt wird schon beim Zeigen — gefragt wird einmal, auch
+   wenn jemand das Fenster wegwischt. Die Reihenfolge der Antworten ist
+   Thomas' Vorgabe; „Sonstiges" steht am Ende. */
+const UMFRAGE_WAHL = [["freunde", "um_freunde"], ["video", "um_video"], ["sozial", "um_sozial"],
+                      ["suche", "um_suche"], ["portal", "um_portal"], ["sonst", "um_sonst"]];
+function umfrageZeigen(){
+  const d = Stimme.laden(); d.quelle = true; Stimme.sichern();
+  const box = $("umfrageWahl");
+  box.innerHTML = "";
+  for (const [wert, text] of UMFRAGE_WAHL){
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = t(text); b.dataset.wert = wert;
+    b.addEventListener("click", () => {
+      Stimme.senden("quelle", wert);
+      show("startVeil");
+      toast(t("um_danke"));
+    });
+    box.appendChild(b);
+  }
+  show("umfrageVeil");
+}
+if (document.getElementById("umfrageSkip"))
+  document.getElementById("umfrageSkip").addEventListener("click", () => show("startVeil"));
+
+/* Die Bewertungsbitte. Daumen runter öffnet „Problem melden" (wenn der
+   Server die Meldestelle anbietet), Daumen hoch die Bewertung im Store —
+   solange es die nicht gibt, „Teile Talumi". Gezählt wird beides anonym. */
+function bewertungZeigen(){
+  const d = Stimme.laden(); d.gefallen = true; Stimme.sichern();
+  $("bwFrage").hidden = false; $("bwTeilen").hidden = true;
+  show("bewertVeil");
+}
+async function teilenZeigen(){
+  /* Mit Konto der eigene Werbelink — dann bekommen beide Ore, wenn der
+     Freund dabeibleibt. Ohne Konto (oder wenn der Server nicht antwortet)
+     die Startseite. */
+  let link = "https://talumi.io/", konto = "";
+  if (istAngemeldet()){
+    try {
+      const st = Werben.stand || await Werben.laden();
+      if (st && st.code){ link = Werben.link(); konto = t("bw_t_konto", st.level); }
+    } catch(_){}
+  }
+  $("bwLink").value = link;
+  const k = $("bwKonto"); k.textContent = konto; k.hidden = !konto;
+  const go = $("bwTeilenGo");
+  const teilbar = typeof navigator.share === "function";
+  go.textContent = t(teilbar ? "w_teilen" : "w_kopieren");
+  go.onclick = async () => {
+    if (teilbar){
+      try { await navigator.share({ title: "Talumi", text: t("w_teiltext"), url: link }); return; }
+      catch(e){ if (e && e.name === "AbortError") return; }
+    }
+    try { await navigator.clipboard.writeText(link); go.textContent = t("w_kopiert"); }
+    catch(_){ const f = $("bwLink"); f.focus(); f.select(); }
+  };
+  $("bwFrage").hidden = true; $("bwTeilen").hidden = false;
+}
+if (document.getElementById("bwJa")) document.getElementById("bwJa").addEventListener("click", async () => {
+  Stimme.senden("gefallen", "ja");
+  if (Bewertung.imStore()){ show("startVeil"); return; }
+  await teilenZeigen();
+});
+if (document.getElementById("bwNein")) document.getElementById("bwNein").addEventListener("click", () => {
+  Stimme.senden("gefallen", "nein");
+  if (Konto.melden){
+    meldeOeffnen({ art: "sonstiges", zurueck: "startVeil", sub: "bw_melde",
+                   runde: "nach der Bewertungsbitte: gefällt mir nicht so" });
+    return;
+  }
+  show("startVeil");
+  toast(t("um_danke"));
+});
+if (document.getElementById("bwSkip")) document.getElementById("bwSkip").addEventListener("click", () => show("startVeil"));
+if (document.getElementById("bwZu")) document.getElementById("bwZu").addEventListener("click", () => show("startVeil"));
 /* Gastfortschritt auch sichern, wenn mitten in der Runde geschlossen wird —
    offline vergibt `addXpLive()` XP unterwegs, und das soll nicht verfallen,
    nur weil der Tab zugeht statt der Runde. */
@@ -9537,6 +10469,11 @@ document.addEventListener("visibilitychange", () => {
           if (ausMail){ paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
         else if (!$("accountVeil").hidden) nachAnmeldung();
         else { paintPurse(); buildGrid(); buildRecords(); paintBonus(); paintRank(); }
+        /* Auch wer schon angemeldet wiederkommt, wird einmal nach den
+           Nutzungsbedingungen gefragt (v106) — `nachAnmeldung()` läuft auf
+           diesen beiden Wegen nicht. Doppelt schadet nicht: `agbPruefen`
+           kehrt um, wenn schon zugestimmt wurde oder ein Fenster offen ist. */
+        agbPruefen();
         return;
       }
     }
@@ -9618,7 +10555,10 @@ const MenueHimmel = {
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
   MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil","meldeVeil",
-           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil","bonusVeil"],
+           "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil","bonusVeil",
+           /* v106: Nutzungsbedingungen, Widerruf, Mail-Links, Umfrage,
+              Bewertungsbitte — sonst läge hinter ihnen eine schwarze Fläche. */
+           "agbVeil","widerrufVeil","ankerVeil","umfrageVeil","bewertVeil"],
   sichtbar(){
     if (Game.running) return false;
     if (document.hidden) return false;

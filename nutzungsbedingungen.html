@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b16">
+<title>Nutzungsbedingungen — Talumi</title>
+<meta name="robots" content="index, follow">
+<!-- Fassungsnummer dieser Bedingungen. Wird bei jeder Zustimmung mit
+     gespeichert; bei jeder inhaltlichen Änderung hochzählen und die
+     sichtbare Zeile „Fassung … · Stand: …“ unten und oben mitziehen. -->
+<meta name="talumi-nutzungsbedingungen-fassung" content="1">
+<link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<style>
+  /* Dieselbe Schrift wie im Spiel (Lora, SIL OFL 1.1, Lizenz in OFL.txt),
+     von talumi.io selbst ausgeliefert — nichts wird von Google geladen.
+     Bis Schritt 88 stand hier die Systemschrift: Wer im Spiel auf
+     „Impressum“ klickte, landete auf einer Seite in einer anderen Schrift. */
+  @font-face{
+    font-family:"Talumi Serif";
+    src:url("lora-latein.woff") format("woff");
+    font-weight:400 700; font-style:normal; font-display:swap;
+    unicode-range:U+0000-024F, U+2010-205E, U+20AC, U+2122, U+2212, U+00D7, U+00B7;
+  }
+  @font-face{
+    font-family:"Talumi Serif";
+    src:url("lora-kyrillisch.woff") format("woff");
+    font-weight:400 700; font-style:normal; font-display:swap;
+    unicode-range:U+0400-04FF;
+  }
+  :root{--ink:#070b16;--plate:#141d31;--line:#243149;--brass:#d8b25f;
+        --paper:#dfe8f5;--paper-2:#8494ad;--rost:#b4593a;
+        --serif:"Talumi Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+        --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);
+       line-height:1.65;font-size:16px}
+  main{max-width:42rem;margin:0 auto;padding:44px 22px 80px}
+  h1{font-family:var(--serif);font-size:clamp(34px,7vw,48px);line-height:1;margin:0 0 24px;
+     color:var(--brass);font-weight:600}
+  h2{font-family:var(--serif);font-size:21px;color:var(--brass);font-weight:600;margin:32px 0 6px}
+  p{color:var(--paper-2);margin:0 0 12px}
+  strong{color:var(--paper);font-weight:600}
+  a{color:var(--brass)}
+  .hinweis{font-size:14px;margin-top:-4px}
+  nav{margin-top:44px;padding-top:16px;border-top:1px solid var(--line);font-size:14px}
+  .stand{font-size:13px;color:var(--paper-2);margin-top:28px}
+  /* Ergänzungen gegenüber dem Impressum, übernommen aus datenschutz.html
+     (Listen, Zwischenüberschriften) — damit die Rechtsseiten gleich aussehen. */
+  h3{font-size:16px;margin:20px 0 4px;color:var(--paper)}
+  ul{color:var(--paper-2);margin:0 0 12px;padding-left:20px}
+  li{margin:4px 0}
+  /* Fassungszeile direkt unter der Überschrift: Wer zustimmt, sieht, welcher
+     Fassung. Die Kurzfassung bewusst in Messing, nicht in Grün — Grün ist im
+     Spiel dem Startknopf vorbehalten. */
+  .fassung{font-size:13px;color:var(--paper-2);margin:-14px 0 22px}
+  .kurz{border:1px solid var(--line);border-radius:3px;padding:14px 16px;margin:22px 0;
+        font-size:14.5px;color:var(--paper);background:var(--plate)}
+  .kurz b{color:var(--brass)}
+  .kurz ul{color:var(--paper);margin:8px 0 0}
+</style>
+</head>
+<body>
+<main>
+  <!-- Weiches Trennzeichen: Das Wort ist bei 34 px breiter als ein
+       360-px-Telefon (gemessen 386 px) — ohne Trennung schob es die Seite
+       seitlich. -->
+  <h1>Nutzungs&shy;bedingungen</h1>
+  <p class="fassung">Fassung 1 · Stand: 18. September 2026</p>
+
+  <div class="kurz">
+    <b>Das Wichtigste in Kürze</b>
+    <ul>
+      <li>Talumi ist kostenlos. Ein Konto darfst du ab 13 Jahren anlegen; ohne
+          Konto kannst du in jedem Alter spielen. Bist du unter 18, müssen deine
+          Eltern mit dem Vertrag einverstanden sein.</li>
+      <li>Innerhalb von 14 Tagen nach Vertragsschluss kannst du den Vertrag ohne
+          Grund widerrufen – im Spiel über „Vertrag widerrufen“ oder per E-Mail
+          (<a href="#widerruf">Abschnitt 11a</a>).</li>
+      <li>Spiel fair: keine Cheats, Bots oder Zweitkonten, mit denen du dir selbst
+          Vorteile verschaffst.</li>
+      <li>Namen ohne Beleidigungen, Hass oder Anstößiges – und nicht mit „NPC“
+          am Anfang.</li>
+      <li>Ore, Designs, Ehre und Ränge sind Spielinhalte ohne Geldwert. Was du
+          dir erspielt hast, nehmen wir dir nicht weg, solange dein Konto besteht –
+          außer bei Fehlern im Spiel oder Regelverstößen.</li>
+      <li>Talumi zeigt nie Werbung während einer laufenden Runde.</li>
+      <li>Dein Konto kannst du jederzeit per E-Mail löschen lassen.</li>
+    </ul>
+    <p class="hinweis" style="margin:10px 0 0">Die Kurzfassung ersetzt nicht den
+       Text darunter – dort steht alles genau.</p>
+  </div>
+
+  <h2>1. Worum es geht und wer dahintersteht</h2>
+  <p>Diese Bedingungen regeln, wie du Talumi nutzen darfst – das Spiel unter
+     <strong>talumi.io</strong>, auch wenn du es als App auf deinem Startbildschirm
+     installierst, über ein Spieleportal spielst oder später aus einem App Store
+     lädst. Auf Portalen und in App Stores gelten zusätzlich deren eigene
+     Bedingungen.</p>
+  <p>Anbieter ist <strong>Thomas Saxinger</strong>, ein Einzelunternehmer.
+     Anschrift und Kontakt stehen im <a href="impressum.html">Impressum</a>.
+     Wenn hier „wir“ steht, ist er gemeint.</p>
+  <p>Wie wir mit deinen Daten umgehen, erklärt die
+     <a href="datenschutz.html">Datenschutzerklärung</a>. Sie wird hier nicht
+     wiederholt.</p>
+
+  <h2>2. Mindestalter und Konto</h2>
+  <h3>Wie alt du sein musst</h3>
+  <p>Ein Konto darfst du anlegen, wenn du <strong>mindestens 13 Jahre</strong>
+     alt bist. Deshalb fragen wir bei der Registrierung nach deinem
+     Geburtsdatum; unter 13 legen wir kein Konto an. Ohne Konto kannst du
+     Talumi in jedem Alter spielen (Abschnitt 3).</p>
+  <p>Wichtig für alle unter 18: Nach dem Gesetz wird der Vertrag mit uns erst
+     wirksam, wenn deine <strong>Eltern</strong> (oder andere
+     Erziehungsberechtigte) einverstanden sind (§§ 107, 108 BGB). Sprich also
+     mit ihnen, bevor du ein Konto anlegst – mit dem Häkchen bestätigst du, dass
+     sie einverstanden sind. Sind sie es nicht, löschen wir das Konto auf ihren
+     Wunsch.</p>
+  <p>Neuigkeiten per E-Mail kannst du erst ab dem Alter bestellen, ab dem du
+     nach dem Recht deines Landes selbst einwilligen kannst – je nach Land
+     zwischen 13 und 16 Jahren, spätestens ab 16. Jüngeren Spielern bieten wir
+     das gar nicht an; alles andere am Spiel steht ihnen offen.</p>
+  <h3>Deine Pflichten beim Konto</h3>
+  <ul>
+    <li>Gib eine E-Mail-Adresse an, die dir gehört und unter der du erreichbar
+        bist.</li>
+    <li>Ein Konto gehört genau einer Person. Teile es nicht mit anderen.</li>
+    <li>Konten dürfen nicht verkauft, gekauft, getauscht oder verschenkt
+        werden – auch nicht einzelne Inhalte darauf.</li>
+    <li>Halte dein Passwort geheim. Glaubst du, dass jemand es kennt, setze es
+        über „Passwort vergessen“ neu und sag uns Bescheid.</li>
+  </ul>
+  <h3>So kommt der Vertrag zustande</h3>
+  <p>Du gibst dein Geburtsdatum an, danach Spielernamen, E-Mail-Adresse,
+     Passwort und Land, setzt das Häkchen bei diesen Nutzungsbedingungen und
+     tippst auf <strong>„Konto anlegen“</strong>.
+     Bis dahin kannst du alle Eingaben noch ändern. Mit dem Tippen schließt du
+     mit uns einen <strong>kostenlosen Nutzungsvertrag</strong> zu diesen
+     Bedingungen; danach bekommst du eine E-Mail, mit der du deine Adresse
+     bestätigst. Legst du ein Konto über Google oder Facebook an, fragen wir
+     dich unmittelbar nach der Rückkehr ins Spiel nach deinem Geburtsdatum und
+     deiner Zustimmung; der Vertrag kommt dann mit ihr zustande.</p>
+  <p>Vertragssprache ist Deutsch; in anderen Sprachen gibt es diese
+     Bedingungen bisher nicht. Wir speichern, welcher Fassung dieser
+     Bedingungen du wann zugestimmt hast, und von deinem Geburtsdatum nur Monat
+     und Jahr. Den Text findest du jederzeit auf dieser Seite – du kannst sie
+     speichern oder drucken. Frühere Fassungen schicken wir dir auf
+     Nachfrage.</p>
+
+  <h2>3. Spielen ohne Konto</h2>
+  <p>Du kannst Talumi auch ohne Konto spielen. Dein Fortschritt – Level, Ore,
+     Designs, Tagesbonus – liegt dann <strong>nur im Speicher deines
+     Browsers</strong>. Löschst du die Websitedaten oder wechselst du Browser oder
+     Gerät, ist er weg. Wiederherstellen können wir ihn nicht, weil er nie bei
+     uns lag. Ein Gast-Spielstand lässt sich nicht in ein Konto übernehmen.</p>
+  <p>Ehre, Ränge, Errungenschaften, Saisonwertung und Clans gibt es nur mit
+     Konto. Spielst du als Gast, gelten diese Bedingungen ebenfalls, soweit sie
+     kein Konto voraussetzen – vor allem die Regeln zu Fair Play (Abschnitt 4)
+     und zu Namen (Abschnitt 5). Darauf weist das Spiel neben „Als Gast
+     spielen“ hin. Wer dagegen verstößt, kann vom Onlinespiel ausgeschlossen
+     werden.</p>
+
+  <h2>4. Fair Play</h2>
+  <p>Talumi soll für alle fair sein. Deshalb ist <strong>nicht erlaubt</strong>:</p>
+  <ul>
+    <li><strong>Cheats, Bots, Makros und Skripte</strong> – also alles, was für
+        dich spielt oder dir einen Vorteil verschafft, den andere nicht
+        haben;</li>
+    <li>den Spielcode, die Datenübertragung zum Server oder den Speicher des
+        Spiels zu <strong>verändern oder zu manipulieren</strong>, zum Beispiel
+        um Ore, Designs oder andere Werte zu erschleichen;</li>
+    <li><strong>Fehler im Spiel absichtlich auszunutzen.</strong> Findest du
+        einen, melde ihn uns lieber über „Problem melden“ – danke!</li>
+    <li><strong>Zweitkonten oder Absprachen</strong>, um dir oder anderen Ehre,
+        Ränge, Errungenschaften, Belohnungen aus „Freunde werben“ oder andere
+        Vorteile zu verschaffen – etwa indem du dich absichtlich von einem
+        eigenen oder verabredeten Konto fressen lässt oder dich selbst
+        wirbst;</li>
+    <li><strong>Angriffe auf unsere Server</strong> oder andere Spieler: sie zu
+        überlasten, in sie einzudringen, massenhaft automatische Anfragen zu
+        schicken oder fremde Konten auszuspähen.</li>
+  </ul>
+  <p>Gemeinsam jagen, Mitspieler mit abgeworfener Masse füttern und im Clan
+     Taktik absprechen gehört zum Spiel und ist erlaubt. Nicht erlaubt ist, sich
+     absichtlich fressen zu lassen, damit jemand Ehre, Ränge oder Belohnungen
+     bekommt – auch nicht im eigenen Clan.</p>
+  <p>Das Spiel hat einen <strong>automatischen Schutz gegen Bots</strong>. Er
+     kann zu schnelle Eingaben bremsen oder eine Runde anhalten und dich um eine
+     kurze Prüfung bitten. Über Sperren eines Kontos entscheidet er nicht – das
+     tut immer ein Mensch.</p>
+
+  <h2>5. Namen, Clan-Namen und Kürzel</h2>
+  <p>Deinen Spielernamen und die Namen und Kürzel von Clans sehen alle. Deshalb
+     sind dort nicht erlaubt:</p>
+  <ul>
+    <li>Beleidigungen, Drohungen, Hass oder Hetze gegen Menschen oder
+        Gruppen;</li>
+    <li>sexuelle oder gewaltverherrlichende Inhalte und alles, was gegen
+        Gesetze verstößt, zum Beispiel verbotene Zeichen und Parolen;</li>
+    <li>so zu tun, als wäre man jemand anderes – eine echte Person, ein
+        anderer Spieler oder wir als Betreiber (etwa „Admin“ oder
+        „Talumi-Team“);</li>
+    <li>Namen, die mit <strong>„NPC“</strong> beginnen – so heißen bei uns nur
+        die Computergegner, die das Kürzel [NPC] tragen;</li>
+    <li>Werbung, Links, Kontaktdaten und fremde Marken- oder Namensrechte.</li>
+  </ul>
+  <p>Manches filtert das Spiel automatisch, anderes prüfen wir, wenn es uns
+     gemeldet wird oder auffällt. Verstößt ein Name gegen diese Regeln, dürfen
+     wir ihn ändern oder auf einen neutralen Namen zurücksetzen und einen Clan
+     umbenennen oder auflösen (Abschnitt 10).</p>
+  <p>Mit Konto kannst du deinen Spielernamen alle 30 Tage in den Einstellungen
+     ändern. Ein Clan hat höchstens 30 Mitglieder; Name und Kürzel wählt, wer ihn
+     gründet.</p>
+  <p>Siehst du einen Namen, der gegen diese Regeln verstößt, melde ihn bitte
+     über „Problem melden“ (Art „Spieler“) oder per E-Mail.</p>
+
+  <h2>6. Ore, Designs und andere virtuelle Inhalte</h2>
+  <p>Zu Talumi gehören virtuelle Inhalte: <strong>Ore</strong> (die
+     Spielwährung), <strong>Designs</strong>, XP und Level, Ehre und Ränge,
+     Errungenschaften, Titel wie „Titan“, Monde, Mondstaub und Skillpunkte,
+     Belohnungen aus Saisons, Tagesbonus, „Freunde werben“ und – sobald es sie
+     gibt – aus Werbevideos, Gutscheine wie der Startbonus und Clans.</p>
+  <ul>
+    <li>Du bekommst das Recht, diese Inhalte <strong>im Spiel zu nutzen</strong>,
+        solange dein Konto besteht (als Gast: solange sie in deinem Browser
+        liegen). Sie gehören dir nicht wie ein Gegenstand.</li>
+    <li>Sie sind <strong>kein Geld</strong>. Ore hat keinen Geldwert, wird nicht
+        ausgezahlt, nicht in echtes Geld oder andere Dinge umgetauscht und kann
+        nicht auf andere Konten übertragen werden. Handel mit Inhalten oder
+        Konten gegen echtes Geld ist verboten.</li>
+    <li>Wie viel Ore, XP, Ehre oder Mondstaub eine Runde bringt, was ein Design
+        kostet und wie stark ein Mond wirkt, legen die Spielregeln fest. Diese
+        Werte können wir anpassen, damit das Spiel fair und ausgewogen bleibt –
+        nach den Regeln in Abschnitt 9.</li>
+    <li>Was du dir schon erspielt hast – dein Ore-Guthaben, freigeschaltete
+        Designs, Level und Errungenschaften –, <strong>nehmen wir dir nicht
+        nachträglich weg, solange dein Konto besteht</strong>. Ausnahme: Es ist
+        durch einen Fehler im Spiel oder einen Regelverstoß entstanden; dann
+        dürfen wir es berichtigen. Das Aussehen eines Designs können wir
+        überarbeiten.</li>
+    <li>Endet der Vertrag, endet auch dein Recht, diese Inhalte zu nutzen – egal
+        ob du dein Konto löschen lässt (oder deine Eltern das verlangen), ob es
+        drei Jahre nicht genutzt wurde, ob wir es wegen eines Verstoßes
+        dauerhaft sperren (Abschnitt 10) oder ob wir den Vertrag kündigen, etwa
+        weil Talumi eingestellt wird (Abschnitte 9 und 11).</li>
+    <li>Manches ist von vornherein auf Zeit angelegt: Die Saisonwertung beginnt
+        alle 28 Tage neu; den Titel „Titan“ trägt man nur, bis man ganz
+        gefressen wird oder die Runde verlässt – wer das letzte Stück des
+        Trägers schluckt, übernimmt ihn; die obersten Ränge hängen von deinem
+        Platz im eigenen Land ab und können an Bessere verloren gehen;
+        Gutscheine werden eingelöst. Das ist Teil des Spiels, keine
+        Kürzung.</li>
+    <li>Monde und Skillpunkte wirken nur in der Spielart „Aufstieg“.</li>
+  </ul>
+
+  <h2>7. Käufe mit echtem Geld</h2>
+  <p>Heute kannst du in Talumi <strong>nichts für echtes Geld kaufen</strong>;
+     Ore bekommst du nur durchs Spielen. Bieten wir später Ore oder andere
+     Inhalte zum Kauf an, gilt:</p>
+  <ul>
+    <li>Vor jedem Kauf siehst du alle vorgeschriebenen Angaben – Preis, was du
+        bekommst, wie du bezahlst und dein Widerrufsrecht. Für Käufe gelten dann
+        ergänzende Bedingungen, die wir dir vorher zeigen und denen du
+        zustimmst.</li>
+    <li>Käufliche Inhalte können dir einen Vorteil im Spiel bringen – vor allem
+        in der Spielart <strong>„Aufstieg“</strong>, etwa Monde, die nur dort
+        wirken (Abschnitt 6). In der Spielart <strong>„Liga“</strong> zählen
+        Level, Monde und Skillpunkte nicht; dort wirkt nur der Startbonus, mit
+        dem du eine Runde größer beginnst.</li>
+    <li>Es gibt <strong>keine Zufallskisten</strong> (Lootboxen): Du weißt vor
+        jedem Kauf genau, was du bekommst.</li>
+    <li>Bist du unter 18, brauchst du für Käufe die Erlaubnis deiner
+        Eltern.</li>
+  </ul>
+
+  <h2>8. Werbung</h2>
+  <p>Auf talumi.io gibt es derzeit keine Werbung. Das kann sich ändern: Talumi
+     kann künftig Werbung <strong>zwischen den Runden</strong> zeigen, auf
+     Spieleportalen wie Poki oder CrazyGames laufen, die eigene Werbung
+     einblenden, und <strong>freiwillige Werbevideos</strong> anbieten, für die
+     du eine Belohnung im Spiel bekommst – ob du eines ansiehst, entscheidest
+     du.</p>
+  <p><strong>Während einer laufenden Runde zeigt Talumi nie Werbung.</strong>
+     Ein Portal kann allerdings rund um das Spielfenster eigene Werbeflächen
+     haben; darauf haben wir keinen Einfluss.</p>
+  <p>Welche Daten dabei verwendet werden und wofür wir deine Einwilligung
+     brauchen, steht in der <a href="datenschutz.html">Datenschutzerklärung</a>,
+     bevor die erste Werbung erscheint. Auf Portalen gelten zusätzlich deren
+     Bedingungen und Datenschutzhinweise.</p>
+
+  <h2>9. Verfügbarkeit und Weiterentwicklung</h2>
+  <h3>Erreichbarkeit</h3>
+  <p>Wir bemühen uns, dass Talumi möglichst immer läuft, können das aber nicht
+     garantieren: Wartung, Aktualisierungen, Störungen im Rechenzentrum oder im
+     Internet und Angriffe können das Spiel zeitweise unterbrechen. Wartungen
+     legen wir möglichst in ruhige Zeiten.</p>
+  <p>Wir halten Talumi auf dem nötigen Stand, auch mit Sicherheits­aktualisierungen.
+     Die neue Fassung lädt dein Browser von selbst.</p>
+  <p>Bei Aktualisierungen und Änderungen halten wir uns an die gesetzlichen
+     Regeln für digitale Produkte (§§ 327f und 327r BGB) – auch soweit das
+     Gesetz sie für ein kostenloses Spiel nicht zwingend vorschreibt.</p>
+  <h3>Wann wir das Spiel ändern</h3>
+  <p>Talumi wird weiterentwickelt. Über die nötigen Aktualisierungen hinaus
+     ändern wir das Spiel nur aus einem <strong>triftigen Grund</strong>,
+     nämlich</p>
+  <ul>
+    <li>damit es fair und ausgewogen bleibt – etwa wenn eine Spielart, ein Mond,
+        ein Preis oder eine Belohnung zu stark oder zu schwach ist;</li>
+    <li>um Fehler und Sicherheitslücken zu beheben oder Missbrauch zu
+        verhindern;</li>
+    <li>um es an neue Technik anzupassen – Browser, Geräte, Betriebssysteme,
+        Spieleportale, App Stores;</li>
+    <li>weil sich die Zahl der Spieler ändert – etwa um Räume zusammenzulegen
+        oder Spielarten ein- oder auszublenden;</li>
+    <li>um neue Inhalte und Funktionen hinzuzufügen;</li>
+    <li>um das kostenlose Spiel zu finanzieren – durch Werbung zwischen den
+        Runden, freiwillige Werbevideos oder freiwillige Käufe (Abschnitte 7
+        und 8), nie durch Werbung während einer laufenden Runde;</li>
+    <li>weil Gesetze, Gerichte oder Behörden es verlangen.</li>
+  </ul>
+  <p>Für eine Änderung zahlst du <strong>nie etwas extra</strong>. Wir
+     informieren dich klar und verständlich im Spiel darüber.</p>
+  <p>Macht eine Änderung es dir mehr als nur unerheblich schwerer, auf Talumi
+     zuzugreifen oder es zu nutzen, schreiben wir dir (mit Konto) vorher eine
+     E-Mail – rechtzeitig, in der Regel mindestens zwei Wochen vorher – mit
+     dem, was sich wann ändert, und mit deinen Rechten. Du kannst den Vertrag
+     dann innerhalb von <strong>30 Tagen kostenlos beenden</strong>, indem du
+     dein Konto löschen lässt. Die Frist beginnt, wenn unsere E-Mail bei dir
+     ankommt, oder mit der Änderung selbst, wenn die später kommt. Dieses Recht
+     hast du nicht, wenn du Talumi ohne Mehrkosten unverändert weiter nutzen
+     kannst.</p>
+  <p>Stellen wir Talumi ganz ein, kündigen wir das mindestens
+     <strong>vier Wochen</strong> vorher im Spiel und, wenn du ein Konto hast,
+     per E-Mail an.</p>
+
+  <h2>10. Verstöße, Sperren und Widerspruch</h2>
+  <p>Hältst du dich nicht an diese Bedingungen, können wir – je nachdem, wie
+     schwer der Verstoß wiegt, ob er absichtlich war und ob er sich wiederholt –</p>
+  <ul>
+    <li>dich verwarnen,</li>
+    <li>einen Spielernamen, Clan-Namen oder ein Kürzel ändern oder zurücksetzen
+        und einen Clan auflösen,</li>
+    <li>zu Unrecht erlangte Inhalte wieder abziehen (etwa Ore, Ehre,
+        Belohnungen oder Ranglistenplätze),</li>
+    <li>dich vorübergehend, höchstens 30 Tage, vom Onlinespiel oder von deinem
+        Konto aussperren,</li>
+    <li>dein Konto dauerhaft sperren und den Vertrag fristlos kündigen: bei
+        wiederholten Verstößen nach einer Verwarnung, ohne vorherige Verwarnung
+        nur bei schweren Verstößen, bei denen eine Verwarnung offensichtlich
+        nichts ändern würde oder uns nicht zuzumuten ist.</li>
+  </ul>
+  <p>Wir wählen die mildeste Maßnahme, die ausreicht. Schwer wiegen zum Beispiel
+     Cheats und Bots, Angriffe auf die Server, Kontohandel und strafbare
+     Namen.</p>
+  <p><strong>Bevor wir dein Konto länger als eine Woche oder dauerhaft
+     sperren</strong>, schreiben wir dir per E-Mail, was wir vorhaben und warum,
+     und geben dir mindestens eine Woche Zeit, deine Sicht zu schildern. Danach
+     entscheidet ein Mensch neu. Nur wenn sofort gehandelt werden muss – etwa
+     bei einem Angriff auf die Server –, sperren wir vorläufig sofort und holen
+     das unverzüglich nach.</p>
+  <p>Unternehmen wir etwas gegen dich, sagen wir dir – mit Konto per E-Mail –,
+     <strong>was</strong> wir getan haben, <strong>warum</strong> (welcher
+     Sachverhalt, welche Regel), ob dabei eine Automatik beteiligt war und wie
+     du dich wehren kannst.</p>
+  <p><strong>Widerspruch:</strong> Du kannst jeder Maßnahme per E-Mail an
+     <a href="mailto:thomas.saxinger@gmx.de">thomas.saxinger@gmx.de</a>
+     widersprechen und deine Sicht schildern. Ein Mensch prüft die Entscheidung
+     dann noch einmal und antwortet dir. War sie falsch, heben wir sie auf und
+     stellen deinen früheren Stand so weit wie möglich wieder her. Deine
+     gesetzlichen Rechte, auch der Weg zu den Gerichten, bleiben
+     unberührt.</p>
+
+  <h2>11. Konto löschen und Vertragsende</h2>
+  <p>Du kannst dein Konto <strong>jederzeit</strong> löschen lassen, ohne Grund
+     und ohne Frist: Schreib eine formlose E-Mail an
+     <a href="mailto:thomas.saxinger@gmx.de">thomas.saxinger@gmx.de</a>, am
+     besten von der Adresse, mit der du angemeldet bist – so wissen wir, dass es
+     wirklich dein Konto ist. Damit endet der Vertrag. Innerhalb der
+     Widerrufsfrist geht das auch im Spiel über „Vertrag widerrufen“
+     (<a href="#widerruf">Abschnitt 11a</a>).</p>
+  <p>Mit dem Konto löschen wir alles, was dazugehört: Ore, Designs, Level,
+     Ehre, Ränge, Errungenschaften, Monde und deine Einträge in den Ranglisten.
+     Das lässt sich nicht rückgängig machen. Weil diese Inhalte keinen Geldwert
+     haben, gibt es dafür keinen Ausgleich. Mit dem Konto endet auch deine
+     Mitgliedschaft in einem Clan.</p>
+  <p>Konten, die <strong>drei Jahre</strong> lang nicht genutzt wurden, löschen
+     wir; auch damit endet der Vertrag. Außerdem können wir den Vertrag ohne
+     Verstoß mit einer Frist von vier Wochen kündigen, etwa wenn wir Talumi
+     einstellen oder du einer neuen Fassung dieser Bedingungen nicht zustimmst
+     (Abschnitt 14).</p>
+  <p>Als Gast löschst du deinen Spielstand, indem du die Websitedaten von
+     talumi.io in deinem Browser löschst. Mehr zur Löschung steht in der
+     <a href="datenschutz.html">Datenschutzerklärung</a>.</p>
+
+  <!-- Widerrufsbelehrung (Ausbau v106, Thomas am 18.09.2026: „die
+       Widerrufsbelehrung kannst du gleich einbauen“). „11a“ statt einer neuen
+       Nummer, damit die Verweise auf die Abschnitte 11 und 14 stimmen bleiben.
+       Inhaltlich folgt sie dem gesetzlichen Muster (Anlage 1 zu Art. 246a § 1
+       Abs. 2 EGBGB), in der Du-Form und bei den Folgen an einen kostenlosen
+       Vertrag angepasst — der Musterschutz des Gesetzes gilt damit nicht mehr.
+       Der Satz zur Online-Funktion ist Pflicht (Art. 246a § 1 Abs. 2 Satz 1
+       Nr. 1 EGBGB); fehlt er, beginnt die Frist nicht. Der Weg „Einstellungen →
+       Rechtliches → Vertrag widerrufen“ muss dem Spiel entsprechen: Wird der
+       Knopf verlegt, hier mitändern (index.html, `#setRecht` und
+       `#legalWiderruf`). -->
+  <h2 id="widerruf">11a. Widerrufsrecht</h2>
+  <p>Das folgende Widerrufsrecht gilt für den kostenlosen Nutzungsvertrag über
+     dein Talumi-Konto (Abschnitt 2). Wir räumen es dir für jedes Konto ein.
+     Unabhängig davon kannst du dein Konto jederzeit löschen lassen
+     (Abschnitt 11).</p>
+  <p>Für Käufe mit echtem Geld – etwa von Ore, das es heute noch nicht zu
+     kaufen gibt – bekommst du vor dem Kauf eine eigene Widerrufsbelehrung
+     (Abschnitt 7).</p>
+
+  <h3>Widerrufsbelehrung</h3>
+  <p><strong>Widerrufsrecht</strong></p>
+  <p>Du hast das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen
+     Vertrag zu widerrufen.</p>
+  <p>Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des
+     Vertragsabschlusses.</p>
+  <p>Um dein Widerrufsrecht auszuüben, musst du uns (Thomas Saxinger,
+     c/o POSTFLEX PFX-024-900, Emsdettener Straße 10, 48268 Greven,
+     Deutschland, E-Mail:
+     <a href="mailto:thomas.saxinger@gmx.de">thomas.saxinger@gmx.de</a>)
+     mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter
+     Brief oder eine E-Mail) über deinen Entschluss, diesen Vertrag zu
+     widerrufen, informieren. Du kannst dafür das unten stehende
+     Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben
+     ist.</p>
+  <!-- Keine Telefonnummer: Thomas' Entscheidung vom 18.09.2026 („es bleibt
+       bei der E-Mail und Postanschrift“). Art. 246a § 1 Abs. 1 Nr. 3 EGBGB und
+       Gestaltungshinweis 2 der Musterbelehrung nennen eine Telefonnummer; das
+       Restrisiko (Abmahnung wegen fehlender Nummer) ist Thomas bekannt. Kommt
+       später eine Nummer dazu, hier hinter „Deutschland,“ und im
+       Muster-Widerrufsformular unten einfügen. -->
+  <p>Du kannst dein Widerrufsrecht auch online unter
+     <a href="https://talumi.io/">talumi.io</a> im Spiel ausüben: angemeldet
+     mit deinem Konto unter <strong>„Einstellungen“ → „Rechtliches“ →
+     „Vertrag widerrufen“</strong>. Wenn du diese Online-Funktion nutzt,
+     übermitteln wir dir auf einem dauerhaften Datenträger (z. B. durch eine
+     E-Mail) unverzüglich eine Eingangsbestätigung mit Informationen zum
+     Inhalt der Widerrufserklärung sowie dem Datum und der Uhrzeit ihres
+     Eingangs.</p>
+  <p>Zur Wahrung der Widerrufsfrist reicht es aus, dass du die Mitteilung über
+     die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist
+     absendest.</p>
+  <p><strong>Folgen des Widerrufs</strong></p>
+  <p>Wenn du diesen Vertrag widerrufst, endet er, und wir löschen dein Konto
+     mit allem, was dazugehört (Abschnitt 11). Hast du über die
+     Online-Funktion widerrufen, geschieht das sofort, sonst unverzüglich,
+     nachdem dein Widerruf bei uns eingegangen ist.</p>
+  <p>Der Vertrag ist kostenlos. Du hast uns nichts bezahlt; wir haben dir
+     deshalb nichts zurückzuzahlen. Für die Zeit, in der du bis zum Widerruf
+     gespielt hast, schuldest du uns weder Kosten noch Wertersatz.</p>
+  <p class="hinweis"><em>Ende der Widerrufsbelehrung</em></p>
+
+  <h3>Muster-Widerrufsformular</h3>
+  <p>(Wenn du den Vertrag widerrufen willst, dann fülle bitte dieses Formular
+     aus und sende es zurück.)</p>
+  <ul>
+    <li>An Thomas Saxinger, c/o POSTFLEX PFX-024-900, Emsdettener Straße 10,
+        48268 Greven, Deutschland, E-Mail: thomas.saxinger@gmx.de:</li>
+    <li>Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen
+        Vertrag über den Kauf der folgenden Waren (*)/die Erbringung der
+        folgenden Dienstleistung (*)</li>
+    <li>Bestellt am (*)/erhalten am (*)</li>
+    <li>Name des/der Verbraucher(s)</li>
+    <li>Anschrift des/der Verbraucher(s)</li>
+    <li>Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf
+        Papier)</li>
+    <li>Datum</li>
+  </ul>
+  <p>(*) Unzutreffendes streichen.</p>
+  <p class="hinweis">Für dein Talumi-Konto schreibst du bei der Dienstleistung
+     zum Beispiel: „Nutzungsvertrag über mein Talumi-Konto, Spielername …,
+     E-Mail-Adresse …“. Bei „Bestellt am“ trägst du den Tag ein, an dem du das
+     Konto angelegt hast. Schreib am besten von der Adresse, mit der du
+     angemeldet bist – so finden wir das richtige Konto.</p>
+
+  <h2>12. Rechte am Spiel, Videos und Streams</h2>
+  <p>Talumi – Programm, Grafiken, Designs, Klänge und Texte – ist
+     urheberrechtlich geschützt. Du darfst es zum Spielen nutzen. Kopieren,
+     verändern oder eigene Server dafür betreiben darfst du nicht, und
+     Programmcode, Grafiken, Klänge und Texte darfst du nicht in eigene Spiele
+     übernehmen – soweit das Gesetz es nicht ausdrücklich erlaubt.</p>
+  <p><strong>Videos, Streams und Bildschirmfotos</strong> von deinem Spiel sind
+     ausdrücklich erlaubt – auch auf Kanälen, mit denen du Geld verdienst. Tu
+     dabei nur nicht so, als wäre es ein offizielles Angebot von Talumi. Über
+     einen Hinweis auf talumi.io freuen wir uns.</p>
+  <p>Ideen und Vorschläge, die du uns schickst, dürfen wir aufgreifen. Eine
+     Idee allein ist nicht geschützt, und eine Vergütung gibt es dafür nicht.
+     Schickst du uns etwas, das du selbst gestaltet hast – etwa ein Bild, eine
+     Melodie oder einen längeren Text –, verwenden wir es nur, wenn wir uns
+     vorher mit dir darüber geeinigt haben.</p>
+
+  <h2>13. Haftung</h2>
+  <p>Talumi ist kostenlos. Wir haften trotzdem nach dem Gesetz, mit diesen
+     Grenzen:</p>
+  <ul>
+    <li><strong>Unbeschränkt</strong> haften wir bei Vorsatz und grober
+        Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit, nach
+        dem Produkthaftungsgesetz, wenn wir einen Mangel arglistig verschwiegen
+        oder eine Garantie übernommen haben.</li>
+    <li>Bei <strong>leichter Fahrlässigkeit</strong> haften wir nur, wenn wir
+        eine <strong>wesentliche Vertragspflicht</strong> verletzen. Das ist
+        eine Pflicht, ohne die der Vertrag gar nicht richtig erfüllt werden
+        kann und auf die du dich deshalb verlassen darfst – zum Beispiel, dass
+        dein Konto samt Spielstand nicht grundlos verloren geht. Dann haften wir
+        nur für den Schaden, der bei einem solchen Vertrag typisch und
+        vorhersehbar ist.</li>
+    <li>In allen anderen Fällen leichter Fahrlässigkeit haften wir nicht.</li>
+    <li>Diese Grenzen gelten auch für Personen und Dienstleister, die für uns
+        arbeiten.</li>
+    <li>Deine gesetzlichen Rechte, wenn das Spiel mangelhaft ist, bleiben
+        unberührt.</li>
+  </ul>
+
+  <h2>14. Änderungen dieser Bedingungen</h2>
+  <p>Wir ändern diese Bedingungen nur, wenn es nötig ist – etwa bei neuen
+     Funktionen, bei Käufen oder Werbung, bei geänderten Gesetzen oder Urteilen
+     oder um Unklarheiten zu beseitigen. Jede Fassung trägt oben eine Nummer und
+     ein Datum.</p>
+  <p>Eine neue Fassung kündigen wir im Spiel an. Sie gilt für dich erst, wenn
+     du ihr <strong>ausdrücklich zustimmst</strong>; mit Konto fragen wir dich,
+     sobald du Talumi das nächste Mal öffnest – auch wenn du angemeldet
+     bleibst. Schweigen gilt nie als Zustimmung.</p>
+  <p>Stimmst du nicht zu, gilt für dich die bisherige Fassung weiter. Wir
+     können den Vertrag dann mit einer Frist von vier Wochen kündigen
+     (Abschnitt 11). Bis dahin spielst du wie gewohnt weiter und kannst
+     jederzeit doch noch zustimmen – oder dein Konto löschen lassen.</p>
+  <p>Konten, die vor dieser ersten Fassung angelegt wurden, fragen wir auf
+     dieselbe Weise einmal, wenn Talumi das nächste Mal geöffnet wird. Bis zur
+     Zustimmung gilt für sie nur das Gesetz; im Übrigen gilt der Absatz
+     davor.</p>
+
+  <h2>15. Recht und Streitbeilegung</h2>
+  <p>Es gilt <strong>deutsches Recht</strong>. Bist du Verbraucher und hast
+     deinen gewöhnlichen Aufenthalt in einem anderen Land, bleiben dir
+     zusätzlich die Vorschriften dieses Landes erhalten, von denen nicht durch
+     Vertrag abgewichen werden darf (Art. 6 Abs. 2 Rom-I-Verordnung).</p>
+  <p>Ist eine Regel dieser Bedingungen unwirksam, bleiben die übrigen gültig;
+     an die Stelle der unwirksamen Regel tritt das Gesetz.</p>
+  <p>Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren
+     vor einer Verbraucherschlichtungsstelle teilzunehmen. Hast du ein Problem,
+     schreib uns – meistens findet sich direkt eine Lösung.</p>
+
+  <h2>16. Kontakt</h2>
+  <p>E-Mail: <a href="mailto:thomas.saxinger@gmx.de">thomas.saxinger@gmx.de</a>
+     – auf Deutsch oder Englisch.<br>
+     Im Spiel: „Problem melden“ nach einer Runde und in den Einstellungen.<br>
+     Postanschrift: siehe <a href="impressum.html">Impressum</a>.</p>
+  <p>Die E-Mail-Adresse ist auch unsere zentrale Kontaktstelle für Nutzer und
+     Behörden nach Art. 11 und 12 des Digital Services Act.</p>
+
+  <p class="stand">Fassung 1 · Stand: 18. September 2026</p>
+
+  <nav>
+    <a href="index.html">Zum Spiel</a> ·
+    <a href="impressum.html">Impressum</a> ·
+    <a href="datenschutz.html">Datenschutzerklärung</a> ·
+    <a href="about.html">About</a>
+  </nav>
+</main>
+</body>
+</html>

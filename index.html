@@ -2154,6 +2154,183 @@
   #cookieBar .wahl button{margin:0;width:auto;flex:1 1 180px;max-width:280px;min-width:140px}
   #cookieBar .wahl .quiet{flex:0 1 170px;min-width:120px;max-width:200px}
   /* Feineinstellung, erst auf Klick sichtbar */
+  /* Pflicht-Häkchen der Nutzungsbedingungen (v106), im Formular und im
+     Zustimmungsfenster. Gebaut wie die Einwilligungs-Kästchen darunter.
+     Die Tippfläche ist das ganze `label`, nicht nur das Kästchen: 13 × 13
+     Punkte trifft auf dem Telefon niemand zuverlässig (44 px sind Vorgabe,
+     siehe `mobil.js`) — deshalb `min-height` und die Beschriftung im selben
+     Klickziel. */
+  .haken{display:flex;gap:10px;align-items:flex-start;margin:2px 0 0;min-height:44px;
+       padding:6px 0;font-size:12.5px;line-height:1.45;color:var(--paper-2);cursor:pointer}
+  .haken input{margin:1px 0 0;width:17px;height:17px;accent-color:var(--brass);flex:0 0 auto}
+  /* Das freiwillige Häkchen tritt sichtbar zurück — es darf nie wie eine
+     zweite Pflicht aussehen. */
+  .haken.freiwillig{min-height:40px;font-size:12px;opacity:.92}
+  .haken small{display:block;margin-top:2px;color:var(--paper-2);opacity:.8;font-size:11px}
+  #acctAgbRow[hidden]{display:none}
+  #acctAgbRow .hintline{margin:0 0 2px}
+  /* Die Häkchen sind ganze Sätze (Erklärung, Einwilligung) — die Regel für
+     die Feldnamen der Anmeldung (Großbuchstaben, gesperrt, fett) machte sie
+     schwer lesbar. Review 18.09.2026. */
+  #accountVeil label.haken{text-transform:none;letter-spacing:0;font-weight:400;
+       font-size:12.5px;margin-bottom:0}
+  #accountVeil label.haken.freiwillig{font-size:12px}
+  body.touch #accountVeil label.haken{min-height:44px}
+  /* Der Datenschutz-Link im Mail-Häkchen stand im Blau des Browsers. */
+  #accountVeil .haken a{color:var(--brass)}
+  .haken[hidden],.gebZeile[hidden],#agbVeil .card[hidden]{display:none}
+  /* Geburtsdatum (18.09.2026): drei Auswahlfelder in einer Zeile, so hoch
+     wie die Eingabefelder. Der Zusatz „nur Monat und Jahr …" steht klein
+     in derselben Zeile wie die Beschriftung und kostet keine Höhe. */
+  .gebFelder{display:grid;grid-template-columns:.8fr 1.3fr 1fr;gap:6px;margin-bottom:11px}
+  .gebFelder select{width:100%;min-width:0;height:44px;padding:0 8px;border-radius:11px;
+       background:rgba(255,255,255,.06);color:var(--paper);border:1px solid var(--line);
+       font:inherit;font-size:15px}
+  .gebFelder select:focus{border-color:var(--brass);outline:none}
+  .gebFelder option{background:var(--plate);color:var(--paper)}
+  .gebWarum{text-transform:none;letter-spacing:0;font-weight:400;opacity:.8;margin-left:4px}
+  #agbGebRow{text-align:left;max-width:26rem;margin:14px auto 0}
+  #agbGebRow label{font-size:12px;margin-bottom:6px}
+  #agbGebRow .gebFelder{margin-bottom:0}
+  @media (max-height:470px){ .gebFelder{margin-bottom:4px} }
+  /* ---- Konto anlegen in zwei Schritten (18.09.2026) ----------------------
+     `data-schritt` am Schleier: "1" nur Geburtsdatum, "2" die übrigen
+     Angaben; ohne Attribut: Anmelden. Beide Schritte müssen auf einem
+     flachen Telefon ohne Scrollen passen (`agbmess.js` misst das). */
+  .feld[hidden],#acctJung[hidden],#acctAgbRow[hidden],#acctGo[hidden]{display:none}
+  .feld > input,.feld > select,.feld > .pwFeld{margin-bottom:11px}
+  #accountVeil .feld > label + input{margin-bottom:11px}
+  .pwFeld{position:relative}
+  #accountVeil .pwFeld input{padding-right:48px;margin:0}
+  .pwAuge{position:absolute;right:2px;top:0;width:44px;height:44px;margin:0;padding:0;
+       display:grid;place-items:center;background:none;border:0;color:var(--paper-2);cursor:pointer}
+  .pwAuge svg{width:20px;height:20px;fill:currentColor}
+  .pwAuge[aria-pressed=true]{color:var(--brass)}
+  #acctLand{width:100%;height:44px;padding:0 10px;border-radius:11px;background:rgba(255,255,255,.06);
+       color:var(--paper);border:1px solid var(--line);font:inherit;font-size:15px}
+  #acctLand:focus{border-color:var(--brass);outline:none}
+  #acctLand option{background:var(--plate);color:var(--paper)}
+  .dsZeile{margin:2px 0 0;font-size:11.5px;color:var(--paper-2)}
+  .dsZeile a{color:var(--brass)}
+  #acctJung .notice{margin:4px 0 10px}
+  #accountVeil.jung #guestBtn{display:none}
+  /* Schritt 2 als Raster: Name | E-Mail, Passwort | Land, Pflicht-Häkchen |
+     Mail-Häkchen, Datenschutz-Zeile | Knopf. Ohne Mail-Häkchen nimmt das
+     Pflicht-Häkchen die ganze Breite (`mitMail` setzt gebFormPruefen). */
+  #accountVeil[data-schritt="2"] #acctForm{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;align-items:start}
+  #accountVeil[data-schritt="2"] #acctAgbRow{display:contents}
+  #accountVeil[data-schritt="2"] #acctAgbRow > .haken:first-child{grid-column:1}
+  #accountVeil[data-schritt="2"] #acctForm:not(.mitMail) #acctAgbRow > .haken:first-child{grid-column:1 / -1}
+  #accountVeil[data-schritt="2"] #acctAgbRow > #acctMailRow{grid-column:2}
+  #accountVeil[data-schritt="2"] .dsZeile{grid-column:1;align-self:center;margin:0}
+  #accountVeil[data-schritt="2"] #acctGo{grid-column:2;margin-top:0}
+  @media (max-width:520px){
+    #accountVeil[data-schritt="2"] #acctForm{grid-template-columns:1fr}
+    #accountVeil[data-schritt="2"] #acctForm > *,
+    #accountVeil[data-schritt="2"] #acctAgbRow > *{grid-column:1 / -1 !important}
+    #accountVeil[data-schritt="2"] .dsZeile{margin:2px 0 8px}
+  }
+  /* Flache Telefone: Beim Anlegen braucht das Formular die ganze Breite —
+     die Spalte mit Titel und Werbepunkten tritt zurück, die Feldnamen
+     bleiben nur für Vorleser (die Felder tragen Platzhalter). */
+  /* Gestapelt (schmal) oder flach: beim Anlegen ohne die Werbespalte. */
+  @media (max-width:820px){ #accountVeil[data-schritt] .anmLinks{display:none} }
+  @media (max-height:560px){
+    #accountVeil[data-schritt] .anmLinks{display:none}
+    #accountVeil[data-schritt] .anmFenster{grid-template-columns:1fr}
+    #accountVeil[data-schritt] .anmRechts{grid-column:1;grid-row:1;border-left:0}
+    #accountVeil[data-schritt] .anmFuss{grid-column:1;grid-row:2;padding-top:4px}
+    #accountVeil[data-schritt="2"] .feld > label{position:absolute;width:1px;height:1px;overflow:hidden;
+         clip:rect(0 0 0 0);white-space:nowrap;margin:0}
+    #accountVeil[data-schritt="2"] .feld > input,#accountVeil[data-schritt="2"] .feld > select,
+    #accountVeil[data-schritt="2"] .feld > .pwFeld{margin-bottom:6px}
+    #accountVeil[data-schritt="2"] .haken{padding:3px 0}
+  }
+  /* Im Zustimmungsfenster steht der Text mittig wie der Rest der Karte;
+     Häkchen und Beschriftung bleiben aber zusammen linksbündig lesbar.
+     Der Kasten macht sie zu einem sichtbaren Feld — ohne ihn schwamm die
+     Zeile zwischen Fließtext und Knopf und sah nicht nach Erklärung aus. */
+  #agbVeil .haken{text-align:left;margin:14px auto 4px;max-width:26rem;
+       border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+       background:rgba(255,255,255,.03)}
+  /* Links in den Fenstern sind Messing wie überall sonst. Ohne diese Regel
+     blieb „Nutzungsbedingungen lesen" im Blau des Browsers stehen — auf dem
+     dunklen Grund kaum zu lesen, und ausgerechnet bei einem Rechtstext. */
+  .veil .card a{color:var(--brass)}
+
+  /* ---- Ausbau v106: Widerruf, Links aus Mails, Umfrage, Bewertung -----
+     `margin:auto 0` statt Zentrieren über den Schleier: Passt eine Karte
+     nicht in die Höhe (flaches Telefon, Russisch), rückt sie nach oben und
+     der Schleier scrollt — mittig gesetzt läge ihr Anfang oberhalb des
+     Bildrands und wäre unerreichbar. */
+  #widerrufVeil .card,#ankerVeil .card,#umfrageVeil .card,#bewertVeil .card{margin:auto 0}
+  .kleinKarte{max-width:min(520px,100%);text-align:center}
+  .kleinKarte h1{font-size:28px;line-height:1.12;margin-bottom:2px}
+  .kleinKarte .foot{margin-top:8px}
+  #ankerNote{min-height:0;margin:10px 0 0}
+  #ankerNote.ok{color:var(--brass-hell)}
+  #ankerNote.warn{color:var(--ember)}
+  #ankerGo[hidden]{display:none}
+  /* Antworten der Umfrage: Kacheln, zwei oder drei nebeneinander. Kein
+     Grün — ausgewählt wird hier nichts, jeder Tipp ist schon die Antwort. */
+  .umWahl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 2px}
+  @media (min-width:560px){ .umWahl{grid-template-columns:repeat(3,minmax(0,1fr))} }
+  .umWahl button{margin:0;padding:10px 8px;font-family:var(--disp);font-size:13.5px;font-weight:600;
+       line-height:1.25;background:var(--block);color:var(--paper);border:1px solid var(--line-hell);
+       border-radius:11px}
+  .umWahl button:hover:not(:disabled){background:rgba(233,176,99,.12);color:var(--brass-hell)}
+  body.touch .umWahl button{min-height:44px}
+  .daumen{display:flex;gap:12px;justify-content:center;margin:16px 0 4px}
+  .daumen button{margin:0;flex:1 1 0;max-width:190px;display:flex;flex-direction:column;align-items:center;
+       gap:6px;padding:14px 10px;background:var(--block);border:1px solid var(--line-hell);
+       color:var(--paper);font-family:var(--disp);font-size:15px;font-weight:600;border-radius:14px}
+  .daumen button:hover:not(:disabled){background:rgba(233,176,99,.12)}
+  .daumen svg{width:34px;height:34px;display:block;fill:var(--brass)}
+  .daumen svg.runter{transform:rotate(180deg);fill:var(--paper-2)}
+  #bwLink{margin:12px 0 0;font-size:13px;text-align:center;user-select:text;-webkit-user-select:text}
+  .bwKnoepfe{margin-top:2px}
+  #bwKonto[hidden]{display:none}
+  /* Der Widerrufsknopf: eigene Farbe (Rost), deutlich abgehoben von den
+     Textlinks zu Impressum und Bedingungen — das Gesetz will ihn
+     „hervorgehoben“, ein unscheinbarer Link genügt nicht. Nie Grün: Grün
+     gehört dem Startknopf. */
+  .widerrufKnopf{width:auto;margin:0;padding:9px 16px;font-family:var(--disp);font-size:13.5px;
+       font-weight:600;color:var(--brass-hell);background:rgba(224,122,60,.12);
+       border:1.5px solid var(--ember);border-radius:10px}
+  .widerrufKnopf:hover:not(:disabled){background:rgba(224,122,60,.24)}
+  body.touch .widerrufKnopf{min-height:44px}
+  .widerrufKnopf[hidden]{display:none}
+  #legalWiderruf{margin:10px 0 0}
+  .setRecht{display:flex;justify-content:space-between;align-items:center;gap:14px;
+       padding:10px 0;border-bottom:1px solid var(--line)}
+  .setRecht[hidden]{display:none}
+  .setRecht > div{min-width:0}
+  .setRecht b{display:block;font-weight:600;font-size:13.5px}
+  .setRecht small{display:block;color:var(--paper-2);font-size:11px;margin-top:2px;line-height:1.35}
+  .setRecht .widerrufKnopf{flex:0 0 auto}
+  .widerrufKarte{max-width:min(560px,100%)}
+  .widerrufKarte h1{font-size:28px;line-height:1.12;margin-bottom:8px}
+  .wdEinl{margin:0 0 4px}
+  .widerrufKarte label{margin:12px 0 6px}
+  .widerrufKarte .hintline{margin:4px 0 0}
+  .wdVertrag{margin:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+       background:var(--block);color:var(--paper);font-size:14px;line-height:1.45;
+       user-select:text;-webkit-user-select:text}
+  #wdNote.warn{color:var(--ember)}
+  .wdKnoepfe{flex-wrap:wrap}
+  .wdKnoepfe button{flex:1 1 180px}
+  #wdForm[hidden],#wdFertig[hidden]{display:none}
+  /* Neuigkeiten in den Einstellungen: Stand und „Mail erneut schicken“. */
+  #setNlStand{color:var(--brass-hell)}
+  .opt small a{color:var(--brass)}
+  .setNlNeu{width:auto;margin:7px 0 0;padding:6px 12px;font-size:12px}
+  body.touch .setNlNeu{min-height:44px}
+  @media (max-height:470px){
+    .kleinKarte h1,.widerrufKarte h1{font-size:23px}
+    .daumen{margin-top:10px}
+    .daumen button{padding:9px 10px;flex-direction:row;justify-content:center}
+    .daumen svg{width:26px;height:26px}
+  }
   #cookieFein{display:grid;gap:8px;padding-top:2px}
   #cookieFein[hidden]{display:none}
   #cookieFein label{display:flex;gap:9px;align-items:flex-start;margin:0;
@@ -2371,7 +2548,7 @@
         yourself into a world with rings and moons of your own.</p>
       <ul class="anmPunkte">
         <li data-i18n="a_pt1">Free, in the browser, no download.</li>
-        <li data-i18n="a_pt2">Nothing on sale gives a lasting advantage.</li>
+        <li data-i18n="a_pt2">In the League, levels and moons don’t count — only skill.</li>
         <li data-i18n="a_pt3">46 designs, twenty ranks, four modes.</li>
       </ul>
       <p class="pow" id="anmOnline" hidden></p>
@@ -2380,31 +2557,94 @@
 
     <div class="anmSp anmRechts">
       <form id="acctForm" autocomplete="on">
-        <label for="acctMail" data-i18n="k_email">E-mail</label>
-        <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
-               spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
-        <label for="acctPw" data-i18n="k_pw">Password</label>
-        <input type="password" id="acctPw" autocomplete="current-password">
-        <p class="hintline" id="acctPwHint" data-i18n="k_pwhint" hidden>At least 8 characters.</p>
-        <!-- Nur beim Anlegen: das Passwort ein zweites Mal (Thomas, 15.09.2026).
-             Ein Tippfehler im einzigen Feld hieße sonst: Konto angelegt, Passwort
-             unbekannt. -->
-        <div id="acctPw2Row" hidden>
-          <label for="acctPw2" data-i18n="k_pw2">Repeat password</label>
-          <input type="password" id="acctPw2" autocomplete="new-password">
+        <!-- Anmelden: E-Mail und Passwort. Konto anlegen (18.09.2026, nach
+             Roblox/Epic/Riot/Discord/Supercell und Baymard): **zwei kurze
+             Schritte**, damit niemand mit Feldern zugemüllt wird.
+             Schritt 1 nur das Geburtsdatum — vorher steht nirgends, ab
+             welchem Alter es geht. Unter 13: freundlich als Gast weiter,
+             mit Knopf ins Spiel (keine Sackgasse).
+             Schritt 2: Spielername, E-Mail, Passwort (mit Auge, ohne
+             Wiederholung, die Regel steht vorher als Platzhalter), Land
+             (aus der Browsersprache vorbelegt, änderbar), ein Pflicht-Häkchen
+             mit kurzem Satz und Link, das freiwillige Mail-Häkchen nur, wenn
+             Alter und Land die Einwilligung erlauben (MAIL_ALTER), und die
+             Datenschutzerklärung als Link — nie als Häkchen.
+             Welcher Schritt gilt, steht in `data-schritt` am Schleier
+             (`kontoFormZeichnen`). -->
+        <div id="acctGebRow" class="gebZeile" hidden>
+          <label for="acctGebT"><span data-i18n="geb_label">Date of birth</span>
+            <span class="gebWarum" data-i18n="geb_warum">only month and year are stored</span></label>
+          <div class="gebFelder">
+            <select id="acctGebT" data-i18n-name="geb_t" autocomplete="bday-day"></select>
+            <select id="acctGebM" data-i18n-name="geb_m" autocomplete="bday-month"></select>
+            <select id="acctGebJ" data-i18n-name="geb_j" autocomplete="bday-year"></select>
+          </div>
         </div>
-        <div id="acctNameRow" hidden>
+        <!-- Unter 13 (Schritt 1): kein Hinweis auf die Grenze, nur der Weg
+             ins Spiel. Das ganze Spiel geht auch als Gast. -->
+        <div id="acctJung" hidden>
+          <p class="notice" data-i18n="jung_gast">Just play as a guest — the whole game is open to you.</p>
+          <button type="button" id="acctJungGast" data-i18n="play">Play as guest</button>
+        </div>
+        <div class="feld" id="acctNameRow" hidden>
           <label for="acctName" data-i18n="designation">Name</label>
           <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
                  autocapitalize="off" spellcheck="false" placeholder="Choose a player name"
                  data-i18n-ph="namepick">
         </div>
-        <!-- Werbecode (Schritt 104), nur beim Anlegen. Aus dem Link `?w=…`
-             vorausgefüllt, sonst leer — freiwillig. -->
+        <div class="feld" id="acctMailFeld">
+          <label for="acctMail" data-i18n="k_email">E-mail</label>
+          <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
+                 spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
+        </div>
+        <div class="feld" id="acctPwFeld">
+          <label for="acctPw" data-i18n="k_pw">Password</label>
+          <div class="pwFeld">
+            <input type="password" id="acctPw" autocomplete="current-password">
+            <!-- Das Auge zeigt das Passwort (statt es zweimal einzutippen). -->
+            <button type="button" id="acctPwAuge" class="pwAuge" aria-pressed="false"
+                    data-i18n-name="k_pw_zeigen">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path
+                d="M12 5C6.5 5 2.7 9.4 1.5 12c1.2 2.6 5 7 10.5 7s9.3-4.4 10.5-7C21.3 9.4 17.5 5 12 5zm0 11.5A4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 0 1 0 9zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="feld" id="acctLandRow" hidden>
+          <label for="acctLand" data-i18n="k_land">Country</label>
+          <select id="acctLand" autocomplete="country"></select>
+        </div>
+        <!-- Werbecode (Schritt 104): Seit dem 18.09.2026 kein sichtbares Feld
+             mehr — ein Code aus dem Link `?w=…` wird trotzdem mitgeschickt
+             (`Werben.gemerkt()` in `Konto.registrieren`). -->
         <div id="acctCodeRow" hidden>
           <label for="acctCode" data-i18n="w_feld">Referral code (optional)</label>
           <input type="text" id="acctCode" maxlength="12" autocomplete="off"
                  autocapitalize="characters" spellcheck="false">
+        </div>
+        <!-- Pflicht-Häkchen (v106), nur im Schritt 2. Ohne es legt der Server
+             kein Konto an: Es ist die Zustimmung, mit der der Vertrag
+             zustande kommt. Der Link steht **im** Satz und öffnet die
+             Bedingungen in einem neuen Tab; ein Klick auf einen Link in einem
+             Label schaltet das Kästchen nicht um. -->
+        <div id="acctAgbRow" hidden>
+          <label class="haken" for="acctAgb">
+            <input type="checkbox" id="acctAgb">
+            <span><span data-i18n="agb_satz1">I agree to the</span>
+              <a href="nutzungsbedingungen.html" target="_blank" rel="noopener" data-i18n="agb_satz_link">terms of use</a><span
+                data-i18n="agb_satz2"> — if I am under 18, with my parents’ permission.</span></span>
+          </label>
+          <!-- Freiwillig, nicht vorangekreuzt, erkennbar getrennt vom
+               Pflicht-Häkchen (Kopplungsverbot). Nur sichtbar, wenn Alter
+               und Land die Einwilligung erlauben (`gebFormPruefen`,
+               `MAIL_ALTER`: 13 bis 16, unbekannt 16). Ein Satz; die
+               Einzelheiten stehen in der Datenschutzerklärung (Link darunter). -->
+          <label class="haken freiwillig" for="acctMailOk" id="acctMailRow" hidden>
+            <input type="checkbox" id="acctMailOk">
+            <span data-i18n="mail_satz">Send me Talumi news by e-mail (opens and clicks are counted
+              anonymously; unsubscribe any time).</span>
+          </label>
+          <p class="dsZeile"><span data-i18n="ds_satz">How we use your data:</span>
+            <a href="datenschutz.html" target="_blank" rel="noopener" data-i18n="ds_link">Privacy</a></p>
         </div>
         <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
       </form>
@@ -2442,6 +2682,13 @@
 
       <button class="quiet gast" id="guestBtn" data-i18n="play">Play as guest</button>
       <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
+      <!-- Abschnitt 3 der Nutzungsbedingungen sagt zu, dass hier ein Hinweis
+           steht: Fair Play und die Regeln für Namen gelten auch ohne Konto.
+           Zwei Bausteine statt eines Satzes mit eingebettetem Link — der
+           Client übersetzt nur Text, kein HTML. -->
+      <p class="hintline"><span data-i18n="agb_gast">As a guest the terms of use apply too.</span>
+        <a href="nutzungsbedingungen.html" target="_blank" rel="noopener"
+           data-i18n="agb_lesen">Read the terms of use</a></p>
     </div>
     <!-- Rechtliches. Steht **im** Fenster: Als eigener Streifen darunter
          kostete es auf einem flachen Schirm 56 Punkte Höhe, und die fehlten
@@ -2450,6 +2697,7 @@
       <button class="quiet" id="legalBtn" data-i18n="legal">Legal</button>
       <a href="impressum.html">Impressum</a>
       <a href="datenschutz.html">Datenschutz</a>
+      <a href="nutzungsbedingungen.html" data-i18n="agb">Terms of use</a>
       <a href="about.html" data-i18n="a_more">More about the game</a>
     </div>
   </div>
@@ -2612,7 +2860,7 @@
         <div class="konsSek" id="naechstBox"></div>
         <div class="konsSek" id="freundBox"></div>
         <p class="foot" id="controls"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
-          No lasting advantages for sale. Every design can be earned by playing.</p>
+          Every design can be earned by playing.</p>
       </div>
 
       <div class="konsSp m">
@@ -2748,6 +2996,21 @@
   <div class="card">
     <h1 style="font-size:34px" data-i18n="settings">Settings</h1>
     <div id="setList" class="setlist"></div>
+    <!-- Widerrufsfunktion nach § 356a BGB (v106). Steht **außerhalb** der
+         schiebbaren Liste, damit sie auf einem flachen Telefon nicht unter
+         den Rand rutscht — das Gesetz will sie „hervorgehoben platziert“.
+         Nur für Konten innerhalb der Widerrufsfrist (`widerrufBis` vom
+         Server); Gäste haben keinen Vertrag und sehen sie nie. Der Weg
+         „Einstellungen → Rechtliches → Vertrag widerrufen“ steht wörtlich in
+         der Widerrufsbelehrung (nutzungsbedingungen.html, Abschnitt 11a) —
+         wer den Knopf verlegt, ändert dort den Satz mit. -->
+    <div class="setRecht" id="setRecht" hidden>
+      <div><b data-i18n="legal">Legal</b>
+        <small data-i18n="wd_hinweis">You can withdraw from your free contract of use within
+          the period without giving a reason (terms of use, section 11a).</small></div>
+      <button type="button" class="widerrufKnopf" id="setWiderruf" data-i18n="wd_knopf">Withdraw
+        from contract here</button>
+    </div>
     <p class="foot" data-i18n="setnote">These live in this session.</p>
     <p class="foot" id="setFassung" style="margin-top:4px;opacity:.7"></p>
     <button class="quiet" id="setMelden" data-i18n="md_knopf" hidden>Report a problem</button>
@@ -2922,19 +3185,170 @@
   </div>
 </div>
 
+<!-- Nutzungsbedingungen für Konten, die es vor der ersten Fassung schon gab,
+     und für jede spätere Fassung (v106). Kommt einmal nach der Anmeldung.
+     „Später" ist Absicht und kein Schlupfloch: Abschnitt 14 sagt diesen
+     Konten zu, dass bis zur Zustimmung das Gesetz gilt — wer nichts falsch
+     gemacht hat, wird nicht ausgesperrt. Beim Anlegen eines **neuen** Kontos
+     gibt es dieses Fenster nicht; dort ist das Häkchen im Formular Pflicht. -->
+<div class="veil" id="agbVeil" hidden>
+  <div class="card" id="agbKarte">
+    <h1 style="font-size:30px" data-i18n="agb_kopf">Terms of use</h1>
+    <p class="sub" data-i18n="agb_neu">We have written down the rules for Talumi. Please have a look and agree.</p>
+    <p class="foot" data-i18n="agb_kurz">In short: play fair, no cheats or second accounts, names without insults, and Ore has no money value.</p>
+    <p class="foot" style="margin-top:14px">
+      <a href="nutzungsbedingungen.html" target="_blank" rel="noopener" data-i18n="agb_lesen">Read the terms of use</a>
+    </p>
+    <!-- Geburtsdatum (18.09.2026): nur für Konten, die noch keines haben
+         (von vorher, über Google/Facebook). Unter 13 erklärt `#agbJung`, dass
+         es Konten erst ab 13 gibt, und löscht nach Bestätigung. -->
+    <div id="agbGebRow" class="gebZeile" hidden>
+      <label for="agbGebT"><span data-i18n="geb_label">Date of birth</span>
+        <span class="gebWarum" data-i18n="geb_warum">only month and year are stored</span></label>
+      <div class="gebFelder">
+        <select id="agbGebT" data-i18n-name="geb_t" autocomplete="bday-day"></select>
+        <select id="agbGebM" data-i18n-name="geb_m" autocomplete="bday-month"></select>
+        <select id="agbGebJ" data-i18n-name="geb_j" autocomplete="bday-year"></select>
+      </div>
+    </div>
+    <label class="haken" for="agbHaken">
+      <input type="checkbox" id="agbHaken">
+      <span><span data-i18n="agb_satz1">I agree to the</span>
+        <a href="nutzungsbedingungen.html" target="_blank" rel="noopener" data-i18n="agb_satz_link">terms of use</a><span
+          data-i18n="agb_satz2"> — if I am under 18, with my parents’ permission.</span></span>
+    </label>
+    <p class="hintline" id="agbNote" aria-live="polite"></p>
+    <button id="agbGo" data-i18n="agb_ok">Agree</button>
+    <button class="quiet" id="agbSpaeter" data-i18n="b_spaeter">Later</button>
+  </div>
+  <div class="card kleinKarte" id="agbJung" hidden>
+    <h1 data-i18n="jung_kopf">Accounts from 13</h1>
+    <p class="foot" data-i18n="jung_text">Accounts are for players aged 13 and over.</p>
+    <p class="hintline" id="agbJungNote" aria-live="polite"></p>
+    <button id="agbJungOk" data-i18n="jung_ok">Delete account and play as a guest</button>
+    <button class="quiet" id="agbJungZurueck" data-i18n="jung_zurueck">Correct the date</button>
+  </div>
+</div>
+
 <div class="veil" id="legalVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="fair">Fair play</h1>
+    <!-- Widerrufsfunktion (§ 356a BGB, v106), oben im Fenster „Rechtliches“
+         — derselbe Knopf wie in den Einstellungen, nur für Konten in der
+         Frist. Vom Anmeldebildschirm aus ist niemand angemeldet; dort bleibt
+         er versteckt. -->
+    <button type="button" class="widerrufKnopf" id="legalWiderruf" data-i18n="wd_knopf" hidden>Withdraw
+      from contract here</button>
     <p class="sub" data-i18n="fair1">Without an account your progress stays in this browser. Signed in, it is kept on the game server.</p>
-    <p class="foot" data-i18n="fair2">Nothing on sale gives a lasting advantage.</p>
+    <p class="foot" data-i18n="fair2">In the League, levels and moons don’t count. Every design can be earned by playing.</p>
     <p class="foot" data-i18n="fair3">Advertising never interrupts a running round.</p>
     <p class="foot" data-i18n="fair4">Anti-bot checks look at input only.</p>
     <p class="foot" style="margin-top:18px">
       <a href="impressum.html" style="color:var(--brass)">Impressum</a> ·
-      <a href="datenschutz.html" style="color:var(--brass)">Datenschutz</a>
+      <a href="datenschutz.html" style="color:var(--brass)">Datenschutz</a> ·
+      <a href="nutzungsbedingungen.html" style="color:var(--brass)" data-i18n="agb">Terms of use</a>
     </p>
     <button class="quiet" id="hilfeBtn2" data-i18n="hilfe">Spielanleitung</button>
     <button id="legalClose" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- =====================================================================
+     Widerrufsfunktion nach § 356a BGB (v106). Zwei Schritte, wie das Gesetz
+     sie vorgibt: „Vertrag widerrufen“ öffnet dieses Fenster, hier stehen
+     genau die drei Angaben aus Abs. 2 — Name, Vertrag, Adresse für die
+     Eingangsbestätigung — vorausgefüllt, und „Widerruf bestätigen“ schickt
+     ab. Kein weiteres „Bist du sicher?“, kein Pflichtfeld für einen Grund,
+     keine abschreckenden Sätze (Gesetzesbegründung BT-Drs. 21/1856,
+     S. 37–39). Die Folgen stehen sachlich in der Einleitung.
+     Erst wenn der Server den Widerruf angenommen hat, steht „eingegangen“
+     da — scheitert es, steht die Fehlermeldung, nie eine Bestätigung.
+     ===================================================================== -->
+<div class="veil" id="widerrufVeil" hidden>
+  <div class="card widerrufKarte" role="dialog" aria-labelledby="wdKopf">
+    <h1 id="wdKopf" data-i18n="wd_kopf">Withdraw from contract</h1>
+    <form id="wdForm" autocomplete="on" novalidate>
+      <p class="foot wdEinl" data-i18n="wd_einl">Here you withdraw from your free contract of use
+        for your Talumi account.</p>
+      <label for="wdName" data-i18n="wd_name">Your name</label>
+      <input type="text" id="wdName" maxlength="80" autocomplete="name" spellcheck="false">
+      <p class="hintline" data-i18n="wd_name_h">First and last name or player name</p>
+      <label data-i18n="wd_vertrag">Contract</label>
+      <p class="wdVertrag" id="wdVertrag"></p>
+      <label for="wdMail" data-i18n="wd_mail">E-mail address for the confirmation of receipt</label>
+      <input type="email" id="wdMail" maxlength="120" autocomplete="email" autocapitalize="off"
+             spellcheck="false" inputmode="email">
+      <p class="hintline" id="wdNote" aria-live="polite"></p>
+      <div class="two wdKnoepfe">
+        <button type="submit" id="wdOk" data-i18n="wd_ok">Confirm withdrawal</button>
+        <button type="button" class="quiet" id="wdAbbr" data-i18n="wd_abbr">Cancel</button>
+      </div>
+      <p class="foot" data-i18n="wd_zeile">With “Confirm withdrawal” you send us your withdrawal.</p>
+    </form>
+    <div id="wdFertig" hidden>
+      <p class="sub" id="wdFertigText" aria-live="polite"></p>
+      <button type="button" id="wdZu" data-i18n="zu_schliessen">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Seite hinter den Links aus den Mails (v106): #ok= (Adresse, bei Haken
+     zugleich die Neuigkeiten), #nl= (Neuigkeiten, später eingeschaltet),
+     #ab= (abbestellen). Bestätigt wird erst mit dem Knopf, nicht schon beim
+     Öffnen — Virenscanner öffnen Links in Postfächern von selbst, und ein
+     Double-Opt-In, das ein Scanner auslöst, beweist nichts. -->
+<div class="veil" id="ankerVeil" hidden>
+  <div class="card kleinKarte" role="dialog" aria-labelledby="ankerKopf">
+    <h1 id="ankerKopf"></h1>
+    <p class="foot" id="ankerText"></p>
+    <p class="notice" id="ankerNote" aria-live="polite"></p>
+    <button type="button" id="ankerGo"></button>
+    <button type="button" class="quiet" id="ankerZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- Umfrage „Wie hast du von Talumi erfahren?“ (v106). Einmal, am fünften
+     Spieltag, im Hangar nach einer Runde — nie während einer. Gespeichert
+     wird am Server nur ein Zähler je Antwort, nichts über den Spieler. -->
+<div class="veil" id="umfrageVeil" hidden>
+  <div class="card kleinKarte" role="dialog" aria-labelledby="umfrageKopf">
+    <h1 id="umfrageKopf" data-i18n="um_kopf">How did you hear about Talumi?</h1>
+    <p class="foot" data-i18n="um_sub">One quick question. Only the answer is counted — no name, no account.</p>
+    <div class="umWahl" id="umfrageWahl"></div>
+    <button type="button" class="quiet" id="umfrageSkip" data-i18n="um_skip">Skip</button>
+  </div>
+</div>
+
+<!-- Bewertungsbitte nach einer neuen Bestmasse (v106): einmal überhaupt,
+     frühestens am dritten Spieltag. Daumen runter → „Problem melden“,
+     Daumen hoch → Bewertung im Store/Portal, solange es die nicht gibt:
+     teilen. Die Daumen sind eigene Zeichnungen, keine Emoji (die sehen auf
+     jedem Gerät anders aus). -->
+<div class="veil" id="bewertVeil" hidden>
+  <div class="card kleinKarte" role="dialog" aria-labelledby="bwKopf">
+    <div id="bwFrage">
+      <h1 id="bwKopf" data-i18n="bw_kopf">Do you like Talumi?</h1>
+      <p class="foot" data-i18n="bw_sub">New personal best — congratulations! One quick question:</p>
+      <div class="daumen">
+        <button type="button" id="bwJa">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 10.5h4v10h-4zM8.5 20.5V10.4l4.3-7a1.9 1.9 0 0 1 3.4 1.5l-.9 4.6h4.4a2.2 2.2 0 0 1 2.1 2.7l-1.6 6.6a2.9 2.9 0 0 1-2.8 2.2z"/></svg>
+          <span data-i18n="bw_ja">Yes!</span></button>
+        <button type="button" id="bwNein">
+          <svg class="runter" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 10.5h4v10h-4zM8.5 20.5V10.4l4.3-7a1.9 1.9 0 0 1 3.4 1.5l-.9 4.6h4.4a2.2 2.2 0 0 1 2.1 2.7l-1.6 6.6a2.9 2.9 0 0 1-2.8 2.2z"/></svg>
+          <span data-i18n="bw_nein">Not really</span></button>
+      </div>
+      <button type="button" class="quiet" id="bwSkip" data-i18n="um_skip">Skip</button>
+    </div>
+    <div id="bwTeilen" hidden>
+      <h1 data-i18n="bw_t_kopf">Share Talumi with your friends</h1>
+      <p class="foot" data-i18n="bw_t_text">Glad to hear it! The best way to help Talumi is to tell others about it.</p>
+      <p class="foot" id="bwKonto" hidden></p>
+      <input type="text" id="bwLink" readonly aria-label="Link">
+      <div class="two bwKnoepfe">
+        <button type="button" id="bwTeilenGo" data-i18n="w_teilen">Share</button>
+        <button type="button" class="quiet" id="bwZu" data-i18n="zu_schliessen">Close</button>
+      </div>
+    </div>
   </div>
 </div>
 
