@@ -2258,6 +2258,16 @@
      dunklen Grund kaum zu lesen, und ausgerechnet bei einem Rechtstext. */
   .veil .card a{color:var(--brass)}
 
+  /* „Nutzungsbedingungen lesen" im Hinweissatz unter dem Gastknopf: eine
+     Textzeile ist 15 Punkte hoch, gefordert sind 44 (Apple 44 pt, Google
+     48 dp) — `mobil.js` hat das auf dem Tablet quer beanstandet. Die Zeile
+     darf aber nicht auseinandergezogen werden, sonst wächst der
+     Anmeldebildschirm in die Höhe, und dort ist Höhe knapp. Deshalb
+     Polsterung nach oben und unten und derselbe Betrag als negativer
+     Abstand: Die Trefferfläche wird 45 Punkte hoch, das Layout bleibt auf
+     den Punkt genau, wie es war. */
+  #accountVeil .hintline a{display:inline-block;padding:15px 0;margin:-15px 0}
+
   /* ---- Ausbau v106: Widerruf, Links aus Mails, Umfrage, Bewertung -----
      `margin:auto 0` statt Zentrieren über den Schleier: Passt eine Karte
      nicht in die Höhe (flaches Telefon, Russisch), rückt sie nach oben und

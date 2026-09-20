@@ -1569,7 +1569,13 @@ const MODE = () => MODES[MODE_ID()];
 let WELT_B = 9000, WELT_H = 9000, DEBRIS = 4200;
 const PELLET = 3;
 const MAX_CELLS = 16;
-const DECAY_FROM = 1200, DECAY_RATE = 0.0009;
+const DECAY_FROM = 1200, DECAY_RATE = 0.0018;
+/* Ausgleich zum staerkeren Masseverlust (20.09.2026, Balance) — dieselbe
+   Zahl wie MASSE_AUSGLEICH in server.js. Seit der Zerfall doppelt so schnell
+   laeuft, liegen die Bestmassen gemessen rund 40 % niedriger; ohne Ausgleich
+   kaemen Level, Designs und Monde fast doppelt so langsam. Schwerer werden
+   soll das Spiel, nicht der Fortschritt. */
+const MASSE_AUSGLEICH = 1.7;
 const STAGES = [
   {at:0,    name:"Dust",         hint:"Sweep up debris. Nothing out here is smaller than you yet."},
   {at:60,   name:"Rubble",       hint:"Craters now. You can take anything loose and slow."},
@@ -2714,7 +2720,7 @@ function step(dt){
   // Spitzenmasse und daraus fließende XP
   {
     const jetzt = Game.cells.reduce((s,c) => s+c.m, 0);
-    if (jetzt > peak){ addXpLive((jetzt-peak)*0.6); peak = jetzt; }
+    if (jetzt > peak){ addXpLive((jetzt-peak)*0.6*MASSE_AUSGLEICH); peak = jetzt; }
   }
 
   // Schweifpunkte sammeln, nur für das Design, das ihn trägt
@@ -2899,7 +2905,7 @@ function finish(timeUp){
   /* Ore setzt sich aus vier Teilen zusammen, damit sichtbar wird, wofür
      bezahlt wird — und damit hohe Spitzenmasse der stärkste Hebel ist. */
   const st        = stageOf(peak);
-  const oreMass   = Math.round(peak / 30);
+  const oreMass   = Math.round(peak / 30 * MASSE_AUSGLEICH);
   const oreKills  = Game.kills * 2;
   const oreStages = STAGE_BONUS.slice(0, st+1).reduce((s,x) => s+x, 0);
   const beat      = peak > Profile.best;
@@ -2950,9 +2956,9 @@ function finish(timeUp){
     if (beat) Profile.best = Math.round(peak);
     /* Online vergibt der Client unterwegs kein XP (er simuliert das Fressen
        nicht selbst). Also am Ende nach derselben Formel wie der Server:
-       `xp: Math.round(peak * 0.6)` in `belohnung()`. */
+       `xp: peak × 0,6 × MASSE_AUSGLEICH` in `belohnung()`. */
     if (gastOnline && xpGain === 0){
-      const dazu = Math.round(peak * 0.6);
+      const dazu = Math.round(peak * 0.6 * MASSE_AUSGLEICH);
       const neu = Profile.addXp(dazu);
       Game.xpRun = dazu;
       if (neu.length){ skin = neu[neu.length-1]; Profile.skin = skin.id; }
@@ -3920,38 +3926,54 @@ function designSchmuck(g, x, y, r, pal, F, M, fancy){
 
 /* Kennung → [Textmuster, Zahl im Text, Ehre]. Die Ehre steht auch im Server
    (`ERFOLGE`); `testkonto-runde.js` vergleicht beide Listen. */
+/* Dieselbe Liste wie `ERFOLGE` in server.js — Muster, Zahl, Ehre. Die
+   Begründung der Zahlen steht dort; `testkonto-runde.js` vergleicht beide
+   bei jedem Lauf und prüft außerdem, dass die Zahl im Text genau die
+   Auslösegrenze des Servers ist. Neu gestaffelt am 20.09.2026 (Balance:
+   nach 2 Stunden höchstens Leutnant, Flottenkapitän nach rund 750
+   Stunden). */
 const ERFOLG_TEXT = {
-  w_geroell:  ["e_masse",     240,   50],
-  w_planetes: ["e_masse",     800,  100],
-  w_proto:    ["e_masse",    2000,  200],
-  w_welt:     ["e_masse",    5000,  400],
-  w_koloss:   ["e_masse",   12000,  400],
-  j_erster:   ["e_jagd1",       1,   25],
-  j_25:       ["e_jagd",       25,  100],
-  j_250:      ["e_jagd",      250,  400],
-  j_1000:     ["e_jagd",     1000,  400],
-  j_runde5:   ["e_jagdrunde",   5,  150],
-  j_runde12:  ["e_jagdrunde",  12,  350],
-  j_runde25:  ["e_jagdrunde",  25,  300],
-  d_erster:   ["e_duell1",      1,   50],
-  d_25:       ["e_duell",      25,  150],
-  d_100:      ["e_duell",     100,  300],
-  a_10:       ["e_runden",     10,   50],
-  a_100:      ["e_runden",    100,  200],
-  a_500:      ["e_runden",    500,  600],
-  a_fuenfmin: ["e_zeit",        5,  200],
-  a_zehnmin:  ["e_zeit",       10,  250],
-  a_stunden:  ["e_stunden",    10,  250],
-  c_mitglied: ["e_clan",        1,  100],
-  g_werber:   ["e_werben",     10,  250],
-  t_woche:    ["e_treue",       7,  300],
-  s_10:       ["e_skins",      10,  100],
-  s_25:       ["e_skins",      25,  300],
-  s_alle:     ["e_skins",      46,  800],
-  l_10:       ["e_level",      10,  100],
-  l_25:       ["e_level",      25,  250],
-  l_50:       ["e_level",      50,  600],
-  l_100:      ["e_level",     100, 1500]
+  w_geroell:  ["e_masse",     500,   10],
+  w_planetes: ["e_masse",    3000,   15],
+  w_proto:    ["e_masse",   15000,   20],
+  w_welt:     ["e_masse",   50000,   60],
+  w_koloss:   ["e_masse",  120000,  140],
+  w_titan:    ["e_masse",  250000,  420],
+  j_erster:   ["e_jagd1",       1,    5],
+  j_100:      ["e_jagd",      100,   15],
+  j_1k:       ["e_jagd",     1000,   35],
+  j_10k:      ["e_jagd",    10000,  110],
+  j_50k:      ["e_jagd",    50000,  420],
+  j_150k:     ["e_jagd",   150000,  700],
+  j_runde10:  ["e_jagdrunde",  10,   15],
+  j_runde30:  ["e_jagdrunde",  30,   25],
+  j_runde75:  ["e_jagdrunde",  75,  100],
+  d_erster:   ["e_duell1",      1,   20],
+  d_25:       ["e_duell",      25,   90],
+  d_100:      ["e_duell",     100,  260],
+  d_500:      ["e_duell",     500,  900],
+  a_25:       ["e_runden",     25,   15],
+  a_250:      ["e_runden",    250,   25],
+  a_1500:     ["e_runden",   1500,   90],
+  a_7500:     ["e_runden",   7500,  380],
+  a_20k:      ["e_runden",  20000,  600],
+  a_zehnmin:  ["e_zeit",       10,   15],
+  a_25min:    ["e_zeit",       25,   50],
+  a_stundemin:["e_zeit",       60,  260],
+  a_std25:    ["e_stunden",    25,   90],
+  a_std100:   ["e_stunden",   100,  280],
+  a_std500:   ["e_stunden",   500,  850],
+  c_mitglied: ["e_clan",        1,   15],
+  g_werber:   ["e_werben",     10,  100],
+  t_woche:    ["e_treue",       7,   15],
+  t_monat:    ["e_treue",      30,  120],
+  s_10:       ["e_skins",      10,   15],
+  s_25:       ["e_skins",      25,   40],
+  s_alle:     ["e_skins",      46,  780],
+  l_10:       ["e_level",      10,   15],
+  l_25:       ["e_level",      25,   25],
+  l_50:       ["e_level",      50,   90],
+  l_100:      ["e_level",     100,  900]
 };
 
 /* Reihenfolge im Bildschirm: dieselbe wie oben, gruppenweise. Erreichte
@@ -10087,14 +10109,14 @@ if ($("hautBtn")) $("hautBtn").addEventListener("click", () => reiter("haut"));
    sie gezeigt werden. `e_jagd1` (der erste Abschuss) ist die erste Stufe der
    Jagd, kein eigener Eintrag. */
 const ERFOLG_FAMILIEN = [
-  { art:"e_masse",     bild:"masse",  ids:["w_geroell","w_planetes","w_proto","w_welt","w_koloss"] },
-  { art:"e_jagd",      bild:"jagd",   ids:["j_erster","j_25","j_250","j_1000"] },
-  { art:"e_jagdrunde", bild:"blitz",  ids:["j_runde5","j_runde12","j_runde25"] },
-  { art:"e_duell",     bild:"duell",  ids:["d_erster","d_25","d_100"] },
-  { art:"e_runden",    bild:"runden", ids:["a_10","a_100","a_500"] },
-  { art:"e_zeit",      bild:"uhr",    ids:["a_fuenfmin","a_zehnmin"] },
-  { art:"e_stunden",   bild:"sand",   ids:["a_stunden"] },
-  { art:"e_treue",     bild:"tage",   ids:["t_woche"] },
+  { art:"e_masse",     bild:"masse",  ids:["w_geroell","w_planetes","w_proto","w_welt","w_koloss","w_titan"] },
+  { art:"e_jagd",      bild:"jagd",   ids:["j_erster","j_100","j_1k","j_10k","j_50k","j_150k"] },
+  { art:"e_jagdrunde", bild:"blitz",  ids:["j_runde10","j_runde30","j_runde75"] },
+  { art:"e_duell",     bild:"duell",  ids:["d_erster","d_25","d_100","d_500"] },
+  { art:"e_runden",    bild:"runden", ids:["a_25","a_250","a_1500","a_7500","a_20k"] },
+  { art:"e_zeit",      bild:"uhr",    ids:["a_zehnmin","a_25min","a_stundemin"] },
+  { art:"e_stunden",   bild:"sand",   ids:["a_std25","a_std100","a_std500"] },
+  { art:"e_treue",     bild:"tage",   ids:["t_woche","t_monat"] },
   { art:"e_clan",      bild:"clan",   ids:["c_mitglied"] },
   { art:"e_werben",    bild:"werben", ids:["g_werber"] },
   { art:"e_skins",     bild:"skins",  ids:["s_10","s_25","s_alle"] },
