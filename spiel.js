@@ -543,6 +543,9 @@ function t(key){
 }
 function applyLang(){
   try { document.documentElement.lang = lang; } catch(_){}
+  /* Die Figurennamen auf dem Willkommensbildschirm (v109) werden per Code
+     gebaut, nicht über data-i18n — beim Sprachwechsel neu. */
+  try { if (typeof willkBilderBauen === "function") willkBilderBauen(); } catch(_){}
   const nodes = document.querySelectorAll ? document.querySelectorAll("[data-i18n]") : [];
   for (const el of nodes) el.textContent = t(el.dataset.i18n);
   // Knöpfe, die nur ein Zeichen zeigen (Zahnrad): Name für Vorleser und Maus
@@ -588,17 +591,29 @@ const THEMES = {
     star:"#e8d9bd", border:"#2b1f15", label:"rgba(14,10,7,.78)",
     pulsar:"rgb(44,30,18)", pulsarEdge:"rgba(216,167,95,.7)",
     pulsarCore:"rgba(216,167,95,.2)", zone:"rgba(120,44,18,.34)",
-    zoneEdge:"224,122,60", rival:{rock:"#8a7659", dark:"#4a3c2a", hot:"#e07a3c", air:"#d8c4a0"}
+    zoneEdge:"224,122,60", rival:{rock:"#8a7659", dark:"#4a3c2a", hot:"#e07a3c", air:"#d8c4a0"},
+    /* Die Fenster der Menüs (Konsole, Anmeldung, Karten). */
+    fenster1:"rgba(15,20,32,.93)", fenster2:"rgba(10,14,23,.95)", glas:"rgba(20,26,41,.68)",
+    block:"rgba(255,255,255,.035)", lineHell:"rgba(255,255,255,.16)", brassHell:"#f8dcab"
   },
+  /* „Sand" seit v109 als warme Nacht über der Wüste — dunkel wie „Erde".
+     Bis v108 war es ein helles Thema: Es färbte nur Text und Spielfeld um,
+     die Fenster der Konsole blieben dunkel, und dunkle Schrift stand auf
+     dunklem Glas (Thomas, 22.09.2026: „Sand passt aber gar nicht zusammen").
+     Jetzt gehört zu jedem Thema ein vollständiger Satz: Fenster, Glas,
+     Linien, Text, Spielfeld. Unterschied zu „Erde": Glas in warmem Kakao
+     statt Nachtblau, Staub in Sand und Gold statt Eisblau. */
   sand: {
-    ink:"#e9dcc4", ink2:"#dccdb0", plate:"#f4ebdc", line:"#c2aa86",
-    brass:"#8a5a24", paper:"#2c2117", paper2:"#6b5842", ember:"#b8501f", onBrass:"#f7f0e2",
-    us:"#1f6b4f", them:"#a8391a", good:"#2f6b33",
-    dust:{h:[24,44], s:[24,46], l:[30,46]}, shatter:"#1f6b7a",
-    star:"#a68e68", border:"#c9b590", label:"rgba(250,244,232,.85)",
-    pulsar:"rgb(120,96,64)", pulsarEdge:"rgba(70,48,24,.8)",
-    pulsarCore:"rgba(70,48,24,.22)", zone:"rgba(176,74,36,.30)",
-    zoneEdge:"152,58,24", rival:{rock:"#9c8a6c", dark:"#6b5b40", hot:"#b8501f", air:"#7a6440"}
+    ink:"#140e08", ink2:"#21170e", plate:"#231910", line:"#4a3620",
+    brass:"#e2b46a", paper:"#f6ead2", paper2:"#b99f7c", ember:"#ec8a4a", onBrass:"#1c1208",
+    us:"#b5ecd3", them:"#ffa27a", good:"#9fd49a",
+    dust:{h:[30,48], s:[34,58], l:[56,76]}, shatter:"#ffd79a",
+    star:"#f0d9ad", border:"#3a2a18", label:"rgba(20,14,8,.78)",
+    pulsar:"rgb(52,34,18)", pulsarEdge:"rgba(236,180,100,.75)",
+    pulsarCore:"rgba(236,180,100,.22)", zone:"rgba(140,52,20,.34)",
+    zoneEdge:"236,138,74", rival:{rock:"#9a7f5a", dark:"#54402a", hot:"#ec8a4a", air:"#e6cda2"},
+    fenster1:"rgba(36,26,16,.94)", fenster2:"rgba(24,17,10,.96)", glas:"rgba(44,32,20,.70)",
+    block:"rgba(255,236,200,.045)", lineHell:"rgba(255,230,190,.18)", brassHell:"#fbe2b4"
   }
 };
 const TH = () => THEMES[Settings.theme] || THEMES.earth;
@@ -618,6 +633,12 @@ function applyTheme(){
   r.style.setProperty("--us", th.us);
   r.style.setProperty("--them", th.them);
   r.style.setProperty("--good", th.good);
+  r.style.setProperty("--fenster-1", th.fenster1);
+  r.style.setProperty("--fenster-2", th.fenster2);
+  r.style.setProperty("--glas", th.glas);
+  r.style.setProperty("--block", th.block);
+  r.style.setProperty("--line-hell", th.lineHell);
+  r.style.setProperty("--brass-hell", th.brassHell);
   const meta = document.querySelector && document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", th.ink);
 }
@@ -846,17 +867,36 @@ const SKINS = [
   /* Inferno (Schritt 104): nur fürs Werben — weder Level noch Ore. `sonder`
      hält es aus Zählung, Preisliste und Levelvergleich heraus; der Server
      schaltet es über das Werbeprogramm frei. */
+  /* Rangstufe der drei Sonderdesigns (v109, Thomas: „Sunflare, Inferno und
+     Rime stechen ein bisschen zu sehr hervor"): Bis v108 bekam jedes Design
+     mit Effekt automatisch Stufe VI — das Glühen der Millionen-Ore-Designs.
+     Ein Design nach sieben Tagen sah damit stärker aus als eines für Level
+     100, und die Leiter (CLAUDE.md: „nach oben stärker") war gebrochen.
+     Jetzt nach Aufwand: Sunflare (7 Tage) III, Inferno (zehn Geworbene) IV,
+     Rime (siebzig Tage) IV. Der Effekt bleibt — er ist, was sie besonders
+     macht —, nur das Glühen entspricht der Stufe. */
   {id:"inferno",   mat:"glut",     label:"Inferno",    rock:"#c2481f", dark:"#5a1a0a", hot:"#ffd166", air:"#ff7b3a",
-   special:"feuer", sonder:"werben"},
+   special:"feuer", sonder:"werben", tier:4},
   /* Sunflare (Schritt 107): die erste volle Woche Tagesbonus. Auffällig
      (Thomas): rotierende Strahlen weit außerhalb des Kreises. */
   {id:"sunflare",  mat:"energie",  label:"Sunflare",   rock:"#ffb43c", dark:"#a1480f", hot:"#fff2a8", air:"#ffd36a",
-   special:"strahlen", sonder:"woche"},
+   special:"strahlen", sonder:"woche", tier:3},
+  /* Drei weitere Wochendesigns (v109, Thomas: „zwischen 3 Designs wählen").
+     Alle Stufe III wie Sunflare, jedes in einem Farbraum, den kein anderes
+     Design belegt: Koralle als Perlmutt, Petrol als Glas, Grünspan als
+     Metall. Kein eigener Effekt — die Materialien machen den Unterschied.
+     Pool und Reihenfolge stehen in `WOCHE1.SKINS` (konten.js). */
+  {id:"coral",     mat:"perle",    label:"Coral",      rock:"#f08a78", dark:"#9a3f3a", hot:"#fff0dc", air:"#ffd4c4",
+   trait:"speckle", sonder:"woche", tier:3},
+  {id:"abyss",     mat:"glas",     label:"Abyss",      rock:"#135a6b", dark:"#062a36", hot:"#7ef3ff", air:"#3ed6ea",
+   trait:"bands", sonder:"woche", tier:3},
+  {id:"verdigris", mat:"metall",   label:"Verdigris",  rock:"#4c9c8e", dark:"#1f4a46", hot:"#d8fff0", air:"#9fe6d2",
+   trait:"cracks", sonder:"woche", tier:3},
   /* Rime (Schritt 106, Raureif): nur über zehn volle Wochen Tagesbonus.
      „Glacier" gibt es schon als Level-Design — Kennungen müssen eindeutig
      sein, sonst findet `SKINS.find` das falsche. */
   {id:"rime",      mat:"eis",      label:"Rime",       rock:"#bfe3f4", dark:"#6fa3bf", hot:"#ffffff", air:"#dff6ff",
-   special:"frost", sonder:"wochen"}
+   special:"frost", sonder:"wochen", tier:4}
 ];
 /* Zählbare Designs: alles, was sich erspielen oder kaufen lässt. */
 const SKINS_ZAHL = SKINS.filter(s => !s.sonder).length;
@@ -900,7 +940,10 @@ const TRAITS = [["plain","speckle"], ["speckle","bands"], ["bands","cracks"],
                 ["cracks","spikes"], ["spikes","shards"]];
 const ROMAN = ["","I","II","III","IV","V","VI"];
 SKINS.forEach((s,i) => {
-  if (s.special){ s.tier = 6; s.trait = s.special; return; }
+  if (s.special){ s.tier = s.tier || 6; s.trait = s.special; return; }
+  /* Sonderdesigns ohne Effekt (v109) bringen Stufe und Merkmal selbst mit
+     und stehen außerhalb der Neuner-Leiter. */
+  if (s.sonder && s.tier){ s.trait = s.trait || "plain"; return; }
   s.tier = Math.min(5, 1 + Math.floor(i/9));
   s.trait = TRAITS[s.tier-1][i % 2];
 });
@@ -1044,7 +1087,10 @@ const Gast = {
     if (r.bonus && typeof r.bonus === "object")
       this.bonus = { tag: zahl(r.bonus.tag, 1e7), serie: Math.min(7, zahl(r.bonus.serie, 7)), wochen: zahl(r.bonus.wochen, 9999) };
     this.gutschein = [2, 3].includes(r.gutschein) ? r.gutschein : 0;
+    /* Profilbild (v109): 0–19, sonst −1. */
+    this.bild = Number.isInteger(r.bild) && r.bild >= 0 && r.bild <= 19 ? r.bild : -1;
   },
+  bild: -1,
 
   /* Name des Gastes (Schritt 95). Vorher war ein getippter Name nach dem
      Neuladen weg, und wer keinen tippte, hieß „Namenloser Körper" — auf
@@ -1064,7 +1110,7 @@ const Gast = {
              serie: (b.tag === h || b.tag === h - 1) ? b.serie : 0,
              wochen: b.wochen || 0, ziel: 10 };
   },
-  bonusHolen(){
+  bonusHolen(wahl){
     const h = this.heute(), b = this.bonus;
     if (b.tag === h) return { fehler: "schon_abgeholt" };
     /* Im Kreis wie am Server (Schritt 106): nach Tag 7 wieder Tag 1, jede
@@ -1076,7 +1122,12 @@ const Gast = {
     this.bonus = { tag: h, serie, wochen };
     let eis = false, design = null;
     if (wochen >= 10 && !Profile.owned.has("rime")){ Profile.owned.add("rime"); eis = true; }
-    if (serie === 7 && !Profile.owned.has("sunflare")){ Profile.owned.add("sunflare"); design = "sunflare"; }
+    /* Tag 7 (v109): ein Wochendesign nach Wahl, wie beim Konto. */
+    if (serie === 7){
+      const offen = WOCHE_POOL.filter(id => !Profile.owned.has(id)).slice(0, WOCHE_WAHL);
+      const d = offen.includes(wahl) ? wahl : offen[0];
+      if (d){ Profile.owned.add(d); design = d; }
+    }
     Profile.ore += ore;
     if (xp) Profile.addXp(xp);
     /* Der Gutschein gilt für die nächste lokale Runde mit Startbonus. */
@@ -1112,6 +1163,7 @@ const Gast = {
         if (this.name) d.name = this.name;
         d.bonus = this.bonus;
         d.gutschein = this.gutschein;
+        d.bild = this.bild;
       }
       if (mitKonto && !(alt && alt.v === this.V)) return;
       d.friends = Profile.friends.slice(0, 50);
@@ -1727,11 +1779,22 @@ const pulsarMax = () => MODE().pulsars + 14;
    Großer das Feld leer und nimmt allen Kleinen ihre Deckung. */
 const PULSAR_MASS = Math.round((PULSAR_R/4)*(PULSAR_R/4));   // ≈ 169
 const FEAST_CELLS = 12, FEAST_BACK = 18;
-const newPulsar = (x,y) => ({
-  x: x !== undefined ? x : rnd(300, WELT_B-300),
-  y: y !== undefined ? y : rnd(300, WELT_H-300),
-  vx:0, vy:0, spin: rnd(0, 6.28), fed:0
-});
+/* Vier von fünf Pulsaren im Band am Rand (v109) — dieselbe Regel wie
+   `pulsarPlatz` in sim.js. Für lokale Runden; die gespiegelte Arena setzt
+   ihre Plätze selbst. */
+function pulsarPlatz(){
+  if (Math.random() >= 0.8) return [rnd(300, WELT_B-300), rnd(300, WELT_H-300)];
+  const band = 0.16 * Math.min(WELT_B, WELT_H);
+  for (let i = 0; i < 40; i++){
+    const x = rnd(300, WELT_B-300), y = rnd(300, WELT_H-300);
+    if (Math.min(x, y, WELT_B - x, WELT_H - y) < band) return [x, y];
+  }
+  return [rnd(300, band), rnd(300, WELT_H-300)];
+}
+const newPulsar = (x,y) => {
+  if (x === undefined || y === undefined) [x, y] = pulsarPlatz();
+  return { x, y, vx:0, vy:0, spin: rnd(0, 6.28), fed:0 };
+};
 let peak = 0;
 
 const radiusOf = m => Math.sqrt(m)*4.0;
@@ -1770,7 +1833,7 @@ let GID = 1;
    Zerlegen am Pulsar per `Object.assign` in jedes Stück mit. */
 const newRival = name => {
   const tier = rivalTier();
-  return {x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:rnd(20,300), name, tag:"NPC",
+  return {x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:rnd(20,300), name, tag:null,
     gid: GID++, vx:0, vy:0, merge:0,
     aggr: rnd(.15,.85),                       // Angriffslust, je Rivale anders
     mood:Math.random(), goal:null, retarget:0, tint:rnd(-30,36),
@@ -1897,7 +1960,11 @@ function start(name){
   $("hud").hidden = false;
   Portal.gameplayStart();
   Game.killer = null; Game.lastSplit = -99; Game.lostPieces = 0;
-  Game.debrisEaten = 0; Game.pulsarSpawns = 0; Game.splitKills = 0;
+  Game.debrisEaten = 0; Game.pulsarSpawns = 0; Game.splitKills = 0; Game.shedCount = 0;
+  /* Tutorial (v109): Der erste Schritt steht, sobald die Runde läuft — es
+     wird beim Spielen gelernt, nicht in einem Fenster davor. Steht in
+     `try`, weil `start()` auch aus Prüfständen ohne die Kästen kommt. */
+  try { Tutorial.rundeStart(); } catch(_){}
   Game.pulsarBack = []; Game.pulsarsEaten = 0; Game.feastSeen = false;
   Game.hint = null; Game.hintUntil = 0; Game.hintCheck = 0;
   Game.sparks = []; Game.levelFx = null; Game.xpRun = 0; Game.unlockedRun = [];
@@ -2092,7 +2159,7 @@ function shed(){
       hot:skin.hot, tier:skin.tier || 1});
     fired = true;
   }
-  if (fired){ Game.safe = 0; Sound.shedS(); Net.send("shed"); }
+  if (fired){ Game.safe = 0; Sound.shedS(); Net.send("shed"); Game.shedCount = (Game.shedCount || 0) + 1; }
 }
 
 /* XP fällt jetzt während der Runde an statt erst am Ende. Nur so kann ein
@@ -2427,6 +2494,9 @@ function feierMalen(){
    lohnt sich nicht sechzigmal. */
 const HINT_RUNS = 2;
 function checkHints(){
+  /* Während des Tutorials (v109) schweigen die Anfängerhinweise: Zwei
+     Sätze zugleich am unteren Rand — gesehen auf dem iPhone 14. */
+  try { if (Tutorial.laufend) return; } catch(_){}
   if (!Settings.hints || Profile.hintRuns > HINT_RUNS) return;
   if (!Game.running || Game.t < 0.5) return;
   if (Game.t < Game.hintUntil || Game.t < Game.hintCheck) return;
@@ -2501,6 +2571,10 @@ function effekteAltern(dt){
 }
 
 function step(dt){
+  /* Tutorial (v109) vor der Weiche: Es zählt in der lokalen Runde ebenso
+     wie in einer Onlinerunde — wer das Tutorial abbricht und später online
+     weiterspielt, soll dort weitermachen, wo er aufgehört hat. */
+  try { Tutorial.takt(dt); } catch(_){}
   if (Game.online){ Net.schritt(dt); return; }
   Game.t += dt;
   if (Game.safe > 0) Game.safe = Math.max(0, Game.safe - dt);
@@ -2841,6 +2915,7 @@ function finish(timeUp){
   Game.running = false;
   document.body.classList.remove("playing");
   $("hud").hidden = true;
+  try { Tutorial.rundeEnde(); } catch(_){}
   Portal.gameplayStop();
   if (!timeUp) Portal.countDeath();
   if (!timeUp) Sound.death();
@@ -3014,10 +3089,10 @@ function finish(timeUp){
     ];
     if (T.rekord) zeilen.push([t("newbest"), T.rekord]);
     if (T.sieg)   zeilen.push([t("wonround"), T.sieg]);
-    if (T.happy)  zeilen.push([t("hh_zeile"), T.happy]);
+    if (T.happy)  zeilen.push([t("hh_zeile"), T.happy, "happy"]);
 
     let html = zeilen.filter(z => z[1] > 0)
-      .map(z => `<div class="tally"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
+      .map(z => `<div class="tally${z[2] ? " " + z[2] : ""}"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
     html += `<div class="tally sum"><span>${ICON_ORE}${t("oreearned")}</span><span>+${L.ore}</span></div>`;
     html += `<p class="gain">${ICON_XP}+<b>${L.xp}</b> XP</p>`;
     /* Der Server schickt Kennungen, keine Namen — Namen und Farben stehen
@@ -3044,7 +3119,7 @@ function finish(timeUp){
        weil sie wie diese etwas Bleibendes sind. */
     if (Net.monde.length){
       html += Net.monde.map(m =>
-        `<div class="tally"><span>${esc(t("mo_neu", t((MONDE[m.art] || {}).name || "mo_eis")))}</span>` +
+        `<div class="tally${m.fund ? " happy" : ""}"><span>${esc(t(m.fund ? "mo_fund" : "mo_neu", t((MONDE[m.art] || {}).name || "mo_eis")))}</span>` +
         `<span>${esc(t("mo_stufe", ["I", "II", "III"][(m.stufe || 1) - 1] || m.stufe))}</span></div>`).join("");
     }
     if (Net.staubDazu > 0)
@@ -3102,11 +3177,11 @@ function finish(timeUp){
   if (oreWin) rows.push([t("wonround"), oreWin]);
   for (const it of Game.goals)
     if (it.done) rows.push([t("objective") + ": " + t("g_"+it.def.id), it.def.ore]);
-  if (oreHappy) rows.push([t("hh_zeile"), oreHappy]);
+  if (oreHappy) rows.push([t("hh_zeile"), oreHappy, "happy"]);
 
   let html = "";
   html += rows.filter(r => r[1] > 0)
-    .map(r => `<div class="tally"><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("");
+    .map(r => `<div class="tally${r[2] ? " " + r[2] : ""}"><span>${r[0]}</span><span>+${r[1]}</span></div>`).join("");
   html += `<div class="tally sum"><span>${ICON_ORE}${t("oreearned")}</span><span>+${oreGain}</span></div>`;
   html += `<p class="gain">${ICON_XP}+<b>${Math.round(Game.xpRun)}</b> XP</p>`;
   /* Aufstieg als Banner (Schritt 103) — auch ohne neues Design, wenn das
@@ -3165,7 +3240,7 @@ const cam = {x:WELT_B/2, y:WELT_H/2, z:1};
 const randGefahren = [];
 /* Letzter Abstand je Gegner, um „kommt näher" zu erkennen (Schritt 111). */
 const gefahrAbstand = new Map();
-const GEFAHR_MASSE = 20000;
+const GEFAHR_MASSE = 60;   // nur Staubkörner ausnehmen (bis v108: 20.000)
 function gefahrenMalen(g){
   if (!randGefahren.length) return;
   /* Auf einem Ring um die eigene Mitte, nicht am Bildrand: Dort liegen die
@@ -3751,10 +3826,20 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   g.strokeStyle = mine ? hexA(pal.air,.55) : hexA(pal.air, .10 + T*.085);
   g.lineWidth = Math.max(1, r*(.035 + T*.008)); g.stroke();
 
+  /* Der Name im Körper (v109): hell mit dunkler Kontur statt dunkel auf
+     dunkel — vorher stand er wie eingeprägt und kaum lesbar auf jedem
+     Stück. Auf dem Schirm höchstens 22 Punkte groß, sonst schrieb ein
+     Riese seinen Namen in Plakatgröße sechzehnmal übers Bild. */
   if (label && r > 9){
-    g.font = `600 ${Math.max(9, r*.3)}px Georgia, serif`;
+    const zs = (typeof cam === "object" && cam && cam.z > 0 && Game.running) ? cam.z : 1;
+    const gr = Math.max(9 / zs, Math.min(r*.3, 22 / zs));
+    g.font = `600 ${gr}px "Talumi Serif", Georgia, serif`;
     g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillStyle = TH().label;
+    g.lineJoin = "round";
+    g.lineWidth = gr * .16;
+    g.strokeStyle = "rgba(10,7,4,.62)";
+    g.strokeText(label, x, y);
+    g.fillStyle = "rgba(255,247,232,.92)";
     g.fillText(label, x, y);
   }
 }
@@ -3791,7 +3876,7 @@ function designSchmuck(g, x, y, r, pal, F, M, fancy){
     for (let i=0;i<n;i++){
       const a = i*(6.2832/n) + Math.sin(tt*1.7 + i)*.12;
       const flack = .5 + .5*Math.sin(tt*9 + i*2.3)*Math.cos(tt*4.1 + i*.7);
-      const h = r*(.26 + .40*flack), w = r*.22;
+      const h = r*(.20 + .32*flack), w = r*.22;
       g.save(); g.rotate(a);
       g.beginPath();
       g.moveTo(r*.94, -w);
@@ -3813,10 +3898,12 @@ function designSchmuck(g, x, y, r, pal, F, M, fancy){
     const n = 12, tt = Game.t;
     g.save(); g.translate(x, y); g.rotate(tt*.5);
     for (let i=0;i<n;i++){
-      const a = i*(6.2832/n), l = r*(.55 + .25*Math.sin(tt*3 + i*1.3)), w = r*.09;
+      /* Bis v108 reichten die Strahlen bis 1,8 r — Thomas: „gehen zu weit
+         hinaus". Jetzt höchstens 1,45 r, dafür etwas kräftiger. */
+      const a = i*(6.2832/n), l = r*(.28 + .14*Math.sin(tt*3 + i*1.3)), w = r*.10;
       g.save(); g.rotate(a);
       g.beginPath(); g.moveTo(r*1.02, -w); g.lineTo(r*1.02 + l, 0); g.lineTo(r*1.02, w); g.closePath();
-      g.fillStyle = hexA(i % 2 ? pal.hot : pal.air, .34); g.fill();
+      g.fillStyle = hexA(i % 2 ? pal.hot : pal.air, .40); g.fill();
       g.restore();
     }
     g.restore();
@@ -4738,6 +4825,33 @@ const TEAM_PALS = {
 const teamPal = t => TEAM_PALS[Settings.teams][t === 1 ? 1 : 2];
 
 let zieleStand = "";
+let duennStufe = 1;
+/* Kleine fremde Körper als fertiges Bildchen (v109). Unter 14 Punkten
+   Bildgröße stand dort eine flache Scheibe in Grundfarbe — Thomas am
+   22.09.2026: „werden kleinere Spieler teilweise nur noch als Farbkleckse
+   ohne Details angezeigt … Das sieht nicht schön aus." Jetzt wird jedes
+   Design einmal in voller Qualität in eine kleine Leinwand gemalt (Radius
+   24, Rand für Hülle und Ringe) und danach nur noch kopiert: So sieht ein
+   ferner Körper aus wie er selbst, und es kostet weniger als die Scheibe
+   mit Verlauf. Schlüssel: Design, Stufe, Rang-Glanz, Merkmal, Tönung. */
+const KLEIN_BILD = new Map();
+function kleinBild(o, pal){
+  const st = stageOf(o.m);
+  const key = (pal.id || pal.label || pal.rock) + "|" + st + "|" + (o.tier || 1) + "|" + (o.trait || "") + "|" + (o.tint || 0);
+  let c = KLEIN_BILD.get(key);
+  if (c) return c;
+  if (KLEIN_BILD.size > 320) KLEIN_BILD.clear();
+  try {
+    c = document.createElement("canvas"); c.width = c.height = 96;
+    const g = c.getContext("2d");
+    const voll = MENUE_VOLL; MENUE_VOLL = true;
+    try { body(g, 48, 48, 24, o.m, pal, o.tint || 0, "", false, o.tier, o.trait); }
+    finally { MENUE_VOLL = voll; }
+  } catch(_){ c = null; }
+  KLEIN_BILD.set(key, c);
+  return c;
+}
+
 function draw(){
   const [mx,my,gm] = centre();
   peak = Math.max(peak, gm);
@@ -4822,12 +4936,27 @@ function draw(){
        Rechtecke. */
     const kante = Math.max(2 / cam.z, 3);
     const punkt = 8 * cam.z;                       // Durchmesser eines Truemmers auf dem Schirm
-    const schritt = punkt >= 1 ? 1 : punkt >= 0.5 ? 2 : 4;
+    /* **Welche** Trümmer wegfallen, hängt seit v109 an ihrer Lage, nicht an
+       ihrer Stelle in der Liste (Thomas, 22.09.2026: „Wenn man 100k Masse
+       hat flackert der Sternenstaub auf der Karte sehr"). Online wird die
+       Liste bei jedem gefressenen oder neuen Trümmer neu aufgebaut; mit
+       „jeder zweite nach Nummer" rutschte dabei jeder Zweite um eine Stelle
+       — und ein anderer Teil des Staubs blinkte auf. Die Lage eines Trümmers
+       ändert sich nie, also bleibt die Auswahl stehen. Dazu eine kleine
+       Hysterese, damit die Stufe nicht am Übergang hin- und herspringt. */
+    const alt = duennStufe;
+    duennStufe = punkt >= (alt === 1 ? 0.9 : 1.1) ? 1 : punkt >= (alt <= 2 ? 0.45 : 0.55) ? 2 : 4;
+    const schritt = duennStufe;
     const nachFarbe = new Map();
     const deb = Game.debris;
-    for (let i = 0; i < deb.length; i += schritt){
+    for (let i = 0; i < deb.length; i++){
       const d = deb[i];
-      if (!d || !seen(d)) continue;
+      if (!d) continue;
+      if (schritt > 1){
+        if (d.h === undefined) d.h = (((Math.round(d.x) * 73856093) ^ (Math.round(d.y) * 19349663)) >>> 0);
+        if (d.h % schritt) continue;
+      }
+      if (!seen(d)) continue;
       let l = nachFarbe.get(d.c); if (!l){ l = []; nachFarbe.set(d.c, l); }
       l.push(d);
     }
@@ -4886,7 +5015,13 @@ function draw(){
        Warnung wert. */
     const jetztDa = new Set();
     for (const {o, mine} of all){
-      if (mine || o.m < GEFAHR_MASSE || o.m < meine*2.44 || seen(o)) continue;
+      /* Seit v109 ohne Mindestmasse (Thomas, 22.09.2026: „ein roter Pfeil …
+         der mich als Spieler durch Teilen fressen könnte … Kümmere dich
+         darum, dass dies funktioniert"). Bis dahin kam er erst ab 20.000
+         Masse — im Spielalltag also nie. Geblieben ist die echte Regel: Die
+         Hälfte nach dem Teilen muss 1,22-mal so schwer sein wie ich, also
+         die ganze Masse gut das 2,44-Fache. */
+      if (mine || o.m < GEFAHR_MASSE || o.m < meine*2*1.22 || seen(o)) continue;
       const key = o.gid !== undefined ? "g" + o.gid : o;
       if (schonDa.has(key)) continue;
       schonDa.add(key); jetztDa.add(key);
@@ -4895,7 +5030,10 @@ function draw(){
       gefahrAbstand.set(key, d);
       const reich = splitPush(o.m/2) + radiusOf(o.m/2) + radiusOf(o.m) + radiusOf(meine) + 300;
       if (d > reich) continue;
-      if (!(vorher > d + 0.5)) continue;          // kommt nicht näher
+      /* „Nur beim Näherkommen" (Schritt 111) gilt seit v109 nur noch am
+         äußeren Rand der Reichweite: Wer still in Sprungweite lauert, ist
+         genauso gefährlich wie einer, der anrollt. */
+      if (!(vorher > d + 0.5) && d > reich * 0.7) continue;
       randGefahren.push({dx:o.x - cam.x, dy:o.y - cam.y, m:o.m, nah: clamp(1 - d/reich, 0, 1)});
     }
     for (const k of gefahrAbstand.keys()) if (!jetztDa.has(k)) gefahrAbstand.delete(k);
@@ -4969,8 +5107,12 @@ function draw(){
        Grundfarbe — Verläufe, Krater und Hülle wären dort ohnehin unsichtbar.
        Der eigene Körper wird immer voll gezeichnet. */
     if (!mine && rWelt * cam.z < 14){
-      ctx.beginPath(); ctx.arc(o.x, o.y, rWelt, 0, 7);
-      ctx.fillStyle = (pal && pal.rock) || RIVAL_PAL.rock; ctx.fill();
+      const bild = rWelt * cam.z >= 2 && pal ? kleinBild(o, pal) : null;
+      if (bild) ctx.drawImage(bild, o.x - rWelt*2, o.y - rWelt*2, rWelt*4, rWelt*4);
+      else {
+        ctx.beginPath(); ctx.arc(o.x, o.y, rWelt, 0, 7);
+        ctx.fillStyle = (pal && pal.rock) || RIVAL_PAL.rock; ctx.fill();
+      }
       continue;
     }
     const monde = mine ? meineMonde : o.mo;
@@ -4998,8 +5140,27 @@ function draw(){
   /* Pulsare liegen jetzt VOR den Körpern: Wer klein genug ist, verschwindet
      darunter. Vorher lag der Spieler oben und das Versteck war wirkungslos —
      man sah genau, wer sich da verbirgt. */
+  /* Pulsare aus der Ferne (v109, Thomas: „die Pulsare sind kaum mehr
+     sichtbar sobald man viel Masse hat"). Ihr echter Umriss bleibt, wie er
+     ist — er ist die Trefferfläche. Wird er auf dem Schirm kleiner als
+     zwölf Punkte, legt sich ein leuchtender Hof darum, der nie kleiner wird;
+     und ist man selbst groß genug, um zerrissen zu werden, glüht er rot. */
+  const pulsFern = PULSAR_R * cam.z < 12;
+  const pulsGefahr = !!(lead && lead.m >= PULSAR_BITE);
   for (const p of Game.pulsars){
     if (!seen(p)) continue;
+    if (pulsFern){
+      const hof = 12 / cam.z, schlag = .55 + .3*Math.sin(Game.t*3 + p.x*.001);
+      const farbe = pulsGefahr ? "242,107,91" : "236,190,120";
+      const gl = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, hof*1.6);
+      gl.addColorStop(0, "rgba(" + farbe + "," + (.34*schlag).toFixed(3) + ")");
+      gl.addColorStop(1, "rgba(" + farbe + ",0)");
+      ctx.fillStyle = gl;
+      ctx.beginPath(); ctx.arc(p.x, p.y, hof*1.6, 0, 7); ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, hof, 0, 7);
+      ctx.strokeStyle = "rgba(" + farbe + "," + (.85*schlag).toFixed(3) + ")";
+      ctx.lineWidth = 1.6 / cam.z; ctx.setLineDash([3.5/cam.z, 2.5/cam.z]); ctx.stroke(); ctx.setLineDash([]);
+    }
     ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.spin);
     ctx.beginPath();
     for (let i=0;i<20;i++){
@@ -5196,11 +5357,17 @@ function paintBoard(gm){
        Steht man selbst nicht darunter, wird man angehängt — mit dem echten
        Platz aus `Net.platz` (Schritt 102). Vorher stand dort immer „11",
        weil nur die Länge der Liste plus eins bekannt war. */
-    list = Net.top.map(e => +e.id === Net.you
-      ? {name:Game.name, m:+e.m, me:true, titel: +e.id === Net.kt}
-      : {name:mitMarke(String(e.n || "?"), e.b), m:+e.m, titel: +e.id === Net.kt});
+    /* Clan-Kürzel vor dem Namen (v109, Thomas: „Clankürzel sollen dafür auf
+       der Rangliste während des Spiels angezeigt werden"). Sie kommen aus dem
+       Steckbrief (`Net.wer`); in der Liga schickt der Server keine. */
+    const eigenTag = istAngemeldet() && Konto.profil.clan && modeId !== "online" ? Konto.profil.clan.tag : null;
+    list = Net.top.map(e => {
+      if (+e.id === Net.you) return {name:Game.name, m:+e.m, me:true, titel: +e.id === Net.kt, tag: eigenTag};
+      const w = Net.wer.get(+e.id);
+      return {name:mitMarke(String(e.n || "?")), m:+e.m, titel: +e.id === Net.kt, tag: (w && w.t) || null};
+    });
     if (gm > 0 && !list.some(e => e.me))
-      list.push({name:Game.name, m:gm, me:true, titel: Net.kt === Net.you, platz: Net.platz || 0});
+      list.push({name:Game.name, m:gm, me:true, titel: Net.kt === Net.you, platz: Net.platz || 0, tag: eigenTag});
   } else {
     const byGid = new Map();
     for (const r of Game.rivals){
@@ -5239,7 +5406,8 @@ function paintBoard(gm){
                  `<span>${dauerText(Net.kts)}</span></div>`;
   }
   $("board").innerHTML = zeigen.map(({e,rang}) =>
-    `<div class="row${e.me?" me":""}"><span>${rang}. ${e.titel ? '<b style="color:#f2c14e">♛</b> ' : ""}${esc(e.name)}</span>` +
+    `<div class="row${e.me?" me":""}"><span>${rang}. ${e.titel ? '<b style="color:#f2c14e">♛</b> ' : ""}` +
+    `${e.tag ? '<i class="kz">' + esc(e.tag) + '</i>' : ""}${esc(e.name)}</span>` +
     `<span>${Math.round(e.m)}</span></div>`
   ).join("") + titelZeile;
 }
@@ -5313,12 +5481,14 @@ requestAnimationFrame(loop);
    Startbildschirm und keine eigenen Bildschirme mehr. */
 /* Jeder Schleier, den `show()` wechselt, muss hier stehen — sonst bleibt er
    hinter dem nächsten offen (so geschehen mit dem Bonusfenster, 16.09.2026). */
-const VEILS = ["accountVeil","startVeil","testVeil","endVeil","legalVeil",
+const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legalVeil",
                "friendsVeil","setVeil","rankVeil","pwVeil","pwaVeil","clanVeil",
                "hilfeVeil","bonusVeil","meldeVeil","agbVeil",
                /* Ausbau v106: Widerruf, Seite hinter den Mail-Links,
                   Umfrage und Bewertungsbitte. */
-               "widerrufVeil","ankerVeil","umfrageVeil","bewertVeil"];
+               "widerrufVeil","ankerVeil","umfrageVeil","bewertVeil",
+               /* v109: Spielerprofil und Bildwahl. */
+               "profilVeil","bildVeil","loeschVeil"];
 
 
 const SET_UI = [
@@ -5562,6 +5732,10 @@ function widerrufMoeglich(){
 function widerrufKnoepfe(){
   const an = widerrufMoeglich();
   const r = document.getElementById("setRecht"); if (r) r.hidden = !an;
+  /* Die Leiste nennt das Ende der Frist (v109) — ein Datum sagt mehr als
+     „innerhalb der Frist". */
+  const f = document.getElementById("setRechtFrist");
+  if (f && an) f.textContent = t("wd_bis", berlinZeit(Number(Konto.profil.widerrufBis)));
   const l = document.getElementById("legalWiderruf"); if (l) l.hidden = !an;
 }
 /* Datum in deutscher Zeit — maßgeblich ist der Eingang auf dem Server in
@@ -5766,8 +5940,65 @@ function buildSettings(){
   });
   wrap.appendChild(text); wrap.appendChild(knopf);
   box.appendChild(wrap);
+  /* Konto löschen (v109): ruhig, ganz unten, aber da — die Stores verlangen
+     den Weg in der App. */
+  const lw = document.createElement("div");
+  lw.className = "opt";
+  const lt = document.createElement("div");
+  lt.innerHTML = `<b>${esc(t("kl_zeile"))}</b><small>${esc(t("kl_zeile_h"))}</small>`;
+  const lb = document.createElement("button");
+  lb.type = "button"; lb.className = "quiet";
+  lb.style.cssText = "margin:0;width:auto;padding:6px 12px";
+  lb.textContent = t("kl_knopf");
+  lb.addEventListener("click", kontoLoeschenOeffnen);
+  lw.appendChild(lt); lw.appendChild(lb);
+  box.appendChild(lw);
 }
-function hideAll(){ VEILS.forEach(v => $(v).hidden = true); anmeldungLage(); }
+/* Das Fenster zum Löschen (v109): ein Satz zu den Folgen, ein Feld zur
+   Bestätigung (Passwort, bei Google/Facebook der Spielername), ein roter
+   Knopf. Danach abgemeldet und zurück zur Anmeldung. */
+let klZurueck = "setVeil";
+function kontoLoeschenOeffnen(){
+  if (!istAngemeldet()) return;
+  klZurueck = "setVeil";
+  const mitPw = !(Konto.profil && Konto.profil.anbieter);
+  $("klFrage").textContent = t(mitPw ? "kl_pw" : "kl_name", Konto.profil.name);
+  const f = $("klFeld"); f.value = ""; f.type = mitPw ? "password" : "text"; f.placeholder = mitPw ? "" : Konto.profil.name;
+  $("klNote").textContent = ""; $("klNote").className = "notice";
+  $("klGo").disabled = false;
+  show("loeschVeil");
+  setTimeout(() => { try { f.focus(); } catch(_){} }, 200);
+}
+async function kontoLoeschenJetzt(){
+  const mitPw = !(Konto.profil && Konto.profil.anbieter);
+  const wert = $("klFeld").value;
+  if (!wert.trim()){ $("klNote").textContent = t("kl_leer"); $("klNote").className = "notice warn"; return; }
+  $("klGo").disabled = true;
+  const a = await Konto.ruf("/konto/loeschen", mitPw ? { passwort: wert } : { name: wert });
+  if (a && a.status === 200){
+    $("klNote").textContent = t("kl_weg"); $("klNote").className = "notice good";
+    Konto.merken(null); Gast.nichtSichern = true;
+    try { sessionStorage.setItem("talumi.abgemeldet", "1"); } catch(_){}
+    setTimeout(() => location.reload(), 1600);
+    return;
+  }
+  $("klGo").disabled = false;
+  $("klNote").textContent = t(a && a.fehler === "zu_viele_versuche" ? "e_zu_viele" : a && a.fehler === "name_falsch" ? "kl_name_falsch" : mitPw ? "kl_pw_falsch" : "net_fail");
+  $("klNote").className = "notice warn";
+}
+(function(){ try {
+  $("klGo").addEventListener("click", kontoLoeschenJetzt);
+  $("klZu").addEventListener("click", () => show(klZurueck));
+  $("klFeld").addEventListener("keydown", e => { if (e.key === "Enter") kontoLoeschenJetzt(); });
+} catch(_){} })();
+function hideAll(){
+  VEILS.forEach(v => $(v).hidden = true);
+  /* Der Happy-Hour-Auftritt liegt über allem und steht nicht in VEILS. */
+  const hv = document.getElementById("happyVeil"); if (hv) hv.hidden = true;
+  /* Die Großansicht eines Designs ebenso (v109). */
+  const dd = document.getElementById("designDetail"); if (dd && !dd.hidden){ dd.hidden = true; ddDesign = null; }
+  anmeldungLage();
+}
 /* Merkt am <body>, ob gerade die Anmeldung zu sehen ist (Schritt 110):
    Dann darf hochkant kein Drehhinweis stehen, und ein Telefon im Querformat
    bekommt die Bitte, hochkant zu halten. */
@@ -5776,14 +6007,16 @@ function anmeldungLage(){
      man meist auf dem Telefon hochkant, und der Drehhinweis läge sonst
      genau über dem Knopf „Bestätigen" bzw. „Abbestellen". */
   const offen = id => { const v = document.getElementById(id); return !!v && !v.hidden; };
-  document.body.classList.toggle("anmeldung", offen("accountVeil") || offen("ankerVeil"));
+  /* Der Willkommensbildschirm (v109) zählt mit: hochkant kein Drehhinweis,
+     die Runde beginnt erst nach dem Tipp. */
+  document.body.classList.toggle("anmeldung", offen("accountVeil") || offen("ankerVeil") || offen("willkVeil"));
 }
 /* ---- Reiter im Konsolenfenster (Schritt 79) ------------------------
    Vier Reiter statt vier Vollbildschirmen. Der Unterschied ist nicht nur
    Gestaltung: Wer im Laden steht, sieht weiter seinen Stand und kommt mit
    einem Klick zurück, statt über einen „Fertig"-Knopf. */
 let reiterJetzt = "start";
-const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat", monde:"paneMonde" };
+const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat", monde:"paneMonde", skill:"paneSkill" };
 
 function reiter(name){
   if (!REITER[name]) name = "start";
@@ -5799,6 +6032,7 @@ function reiter(name){
   if (name === "erf") buildErfolge();
   if (name === "stat"){ buildRecords(); paintRank(); }
   if (name === "monde") buildMonde();
+  if (name === "skill") buildSkill();
   if (name === "start") heldMalen();
 }
 
@@ -5847,11 +6081,11 @@ function mondeMalen(g, x, y, r, arten, zeit, hinten = false){
   if (!arten || !arten.length) return;
   const mr = Math.max(3, r * 0.16);
   const bahn = r * 1.32 + mr;
-  arten.slice(0, 3).forEach((art, i) => {
+  arten.slice(0, 4).forEach((art, i) => {
     const B = MOND_BAHN[art]; if (!B) return;
-    /* Drittel je Platz, damit zwei Monde nicht übereinanderliegen; die
-       Art gibt nur Tempo und Neigung. */
-    const w = i * 2.094 + B.phase * 0.25 + zeit * (6.283 / B.umlauf);
+    /* Ein Viertel je Platz (v109: vier Plätze), damit zwei Monde nicht
+       übereinanderliegen; die Art gibt nur Tempo und Neigung. */
+    const w = i * 1.5708 + B.phase * 0.25 + zeit * (6.283 / B.umlauf);
     const sw = Math.sin(w);
     if (hinten ? sw >= 0 : sw < 0) return;
     mondKugel(g, x + Math.cos(w) * bahn, y + sw * bahn * B.neig, mr * (0.85 + 0.15 * sw), art, hinten ? 0.85 : 1);
@@ -5879,11 +6113,13 @@ let mondeStand = null;   // letzte Antwort von /konto/monde
    Spielart, während der Reiter offen ist, geht es zurück in den Hangar. */
 function mondeReiterZeigen(){
   const leiste = $("konsReiter");
-  const knopf = leiste && leiste.querySelector("button[data-reiter=monde]");
-  if (!knopf) return;
+  if (!leiste) return;
   const zeigen = modeId === "liga";
-  knopf.hidden = !zeigen;
-  if (!zeigen && reiterJetzt === "monde") reiter("start");
+  for (const n of ["monde", "skill"]){
+    const knopf = leiste.querySelector("button[data-reiter=" + n + "]");
+    if (knopf) knopf.hidden = !zeigen;
+  }
+  if (!zeigen && (reiterJetzt === "monde" || reiterJetzt === "skill")) reiter("start");
 }
 /* Skillpunkte (Schritt 109): ein Punkt je Level, verteilt auf fünf
    Eigenschaften. Der Server rechnet (`modAusSkill` in sim.js) und prüft die
@@ -5901,15 +6137,15 @@ function buildSkill(){
     const vergeben = SKILL_FELDER.reduce((n, f) => n + (v[f] || 0), 0);
     const frei = Math.max(0, st.punkte - vergeben);
     const geaendert = SKILL_FELDER.some(f => (v[f] || 0) !== (st.verteilung[f] || 0));
-    box.innerHTML = `<div class="plate recbox" style="grid-column:1/-1"><h3>${esc(t("sp_kopf"))}</h3>` +
-      `<small class="hintline">${esc(t("sp_erkl"))}</small>` +
+    box.innerHTML = `<div class="plate recbox" style="grid-column:1/-1;margin-top:0">` +
       `<div class="skillFrei">${esc(t("sp_frei", frei, st.punkte))}</div><div id="skillZeilen"></div>` +
       `<div class="skillFuss"><button type="button" id="skillSpeichern" ${geaendert ? "" : "disabled"}>${esc(t("sp_speichern"))}</button>` +
       `<button type="button" class="quiet" id="skillReset" ${vergeben ? "" : "disabled"}>${esc(t("sp_reset"))}</button></div></div>`;
     const z = $("skillZeilen");
     for (const f of SKILL_FELDER){
       const row = document.createElement("div"); row.className = "skillZeile";
-      row.innerHTML = `<div><b>${esc(t("sp_" + f))}</b><small>+${((v[f] || 0) / 10).toLocaleString(lang, {minimumFractionDigits:1, maximumFractionDigits:1})} %</small></div>` +
+      /* 0,2 % je Punkt seit v109, Teilweite 0,1 % (`modAusSkill` in sim.js). */
+      row.innerHTML = `<div><b>${esc(t("sp_" + f))}</b><small>+${((v[f] || 0) / (f === "push" ? 10 : 5)).toLocaleString(lang, {minimumFractionDigits:1, maximumFractionDigits:1})} %</small></div>` +
         `<div class="skillKn"><button type="button" data-minus="${f}" ${v[f] ? "" : "disabled"}>−</button><i>${v[f] || 0}</i>` +
         `<button type="button" data-plus="${f}" ${frei ? "" : "disabled"}>+</button></div>`;
       z.appendChild(row);
@@ -5929,61 +6165,127 @@ function buildSkill(){
     if (!a || !a.ok) return;
     a.konto = Konto.profil ? Konto.profil.id : 0;
     skillStand = a; skillEntwurf = Object.assign({}, a.verteilung); Profile.skill = Object.assign({}, a.verteilung);
-    if (reiterJetzt === "monde") zeichnen();
+    if (reiterJetzt === "skill") zeichnen();
   });
 }
+
+/* Die Welt im Reiter „Monde" (v109): das gewählte Design als Welt mit
+   Ringen, gezeichnet von `body()`, und die vier Plätze auf dem mittleren
+   Ring. Angelegte Monde sitzen fest auf ihrem Platz (im Spiel kreisen sie);
+   ein Knopf je Platz liegt als Tippfläche darüber. */
+const MOND_PLATZ_WINKEL = [-2.6, -0.55, 0.55, 2.6];   // zwei hinten, zwei vorn
+function mondPlatzLage(i, R, S){
+  const a = MOND_PLATZ_WINKEL[i], ring = R * 1.66, neig = .3, dreh = .2;
+  const x = Math.cos(a) * ring, y = Math.sin(a) * ring * neig;
+  return { x: S/2 + x * Math.cos(dreh) - y * Math.sin(dreh), y: S/2 + x * Math.sin(dreh) + y * Math.cos(dreh), hinten: Math.sin(a) < 0 };
+}
+function mondReiterMalen(aktiv){
+  const c = $("mondCanvas"), glc = $("mondGL"); if (!c) return;
+  const S = c.width, monde = (aktiv || []).slice(0, 4);
+  const stufe = STAGES.length - 1, masse = STAGES[stufe].at;
+  const R = S * heldAnteil(stufe, skin, monde.length ? monde : null);
+  if (glc && Mond3D.moeglich(glc)){
+    glc.hidden = false;
+    Mond3D.zeigen({ pal: skin, masse, stufe, monde: monde.length ? monde : null, R, S });
+  } else {
+    if (glc) glc.hidden = true;
+    const g = c.getContext("2d");
+    g.clearRect(0, 0, S, S);
+    const saveT = Game.t; Game.t = 1.2; MENUE_VOLL = true;
+    if (monde.length) mondeMalen(g, S/2, S/2, R, monde, 1.2, true);
+    try { body(g, S/2, S/2, R, masse, skin, 0, "", true); } catch(_){}
+    if (monde.length) mondeMalen(g, S/2, S/2, R, monde, 1.2);
+    MENUE_VOLL = false; Game.t = saveT;
+  }
+  /* Die vier Plätze als Reihe unter der Welt: Mond oder „+". */
+  const kn = $("mondPlatzKn");
+  if (!kn) return;
+  kn.innerHTML = "";
+  const m = mondeStand, besitz = (m && m.monde.besitz) || {};
+  for (let i = 0; i < 4; i++){
+    const art = monde[i];
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = art ? "voll" : "";
+    b.title = art ? t("mo_ablegen") + ": " + t(MONDE[art].name) : t("mo_platz");
+    b.setAttribute("aria-label", b.title);
+    if (art) b.appendChild(mondBild(art, besitz[art] || 1)); else b.textContent = "+";
+    b.addEventListener("click", () => {
+      if (art) mondAnlegenWechseln(art);
+      else { const l = $("mondeInhalt"); if (l) l.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    });
+    kn.appendChild(b);
+  }
+}
+async function mondAnlegenWechseln(art){
+  const m = mondeStand; if (!m) return;
+  const aktiv = m.monde.aktiv, an = aktiv.includes(art);
+  const neu = an ? aktiv.filter(a => a !== art) : aktiv.concat(art);
+  if (neu.length > (m.plaetze || 4)){ toast(t("mo_voll")); return; }
+  const a = await Konto.ruf("/konto/monde/anlegen", { aktiv: neu });
+  if (a && a.ok){ m.monde = a.monde; Profile.monde = a.monde; buildMonde(); heldMalen(); }
+  else toast(t("net_fail"));
+}
 function buildMonde(){
-  buildSkill();
-  const box = $("mondeInhalt");
+  const box = $("mondeInhalt"), seite = $("mondSeite");
+  if (!box) return;
   if (!box) return;
   if (!istAngemeldet()){
     box.innerHTML = `<p class="hintline">${esc(t("mo_konto"))}</p>`;
+    if (seite) seite.innerHTML = "";
+    mondReiterMalen([]);
     return;
   }
   const roem = st => ["I", "II", "III"][st - 1] || String(st);
   const zeichnen = () => {
     const m = mondeStand;
     if (!m) return;
-    const besitz = m.monde.besitz, aktiv = m.monde.aktiv;
-    box.innerHTML =
-      `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><div class="mondPlaetze" id="mondPlaetze"></div>` +
-      `<h3 style="margin-top:14px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
-      `<small class="hintline">${esc(t("mo_staub_erkl"))}</small></div>` +
-      `<div class="plate recbox"><h3>${esc(t("mo_besitz"))}</h3><div id="mondListe"></div>` +
-      `<h3 style="margin-top:14px">${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
-      MOND_ARTEN.map(a => `<li class="${besitz[a] ? "hat" : ""}">${esc(t(MONDE[a].quelle))}</li>`).join("") + `</ol></div>`;
-    const pl = $("mondPlaetze");
-    for (let i = 0; i < (m.plaetze || 3); i++){
-      const art = aktiv[i];
-      const d = document.createElement("div");
-      d.className = "mondPlatz" + (art ? " voll" : "");
-      if (art){ d.appendChild(mondBild(art, besitz[art] || 1)); const n = document.createElement("span"); n.textContent = t(MONDE[art].name); d.appendChild(n); }
-      else d.textContent = t("mo_platz");
-      pl.appendChild(d);
+    const besitz = m.monde.besitz, aktiv = m.monde.aktiv, vorrat = m.monde.vorrat || {};
+    mondReiterMalen(aktiv);
+    /* Rechts: Mondstaub und die Wege. Der Fund-Satz nennt die echten
+       Zahlen vom Server. */
+    if (seite){
+      const F = m.fund || { basis: .06, jePulsar: .15, deckel: .6 };
+      const pz = n => Math.round(n * 100) + " %";
+      seite.innerHTML =
+        `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><small class="hintline">${esc(t("mo_platz_erkl", aktiv.length, m.plaetze || 4))}</small>` +
+        `<h3 style="margin-top:12px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
+        `<small class="hintline">${esc(t("mo_staub_erkl"))}</small></div>` +
+        `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
+        [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
+          .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
     }
+    box.innerHTML = `<h3 class="dGruppe" style="margin:4px 0 10px">${esc(t("mo_besitz"))}<em>${MOND_ARTEN.filter(a => besitz[a]).length} / ${MOND_ARTEN.length}</em></h3><div class="mondVorrat" id="mondListe"></div>`;
     const liste = $("mondListe");
     const eigene = MOND_ARTEN.filter(a => besitz[a]);
     if (!eigene.length){ liste.innerHTML = `<p class="hintline">${esc(t("mo_leer"))}</p>`; return; }
     for (const art of eigene){
-      const st = besitz[art], an = aktiv.includes(art);
-      const k = document.createElement("div"); k.className = "mondKarte";
+      const st = besitz[art], an = aktiv.includes(art), z = vorrat[art] || [0, 0, 0];
+      const k = document.createElement("div"); k.className = "mondKarte" + (an ? " an" : "");
       k.appendChild(mondBild(art, st));
       const tx = document.createElement("div");
       tx.innerHTML = `<b>${esc(t(MONDE[art].name))} · ${esc(t("mo_stufe", roem(st)))}</b>` +
-        `<small>${esc(t(MONDE[art].wirkung, MOND_PCT_ANZEIGE[st]))}</small>`;
+        `<small>${esc(t(MONDE[art].wirkung, MOND_PCT_ANZEIGE[st]))}</small>` +
+        `<div class="stufen">${[0, 1, 2].map(i => `<span class="${z[i] ? "hat" : ""}">${roem(i + 1)} ×${z[i]}</span>`).join("")}</div>`;
       k.appendChild(tx);
       const kn = document.createElement("div"); kn.className = "kn";
       const b1 = document.createElement("button"); b1.type = "button";
       b1.textContent = t(an ? "mo_ablegen" : "mo_anlegen");
-      b1.onclick = async () => {
-        const neu = an ? aktiv.filter(a => a !== art) : aktiv.concat(art);
-        if (neu.length > (m.plaetze || 3)){ toast(t("mo_voll")); return; }
-        b1.disabled = true;
-        const a = await Konto.ruf("/konto/monde/anlegen", { aktiv: neu });
-        if (a && a.ok){ m.monde = a.monde; Profile.monde = a.monde; zeichnen(); heldMalen(); }
-        else { b1.disabled = false; toast(t("net_fail")); }
-      };
+      b1.onclick = () => { b1.disabled = true; mondAnlegenWechseln(art); };
       kn.appendChild(b1);
+      /* Verschmelzen (v109): drei gleiche der niedrigsten Stufe mit ≥ 3. */
+      const fusionStufe = [0, 1].find(i => z[i] >= (m.fusion || 3));
+      if (fusionStufe !== undefined){
+        const b3 = document.createElement("button"); b3.type = "button";
+        b3.textContent = t("mo_fusion", m.fusion || 3, roem(fusionStufe + 1), roem(fusionStufe + 2));
+        b3.onclick = async () => {
+          b3.disabled = true;
+          const a = await Konto.ruf("/konto/monde/fusion", { art, stufe: fusionStufe + 1 });
+          if (a && a.ok){ m.monde = a.monde; Profile.monde = a.monde; zeichnen(); heldMalen(); lohnZeigen(t(MONDE[art].name), t("mo_stufe", roem(a.stufe)), ""); }
+          else { b3.disabled = false; toast(t("net_fail")); }
+        };
+        kn.appendChild(b3);
+      }
       const b2 = document.createElement("button"); b2.type = "button";
       if (st >= 3){ b2.textContent = t("mo_max"); b2.disabled = true; }
       else {
@@ -6063,6 +6365,7 @@ function heldMalen(){
   }
 
   setze("heldName", spielerName() || t("k_guest"));
+  try { heldBildMalen(); } catch(_){}
   /* Level und Rang über und unter dem Körper schreibt `paintPurse()` —
      die läuft auch beim Sprachwechsel, diese Funktion nicht. */
 }
@@ -6075,7 +6378,7 @@ function heldAnteil(stufe, pal, monde){
   const T = pal.tier || 1, F = pal.trait || "plain";
   let weit = stufe >= 4 ? 2.05 : stufe >= 3 ? 1.35 : 1.0;
   weit = Math.max(weit, T >= 6 ? 1.95 : T >= 5 ? 1.70 : T >= 4 ? 1.42 : T >= 3 ? 1.26 : 1);
-  const schmuck = { halo:2.1, strahlen:1.9, feuer:1.75, shards:1.72, frost:1.45, warp:1.32, spikes:1.18, prism:1.1 };
+  const schmuck = { halo:2.1, strahlen:1.5, feuer:1.58, shards:1.72, frost:1.45, warp:1.32, spikes:1.18, prism:1.1 };
   weit = Math.max(weit, schmuck[F] || 1);
   if (monde) weit = Math.max(weit, 1.7);
   return Math.min(.40, .49 / weit);
@@ -6367,7 +6670,9 @@ const Held3D = {
      drängen sie sich auf der Kugel dort zusammen. */
   textur(pal){
     const gl = this.gl;
-    const alt = this.texturen.get(pal.id);
+    const W = this.texturBreite || (Settings.lowPower ? 512 : 1024), H = W / 2;
+    const schl = pal.id + "|" + W;
+    const alt = this.texturen.get(schl);
     if (alt) return alt;
     /* Höchstens sechs Karten im Speicher — mehr braucht niemand, der im
        Hangar Designs durchprobiert, und jede kostet zwei Megabyte. */
@@ -6375,7 +6680,6 @@ const Held3D = {
       const [k, v] = this.texturen.entries().next().value;
       gl.deleteTexture(v); this.texturen.delete(k);
     }
-    const W = Settings.lowPower ? 512 : 1024, H = W / 2;
     const A = document.createElement("canvas"); A.width = W; A.height = H;
     const E = document.createElement("canvas"); E.width = W; E.height = H;
     const ga = A.getContext("2d"), ge = E.getContext("2d");
@@ -6548,7 +6852,7 @@ const Held3D = {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    this.texturen.set(pal.id, tex);
+    this.texturen.set(schl, tex);
     this.gebaut = true;   // dieses Bild zählt für die Bremse nicht mit
     return tex;
   },
@@ -6719,7 +7023,7 @@ const Held3D = {
 
     /* Lage im Raum: Achse leicht geneigt, der Körper dreht sich langsam. */
     const neigung = this.mal(this.rotZ(-.20), this.rotX(.305));
-    const rot = this.mal(neigung, this.rotY(zeit * .22));
+    const rot = this.mal(neigung, this.rotY(zeit * .22 + (this.dreh || 0)));
 
     /* 2. Die Kugel. */
     const K = this.prog.kugel;
@@ -6755,9 +7059,9 @@ const Held3D = {
        ist, verschwindet hinter der Kugel von selbst. */
     if (st.monde){
       const mr = .16, bahn = 1.32 + mr;
-      st.monde.slice(0, 3).forEach((art, i) => {
+      st.monde.slice(0, 4).forEach((art, i) => {
         const B = MOND_BAHN[art]; if (!B) return;
-        const wnk = i * 2.094 + B.phase * .25 + (zeit + 1.2) * (6.283 / B.umlauf);
+        const wnk = i * 1.5708 + B.phase * .25 + (zeit + 1.2) * (6.283 / B.umlauf);
         const sw = Math.sin(wnk), cw = Math.cos(wnk);
         const x = cw * bahn, y = sw * bahn * B.neig, z = -sw * bahn * (1 - B.neig);
         const MM = MONDE[art];
@@ -6796,18 +7100,568 @@ const Held3D = {
 
     /* 5. Darüber, auf der zweiten Fläche: was das Design außerhalb des
        Kreises trägt — derselbe Code wie im Spiel. */
-    const c2 = document.getElementById("heldCanvas");
+    const c2 = document.getElementById(this.obenId || "heldCanvas");
     if (c2){
       const g = c2.getContext("2d");
       g.clearRect(0, 0, c2.width, c2.height);
       const saveT = Game.t; Game.t = zeit + 1.2;
       try { designSchmuck(g, S / 2, S / 2, R, pal, pal.trait || "plain", merkmale(pal), true); } catch(_){}
       Game.t = saveT;
-      if (!foto) try { heldBaender(g); } catch(_){}
+      if (!foto && !this.ohneBaender) try { heldBaender(g); } catch(_){}
     }
   }
 };
 document.addEventListener("visibilitychange", () => { if (!document.hidden) Held3D.weiter(); });
+
+/* Dritte 3D-Fläche (v109) — steht hier hinter `Held3D`, weil `Object.create`
+   das Vorbild zur Ladezeit braucht; weiter oben brach der Client beim Laden ab.
+   Die Welt: die Welt im Reiter „Monde", mit kreisenden Monden wie
+   im Hangar. Erbt alles von `Held3D`, eigene Leinwände, eigene Sicht. */
+const Mond3D = Object.assign(Object.create(Held3D), {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  kosten: 0, bilder: 0, stehen: false, fotos: {},
+  obenId: "mondCanvas", ohneBaender: true, dreh: 0,
+  sichtbar(){
+    const sv = document.getElementById("startVeil"), p = document.getElementById("paneMonde");
+    return !!sv && !sv.hidden && !!p && !p.hidden && !document.hidden && !Game.running;
+  }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Mond3D.weiter(); });
+
+/* =====================================================================
+   DESIGN-LADEN IN 3D (v109)
+
+   Thomas am 22.09.2026: „Die Designs im Design Store sehen oft minderwertig
+   und oft sehr ähnlich aus … Die Auflösung der Designs im Store muss für
+   größere Bildschirme viel besser werden." Und: „Wenn man auf ein Design im
+   Store tippt, soll dieses groß und in 3D erscheinen. Es soll sich drehen.
+   Darunter soll es dann einen Knopf geben, um es auszuwählen bzw. es zu
+   kaufen. Es soll auch mit einem kleinen Symbol ersichtlich sein, welches
+   gerade gewählt ist."
+
+   Bis v108 malte jede Kachel ein 132-Punkte-Bildchen mit dem 2D-Zeichner —
+   auf einem großen Schirm auf 600 Punkte hochgezogen, also verwaschen, und
+   ohne die Materialien, die im Hangar den Unterschied machen (Metall glänzt,
+   Glas spiegelt, Glut leuchtet). Jetzt:
+
+   - **Kacheln** zeigen ein Foto des 3D-Modells, in der Auflösung der Kachel
+     (`DesignBild`). Erst steht das gemalte Bildchen da, das Foto kommt
+     nach, eines je Bild, nur solange der Reiter offen ist.
+   - **Ein Tipp** öffnet `#designDetail`: das Modell groß und drehend, mit
+     dem Finger zu drehen, darunter der eine Knopf — auswählen, kaufen, oder
+     sagen, was fehlt. Pfeile blättern zum nächsten Design.
+   - Gezeichnet wird mit einer **zweiten** 3D-Fläche (`Detail3D`), damit der
+     Hangar seinen eigenen Stand behält. Sie erbt alles von `Held3D` und hat
+     nur eigene Leinwände, eigene Texturen und eine eigene Sichtbarkeit.
+   ===================================================================== */
+const Detail3D = Object.assign(Object.create(Held3D), {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  kosten: 0, bilder: 0, stehen: false, fotos: {},
+  obenId: "ddOben", ohneBaender: true, dreh: 0,
+  sichtbar(){
+    const v = document.getElementById("designDetail");
+    return !!v && !v.hidden && !document.hidden;
+  }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Detail3D.weiter(); });
+
+/* Fotos für die Kacheln. Warteschlange, eines je Bild — 46 Oberflächen auf
+   einmal zu rechnen hielte ein günstiges Telefon mehrere Sekunden an. Die
+   Oberfläche wird dafür in halber Auflösung gerechnet (512 statt 1024): Auf
+   einer Kachel sieht niemand den Unterschied, und es geht viermal schneller. */
+const DesignBild = {
+  fertig: new Map(),          // Design-Kennung → data:-Adresse
+  warten: [],                 // [{pal, px}]
+  laeuft: false,
+  groesse(){
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    return Math.min(480, Math.max(200, Math.round(190 * dpr / 40) * 40));
+  },
+  anfordern(pal){
+    if (!this.fertig.has(pal.id) && !this.warten.some(w => w.pal.id === pal.id)) this.warten.push({ pal });
+    this.anstossen();
+  },
+  /* Anstoßen mit kurzer Verzögerung: `buildGrid()` läuft beim Wechsel in den
+     Reiter, bevor der Reiter als offen gilt — ein sofortiger Blick sähe ihn
+     noch geschlossen und legte die Schlange still. */
+  anstossen(){
+    if (this.laeuft || !this.warten.length) return;
+    this.laeuft = true;
+    setTimeout(() => requestAnimationFrame(() => this.weiter()), 60);
+  },
+  weiter(){
+    const glc = document.getElementById("ddGL");
+    if (!this.warten.length || !glc || !Detail3D.moeglich(glc) || !ladenOffen()){ this.laeuft = false; return; }
+    /* Läuft gerade die Großansicht, hat sie Vorrang — die Fotos warten. */
+    if (Detail3D.sichtbar()){ setTimeout(() => this.weiter(), 400); return; }
+    const { pal } = this.warten.shift();
+    const url = this.foto(pal, this.groesse());
+    if (url){
+      this.fertig.set(pal.id, url);
+      for (const img of document.querySelectorAll('img.dBild[data-id="' + pal.id + '"]')){
+        img.src = url; img.classList.add("da");
+      }
+    }
+    requestAnimationFrame(() => this.weiter());
+  },
+  foto(pal, px){
+    const glc = document.getElementById("ddGL"), c2 = document.getElementById("ddOben");
+    if (!glc || !c2) return null;
+    try {
+      const S = glc.width;
+      const breite = Detail3D.texturBreite;
+      Detail3D.texturBreite = 512;
+      Detail3D.stand = { pal, masse: STAGES[STAGES.length - 1].at, stufe: STAGES.length - 1, monde: null,
+                         R: S * heldAnteil(STAGES.length - 1, pal, null), S };
+      Detail3D.zeit = 2.4; Detail3D.dreh = 0;
+      Detail3D.bild(true);
+      Detail3D.texturBreite = breite;
+      const aus = document.createElement("canvas"); aus.width = aus.height = px;
+      const g = aus.getContext("2d");
+      g.imageSmoothingQuality = "high";
+      g.drawImage(glc, 0, 0, px, px); g.drawImage(c2, 0, 0, px, px);
+      return aus.toDataURL("image/png");
+    } catch(_){ return null; }
+  }
+};
+
+/* ---- Die Großansicht ------------------------------------------------ */
+let ddDesign = null;
+function designReihe(){
+  /* Dieselbe Reihenfolge wie im Raster: erst Level, dann Ore, dann besondere. */
+  return designGruppen().flatMap(g => g.liste);
+}
+function designGruppen(){
+  const lv = SKINS.filter(s => s.lv && !s.sonder).sort((a, b) => a.lv - b.lv);
+  const ore = SKINS.filter(s => s.ore && !s.sonder && !s.lv).sort((a, b) => a.ore - b.ore);
+  const rest = SKINS.filter(s => !lv.includes(s) && !ore.includes(s));
+  return [{ kopf: "dg_level", liste: lv }, { kopf: "dg_ore", liste: ore }, { kopf: "dg_sonder", liste: rest }]
+    .filter(g => g.liste.length);
+}
+
+function designDetailOeffnen(s){
+  const v = document.getElementById("designDetail");
+  if (!v || !s) return;
+  ddDesign = s;
+  v.hidden = false;
+  try { kaufLeisteAus(); } catch(_){}
+  designDetailMalen();
+  const glc = document.getElementById("ddGL");
+  const bild = document.getElementById("ddBild");
+  if (glc && Detail3D.moeglich(glc)){
+    glc.hidden = false;
+    if (bild) bild.hidden = true;
+    const S = glc.width, stufe = STAGES.length - 1;
+    Detail3D.texturBreite = 0;
+    Detail3D.dreh = 0;
+    Detail3D.zeigen({ pal: s, masse: STAGES[stufe].at, stufe, monde: null, R: S * heldAnteil(stufe, s, null), S });
+  } else {
+    /* Ohne WebGL: das gemalte Bild, groß. */
+    if (glc) glc.hidden = true;
+    if (bild){ bild.hidden = false; preview(bild, s); }
+  }
+}
+function designDetailZu(){
+  const v = document.getElementById("designDetail");
+  if (!v || v.hidden) return;
+  v.hidden = true;
+  Detail3D.laeuft = false;
+  ddDesign = null;
+  if (ladenOffen()) buildGrid();
+}
+function designDetailBlaettern(schritt){
+  const reihe = designReihe();
+  const i = reihe.findIndex(s => ddDesign && s.id === ddDesign.id);
+  if (i < 0) return;
+  designDetailOeffnen(reihe[(i + schritt + reihe.length) % reihe.length]);
+}
+
+/* Name, Rang, Material, Bedingung und der eine Knopf. */
+function designDetailMalen(){
+  const s = ddDesign;
+  if (!s) return;
+  const st = Profile.state(s);
+  const hat = Profile.owned.has(s.id), gewaehlt = skin.id === s.id;
+  setze("ddName", s.label);
+  setze("ddRang", t("dd_rang", ROMAN[s.tier || 1]));
+  setze("ddMat", t("mat_" + (s.mat || "fels")));
+  const w = document.getElementById("ddWie");
+  if (w) w.textContent = hat ? t("dd_hast") : s.sonder ? t("sk_" + s.sonder + "_note")
+                       : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang));
+  const k = document.getElementById("ddKnopf");
+  if (!k) return;
+  k.disabled = false; k.className = "ddKnopf";
+  if (gewaehlt){ k.textContent = "✓ " + t("dd_gewaehlt"); k.disabled = true; k.classList.add("gewaehlt"); }
+  else if (hat){ k.textContent = t("dd_waehlen"); }
+  else if (s.sonder){ k.textContent = t("dd_besonders"); k.disabled = true; }
+  else if (s.lv){ k.textContent = t("dd_level_kurz", s.lv); k.disabled = true; }
+  else if (Profile.ore >= s.ore){ k.innerHTML = ICON_ORE + esc(t("dd_kaufen", s.ore.toLocaleString(lang))); k.classList.add("kauf"); }
+  else { k.innerHTML = ICON_ORE + esc(t("dd_fehlt", (s.ore - Profile.ore).toLocaleString(lang))); k.disabled = true; }
+  const n = document.getElementById("ddNote");
+  if (n){ n.textContent = ""; n.className = "ddNote"; }
+  /* Welche Gruppe und welche Nummer darin — hilft beim Blättern. */
+  const gr = designGruppen().find(g => g.liste.some(x => x.id === s.id));
+  if (gr) setze("ddZahl", t(gr.kopf) + " · " + (gr.liste.findIndex(x => x.id === s.id) + 1) + " / " + gr.liste.length);
+  void st;
+}
+
+async function designDetailKnopf(){
+  const s = ddDesign;
+  if (!s) return;
+  if (Profile.owned.has(s.id)){
+    await pick(s);
+    designDetailMalen();
+    try { heldMalen(); buildStrip(); } catch(_){}
+    return;
+  }
+  if (!s.sonder && !s.lv && Profile.ore >= s.ore){
+    const k = document.getElementById("ddKnopf");
+    if (k) k.disabled = true;
+    await kaufMitOre(s);
+    designDetailMalen();
+    const n = document.getElementById("ddNote"), sn = document.getElementById("shopNote");
+    if (n && sn){ n.textContent = sn.textContent; n.className = "ddNote " + (sn.className.includes("good") ? "good" : sn.className.includes("warn") ? "warn" : ""); }
+    try { heldMalen(); buildStrip(); } catch(_){}
+  }
+}
+
+(function designDetailEinhaengen(){
+  try {
+    const v = document.getElementById("designDetail");
+    if (!v) return;
+    document.getElementById("ddZu").addEventListener("click", designDetailZu);
+    document.getElementById("ddVor").addEventListener("click", () => designDetailBlaettern(1));
+    document.getElementById("ddZurueck").addEventListener("click", () => designDetailBlaettern(-1));
+    document.getElementById("ddKnopf").addEventListener("click", designDetailKnopf);
+    /* Ein Tipp neben das Fenster schließt, wie bei jeder Großansicht. */
+    v.addEventListener("click", e => { if (e.target === v) designDetailZu(); });
+    addEventListener("keydown", e => {
+      if (v.hidden) return;
+      if (e.key === "Escape") designDetailZu();
+      if (e.key === "ArrowRight") designDetailBlaettern(1);
+      if (e.key === "ArrowLeft") designDetailBlaettern(-1);
+    });
+    /* Drehen mit dem Finger oder der Maus: waagerecht ziehen dreht um die
+       Achse. Beim Loslassen dreht er von selbst weiter. */
+    const buehne = document.getElementById("ddBuehne");
+    let zieht = null;
+    buehne.addEventListener("pointerdown", e => { zieht = { x: e.clientX, d: Detail3D.dreh }; try { buehne.setPointerCapture(e.pointerId); } catch(_){} });
+    buehne.addEventListener("pointermove", e => {
+      if (!zieht) return;
+      Detail3D.dreh = zieht.d + (e.clientX - zieht.x) * 0.012;
+      if (!Detail3D.laeuft) try { Detail3D.bild(); } catch(_){}
+    });
+    const los = () => { zieht = null; };
+    buehne.addEventListener("pointerup", los);
+    buehne.addEventListener("pointercancel", los);
+  } catch(_){}
+})();
+
+
+/* =====================================================================
+   PROFILBILDER — die zwanzig Hüter (v109)
+
+   Thomas (22.09.2026): „Dafür kann man aus 20 Profilbildern auswählen. Man
+   könnte es so darstellen, dass man als Spieler der Herr über die Welt ist,
+   die man steuert." Und: „Je nachdem welches Profilbild zu Beginn des
+   ersten Spiels ausgewählt wird, wird man auch von dem Bild … durch das
+   Tutorial geführt."
+
+   Zwanzig Figuren, alle im selben Stil: eine dunkle Silhouette (Kopf und
+   Schultern) vor einem leuchtenden Nebel in ihrer Farbe, zwei Augen, die in
+   derselben Farbe glühen, und **ein** Merkmal, das sie unterscheidet —
+   Helm, Krone, Kapuze, Hörner, Antennen, Visier … Keine Gesichter: Ein
+   gezeichnetes Gesicht altert schlecht und sieht in jeder Kultur anders
+   aus; eine Silhouette mit Licht liest sich überall gleich. Gezeichnet
+   wird auf einer Leinwand, in jeder Größe scharf; keine Bilddateien.
+
+   Jede Figur hat eine Kennung (0–19), einen Namen (übersetzt, `av_<id>`)
+   und eine Farbe. Der Server speichert nur die Nummer.
+   ===================================================================== */
+const AVATARE = [
+  { id:"pilot",     farbe:"#7fd7ff", form:"helm" },
+  { id:"waechter",  farbe:"#ffd36a", form:"krone" },
+  { id:"schatten",  farbe:"#b49bff", form:"kapuze" },
+  { id:"sturm",     farbe:"#8ef5bd", form:"hoerner" },
+  { id:"funk",      farbe:"#ff9a72", form:"antennen" },
+  { id:"visier",    farbe:"#ff6bff", form:"visier" },
+  { id:"komet",     farbe:"#fff2a8", form:"kamm" },
+  { id:"eis",       farbe:"#bfe8ff", form:"zacken" },
+  { id:"glut",      farbe:"#ff7b3a", form:"flammen" },
+  { id:"orbit",     farbe:"#d6c2ff", form:"ring" },
+  { id:"nebel",     farbe:"#9fe6d2", form:"schleier" },
+  { id:"stahl",     farbe:"#d7dde3", form:"panzer" },
+  { id:"pflanze",   farbe:"#9be07a", form:"blatt" },
+  { id:"leuchte",   farbe:"#ffe58a", form:"laterne" },
+  { id:"tiefsee",   farbe:"#3ed6ea", form:"fuehler" },
+  { id:"kristall",  farbe:"#e8e8f5", form:"kristall" },
+  { id:"wolf",      farbe:"#c9b76a", form:"ohren" },
+  { id:"mond",      farbe:"#f0e4d0", form:"sichel" },
+  { id:"rauch",     farbe:"#a8927a", form:"maske" },
+  { id:"stern",     farbe:"#8fc98f", form:"stern" }
+];
+const AVATAR_BILDER = {};
+/* Ein Profilbild in der Größe `S` (Punkte); `rahmen` malt den runden Rand. */
+function avatarBild(nr, S = 128, rahmen = true){
+  const key = nr + "|" + S + "|" + (rahmen ? 1 : 0);
+  if (AVATAR_BILDER[key]) return AVATAR_BILDER[key];
+  const A = AVATARE[nr] || AVATARE[0];
+  const c = document.createElement("canvas"); c.width = c.height = S;
+  const g = c.getContext("2d"), u = S / 100;   // Zeichnung in 100er-Einheiten
+  const F = A.farbe;
+  g.save();
+  g.beginPath(); g.arc(S/2, S/2, S/2 - (rahmen ? u*1.5 : 0), 0, 7); g.clip();
+  /* Nebel: dunkler Grund, Licht hinter dem Kopf. */
+  g.fillStyle = "#0b0e16"; g.fillRect(0, 0, S, S);
+  const neb = g.createRadialGradient(S*.5, S*.42, S*.05, S*.5, S*.5, S*.62);
+  neb.addColorStop(0, hexA(F, .55)); neb.addColorStop(.45, hexA(F, .16)); neb.addColorStop(1, hexA(F, 0));
+  g.fillStyle = neb; g.fillRect(0, 0, S, S);
+  /* Ein paar Sterne, fest gewürfelt. */
+  const w = wuerfel(saat("avatar|" + A.id));
+  g.fillStyle = "rgba(255,255,255,.7)";
+  for (let i = 0; i < 14; i++){ const x = w()*S, y = w()*S, r = (.3 + w()*.9)*u; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); }
+  /* Die Silhouette: Schultern und Kopf. */
+  g.translate(S/2, S/2);
+  const dunkel = "#070910";
+  const koerper = () => {
+    g.beginPath();
+    g.moveTo(-46*u, 62*u); g.quadraticCurveTo(-44*u, 30*u, -18*u, 24*u);
+    g.lineTo(-10*u, 18*u); g.lineTo(10*u, 18*u); g.lineTo(18*u, 24*u);
+    g.quadraticCurveTo(44*u, 30*u, 46*u, 62*u); g.closePath();
+  };
+  koerper(); g.fillStyle = dunkel; g.fill();
+  /* Lichtsaum am Körper. */
+  koerper(); g.strokeStyle = hexA(F, .55); g.lineWidth = 1.2*u; g.stroke();
+  /* Ein Lichtschimmer auf den Schultern, von oben. */
+  koerper(); g.save(); g.clip();
+  const sch = g.createLinearGradient(0, 18*u, 0, 44*u); sch.addColorStop(0, hexA(F, .28)); sch.addColorStop(1, hexA(F, 0));
+  g.fillStyle = sch; g.fillRect(-50*u, 18*u, 100*u, 30*u); g.restore();
+  const kopf = (rx = 17, ry = 19, cy = -6) => { g.beginPath(); g.ellipse(0, cy*u, rx*u, ry*u, 0, 0, 7); };
+  const merkmalHinten = () => {
+    const f = A.form;
+    g.fillStyle = dunkel; g.strokeStyle = hexA(F, .75); g.lineWidth = 1.2*u;
+    if (f === "krone"){ g.beginPath(); g.moveTo(-16*u, -20*u); for (let i = 0; i < 5; i++){ const x = -16 + i*8; g.lineTo((x+4)*u, (i%2 ? -30 : -40)*u); g.lineTo((x+8)*u, -20*u); } g.closePath(); g.fill(); g.stroke(); }
+    if (f === "hoerner"){ for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s*10*u, -18*u); g.quadraticCurveTo(s*30*u, -30*u, s*22*u, -48*u); g.quadraticCurveTo(s*22*u, -28*u, s*6*u, -22*u); g.closePath(); g.fill(); g.stroke(); } }
+    if (f === "antennen"){ for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s*8*u, -22*u); g.lineTo(s*16*u, -46*u); g.stroke(); g.beginPath(); g.arc(s*16*u, -47*u, 3*u, 0, 7); g.fillStyle = F; g.fill(); g.fillStyle = dunkel; } }
+    if (f === "kamm"){ g.beginPath(); g.moveTo(-8*u, -22*u); g.quadraticCurveTo(-4*u, -60*u, 10*u, -58*u); g.quadraticCurveTo(22*u, -50*u, 12*u, -22*u); g.closePath(); g.fillStyle = hexA(F, .45); g.fill(); g.stroke(); g.fillStyle = dunkel; }
+    if (f === "zacken"){ g.beginPath(); g.moveTo(-20*u, -12*u); for (let i = 0; i < 5; i++){ const x = -20 + i*8; g.lineTo((x+4)*u, (-38 - (i%2)*6 - (i===2?10:0))*u); g.lineTo((x+8)*u, -12*u); } g.closePath(); g.fillStyle = hexA(F, .5); g.fill(); g.stroke(); g.fillStyle = dunkel; }
+    if (f === "flammen"){ g.fillStyle = hexA(F, .9); for (let i = -2; i <= 2; i++){ g.beginPath(); g.moveTo(i*8*u - 4*u, -20*u); g.quadraticCurveTo(i*9*u, (-40 - (2-Math.abs(i))*8)*u, i*8*u + 4*u, -20*u); g.closePath(); g.fill(); } g.fillStyle = dunkel; }
+    if (f === "ring"){ g.save(); g.rotate(-.35); g.beginPath(); g.ellipse(0, -8*u, 30*u, 9*u, 0, 0, 7); g.strokeStyle = hexA(F, .85); g.lineWidth = 1.8*u; g.stroke(); g.restore(); }
+    if (f === "schleier"){ for (let i = 0; i < 3; i++){ g.beginPath(); g.ellipse(0, (-8 - i*4)*u, (26 + i*6)*u, (30 + i*6)*u, 0, Math.PI*1.1, Math.PI*1.9); g.strokeStyle = hexA(F, .55 - i*.15); g.lineWidth = (2.2 - i*.5)*u; g.stroke(); } g.strokeStyle = hexA(F, .75); g.lineWidth = 1.2*u; }
+    if (f === "blatt"){ for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s*4*u, -22*u); g.quadraticCurveTo(s*28*u, -34*u, s*24*u, -50*u); g.quadraticCurveTo(s*12*u, -40*u, s*4*u, -22*u); g.closePath(); g.fillStyle = hexA(F, .8); g.fill(); g.fillStyle = dunkel; } }
+    if (f === "fuehler"){ for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s*6*u, -24*u); g.bezierCurveTo(s*10*u, -44*u, s*30*u, -40*u, s*26*u, -54*u); g.strokeStyle = hexA(F, .8); g.lineWidth = 1.6*u; g.stroke(); g.beginPath(); g.arc(s*26*u, -55*u, 2.6*u, 0, 7); g.fillStyle = F; g.fill(); g.fillStyle = dunkel; } }
+    if (f === "kristall"){ for (const [dx, h, w2] of [[0, 56, 9], [-14, 40, 6], [14, 42, 6]]){ g.beginPath(); g.moveTo((dx-w2)*u, -18*u); g.lineTo((dx-w2*.6)*u, -(h-6)*u); g.lineTo(dx*u, -h*u); g.lineTo((dx+w2*.6)*u, -(h-6)*u); g.lineTo((dx+w2)*u, -18*u); g.closePath(); g.fillStyle = hexA(F, .45); g.fill(); g.stroke(); } g.fillStyle = dunkel; }
+    if (f === "ohren"){ for (const s of [-1, 1]){ g.beginPath(); g.moveTo(s*6*u, -20*u); g.lineTo(s*18*u, -44*u); g.lineTo(s*20*u, -16*u); g.closePath(); g.fill(); g.stroke(); } }
+    if (f === "sichel"){ g.beginPath(); g.arc(0, -8*u, 30*u, Math.PI*1.05, Math.PI*1.95); g.arc(4*u, -12*u, 24*u, Math.PI*1.92, Math.PI*1.08, true); g.closePath(); g.fillStyle = hexA(F, .85); g.fill(); g.fillStyle = dunkel; }
+    if (f === "stern"){ g.beginPath(); for (let i = 0; i < 10; i++){ const a = -Math.PI/2 + i*Math.PI/5, r = i%2 ? 5 : 12; const x = Math.cos(a)*r*u, y = -40*u + Math.sin(a)*r*u; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fillStyle = F; g.fill(); g.fillStyle = dunkel; }
+    if (f === "laterne"){ g.beginPath(); g.moveTo(0, -24*u); g.lineTo(0, -40*u); g.strokeStyle = hexA(F, .8); g.stroke(); const l = g.createRadialGradient(0, -46*u, u, 0, -46*u, 9*u); l.addColorStop(0, F); l.addColorStop(1, hexA(F, 0)); g.fillStyle = l; g.beginPath(); g.arc(0, -46*u, 9*u, 0, 7); g.fill(); g.fillStyle = dunkel; }
+  };
+  merkmalHinten();
+  kopf(); g.fillStyle = dunkel; g.fill();
+  kopf(); g.strokeStyle = hexA(F, .55); g.lineWidth = 1.2*u; g.stroke();
+  /* Merkmale vor dem Kopf. */
+  const f = A.form;
+  g.strokeStyle = hexA(F, .85); g.lineWidth = 1.4*u; g.fillStyle = dunkel;
+  if (f === "helm"){ g.beginPath(); g.ellipse(0, -10*u, 19*u, 20*u, 0, Math.PI, 0); g.lineTo(19*u, -4*u); g.lineTo(-19*u, -4*u); g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.moveTo(-16*u, -4*u); g.lineTo(16*u, -4*u); g.stroke(); }
+  if (f === "kapuze"){ g.beginPath(); g.moveTo(-24*u, 22*u); g.quadraticCurveTo(-26*u, -26*u, 0, -30*u); g.quadraticCurveTo(26*u, -26*u, 24*u, 22*u); g.lineTo(14*u, 22*u); g.quadraticCurveTo(16*u, -12*u, 0, -14*u); g.quadraticCurveTo(-16*u, -12*u, -14*u, 22*u); g.closePath(); g.fill(); g.stroke(); }
+  if (f === "visier"){ g.beginPath(); g.moveTo(-17*u, -10*u); g.lineTo(17*u, -10*u); g.lineTo(15*u, -2*u); g.lineTo(-15*u, -2*u); g.closePath(); g.fillStyle = hexA(F, .85); g.fill(); g.fillStyle = dunkel; }
+  if (f === "panzer"){ g.beginPath(); g.moveTo(-17*u, 0); g.lineTo(-15*u, 12*u); g.quadraticCurveTo(0, 20*u, 15*u, 12*u); g.lineTo(17*u, 0); g.closePath(); g.fillStyle = hexA(F, .22); g.fill(); g.stroke(); g.beginPath(); g.moveTo(-13*u, 4*u); g.lineTo(13*u, 4*u); g.stroke(); g.fillStyle = dunkel; }
+  if (f === "maske"){ g.beginPath(); g.moveTo(-14*u, -2*u); g.quadraticCurveTo(0, 14*u, 14*u, -2*u); g.lineTo(14*u, 8*u); g.quadraticCurveTo(0, 16*u, -14*u, 8*u); g.closePath(); g.fillStyle = hexA(F, .3); g.fill(); g.stroke(); g.fillStyle = dunkel; }
+  /* Die Augen — bei Visier und Maske anders gesetzt. */
+  if (f !== "visier"){
+    const ay = f === "kapuze" ? -6 : -8;
+    for (const s of [-1, 1]){
+      const gl = g.createRadialGradient(s*7*u, ay*u, .5*u, s*7*u, ay*u, 6*u);
+      gl.addColorStop(0, "#ffffff"); gl.addColorStop(.35, F); gl.addColorStop(1, hexA(F, 0));
+      g.fillStyle = gl; g.beginPath(); g.arc(s*7*u, ay*u, 6*u, 0, 7); g.fill();
+      g.fillStyle = F; g.beginPath(); g.ellipse(s*7*u, ay*u, 3.6*u, 1.7*u, s*.22, 0, 7); g.fill();
+    }
+  }
+  g.restore();
+  if (rahmen){
+    g.beginPath(); g.arc(S/2, S/2, S/2 - u*1.5, 0, 7);
+    g.strokeStyle = hexA(F, .7); g.lineWidth = u*1.6; g.stroke();
+  }
+  let url = "";
+  try { url = c.toDataURL("image/png"); } catch(_){}
+  AVATAR_BILDER[key] = url;
+  return url;
+}
+function avatarHtml(nr, S = 64, klasse = "av"){
+  return `<img class="${klasse}" alt="" width="${S}" height="${S}" src="${avatarBild(nr, S * 2)}">`;
+}
+
+
+/* =====================================================================
+   SPIELERPROFILE (v109)
+
+   Thomas (22.09.2026): „Wenn man z. B. in der Rangliste auf einen Spieler
+   klickt, soll man seine Statistik sehen können und seine Erfolge und sein
+   aktuell gewähltes Design. Keine Monde und keine Skills."
+
+   Ein Fenster (`#profilVeil`) für fremde und für das eigene Profil. Oben
+   das Profilbild, Name, Rangabzeichen, Level, Titel; daneben das Design
+   als 3D-Foto; darunter die Zahlen (Bestmasse, Ehre, Abschüsse, Runden,
+   Spielzeit, dabei seit) und die Errungenschaften als Vitrine — nur die
+   erreichten, nach Familie. Was nicht hinausgeht, entscheidet der Server
+   (`oeffentlichesProfil` in konten.js): keine E-Mail, keine Monde, keine
+   Skillpunkte, kein Ore, kein Online-Status.
+
+   Das eigene Profil hat dazu die Bildwahl (zwanzig Hüter, `AVATARE`).
+   Gäste sehen ihr eigenes Profil aus dem Browserstand — sie stehen in
+   keiner Rangliste und haben deshalb kein öffentliches.
+   ===================================================================== */
+function spielerBild(){
+  if (istAngemeldet() && Konto.profil) return Number.isInteger(Konto.profil.bild) ? Konto.profil.bild : -1;
+  return Number.isInteger(Gast.bild) ? Gast.bild : -1;
+}
+/* Wer führt durchs Tutorial: die gewählte Figur, sonst der Pilot. */
+function fuehrerBild(){ const b = spielerBild(); return b >= 0 ? b : 0; }
+
+let profilZurueck = "startVeil";
+async function profilOeffnen(id, eigen){
+  const v = $("profilVeil"); if (!v) return;
+  const offen = VEILS.map(x => $(x)).find(x => x && !x.hidden);
+  profilZurueck = offen && offen.id !== "profilVeil" ? offen.id : "startVeil";
+  $("profilInhalt").innerHTML = `<p class="hintline">${esc(t("r_loading"))}</p>`;
+  show("profilVeil");
+  let p = null;
+  if (eigen && !istAngemeldet()){
+    /* Der Gast: aus dem Browserstand, ohne Ehre und Rang. */
+    p = { id: 0, name: spielerName(), level: Profile.level, best: Profile.best, ehre: 0, rang: null,
+          skin: Profile.skin || "basalt", clan: null, abschuesse: Profile.rec.kills || 0,
+          runden: Profile.rec.runs || 0, zeit: Profile.rec.time || 0, erfolge: [], titel: [], bild: spielerBild(),
+          seit: null, gast: true };
+  } else if (eigen && istAngemeldet()){
+    const a = await Konto.ruf("/spieler?id=" + Konto.profil.id);
+    p = a && a.ok ? a.profil : null;
+    if (p){ p.erfolge = Konto.profil.erfolge || p.erfolge; p.bild = spielerBild(); }
+  } else {
+    const a = await Konto.ruf("/spieler?id=" + Math.floor(Number(id) || 0));
+    p = a && a.ok ? a.profil : null;
+  }
+  if ($("profilVeil").hidden) return;
+  if (!p){ $("profilInhalt").innerHTML = `<p class="notice warn">${esc(t("pf_fehlt"))}</p>`; return; }
+  profilMalen(p, !!eigen);
+}
+
+function profilMalen(p, eigen){
+  const box = $("profilInhalt");
+  const pal = SKINS.find(s => s.id === p.skin) || SKINS[0];
+  const foto = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
+  const bildDa = Number.isInteger(p.bild) && p.bild >= 0;
+  const av = AVATARE[bildDa ? p.bild : 0];
+  const rang = Number.isInteger(p.rang) ? p.rang : null;
+  const titel = (p.titel || []).slice(-3).reverse().map(x => `<span class="pfTitel">${esc(t("pf_t_" + x.art, x.nr))}</span>`).join("");
+  const seit = p.seit ? new Date(p.seit + "-01T00:00:00Z").toLocaleDateString(lang, { month: "long", year: "numeric" }) : "";
+  const zahl = n => (Math.round(n) || 0).toLocaleString(lang);
+  const std = Math.floor((p.zeit || 0) / 3600), min = Math.floor(((p.zeit || 0) % 3600) / 60);
+  const werte = [
+    [t("bestmass"), zahl(p.best)],
+    rang !== null ? [t("ehre"), zahl(p.ehre)] : null,
+    [t("r_kills"), zahl(p.abschuesse)],
+    [t("rec_runs"), zahl(p.runden)],
+    [t("rec_time"), std ? std + " h " + min + " min" : min + " min"],
+    seit ? [t("pf_seit"), seit] : null
+  ].filter(Boolean);
+  const hat = new Set(p.erfolge || []);
+  const vitrine = ERFOLG_FAMILIEN.map(f => {
+    const da = f.ids.filter(id => hat.has(id));
+    if (!da.length) return "";
+    const letzte = da[da.length - 1];
+    return `<div class="pfErf${da.length === f.ids.length ? " voll" : ""}" title="${esc(erfolgLabel(letzte))}">` +
+           `<div class="bild">${erfolgBild(f.bild)}</div><b>${esc(t("ef_" + f.art.slice(2)))}</b>` +
+           `<small>${da.length} / ${f.ids.length}</small></div>`;
+  }).join("");
+  box.innerHTML =
+    `<div class="pfKopf">` +
+      `<button type="button" class="pfBild${eigen ? " eigen" : ""}${bildDa ? "" : " leer"}" id="pfBild" ${eigen ? "" : "disabled"}>` +
+        `<img alt="" src="${avatarBild(bildDa ? p.bild : 0, 256, true)}">` +
+        (eigen ? `<span class="pfBildTipp">${esc(t("pf_bild_aendern"))}</span>` : "") + `</button>` +
+      `<div class="pfNamen">` +
+        `<h2>${p.clan ? `<i class="kz">${esc(p.clan.tag)}</i>` : ""}${esc(p.name)}${p.gast ? ` <small>${esc(t("k_guest"))}</small>` : ""}</h2>` +
+        `<div class="pfZeile"><span class="chip">${esc(t("level"))} ${p.level}</span>` +
+        (rang !== null ? `<span class="chip rang"><canvas id="pfAbz" width="96" height="56"></canvas>${esc(t("rk" + clamp(rang, 0, RANG_MAX)))}</span>` : "") +
+        (p.land ? `<span class="chip">${esc(p.land)}</span>` : "") + `</div>` +
+        (titel ? `<div class="pfTitelZeile">${titel}</div>` : "") +
+        (p.clan ? `<p class="pfClan">${esc(t("pf_clan", p.clan.name))}</p>` : "") +
+      `</div>` +
+      `<div class="pfDesign">${foto ? `<img alt="" src="${foto}">` : ikonBild(null, pal.id)}<small>${esc(pal.label)}</small></div>` +
+    `</div>` +
+    `<div class="pfWerte">${werte.map(([a, b]) => `<div><b>${b}</b><span>${esc(a)}</span></div>`).join("")}</div>` +
+    `<h3 class="dGruppe">${esc(t("e_head"))}<em>${hat.size} / ${ERFOLG_REIHE.length}</em></h3>` +
+    (vitrine ? `<div class="pfVitrine">${vitrine}</div>` : `<p class="hintline">${esc(t(p.gast ? "e_konto" : "pf_keine_erf"))}</p>`) +
+    (eigen ? "" : `<p class="pfFuss"><button type="button" class="linkKnopf" id="pfMelden">${esc(t("pf_melden"))}</button></p>`);
+  if (rang !== null){
+    const c = $("pfAbz");
+    if (c){ const g = c.getContext("2d"); g.clearRect(0, 0, 96, 56); try { abzeichen(g, 0, 0, rang, 56); } catch(_){} }
+  }
+  if (eigen){ const b = $("pfBild"); if (b) b.addEventListener("click", () => bildWahlOeffnen()); }
+  const md = $("pfMelden");
+  if (md) md.addEventListener("click", () => {
+    if (!Konto.melden){ toast(t("pf_melden_aus")); return; }
+    meldeOeffnen({ art: "spieler", zurueck: "profilVeil", runde: "Profil #" + p.id + " · " + p.name });
+  });
+}
+
+/* ---- Die Bildwahl ------------------------------------------------- */
+let bildWahlZurueck = "startVeil";
+function bildWahlOeffnen(){
+  const v = $("bildVeil"); if (!v) return;
+  const offen = VEILS.map(x => $(x)).find(x => x && !x.hidden);
+  bildWahlZurueck = offen && offen.id !== "bildVeil" ? offen.id : "startVeil";
+  bildRasterMalen($("bildRaster"), spielerBild(), async nr => {
+    await bildSetzen(nr);
+    show(bildWahlZurueck);
+    if (bildWahlZurueck === "profilVeil") profilOeffnen(0, true);
+    else try { heldMalen(); } catch(_){}
+  });
+  show("bildVeil");
+}
+function bildRasterMalen(raster, gewaehlt, wahl){
+  if (!raster) return;
+  raster.innerHTML = "";
+  AVATARE.forEach((A, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "bildKachel";
+    b.setAttribute("aria-pressed", String(i === gewaehlt));
+    b.innerHTML = `<img alt="" src="${avatarBild(i, 200, true)}"><span>${esc(t("av_" + A.id))}</span>`;
+    b.addEventListener("click", () => wahl(i, b));
+    raster.appendChild(b);
+  });
+}
+async function bildSetzen(nr){
+  if (istAngemeldet()){
+    const a = await Konto.einstellen({ bild: nr });
+    if (!a || a.fehler) toast(t("net_fail"));
+  } else { Gast.bild = nr; Gast.sichern(); }
+  try { heldBildMalen(); } catch(_){}
+}
+/* Das kleine Bild neben dem Namen im Hangar. */
+function heldBildMalen(){
+  const el = $("heldBild"); if (!el) return;
+  const b = spielerBild();
+  el.innerHTML = `<img alt="" src="${avatarBild(b >= 0 ? b : 0, 96, true)}">`;
+  el.classList.toggle("leer", b < 0);
+  el.title = t("pf_mein");
+}
+(function profilEinhaengen(){
+  try {
+    const hb = $("heldBild"); if (hb) hb.addEventListener("click", () => profilOeffnen(0, true));
+    const pz = $("profilZu"); if (pz) pz.addEventListener("click", () => show(profilZurueck));
+    const bz = $("bildZu"); if (bz) bz.addEventListener("click", () => show(bildWahlZurueck));
+    /* Ranglisten: ein Tipp auf eine Zeile mit Kennung öffnet das Profil. */
+    const rl = $("rankList");
+    if (rl) rl.addEventListener("click", e => {
+      const z = e.target.closest && e.target.closest(".rankrow[data-id]");
+      if (z && +z.dataset.id > 0) profilOeffnen(+z.dataset.id, istAngemeldet() && +z.dataset.id === Konto.profil.id);
+    });
+  } catch(_){}
+})();
 
 /* „Nächste Errungenschaften": die drei, die am nächsten dran sind.
    Erfunden ist daran nichts — die Schwellen stehen in `ERFOLG_TEXT`, der
@@ -6887,6 +7741,14 @@ function show(id){
        Verzögerung, damit der Hangar erst steht; `nachRundeKarte()` prüft
        selbst, ob inzwischen ein anderes Fenster offen ist. */
     if (Stimme.nachRunde || ankerWartet) setTimeout(nachRundeKarte, 650);
+    /* Tutorial (v109): Der Rundgang durchs Menü kommt, sobald der Hangar
+       steht — aber nach der Umfrage und dem Tagesbonus, die eigene Fenster
+       öffnen. `menueVersuchen()` prüft das selbst und wartet sonst bis zum
+       nächsten Mal. */
+    setTimeout(() => { try { Tutorial.menueVersuchen(); } catch(_){} }, 1100);
+    /* Happy Hour (v109): der große Auftritt, falls diese Stunde noch nicht
+       gezeigt — nach dem Tagesbonus, der sein eigenes Fenster öffnet. */
+    setTimeout(() => { try { happyPlakette(); happyAuftritt(); } catch(_){} }, 700);
   }
   /* Widerrufsknopf (v106) nur für Konten in der Frist — bei jedem Öffnen
      neu entschieden, weil die Frist während einer Sitzung ablaufen kann. */
@@ -7136,13 +7998,17 @@ function happyFaktor(){
 }
 function happyZeigen(){
   const h = Konto.happy;
+  happyPlakette();
+  happyAuftritt();
   for (const id of ["happyText", "anmHappy"]){
     const el = $(id);
     if (!el) continue;
     /* Unter dem Startknopf nur, solange sie läuft — als Werbung für die
        nächste Stunde reicht die Zeile auf dem Anmeldebildschirm; unter dem
        Knopf wäre sie eine zweite Textzeile, die die Kopfzeile sprengt. */
-    if (!h || (id === "happyText" && !h.aktiv)){ el.hidden = true; el.textContent = ""; el.classList.remove("an"); continue; }
+    /* Seit v109 steht unter dem Startknopf keine Zeile mehr: Auf dem iPhone
+       hing sie über den Reitern. Die Plakette auf dem Knopf sagt dasselbe. */
+    if (!h || id === "happyText"){ el.hidden = true; el.textContent = ""; el.classList.remove("an"); continue; }
     el.hidden = false;
     const faktor = h.faktor.toLocaleString(lang, { maximumFractionDigits: 1 });
     if (h.aktiv){
@@ -7157,6 +8023,55 @@ function happyZeigen(){
     }
   }
 }
+
+/* Die Plakette auf dem Startknopf (v109): solange die Stunde läuft. Aus den
+   Zeitmarken gerechnet (`happyFaktor`), damit sie auch ohne neue Abfrage
+   pünktlich verschwindet — dafür schaut ein Wecker jede halbe Minute nach. */
+function happyPlakette(){
+  const el = document.getElementById("hhPlakette");
+  if (!el) return;
+  const f = happyFaktor();
+  if (f <= 1){ el.hidden = true; return; }
+  el.innerHTML = ICON_ORE + esc(t("hh_plakette", f.toLocaleString(lang, { maximumFractionDigits: 1 })));
+  el.hidden = false;
+}
+try { setInterval(() => { try { happyPlakette(); } catch(_){} }, 30000); } catch(_){}
+
+/* Der große Auftritt (v109): einmal je Happy Hour, nur im Hangar und nur,
+   wenn kein anderes Fenster offen ist. Gemerkt wird das Ende der Stunde —
+   eine neue Stunde hat ein neues Ende und zeigt sich wieder. */
+const HAPPY_GESEHEN = "talumi.happyGesehen";
+function happyAuftritt(){
+  const h = Konto.happy, v = document.getElementById("happyVeil");
+  if (!h || !v || !v.hidden) return;
+  if (!h.aktiv || !(h.bis > Date.now())) return;
+  if (Game.running) return;
+  const sv = document.getElementById("startVeil");
+  if (!sv || sv.hidden) return;
+  try { if (VEILS.some(id => { const e = document.getElementById(id); return e && !e.hidden && id !== "startVeil"; })) return; } catch(_){}
+  try { if (localStorage.getItem(HAPPY_GESEHEN) === String(h.bis)) return; } catch(_){}
+  const faktor = h.faktor.toLocaleString(lang, { maximumFractionDigits: 1 });
+  const rest = Math.max(1, Math.ceil((h.bis - Date.now()) / 60000));
+  const erz = document.getElementById("hhErz");
+  if (erz) try { erz.innerHTML = ikonBild("ore"); } catch(_){}
+  document.getElementById("hhZeit").textContent = t("hh_zeit", rest);
+  document.getElementById("hhFaktor").textContent = t("hh_plakette", faktor);
+  v.classList.remove("zu");
+  v.hidden = false;
+  try { Sound.levelUp(); } catch(_){}
+  try { localStorage.setItem(HAPPY_GESEHEN, String(h.bis)); } catch(_){}
+}
+function happyAuftrittZu(){
+  const v = document.getElementById("happyVeil");
+  if (!v || v.hidden) return;
+  v.classList.add("zu");
+  setTimeout(() => { v.hidden = true; v.classList.remove("zu"); }, 340);
+}
+try {
+  const v = document.getElementById("happyVeil");
+  if (v) v.addEventListener("click", happyAuftrittZu);
+  addEventListener("keydown", e => { if (e.key === "Escape" || e.key === "Enter") happyAuftrittZu(); });
+} catch(_){}
 
 /* Saison im Hangar (Schritt 100): „Saison 1 · noch 12 Tage", darunter die
    eigene Saison-Ehre mit Fortschrittsbalken der Saison. Gäste sehen Nummer
@@ -7534,13 +8449,24 @@ async function clanOhne(body, einladungen, top){
    für den Startbonus (×2, ×3), Ehre, Erfahrung. Gäste haben keine Ehre —
    ihr vierter Tag zahlt Ore (`BONUS_GAST`). */
 const BONUS_ANZEIGE = [
-  { ore: 100 }, { ore: 150 }, { boost: 2 }, { ehre: 40 }, { xp: 400 }, { boost: 3 }, { ore: 1000, design: "sunflare" }
+  { ore: 100 }, { ore: 150 }, { boost: 2 }, { ehre: 40 }, { xp: 400, mond: 1 }, { boost: 3 }, { ore: 1000, wahl: 1 }
 ];
-const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 200 } : b);
+/* Gäste: Tag 4 Ore statt Ehre, Tag 5 nur XP — Monde gibt es nur mit Konto. */
+const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 200 } : b.mond ? { xp: b.xp } : b);
+/* Der Pool der Wochendesigns (v109) — dieselbe Liste wie `WOCHE1.SKINS` in
+   konten.js. Der Server schickt einem Konto in `bonus.wahl`, was noch fehlt;
+   für Gäste rechnet `wochenWahl()` dasselbe aus dem Browserstand. */
+const WOCHE_POOL = ["sunflare", "coral", "abyss", "verdigris"], WOCHE_WAHL = 3;
+function wochenWahl(){
+  if (istAngemeldet()) return Array.isArray(Konto.bonus && Konto.bonus.wahl) ? Konto.bonus.wahl.slice(0, WOCHE_WAHL) : [];
+  return WOCHE_POOL.filter(id => !Profile.owned.has(id)).slice(0, WOCHE_WAHL);
+}
 function bonusReihe(){ return istAngemeldet() ? BONUS_ANZEIGE : BONUS_GAST; }
 /* Kurztext eines Tages: „50 Ore", „Startbonus ×2", „20 Ehre", „150 XP". */
 function bonusText(b){
   if (!b) return "";
+  if (b.wahl && wochenWahl().length)
+    return t("b_wahl") + " + " + (b.ore || 0).toLocaleString(lang) + " Ore";
   if (b.design && !Profile.owned.has(b.design)){
     const d = SKINS.find(k => k.id === b.design);
     return t("b_design", d ? d.label : b.design) + " + " + (b.ore || 0).toLocaleString(lang) + " Ore";
@@ -7611,6 +8537,8 @@ function ikonBild(art, design){
 /* Was ein Tag zeigt: das Design, solange man es noch nicht hat, sonst
    sein Ore. */
 function bonusArt(b){
+  /* Tag 7 (v109): das erste noch fehlende Wochendesign steht für die Wahl. */
+  if (b.wahl){ const w = wochenWahl(); if (w.length) return { design: w[0], wahl: 1 }; }
   if (b.design && !Profile.owned.has(b.design)) return { design: b.design };
   return b;
 }
@@ -7661,7 +8589,7 @@ function paintBonus(){
                   : nr < naechster ? "done"
                   : nr === naechster ? "next" : "";
     const a = bonusArt(b);
-    const wert = a.design ? t("b_designkurz") : b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
+    const wert = a.wahl ? t("b_wahlkurz") : a.design ? t("b_designkurz") : b.boost ? "" : b.xp ? b.xp + " XP" : b.ehre ? b.ehre : (b.ore || 0);
     return `<i class="bead ${zustand}${a.design ? " design" : ""}" title="${esc(bonusText(b))}">` +
            (gross ? `<small>${nr}</small>` : "") +
            `<span class="bb">${bonusBild(b)}</span>` + (gross ? `<b>${wert}</b>` : "") + `</i>`;
@@ -7674,9 +8602,9 @@ function paintBonus(){
   const wochenText = t("b_woche", wochen, ziel);
   box.innerHTML = "";
 
-  const holen = async (knopf) => {
+  const holen = async (knopf, wahl) => {
     if (knopf) knopf.disabled = true;
-    const e = gast ? Gast.bonusHolen() : await Konto.bonusHolen();
+    const e = gast ? Gast.bonusHolen(wahl) : await Konto.bonusHolen(wahl);
     if (e.ok){
       const b = e.boost ? {boost:e.boost} : e.xp ? {xp:e.xp} : e.ehre ? {ehre:e.ehre} : {ore:e.ore};
       /* Strahlend in der Mitte (Thomas) — statt der kleinen Zeile unten. */
@@ -7730,24 +8658,39 @@ function bonusVeilAuf(perlen, tag, heute, wochenText, wochen, ziel, holen, offen
   /* Ansporn (Schritt 107): die beiden Designs, die es zu holen gibt — mit
      Bild, gemalt wie im Hangar. */
   const ansporn = $("bonusAnsporn");
+  /* Tag 7 mit offenem Bonus (v109): die Wahl. Statt des Abholknopfs stehen
+     bis zu drei Designs; ein Tipp holt den Tag **mit** diesem Design. Davor
+     (Tag 1–6) stehen dieselben Designs als Ansporn, dazu Rime. */
+  const wahl = wochenWahl();
+  const istWahl = offen && tag === 7 && wahl.length > 0;
   if (ansporn){
-    const karte = (id, wann) => {
+    const karte = (id, wann, waehlbar) => {
       const d = SKINS.find(k => k.id === id); if (!d) return "";
       const hat = Profile.owned.has(id);
       /* Als 3D-Modell (v104). Ohne WebGL bleibt das gemalte Bildchen. */
       const foto = Held3D.foto(d);
       const bild = foto ? `<img class="ik hd" alt="" src="${foto}">` : ikonBild(null, id);
       const unter = hat ? t("b_besitz") : wann;
-      return `<button type="button" class="ziel${hat ? " hat" : ""}" data-gross="${esc(id)}" data-unter="${esc(unter)}">${bild}<b>${esc(d.label)}</b>` +
+      return `<button type="button" class="ziel${hat ? " hat" : ""}${waehlbar ? " wahl" : ""}" data-${waehlbar ? "wahl" : "gross"}="${esc(id)}" data-unter="${esc(unter)}">${bild}<b>${esc(d.label)}</b>` +
              `<small>${esc(unter)}</small></button>`;
     };
-    ansporn.innerHTML = `<p class="hinweis" style="margin:12px 0 6px">${esc(t("b_ansporn"))}</p>` +
-      `<div class="ziele">${karte("sunflare", t("b_nach7"))}${karte("rime", t("b_nach10w", ziel))}</div>`;
-    for (const k of ansporn.querySelectorAll("[data-gross]"))
-      k.addEventListener("click", () => designGross(k.dataset.gross, k.dataset.unter));
+    if (istWahl){
+      ansporn.innerHTML = `<p class="hinweis wahlKopf">${esc(t("b_wahl_kopf"))}</p>` +
+        `<div class="ziele">${wahl.map(id => karte(id, t("b_wahl_tipp"), true)).join("")}</div>`;
+      for (const k of ansporn.querySelectorAll("[data-wahl]"))
+        k.addEventListener("click", () => {
+          for (const x of ansporn.querySelectorAll("[data-wahl]")) x.disabled = true;
+          holen(null, k.dataset.wahl);
+        });
+    } else {
+      ansporn.innerHTML = `<p class="hinweis" style="margin:12px 0 6px">${esc(t("b_ansporn"))}</p>` +
+        `<div class="ziele">${wahl.map(id => karte(id, t("b_nach7"))).join("")}${karte("rime", t("b_nach10w", ziel))}</div>`;
+      for (const k of ansporn.querySelectorAll("[data-gross]"))
+        k.addEventListener("click", () => designGross(k.dataset.gross, k.dataset.unter));
+    }
   }
   const go = $("bonusVeilGo");
-  go.hidden = !offen;
+  go.hidden = !offen || istWahl;
   go.disabled = false;
   go.onclick = () => holen(go);
   $("bonusVeilSpaeter").onclick = bonusVeilZu;
@@ -7832,13 +8775,16 @@ function istAngemeldet(){
   try { return Konto.angemeldet(); } catch(_){ return false; }
 }
 
-/* Startbonus nur im freien Raum. Die gespiegelten Arenen sind ausdrücklich
-   als faire Karten gebaut — ein Startvorteil dort wäre ein Widerspruch.
-   Seit der Zusammenlegung ist das genau ein Modus, für Gäste wie für Konten:
-   Angemeldet bucht der Server beim Beitritt ab, im lokalen Rückfall der
-   Client. */
+/* **Startbonus nur im Aufstieg** (Kennung `liga`) — dieselbe Regel wie für
+   Levelbonus, Skillpunkte und Monde (Thomas, 20.09.2026: „Der Startbonus x2
+   und x3 sollte nur im Aufstiegsmodus verfügbar sein. Genau so wie die Monde
+   und Skillpunkte. Im Liga-Modus soll es nur um Geschick gehen ohne Boni.").
+
+   Bis v108 stand hier `modeId === "online"`, also die Liga — seit dem
+   Namenstausch in Schritt 112 genau verkehrt herum. Der Server prüft
+   dasselbe noch einmal beim Beitritt; was hier steht, ist nur die Anzeige. */
 function boostErlaubt(){
-  return modeId === "online";
+  return modeId === "liga";
 }
 
 function buildBoost(){
@@ -7877,11 +8823,15 @@ function buildBoost(){
     box.appendChild(b);
   }
   const notiz = $("boostNote");
+  /* Drei Fälle, seit der Bonus nur noch im Aufstieg wirkt (v109):
+     Aufstieg mit Konto — was er kostet; Aufstieg als Gast — dass der Server
+     abbucht und es dafür ein Konto braucht; sonst — dass er hier nicht
+     wirkt. Vorher stand für einen angemeldeten Spieler in der Liga der Satz
+     über lokale Übungsrunden da, der mit der Frage nichts zu tun hatte. */
   notiz.textContent =
-    erlaubt                ? t("boostnote")
-    : istAngemeldet()      ? t("practiceacct")
-    : modeId === "online"  ? t("boostacct")
-                           : t("boostonly");
+    erlaubt && istAngemeldet() ? t("boostnote")
+    : erlaubt                  ? t("boostacct")
+                               : t("boostonly");
   /* Sichtbar nur, wenn er etwas erklärt: Entweder wirkt der Bonus hier
      nicht — dann muss man wissen, warum — oder es ist einer gewählt, und
      dann gehört der Hinweis dazu, was er kostet. Bei „Aus" und erlaubtem
@@ -7947,28 +8897,56 @@ function buildStrip(){
   strip.appendChild(more);
 }
 
+/* Das Raster im Reiter „Designs" (v109): nach Weg gruppiert (Level, Ore,
+   besondere), jede Kachel mit dem 3D-Foto, sobald es fertig ist, dem
+   gemalten Bildchen bis dahin. Das gewählte Design trägt ein Häkchen, ein
+   gesperrtes ein Schloss. Ein Tipp öffnet die Großansicht — ausgewählt oder
+   gekauft wird dort, mit einem Knopf, nicht mehr aus Versehen im Raster. */
+const SCHLOSS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="10" width="14" height="10" rx="2.5" fill="currentColor"/></svg>`;
 function buildGrid(){
   const grid = $("grid");
   grid.innerHTML = "";
   $("shopCount").textContent = t("ownedcount", Profile.owned.size, SKINS_ZAHL);
   $("shopNext").textContent = nextUnlock();
-  for (const s of SKINS){
-    const st = Profile.state(s);
-    const b = document.createElement("button");
-    b.className = "tile"; b.type = "button";
-    b.dataset.state = st;
-    b.setAttribute("aria-pressed", String(skin.id === s.id));
-    const c = document.createElement("canvas");
-    b.appendChild(c);
-    preview(c, s);
-    const nm = document.createElement("span");
-    nm.className = "nm";
-    nm.innerHTML = esc(s.label) + ` <i>${ROMAN[s.tier]}</i>`;
-    const rq = document.createElement("span");
-    rq.className = "rq"; rq.textContent = Profile.requirement(s);
-    b.appendChild(nm); b.appendChild(rq);
-    b.addEventListener("click", () => pick(s));
-    grid.appendChild(b);
+  for (const gr of designGruppen()){
+    const kopf = document.createElement("h3");
+    kopf.className = "dGruppe";
+    const besitz = gr.liste.filter(s => Profile.owned.has(s.id)).length;
+    kopf.innerHTML = esc(t(gr.kopf)) + `<em>${besitz} / ${gr.liste.length}</em>`;
+    grid.appendChild(kopf);
+    for (const s of gr.liste){
+      const st = Profile.state(s);
+      const b = document.createElement("button");
+      b.className = "tile"; b.type = "button";
+      b.dataset.state = st;
+      const gewaehlt = skin.id === s.id;
+      b.setAttribute("aria-pressed", String(gewaehlt));
+      const rahmen = document.createElement("span");
+      rahmen.className = "dRahmen";
+      const c = document.createElement("canvas");
+      c.className = "dVor";
+      rahmen.appendChild(c);
+      const img = document.createElement("img");
+      img.className = "dBild"; img.alt = ""; img.dataset.id = s.id;
+      const fertig = DesignBild.fertig.get(s.id);
+      if (fertig){ img.src = fertig; img.classList.add("da"); }
+      else { preview(c, s); DesignBild.anfordern(s); }
+      rahmen.appendChild(img);
+      b.appendChild(rahmen);
+      if (gewaehlt) b.insertAdjacentHTML("beforeend", `<span class="dZeichen" title="${esc(t("dd_gewaehlt"))}">✓</span>`);
+      else if (st === "locked") b.insertAdjacentHTML("beforeend", `<span class="dSchloss">${SCHLOSS}</span>`);
+      const nm = document.createElement("span");
+      nm.className = "nm";
+      nm.innerHTML = esc(s.label) + ` <i>${ROMAN[s.tier]}</i>`;
+      const rq = document.createElement("span");
+      rq.className = "rq";
+      if (gewaehlt) rq.textContent = t("dd_gewaehlt");
+      else if (st === "buyable") rq.innerHTML = ICON_ORE + esc((s.ore || 0).toLocaleString(lang));
+      else rq.textContent = Profile.requirement(s);
+      b.appendChild(nm); b.appendChild(rq);
+      b.addEventListener("click", () => designDetailOeffnen(s));
+      grid.appendChild(b);
+    }
   }
 }
 function note(text, kind){
@@ -8129,9 +9107,53 @@ else setTimeout(() => {
   try { if (sessionStorage.getItem("talumi.zuJung") === "1"){
           sessionStorage.removeItem("talumi.zuJung"); kontoMeldung(t("jung_weg")); } } catch(_){}
   if (abgemeldet) return;
+  /* Erstbesucher springen seit v109 mit **einem** Klick ins Spiel statt in
+     ein Formular (Thomas, 20.09.2026; CrazyGames erlaubt genau einen Klick
+     bis zum Spiel, Poki rät zu „straight into the good part"). Der
+     Anmeldebildschirm bleibt für alle, die ihn suchen — über die Zeile
+     unter dem Knopf und über die Einstellungen. */
+  try { if (Tutorial.erstbesuch()){ show("willkVeil"); return; } } catch(_){}
   if (location.hash || Konto.gemerkt() || !((Profile.rec && Profile.rec.runs) > 0)) return;
   paintPurse(); buildGrid(); show("startVeil");
 }, 0);
+
+/* Der eine Knopf des Willkommensbildschirms: Er startet sofort eine Runde.
+   **Lokal** (`MODES.open`) — sie beginnt ohne Verbindung in derselben
+   Sekunde, und ein Neuling trifft in seinen ersten zwanzig Sekunden keinen
+   geübten Spieler. Danach steht im Hangar wie gewohnt Aufstieg oder Liga. */
+/* Die Figurenwahl auf dem Willkommensbildschirm (v109): ein Tipp auf einen
+   der zwanzig Hüter wählt ihn **und** startet die Runde — es bleibt bei
+   einem Klick bis ins Spiel. Der grüne Knopf startet ohne Wahl; dann führt
+   der Pilot. */
+function willkBilderBauen(){
+  const box = $("willkBilder"); if (!box) return;
+  bildRasterMalen(box, Gast.bild, (nr, knopf) => {
+    for (const b of box.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b === knopf));
+    Gast.bild = nr; Gast.sichern();
+    $("willkStart").click();
+  });
+}
+willkBilderBauen();
+if ($("willkStart")) $("willkStart").addEventListener("click", () => {
+  Sound.unlock();                     // Nutzergeste: erst hier darf Ton starten
+  const vorher = modeId;
+  modeId = "open";
+  ersatz = true;                      // lokale Runde, kein Verbindungsversuch
+  paintPurse(); buildGrid();
+  $("willkVeil").hidden = true;
+  try { goImmersive(); } catch(_){}
+  /* Der Name muss mit: `start()` ohne ihn schreibt „undefined" unter den
+     Körper und in die Bestenliste. Ein Gast hat seinen Namen aus
+     `Gast.laden()`; hat er noch keinen, springt `spielerName()` ein. */
+  start((spielerName() || "").trim().slice(0,14));
+  /* Die Wahl im Hangar bleibt, was sie war — die Tutorialrunde ist ein
+     einmaliger Sonderfall und darf die Spielart nicht verstellen. */
+  modeId = vorher;
+});
+if ($("willkKonto")) $("willkKonto").addEventListener("click", () => {
+  $("willkVeil").hidden = true;
+  kontoMeldung(""); show("accountVeil");
+});
 
 /* ---- Anmeldung ----------------------------------------------------
    Ein Formular für beides. `anlegen` schaltet zwischen Anmelden und
@@ -9076,6 +10098,13 @@ const Konto = {
     const lohn = antwort.saisonLohn;
     if (lohn && typeof lohn === "object")
       setTimeout(() => toast(t("s_lohn", lohn.nr, lohn.platz, (+lohn.ore || 0).toLocaleString(lang))), 2200);
+    /* Nachricht vom Server (v109), z. B. eine Nachwertung: einmal, groß. */
+    const n = antwort.nachricht;
+    if (n && typeof n === "object" && n.art === "nachwertung")
+      setTimeout(() => { try {
+        lohnZeigen((+n.ore || 0).toLocaleString(lang) + " Ore", t("nw_kopf", n.datum), ikonBild("ore"));
+        setTimeout(() => toast(t("nw_text", (+n.peak || 0).toLocaleString(lang), (+n.xp || 0).toLocaleString(lang), n.level, n.erfolge || 0)), 2400);
+      } catch(_){} }, 1200);
     try { saisonZeigen(); } catch(_){}
 
     const p = antwort.profil;
@@ -9140,7 +10169,10 @@ const Konto = {
         /* Nur ein sichtbares Häkchen zählt (unter 16 gibt es keines). */
         mailOk: !!(haken && haken.checked && !(mailZeile && mailZeile.hidden)) });
     if (a.status === 200){ Werben.vergessen(); this.merken(a.token); this.uebernehmen(a);
-                           this.spracheGemeldet = lang; return { ok:true }; }
+                           this.spracheGemeldet = lang;
+                           /* Das als Gast gewählte Profilbild (v109) wandert mit ins Konto. */
+                           if (Gast.bild >= 0 && !(this.profil && this.profil.bild >= 0)) this.einstellen({ bild: Gast.bild }).catch(() => {});
+                           return { ok:true }; }
     return { fehler: a.fehler || "netz" };
   },
 
@@ -9260,10 +10292,11 @@ const Konto = {
     this.profil = null; this.stand = null; this.bonus = null;
   },
 
-  async bonusHolen(){
-    const a = await this.ruf("/konto/bonus", {});
+  async bonusHolen(wahl){
+    const a = await this.ruf("/konto/bonus", wahl ? { wahl } : {});
     if (a.status === 200){ this.uebernehmen(a);
-                           this.bonus = {offen:false, serie:a.tag, wochen:a.wochen || 0, ziel:10};
+                           this.bonus = {offen:false, serie:a.tag, wochen:a.wochen || 0, ziel:10,
+                                         wahl: WOCHE_POOL.filter(id => !Profile.owned.has(id) && id !== a.design).slice(0, WOCHE_WAHL)};
                            erfolgeMelden(a);
                            return { ok:true, tag:a.tag, ore:a.ore || 0, xp:a.xp || 0,
                                     boost:a.boost || 0, ehre:a.ehre || 0, wochen:a.wochen || 0, eis:!!a.eis,
@@ -9436,7 +10469,14 @@ function landAusSprache(){
      Meldung) setzen es über `mitMarke()` vor den Namen.
    Erkannt wird ein NPC nur am Merkmal `b` des Servers bzw. daran, dass er
    ein lokaler Rivale ist — nie am Namen. */
-const mitMarke = (name, bot) => bot ? "[NPC] " + name : name;
+/* Seit v109 **ohne** Kürzel (Thomas, 22.09.2026: „Das NPC im Namen der
+   Computer Gegner soll wieder entfernt werden. Keiner muss auf den ersten
+   Blick sehen, dass das NPCs sind."). Die Funktion bleibt als eine Stelle
+   für den Fall, dass es wieder anders entschieden wird. Was bleibt, ist die
+   ehrliche Auskunft außerhalb des Spielfelds: „Über das Spiel" und die
+   Store-Texte sagen, dass Räume mit Computergegnern aufgefüllt werden, und
+   die Spielerzahl im Menü zählt nur Menschen. */
+const mitMarke = (name) => name;
 
 /* Was der Server über einen Mitspieler schickt, in die Form bringen, in der
    der Client damit arbeitet. `l` (Level) und `r` (Rang) kommen nur für
@@ -9451,9 +10491,8 @@ function steckbrief(e){
   if (typeof e.t === "string" && e.t) w.t = e.t;
   /* [NPC] nur aus `b`: Ein Computergegner trägt es immer, ein Mensch nie —
      auch wenn ein Server ihm ein solches Kürzel schickte. */
-  if (e.b) w.t = "NPC";
-  else if (w.t && w.t.toUpperCase() === "NPC") delete w.t;
-  if (Array.isArray(e.mo)){ const mo = e.mo.filter(a => MONDE[a]).slice(0, 3); if (mo.length) w.mo = mo; }
+  if (w.t && w.t.toUpperCase() === "NPC") delete w.t;
+  if (Array.isArray(e.mo)){ const mo = e.mo.filter(a => MONDE[a]).slice(0, 4); if (mo.length) w.mo = mo; }
   return w;
 }
 
@@ -9636,6 +10675,11 @@ const Net = {
       this.ehre = m.ehre || null;
       this.erfolge = Array.isArray(m.erfolge) ? m.erfolge : [];
       this.monde = Array.isArray(m.monde) ? m.monde : [];
+      /* Mondfund (v109): ein Mond aus der Runde selbst — kommt vom Server,
+         der Client rechnet nichts. Steht in derselben Liste wie die Monde
+         aus Errungenschaften, mit Kennzeichen `fund`. */
+      if (m.mondFund && typeof m.mondFund === "object" && m.mondFund.art)
+        this.monde = this.monde.concat([{ art: String(m.mondFund.art), stufe: +m.mondFund.stufe || 1, fund: true }]);
       this.staubDazu = +m.staubDazu || 0;
       this.rangNeu = +m.rangNeu || 0;
       this.stand = m.stand || null;
@@ -9810,7 +10854,9 @@ const Net = {
                          der Server seit Schritt 98 gar nicht mehr; erkennbar
                          sind sie seit v105 am Kürzel [NPC] (`tag`). Die
                          Abfrage hier bleibt als zweite Sicherung. */
-                      lvl:info.l, rang: info.b ? undefined : info.r,
+                      /* Seit v109 tragen auch Computergegner ihr Abzeichen — ein Rang, der zu
+                         ihrem Können passt (bots.js, `rangAusStaerke`). */
+                      lvl:info.l, rang: info.r,
                       tag: typeof info.t === "string" ? info.t : null,
                       /* Mannschaft aus Sicht des Spielers: 1 = eigene, 2 = Gegner. */
                       team: info.tm ? (info.tm === this.team ? 1 : 2) : 0,
@@ -9963,7 +11009,7 @@ async function titelRangLaden(meine){
     const zusatz = e.laufend ? `<small style="color:#f2c14e">♛</small>`
                  : e.gast ? `<small>${esc(t("k_guest"))}</small>`
                  : e.land ? `<small>${esc(e.land)}</small>` : "";
-    return `<div class="rankrow${ich ? " me" : ""}">` +
+    return `<div class="rankrow${ich ? " me" : ""}${e.id ? " tipp" : ""}"${e.id ? ` data-id="${+e.id}"` : ""}>` +
            `<i>${e.rang}</i><b>${esc(e.name)}${zusatz}</b>` +
            `<span>${esc(dauerText(e.wert))}</span></div>`;
   }).join("");
@@ -10037,7 +11083,7 @@ async function rangLaden(){
   const ich = Konto.profil.id;
   box.innerHTML = liste.map(e => {
     const land2 = e.land ? `<small>${esc(e.land)}</small>` : "";
-    return `<div class="rankrow${+e.id === ich ? " me" : ""}">` +
+    return `<div class="rankrow tipp${+e.id === ich ? " me" : ""}" data-id="${+e.id}">` +
            `<i>${e.rang}</i><b>${esc(e.name)}${land2}</b>` +
            `<span>${esc(rangWert(e))}</span></div>`;
   }).join("");
@@ -10579,7 +11625,7 @@ const MenueHimmel = {
      hat. Das durch ein Sternenfeld zu ersetzen hieße, dem Spieler die
      Antwort auf „was ist gerade passiert" wegzunehmen. `testVeil` ebenso —
      dort läuft die Eingabeprüfung auf der Fläche. */
-  MENUES: ["accountVeil","startVeil","legalVeil","friendsVeil","meldeVeil",
+  MENUES: ["willkVeil","accountVeil","startVeil","legalVeil","friendsVeil","meldeVeil",
            "setVeil","rankVeil","pwVeil","pwaVeil","clanVeil","hilfeVeil","bonusVeil",
            /* v106: Nutzungsbedingungen, Widerruf, Mail-Links, Umfrage,
               Bewertungsbitte — sonst läge hinter ihnen eine schwarze Fläche. */
@@ -10806,3 +11852,355 @@ PWA.start();
 /* Abgebrochene Gastrunde gutschreiben (v104) — erst, wenn die gemerkte
    Sitzung eine Chance hatte: Ein Konto bekommt seine Abrechnung vom Server. */
 setTimeout(() => { try { offeneRundeEinloesen(); } catch(_){} }, 2500);
+
+/* =====================================================================
+   TUTORIAL (v109, 20.09.2026)
+
+   Thomas: „Wichtig ist noch, dass man beim ersten Start des Spiels gleich
+   ins Spiel hüpft und dass man durch ein Tutorial geführt wird, damit man
+   die Spielmechanik und das Menü kennenlernt."
+
+   Recherchiert am 20.09.2026, und die Quellen sagen dasselbe:
+   - CrazyGames (docs.crazygames.com/requirements/gameplay): „Games should
+     land new users in gameplay immediately. If this is not feasible given
+     the game specifics, a maximum of 1 click is allowed." Dazu in den
+     Qualitätsrichtlinien: das Onboarding **im Spiel** umsetzen, überspringbar
+     halten, wenig Text, die Steuerung zeigen.
+   - Poki (developers.poki.com/guide/easy-access): „Skip splash screens,
+     title screens, and level selects. Let them jump straight into the good
+     part", und: Bilder, Animationen, Gesten statt Textwänden.
+
+   Daraus die Bauweise:
+   1. **Ein Klick.** `#willkVeil` zeigt einem Erstbesucher nur den grünen
+      Startknopf; der Anmeldebildschirm kommt erst, wenn er ihn sucht.
+   2. **Gelernt wird beim Spielen**, nicht in einem Fenster davor. Jeder
+      Schritt endet damit, dass der Spieler ihn **getan** hat — nicht damit,
+      dass er „Weiter" drückt.
+   3. **Eine Sache auf einmal**, höchstens ein Satz, und der Kasten
+      verschwindet dazwischen.
+   4. **Überspringbar**, jederzeit, mit einem Tipp.
+   5. Die erste Runde läuft **lokal** gegen Computergegner: Sie beginnt ohne
+      Verbindung sofort, und niemand wird in den ersten zwanzig Sekunden von
+      einem geübten Spieler gefressen.
+
+   Der Stand liegt im `localStorage` (`talumi.tutorial`) — er ist reine
+   Anzeige, nichts davon geht an den Server.
+   ===================================================================== */
+
+/* Tippgerät oder Maus — Poki verlangt, dass die Steuerung passend zum Gerät
+   erklärt wird. `body.touch` setzt der Client selbst beim ersten Tipp. */
+function tippGeraet(){
+  try { return document.body.classList.contains("touch"); } catch(_){ return false; }
+}
+
+const Tutorial = {
+  SCHLUESSEL: "talumi.tutorial",
+  stand: { spiel: 0, menue: 0, fertig: false },
+  laufend: false,          // Tutorialrunde läuft gerade
+  schritt: null,           // aktueller Schritt im Spiel
+  seit: 0,                 // Sekunden, die er schon steht
+  start: null,             // letzte Stelle, für „hat er sich bewegt?"
+  strecke: 0,
+  zielJetzt: null,
+
+  /* --- Stand merken ------------------------------------------------- */
+  laden(){
+    try {
+      const roh = localStorage.getItem(this.SCHLUESSEL);
+      if (roh){
+        const o = JSON.parse(roh);
+        if (o && typeof o === "object"){
+          this.stand.spiel  = Math.max(0, Math.min(99, +o.spiel || 0));
+          this.stand.menue  = Math.max(0, Math.min(99, +o.menue || 0));
+          this.stand.fertig = !!o.fertig;
+          this.stand.belohnt = !!o.belohnt;
+        }
+      }
+    } catch(_){}
+    return this.stand;
+  },
+  sichern(){
+    try { localStorage.setItem(this.SCHLUESSEL, JSON.stringify(this.stand)); } catch(_){}
+  },
+
+  /* Ein Erstbesucher ist, wer noch keine Runde gespielt hat und kein Konto
+     gemerkt hat. Dieselbe Bedingung wie die Weiche beim Laden — sonst
+     bekäme ein wiederkehrender Gast den Willkommensbildschirm noch einmal. */
+  erstbesuch(){
+    if (this.stand.fertig) return false;
+    if (this.stand.spiel > 0 || this.stand.menue > 0) return false;
+    try { if (Konto.gemerkt()) return false; } catch(_){}
+    try { if (Portal.name) return false; } catch(_){}   // Portale springen selbst ins Menü
+    try { if (location.hash) return false; } catch(_){} // Link aus einer Mail geht vor
+    return !((Profile.rec && Profile.rec.runs) > 0);
+  },
+
+  /* --- Die Schritte im Spiel ---------------------------------------- */
+  /* `fertig` prüft, ob der Spieler es getan hat. `wenn` (nur bei „Gefahr")
+     entscheidet, ob der Schritt überhaupt an der Reihe ist; `zeit` lässt
+     ihn nach so vielen Sekunden von selbst weitergehen. */
+  /* Acht Schritte (v109, nach Thomas' Liste vom 22.09.: sammeln, lenken,
+     teilen, abwerfen, Pulsare, Spieler fressen, Pulsare schießen). Jeder
+     endet, wenn der Spieler es **getan** hat; Erklärschritte (Gefahr,
+     Pulsar) gehen nach ein paar Sekunden von selbst weiter. Der letzte Satz
+     nennt die Belohnung. */
+  SCHRITTE: [
+    { id:"bewegen",  text:() => t(tippGeraet() ? "tut_bewegen_tipp" : "tut_bewegen_maus"),
+      fertig: () => Tutorial.strecke > 420 },
+    { id:"truemmer", text:() => t("tut_truemmer"),
+      fertig: () => (Game.debrisEaten || 0) >= 12 },
+    { id:"gefahr",   text:() => t("tut_gefahr"),
+      wenn: () => Tutorial.grosseNah(), zeit: 7 },
+    { id:"fressen",  text:() => t("tut_fressen"),
+      fertig: () => (Game.kills || 0) >= 1 },
+    { id:"teilen",   text:() => t(tippGeraet() ? "tut_teilen_tipp" : "tut_teilen_maus"),
+      fertig: () => Game.lastSplit > 0 },
+    { id:"abwerfen", text:() => t(tippGeraet() ? "tut_abwerfen_tipp" : "tut_abwerfen_maus"),
+      fertig: () => (Game.shedCount || 0) >= 1 },
+    { id:"pulsar",   text:() => t("tut_pulsar"),
+      wenn: () => Tutorial.pulsarNah(), zeit: 8 },
+    { id:"schuss",   text:() => t(tippGeraet() ? "tut_schuss_tipp" : "tut_schuss_maus"),
+      wenn: () => Tutorial.pulsarNah() && Tutorial.eigeneMasse() >= 260,
+      fertig: () => (Game.pulsarSpawns || 0) >= 1, zeit: 25 },
+    { id:"fertig",   text:() => t("tut_fertig"), zeit: 6 }
+  ],
+  eigeneMasse(){ return (Game.cells || []).reduce((a, c) => a + c.m, 0); },
+  /* Ein Pulsar im Bild? Dann lässt er sich zeigen. */
+  pulsarNah(){
+    const c = Game.cells && Game.cells[0];
+    if (!c) return false;
+    for (const p of (Game.pulsars || [])) if (Math.hypot(p.x - c.x, p.y - c.y) < 700) return true;
+    return false;
+  },
+
+  /* Ist ein Körper in Sicht, der einen fressen könnte? Dieselbe Grenze wie
+     im Spiel (1,22), damit der Satz nicht bei jemandem erscheint, der gar
+     nicht gefährlich ist. */
+  grosseNah(){
+    const c = Game.cells && Game.cells[0];
+    if (!c) return false;
+    const liste = Game.rivals || [];
+    for (const r of liste){
+      if (!r || r.dead) continue;
+      const zellen = r.cells || (r.m !== undefined ? [r] : null);
+      if (!zellen) continue;
+      for (const z of zellen){
+        if (!z || !(z.m >= c.m * 1.22)) continue;
+        if (Math.hypot((z.x || 0) - c.x, (z.y || 0) - c.y) < 900) return true;
+      }
+    }
+    return false;
+  },
+
+  /* --- Ablauf im Spiel ---------------------------------------------- */
+  rundeStart(){
+    if (this.stand.fertig || this.stand.spiel >= this.SCHRITTE.length){ this.laufend = false; return; }
+    this.laufend = true;
+    this.strecke = 0;
+    this.start = null;
+    this.seit = 0;
+    this.schritt = null;
+    this.naechster();
+  },
+
+  naechster(){
+    const box = document.getElementById("tutBox");
+    if (!box) return;
+    if (this.stand.spiel < this.SCHRITTE.length){
+      const s = this.SCHRITTE[this.stand.spiel];
+      /* Ein Schritt, dessen Lage noch nicht eingetreten ist („Gefahr"),
+         wartet: Der Kasten bleibt leer, bis es so weit ist. */
+      if (s.wenn && !s.wenn()){ this.schritt = null; box.hidden = true; return; }
+      this.schritt = s; this.seit = 0;
+      box.hidden = false;
+      box.classList.remove("fertig");
+      /* Die Führerin (v109): das gewählte Profilbild spricht. */
+      const fig = document.getElementById("tutFigur");
+      if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
+      const haken = document.getElementById("tutHaken");
+      if (haken) haken.hidden = true;
+      const txt = document.getElementById("tutText");
+      if (txt) txt.textContent = s.text();
+      return;
+    }
+    this.schritt = null;
+    box.hidden = true;
+  },
+
+  /* Ein Schritt ist geschafft: kurz der Haken, dann der nächste. */
+  geschafft(){
+    const box = document.getElementById("tutBox");
+    if (box){
+      box.classList.add("fertig");
+      const haken = document.getElementById("tutHaken");
+      if (haken) haken.hidden = false;
+    }
+    this.stand.spiel++;
+    this.sichern();
+    this.schritt = null;
+    setTimeout(() => { if (this.laufend) this.naechster(); }, 900);
+  },
+
+  /* Läuft aus der Bildschleife, nicht aus einem Zeitgeber: Ein verdeckter
+     Tab friert `requestAnimationFrame` ein, und dann soll auch das Tutorial
+     stehen bleiben statt im Hintergrund durchzulaufen. */
+  takt(dt){
+    if (!this.laufend || !Game.running) return;
+    const c = Game.cells && Game.cells[0];
+    if (c){
+      if (!this.start) this.start = { x: c.x, y: c.y };
+      else {
+        this.strecke += Math.hypot(c.x - this.start.x, c.y - this.start.y);
+        this.start.x = c.x; this.start.y = c.y;
+      }
+    }
+    if (!this.schritt){
+      /* Ein wartender Schritt kann jederzeit an die Reihe kommen — einmal
+         je Sekunde nachsehen reicht. */
+      this.seit += dt;
+      if (this.seit > 1){ this.seit = 0; this.naechster(); }
+      return;
+    }
+    this.seit += dt;
+    const s = this.schritt;
+    if (s.fertig && s.fertig()) return this.geschafft();
+    if (s.zeit && this.seit >= s.zeit) return this.geschafft();
+  },
+
+  /* Beim Tod oder Beenden: Kasten weg. Der Rundgang durchs Menü kommt,
+     sobald der Hangar wieder zu sehen ist. */
+  rundeEnde(){
+    this.laufend = false;
+    this.schritt = null;
+    const box = document.getElementById("tutBox");
+    if (box) box.hidden = true;
+  },
+
+  ueberspringen(){
+    this.laufend = false;
+    this.schritt = null;
+    this.stand.spiel = this.SCHRITTE.length;
+    this.stand.menue = 99;
+    this.stand.fertig = true;
+    this.sichern();
+    const box = document.getElementById("tutBox");
+    if (box) box.hidden = true;
+    this.tippZu();
+  },
+
+  /* --- Rundgang durch das Menü -------------------------------------- */
+  /* Drei Sprechblasen, mehr nicht: Der Spieler hat gerade eine Runde
+     gespielt und will die nächste, nicht eine Führung. */
+  /* Gezeigt wird die **Bühne**, nicht `#heldCanvas`: Läuft das 3D-Modell,
+     ist die obere Fläche leer und kann unsichtbar sein — dann hätte die
+     Blase ihr Ziel verloren und der Schritt wäre stillschweigend
+     übersprungen worden (genau so geschehen beim ersten Lauf). */
+  MENUE: [
+    { ziel: ".heldBuehne", text: "tut_m_koerper" },
+    { ziel: "#konsReiter button[data-reiter=haut]", text: "tut_m_designs" },
+    { ziel: "#modes", text: "tut_m_modi" },
+    { ziel: "#bonusKnopf", text: "tut_m_bonus" }
+  ],
+
+  menueVersuchen(){
+    if (this.stand.fertig) return;
+    if (this.stand.spiel < this.SCHRITTE.length) return;   // Spielteil noch offen
+    if (this.stand.menue >= this.MENUE.length) return this.abschliessen();
+    /* Steht die Blase schon, bleibt sie stehen. `show()` ruft hier nach
+       jedem Öffnen des Hangars an; ohne diese Zeile würde eine offene Blase
+       neu aufgebaut und der Spieler verlöre sie mitten im Lesen. */
+    const offenSchon = document.getElementById("tutTipp");
+    if (offenSchon && !offenSchon.hidden) return;
+    const sv = document.getElementById("startVeil");
+    if (!sv || sv.hidden) return;
+    /* Nicht über einen anderen Schleier legen (Tagesbonus, Ergebnis). */
+    try {
+      if (VEILS.some(id => { const v = document.getElementById(id);
+                             return v && !v.hidden && id !== "startVeil"; })) return;
+    } catch(_){}
+    this.tippZeigen();
+  },
+
+  tippZeigen(){
+    const blase = document.getElementById("tutTipp");
+    if (!blase) return;
+    const s = this.MENUE[this.stand.menue];
+    if (!s) return this.abschliessen();
+    const ziel = document.querySelector(s.ziel);
+    /* Fehlt das Element auf dieser Größe, wird der Schritt übersprungen,
+       statt eine Blase ins Leere zu setzen. */
+    if (!ziel || !ziel.offsetParent){ this.stand.menue++; this.sichern(); return this.menueVersuchen(); }
+
+    const txt = document.getElementById("tutTippText");
+    if (txt) txt.textContent = t(s.text);
+    const fig = document.getElementById("tutTippFigur");
+    if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
+    const zahl = document.getElementById("tutTippZahl");
+    if (zahl) zahl.textContent = (this.stand.menue + 1) + "/" + this.MENUE.length;
+    blase.hidden = false;
+    ziel.classList.add("tutZiel");
+    this.zielJetzt = ziel;
+
+    /* Die Blase setzt sich unter das Element, und wenn dort kein Platz mehr
+       ist, darüber. Gemessen wird nach dem Einblenden, sonst ist ihre Höhe
+       noch null. */
+    const r = ziel.getBoundingClientRect();
+    const b = blase.getBoundingClientRect();
+    let oben = r.bottom + 10;
+    if (oben + b.height > innerHeight - 8) oben = Math.max(8, r.top - b.height - 10);
+    let links = r.left + r.width/2 - b.width/2;
+    links = Math.max(10, Math.min(innerWidth - b.width - 10, links));
+    blase.style.top = Math.round(oben) + "px";
+    blase.style.left = Math.round(links) + "px";
+  },
+
+  tippZu(){
+    const blase = document.getElementById("tutTipp");
+    if (blase) blase.hidden = true;
+    if (this.zielJetzt){ this.zielJetzt.classList.remove("tutZiel"); this.zielJetzt = null; }
+  },
+
+  tippWeiter(){
+    this.stand.menue++;
+    this.sichern();
+    this.tippZu();
+    if (this.stand.menue >= this.MENUE.length) return this.abschliessen();
+    setTimeout(() => this.menueVersuchen(), 120);
+  },
+
+  abschliessen(){
+    const war = this.stand.fertig;
+    this.stand.fertig = true;
+    this.sichern();
+    this.tippZu();
+    /* Belohnung (v109): einmal 200 Ore für den Rundgang — als Gast lokal,
+       ein Konto hat das Tutorial schon hinter sich. Recherche: Ein kleiner,
+       sicherer Lohn am Ende hält mehr Spieler als ein großer, der Zufall
+       verspricht. */
+    if (!war && !istAngemeldet() && !this.stand.belohnt){
+      this.stand.belohnt = true; this.sichern();
+      Profile.ore += 200; Gast.sichern();
+      try { paintPurse(); lohnZeigen("200 Ore", t("tut_lohn"), ikonBild("ore")); } catch(_){}
+    }
+  },
+
+  /* --- Einhängen ---------------------------------------------------- */
+  einhaengen(){
+    this.laden();
+    const skip = document.getElementById("tutSkip");
+    if (skip) skip.addEventListener("click", () => this.ueberspringen());
+    const weiter = document.getElementById("tutTippWeiter");
+    if (weiter) weiter.addEventListener("click", () => this.tippWeiter());
+    /* Wird das Fenster gedreht, sitzt die Blase falsch — dann neu setzen.
+       In `try`, weil dieser Abschnitt auch in Prüfständen ohne Fenster
+       geladen wird (die Falle aus v105). */
+    try {
+      addEventListener("resize", () => {
+        const blase = document.getElementById("tutTipp");
+        if (blase && !blase.hidden) this.tippZeigen();
+      });
+    } catch(_){}
+  }
+};
+
+try { Tutorial.einhaengen(); } catch(_){}

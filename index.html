@@ -10,11 +10,11 @@
 <meta name="apple-mobile-web-app-title" content="Talumi">
 <!-- Titel: Hauptbegriff vorn, unter 60 Zeichen. Er entscheidet in der
      Trefferliste und bei KI-Antworten über den Klick. -->
-<meta name="description" content="Talumi is a free online multiplayer io game in the browser: start as dust, eat debris and rivals, grow into a world with rings. Real players and NPC rivals in one arena, four modes, 46 earned designs, no lasting advantages for sale.">
+<meta name="description" content="Talumi is a free online multiplayer io game in the browser: start as dust, eat stardust and rivals, grow into a world with rings. Real players and NPC rivals in one arena, four modes, 46 earned designs, no lasting advantages for sale.">
 <link rel="canonical" href="https://talumi.io/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Talumi — free online multiplayer io game, dust to planet">
-<meta property="og:description" content="Online multiplayer in the browser: start as a grain of dust, eat debris and rivals, grow into a world with rings and moons. Real players and NPC rivals in one arena. Free to play. Nothing on sale gives a lasting advantage.">
+<meta property="og:description" content="Online multiplayer in the browser: start as a grain of dust, eat stardust and rivals, grow into a world with rings and moons. Real players and NPC rivals in one arena. Free to play. Nothing on sale gives a lasting advantage.">
 <meta property="og:image" content="https://talumi.io/share-1200x630.png">
 <meta property="og:url" content="https://talumi.io/">
 <meta name="twitter:card" content="summary_large_image">
@@ -129,6 +129,9 @@
        padding:10px 12px;min-width:168px;backdrop-filter:blur(4px);white-space:nowrap}
   .plate h2{margin:0 0 7px;font-family:var(--serif);font-size:13px;font-weight:600;color:var(--paper-2)}
   .row{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:1.5px 0}
+  /* Clan-Kürzel in der Rangliste im Spiel (v109): klein, in Messing, wie in
+     der Namenszeile über dem Körper. */
+  .row .kz{font-style:normal;font-size:11px;letter-spacing:.06em;color:var(--brass);margin-right:4px;opacity:.9}
   .row.me{color:var(--brass)}
   .row span:first-child{overflow:hidden;text-overflow:ellipsis}
   .row span:last-child{color:var(--paper-2);font-variant-numeric:tabular-nums;
@@ -140,7 +143,19 @@
 
   /* Leicht durchscheinend: Das Sternenfeld dahinter bleibt sichtbar und das
      Menü wirkt als Teil des Spiels statt als davorgelegte Seite. */
-  .veil{position:fixed;inset:0;display:grid;place-items:center;padding:24px 18px;
+  /* Die Ränder rechnen die Kamera-Aussparung mit (v109, Thomas 22.09.2026:
+     „Wenn ich zerstreut wurde, überdeckt die Kamera von meinem iPhone 14 das
+     Fenster ein wenig" — dasselbe bei Ranglisten, Einstellungen, Anmeldung).
+     Quer meldet das iPhone links **und** rechts 47 Punkte, unten 21; auf
+     Geräten ohne Aussparung ist env() null und nichts ändert sich.
+     `--rand-y`/`--rand-x` sind der Grundabstand, den die flachen Schirme
+     unten verkleinern. */
+  .veil{--rand-y:24px;--rand-x:18px;
+        position:fixed;inset:0;display:grid;place-items:center;
+        padding:calc(var(--rand-y) + env(safe-area-inset-top))
+                calc(var(--rand-x) + env(safe-area-inset-right))
+                calc(var(--rand-y) + env(safe-area-inset-bottom))
+                calc(var(--rand-x) + env(safe-area-inset-left));
         background:color-mix(in srgb, var(--ink) 88%, transparent);
         backdrop-filter:blur(2px);z-index:5;overflow:auto}
   .veil[hidden]{display:none}
@@ -320,6 +335,15 @@
   .ziele .ziel{flex:0 1 150px;padding:10px 8px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);
      display:grid;justify-items:center;gap:2px}
   .ziele .ziel img.ik{width:64px;height:64px}
+  /* Tag 7 (v109): die drei Karten sind die Wahl — sie **sind** der Knopf.
+     Messing-Rahmen, kräftiger beim Berühren; der Tipp darunter in Messing. */
+  .ziele .ziel.wahl{border-color:rgba(233,176,99,.5);background:rgba(233,176,99,.06);cursor:pointer;
+       transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease}
+  .ziele .ziel.wahl:hover:not(:disabled){transform:translateY(-3px);border-color:var(--brass);
+       box-shadow:0 12px 30px rgba(0,0,0,.4), 0 0 18px rgba(233,176,99,.25)}
+  .ziele .ziel.wahl small{color:var(--brass)}
+  .ziele .ziel.wahl:disabled{opacity:.6;cursor:default}
+  .bonusKarte .wahlKopf{margin:12px 0 8px;color:var(--brass-hell);font-weight:600}
   /* Als 3D-Modell (v104): größer, weil die Ringe Platz brauchen; die Karte
      ist ein Knopf und zeigt das Design auf Tipp groß. */
   .ziele button.ziel{margin:0;width:auto;height:auto;min-height:0;cursor:pointer;color:inherit;font:inherit;
@@ -370,6 +394,27 @@
      font-variant-numeric:tabular-nums}
 
   .setlist{max-height:56vh;overflow:auto;padding-right:4px}
+  /* Einstellungen: **ein** Bereich scrollt, nicht zwei (v109). Vorher war die
+     Liste auf 56 % der Höhe gedeckelt und scrollte in sich — und weil Fuß,
+     Rechtliches und Zurück darunter nicht mehr in den Schirm passten, scrollte
+     zusätzlich das ganze Fenster. Jetzt ist die Karte eine Spalte, die nie
+     höher wird als der Schirm; die Liste nimmt sich den Rest. */
+  #setVeil .card{display:flex;flex-direction:column;
+       max-height:calc(100vh - 2 * var(--rand-y) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+       max-height:calc(100dvh - 2 * var(--rand-y) - env(safe-area-inset-top) - env(safe-area-inset-bottom))}
+  #setVeil .card > *{flex:0 0 auto}
+  #setVeil .setlist{flex:1 1 auto;min-height:90px;max-height:none;overflow:auto;
+       overscroll-behavior:contain;
+       /* Ein weicher Rand unten zeigt, dass es weitergeht. */
+       -webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent);
+               mask-image:linear-gradient(180deg,#000 calc(100% - 18px),transparent)}
+  .setFuss{display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:8px}
+  .setFuss .foot{margin:0;font-size:11.5px}
+  #setFassung{opacity:.7}
+  .setKnoepfe{display:flex;gap:8px;margin-top:10px}
+  .setKnoepfe button{margin:0;flex:1 1 0;min-width:0}
+  .setKnoepfe button[hidden]{display:none}
+  .setKnoepfe #setClose{flex:1.4 1 0}
   .opt{display:flex;justify-content:space-between;align-items:center;gap:14px;
      padding:9px 0;border-bottom:1px solid var(--line)}
   .opt > div{min-width:0}
@@ -504,7 +549,20 @@
   .erf.done{color:var(--paper)}
   .erf.done i,.erf.done b{color:var(--brass)}
 
-  #rankList{margin-top:12px;min-height:120px}
+  /* Die Liste scrollt in sich, statt die ganze Karte über den Bildrand zu
+     schieben (v109). Gemessen mit `ranglistemess.js`: Vorher ragte die Karte
+     auf **jeder** Größe hinaus — 36 Punkte auf dem iPhone 14 quer, 287 am
+     Rechner; unten fehlte dann der Zurück-Knopf.
+
+     Keine geschätzte Konstante: Die Karte bekommt eine Höhengrenze und wird
+     eine Spalte, die Liste nimmt sich den Rest (`flex:1`, `min-height:0` —
+     ohne das schrumpft ein Flex-Kind nie unter seinen Inhalt). Damit stimmt
+     es in jeder Sprache und bei jeder Zahl von Filtern, ohne Nachrechnen.
+     `dvh` zuerst als `vh` für alte Browser, dann echt: Die Adressleiste
+     gehört abgezogen. */
+  #rankVeil .card{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);
+     display:flex;flex-direction:column}
+  #rankList{margin-top:12px;min-height:120px;flex:1 1 auto;overflow:auto}
   .rankrow{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:baseline;
      padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
   .rankrow i{font-style:normal;color:var(--paper-2);font-variant-numeric:tabular-nums;
@@ -708,7 +766,7 @@
      Drittel der Fläche leer, während der Inhalt über zwei Bildschirmhöhen
      scrollte. Flache Schirme brauchen mehr Breite, nicht weniger. */
   @media (max-height:520px){
-    .veil{padding:14px;align-items:start}
+    .veil{--rand-y:14px;--rand-x:14px;align-items:start}
     .card{max-width:min(940px, 100%);padding:16px 18px;border-radius:14px}
     h1{font-size:clamp(30px,7vh,44px)}
     .sub{font-size:14px;margin:8px 0 12px}
@@ -737,12 +795,15 @@
     .modes{display:grid;grid-template-columns:1fr 1fr;gap:6px}
     .modes button{padding:7px 9px}
     .modes b{font-size:13.5px}
-    /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen
-       nebeneinander brechen in der schmalen Spalte auf je fünf Zeilen um und
-       kosten mehr Höhe als die ganze übrige Spalte. Man liest ohnehin nur die
-       des Modus, für den man sich gerade entscheidet. */
-    .modes span{font-size:11px;line-height:1.3;display:none}
-    .modes button[aria-pressed=true] span{display:block}
+    /* Beschreibung steht seit v109 bei **beiden** Spielarten (Thomas,
+       20.09.2026: „Ich möchte, dass unter dem Spielmodus noch eine kurze
+       Beschreibung dazu steht."). Als noch vier bis fünf Spielarten hier
+       standen, brachen ihre Sätze in der schmalen Spalte auf je fünf Zeilen
+       um und kosteten mehr Höhe als die ganze übrige Spalte; deshalb war
+       hier bis v108 nur die gewählte zu sehen. Mit zwei Spielarten und den
+       kurzen Sätzen aus `LANGS_V109` passt es — solange sie kurz bleiben.
+       Nach jeder Textänderung `node scrollall.js` fahren. */
+    .modes span{font-size:11px;line-height:1.3}
     /* Erklärtexte, die man einmal liest und danach nie wieder braucht.
        Der Platz gehört hier dem, was man tatsächlich bedient. */
     #boostNote,#controls{display:none}
@@ -796,7 +857,7 @@
      kostet: am Rand und zwischen den Beschriftungen — nicht an den
      Tippflächen, die gerade erst groß genug geworden sind. */
   @media (max-height:400px){
-    .veil{padding:10px}
+    .veil{--rand-y:10px;--rand-x:10px}
     .card .col > label{margin-top:6px!important}
   }
 
@@ -829,7 +890,11 @@
      Bildschirmfoto bekam; auf einem älteren Telefon wäre es ein zäher
      Startbildschirm. Und sichtbar war der Weichzeichner ohnehin nicht:
      Sterne sollen scharf sein. */
-  #accountVeil{padding:0;display:block;overflow:auto;backdrop-filter:none;
+  /* Kein Grundabstand, aber die Kamera-Aussparung rechnet mit (v109): Auf dem
+     iPhone 14 quer lag der Anfang jeder Zeile der linken Spalte unter der
+     Kamera. Der Grund bleibt randlos, nur der Inhalt rückt ein. */
+  #accountVeil{padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+       display:block;overflow:auto;backdrop-filter:none;
        background:radial-gradient(1500px 1000px at 50% 34%,
                   color-mix(in srgb, var(--ink) 16%, transparent),
                   color-mix(in srgb, var(--ink) 78%, transparent) 62%,
@@ -933,19 +998,29 @@
   #guestBtn.quiet{color:var(--paper);border-color:var(--line-hell)}
   #accountVeil .hintline{margin-top:9px}
 
+  /* Rechtliches nur noch klein ganz unten (v109, Thomas 22.09.2026: „stehen
+     mir beim Login-Fenster zu sehr im Mittelpunkt. Das interessiert kaum
+     jemanden"). Vier ruhige Textlinks in **einer** Zeile, durch Punkte
+     getrennt, ohne Kasten und ohne Unterstreichung. Erreichbar bleiben sie
+     mit einem Tipp — Impressum und Datenschutz müssen es (§ 5 DDG, Art. 13
+     DSGVO), hervorgehoben sein müssen sie nicht. Der Knopf „Rechtliches"
+     (die Fair-Play-Sätze) fällt hier weg; das Fenster öffnet sich weiter aus
+     den Einstellungen. */
   .anmFuss{grid-column:1 / -1;display:flex;align-items:center;justify-content:center;
-       flex-wrap:wrap;gap:8px 16px;padding:14px 28px 20px;font-size:12px;
-       border-top:1px solid var(--line)}
-  .anmFuss a{color:var(--paper-2);text-decoration:none;border-bottom:1px solid var(--line)}
-  .anmFuss a:hover{color:var(--brass);border-color:var(--brass)}
+       flex-wrap:wrap;gap:4px 0;padding:10px 28px 14px;font-size:11.5px;letter-spacing:.01em}
+  .anmFuss a{color:color-mix(in srgb, var(--paper-2) 78%, transparent);text-decoration:none;white-space:nowrap}
+  .anmFuss a + a::before{content:"·";display:inline-block;margin:0 9px;color:var(--line-hell)}
+  .anmFuss a:hover{color:var(--brass)}
+  #accountVeil #legalBtn{display:none}
   /* Auf Tippgeräten braucht auch ein Textlink eine Fläche, die der Daumen
      trifft — Apple verlangt 44 pt, Google 48 dp, und Impressum und
      Datenschutz sind genau die Links, die eine Store-Prüfung anfasst.
      Gemessen waren es 17 Punkte Höhe. Die Fläche wächst nach oben und unten,
      die Zeile bleibt dadurch optisch gleich. */
-  body.touch .anmFuss a{display:inline-flex;align-items:center;min-height:44px;
-       padding:0 4px}
-  body.touch .anmFuss{gap:4px 12px}
+  /* Die Trefferfläche wächst unsichtbar nach oben und unten auf 44 Punkte
+     (Polsterung plus Gegenabstand) — die Zeile bleibt optisch so schmal wie
+     am Rechner. Dieselbe Machart wie bei „Nutzungsbedingungen lesen". */
+  body.touch .anmFuss a{display:inline-block;padding:15px 0;margin:-15px 0}
   .anmFuss button{margin:0;width:auto;padding:7px 14px}
 
   /* Der Fließtext für Trefferlisten. Sichtbar, aber zurückgenommen: Wer
@@ -983,8 +1058,12 @@
     #guestBtn{margin-top:8px}
     #accountVeil .hintline{margin-top:6px;font-size:11px}
     /* Unter die linke Spalte: Die hat hier Luft, die rechte nicht. */
-    .anmFuss{grid-column:1;grid-row:2;border-top:0;padding:0 16px 14px;
-         justify-content:flex-start;gap:6px 12px;font-size:11.5px}
+    .anmFuss{grid-column:1;grid-row:2;border-top:0;padding:0 16px 12px;
+         justify-content:flex-start;gap:4px 0;font-size:11px;align-self:end}
+    /* Drei Links passen in eine Zeile, vier brachen um — und die zweite
+       Zeile begann dann mit einem verwaisten Punkt. „Mehr über das Spiel"
+       steht hochkant weiter da (dort sieht auch Googles Bot die Seite). */
+    .anmFuss a[href="about.html"], body.touch .anmFuss a[href="about.html"]{display:none}
     .anmFenster{align-items:stretch}
     .anmLinks{grid-column:1;grid-row:1}
     .anmRechts{grid-column:2;grid-row:1 / span 2}
@@ -1181,10 +1260,275 @@
   .bonusKnopf{margin:0;flex:0 0 auto;width:44px;height:44px;min-width:44px;padding:0;border-radius:12px;
        background:var(--plate);border:1px solid var(--line-hell);display:grid;place-items:center;position:relative}
   .bonusKnopf img{width:30px;height:30px;display:block}
-  .bonusKnopf.offen{border-color:rgba(61,220,132,.7);box-shadow:0 0 12px rgba(61,220,132,.35)}
+  /* Das Leuchten liegt **innen** (v109): Außen strahlte es 12 Punkte weit und
+     legte sich über den Sprachknopf daneben — Thomas am 22.09.2026: „Es sieht
+     aus als würde der Schatten … den Sprachen Button links daneben leicht
+     überdecken". Der Abstand zum Nachbarn ist nur 10 Punkte. */
+  .bonusKnopf.offen{border-color:rgba(61,220,132,.7);
+       box-shadow:inset 0 0 12px rgba(61,220,132,.28), inset 0 0 0 1px rgba(61,220,132,.18)}
   .bonusKnopf.offen::after{content:"";position:absolute;top:-4px;right:-4px;width:11px;height:11px;border-radius:50%;
        background:#3ddc84;box-shadow:0 0 8px #3ddc84}
   body.touch .bonusKnopf{width:48px;height:48px;min-width:48px}
+  .startHuelle{position:relative;flex:1 1 auto;display:flex;min-width:0}
+  .startHuelle #startBtn{flex:1 1 auto}
+
+  /* ---- Happy Hour (v109) -------------------------------------------------
+     Thomas am 22.09.2026: „Das Happy-Hour-Feld verdeckt auf meinem iPhone 14
+     einige Menüpunkte. Ich denke, es sollte groß und prunkvoll … erscheinen
+     und dann beim Antippen verschwinden und nur noch im Spielen-Button als
+     2.5x Ore angezeigt werden … ohne dass der Spielen-Button größer gemacht
+     wird."
+     Deshalb zwei Teile: einmal je Stunde der große Auftritt (`#happyVeil`),
+     danach nur die Plakette auf dem Startknopf. Die Zeile unter dem Knopf
+     (`#happyText`) gibt es im Hangar nicht mehr. Gold statt Grün: Grün
+     gehört dem Startknopf, und Gold ist die Farbe des Ore. */
+  .hhPlakette{position:absolute;left:50%;top:-9px;transform:translateX(-50%);z-index:2;
+       pointer-events:none;white-space:nowrap;
+       display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 8px;border-radius:99px;
+       font-family:var(--disp);font-size:11px;font-weight:800;letter-spacing:.06em;line-height:1;
+       color:#2a1703;
+       background:linear-gradient(100deg,#f3c26b 0%,#ffe7b0 38%,#f7cf7f 50%,#e8a84a 100%);
+       background-size:220% 100%;
+       border:1px solid rgba(255,236,190,.85);
+       box-shadow:0 2px 8px rgba(0,0,0,.45), 0 0 12px rgba(248,208,130,.45);
+       animation:hhGlanz 3.2s linear infinite}
+  .hhPlakette[hidden]{display:none}
+  .hhPlakette svg{width:11px;height:11px}
+  @keyframes hhGlanz{0%{background-position:120% 0}100%{background-position:-120% 0}}
+
+  #happyVeil{position:fixed;inset:0;z-index:26;display:grid;place-items:center;cursor:pointer;overflow:hidden;
+       padding:calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+               calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+       background:radial-gradient(1100px 700px at 50% 50%, rgba(58,34,8,.93), rgba(7,5,3,.97) 70%);
+       animation:hhEin .5s ease-out}
+  #happyVeil[hidden]{display:none}
+  #happyVeil.zu{animation:hhAus .35s ease-in forwards}
+  .hhBuehne{position:relative;display:grid;place-items:center;width:100%;height:100%}
+  /* Der Strahlenkranz: ein Kegelverlauf, der sich langsam dreht, außen
+     weich ausgeblendet. Dahinter ein warmer Kern. */
+  .hhStrahlen{position:absolute;left:50%;top:50%;width:min(150vmax,1500px);aspect-ratio:1;
+       margin:calc(min(150vmax,1500px) / -2) 0 0 calc(min(150vmax,1500px) / -2);border-radius:50%;
+       background:repeating-conic-gradient(from 0deg, rgba(255,214,140,.16) 0deg 2.5deg,
+                  rgba(255,214,140,.05) 2.5deg 5deg, transparent 5deg 15deg);
+       -webkit-mask-image:radial-gradient(circle, #000 6%, rgba(0,0,0,.55) 22%, transparent 46%);
+               mask-image:radial-gradient(circle, #000 6%, rgba(0,0,0,.55) 22%, transparent 46%);
+       filter:blur(1.2px);
+       animation:hhDreh 40s linear infinite}
+  .hhStrahlen::after{content:"";position:absolute;inset:36%;border-radius:50%;
+       background:radial-gradient(circle, rgba(255,210,130,.38), rgba(232,160,70,.12) 45%, transparent 70%)}
+  .hhKern{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px}
+  .hhErz{width:92px;height:92px;display:block;margin-bottom:4px;
+       filter:drop-shadow(0 0 18px rgba(255,200,110,.75));animation:hhPuls 2.4s ease-in-out infinite}
+  .hhErz img{width:100%;height:100%;display:block}
+  .hhZeit{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass-hell);opacity:.9}
+  .hhTitel{font-family:var(--disp);font-size:clamp(34px,7.2vw,58px);font-weight:800;letter-spacing:.04em;
+       line-height:1;text-transform:uppercase;
+       background:linear-gradient(180deg,#fff4d8 0%,#f8d58c 45%,#d99a3e 100%);
+       -webkit-background-clip:text;background-clip:text;color:transparent;
+       filter:drop-shadow(0 0 22px rgba(248,200,110,.55))}
+  .hhFaktor{font-family:var(--disp);font-size:clamp(22px,4.4vw,34px);font-weight:800;color:#fff1cf;
+       margin-top:6px;text-shadow:0 0 18px rgba(255,200,110,.8)}
+  .hhSatz{margin:4px 0 0;font-size:14px;color:var(--paper);max-width:26rem}
+  .hhTipp{margin-top:14px;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-2)}
+  @keyframes hhDreh{to{transform:rotate(360deg)}}
+  @keyframes hhPuls{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  @keyframes hhEin{from{opacity:0}to{opacity:1}}
+  @keyframes hhAus{to{opacity:0;transform:scale(1.04)}}
+  @media (max-height:460px){
+    .hhErz{width:56px;height:56px;margin-bottom:0}
+    .hhTitel{font-size:clamp(30px,10vh,46px)}
+    .hhFaktor{font-size:24px;margin-top:2px}
+    .hhSatz{font-size:12.5px}
+    .hhTipp{margin-top:8px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hhStrahlen,.hhErz,.hhPlakette,#happyVeil,#happyVeil.zu{animation:none}
+  }
+  /* ---- Designs: Raster und Großansicht (v109) ------------------------
+     Kacheln wachsen mit dem Schirm, aber nicht ins Unendliche: 128 bis
+     210 Punkte, so viele Spalten wie passen. Bis v108 waren es fest drei
+     Spalten — auf 1920 Punkten 600 Punkte breite Kacheln mit einem 132-
+     Punkte-Bild darin. */
+  #paneHaut .grid{grid-template-columns:repeat(auto-fill,minmax(clamp(128px,11.5vw,210px),1fr));
+       gap:12px;padding:2px 4px 10px 0}
+  .dGruppe{grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;
+       margin:10px 0 0;font-family:var(--disp);font-size:12px;font-weight:700;letter-spacing:.16em;
+       text-transform:uppercase;color:var(--paper-2);border-bottom:1px solid var(--line);padding-bottom:6px}
+  .dGruppe:first-child{margin-top:0}
+  .dGruppe em{font-style:normal;letter-spacing:.04em;color:var(--brass)}
+  #paneHaut .tile{border-radius:14px;border:1px solid var(--line-hell);text-align:left;
+       background:radial-gradient(120% 90% at 50% 38%, rgba(255,255,255,.06), rgba(255,255,255,.012) 60%, transparent),
+                  var(--block);
+       transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease}
+  #paneHaut .tile:hover:not(:disabled){transform:translateY(-2px);border-color:rgba(233,176,99,.45);
+       box-shadow:0 10px 26px rgba(0,0,0,.35)}
+  #paneHaut .tile[aria-pressed=true]{border-color:var(--brass);
+       box-shadow:0 0 0 1px var(--brass), 0 0 22px rgba(233,176,99,.28)}
+  #paneHaut .tile[data-state=locked]{opacity:1}
+  .dRahmen{position:relative;display:block;aspect-ratio:1;overflow:hidden}
+  .dRahmen canvas.dVor{position:absolute;inset:6%;width:88%;height:88%;display:block;opacity:.85}
+  .dRahmen img.dBild{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;
+       transform:scale(1.14);transition:opacity .4s ease}
+  .dRahmen img.dBild.da{opacity:1}
+  /* Gesperrt heißt nicht grau: Ein Design soll auch gesperrt Lust machen.
+     Leicht zurückgenommen, das Schloss sagt den Rest. */
+  .tile[data-state=locked] .dRahmen{filter:saturate(.8) brightness(.8)}
+  .dZeichen{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;
+       display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--on-brass);
+       background:linear-gradient(180deg,var(--brass-hell),var(--brass));box-shadow:0 2px 8px rgba(0,0,0,.45)}
+  .dSchloss{position:absolute;top:9px;right:9px;width:18px;height:18px;color:var(--paper-2);opacity:.85}
+  .dSchloss svg{width:100%;height:100%;display:block}
+  #paneHaut .tile .nm{font-family:var(--disp);font-size:13px;font-weight:600;padding:2px 10px 0}
+  #paneHaut .tile .nm i{font-size:11px}
+  #paneHaut .tile .rq{font-size:11.5px;padding:2px 10px 10px;display:flex;align-items:center;gap:4px}
+  #paneHaut .tile .rq .ico{width:13px;height:13px;color:var(--brass);margin:0}
+  #paneHaut .tile[aria-pressed=true] .rq{color:var(--brass)}
+  /* Die alte Kaufleiste unter dem Raster braucht es nicht mehr — gekauft
+     wird in der Großansicht. */
+  #paneHaut #kaufLeiste{display:none!important}
+
+  #designDetail{position:fixed;inset:0;z-index:24;display:grid;place-items:center;
+       padding:calc(14px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+               calc(14px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+       background:radial-gradient(900px 700px at 40% 45%, rgba(40,48,70,.55), rgba(6,8,12,.94) 72%);
+       animation:hhEin .25s ease-out}
+  #designDetail[hidden]{display:none}
+  .ddKarte{position:relative;width:min(980px,100%);max-height:100%;display:grid;
+       grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);align-items:center;gap:10px 26px;
+       border-radius:20px;border:1px solid var(--line-hell);padding:22px 26px;
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));box-shadow:0 36px 100px rgba(0,0,0,.6)}
+  .ddBuehne{position:relative;aspect-ratio:1;width:100%;max-width:calc(100vh - 90px);max-width:calc(100dvh - 90px);
+       justify-self:center;touch-action:none;cursor:grab;line-height:0}
+  .ddBuehne:active{cursor:grabbing}
+  .ddBuehne canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .ddBuehne canvas[hidden]{display:none}
+  .ddPfeil{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;margin:0;padding:0;
+       border-radius:50%;border:1px solid var(--line-hell);background:var(--glas);color:var(--paper);
+       font-size:26px;line-height:1;display:grid;place-items:center;z-index:2}
+  .ddPfeil.l{left:0}
+  .ddPfeil.r{right:0}
+  .ddDrehen{position:absolute;left:50%;bottom:2%;transform:translateX(-50%);font-size:11px;letter-spacing:.14em;
+       text-transform:uppercase;color:var(--paper-2);line-height:1.2;white-space:nowrap;pointer-events:none}
+  .ddInfo{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .ddZahl{font-size:11.5px;letter-spacing:.14em;color:var(--paper-2)}
+  .ddInfo h2{margin:0;font-family:var(--disp);font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.02;color:var(--paper)}
+  .ddChips{margin:2px 0 0;display:flex;gap:6px;flex-wrap:wrap}
+  .ddChips span{font-size:11.5px;padding:3px 9px;border-radius:99px;border:1px solid rgba(233,176,99,.35);color:var(--brass-hell)}
+  .ddWie{margin:6px 0 4px;font-size:14px;line-height:1.5;color:var(--paper-2)}
+  .ddKnopf{margin:6px 0 0;width:100%;min-height:50px;border-radius:13px;font-family:var(--disp);font-size:16px;font-weight:700;
+       letter-spacing:.06em;display:flex;align-items:center;justify-content:center;gap:8px;
+       background:linear-gradient(180deg,var(--brass-hell),var(--brass));color:var(--on-brass);border:0}
+  .ddKnopf .ico{width:18px;height:18px;margin:0}
+  .ddKnopf:disabled{background:var(--block);color:var(--paper-2);border:1px solid var(--line-hell);cursor:default}
+  .ddKnopf.gewaehlt:disabled{color:var(--brass-hell);border-color:rgba(233,176,99,.45);background:rgba(233,176,99,.08)}
+  .ddNote{margin:4px 0 0;font-size:12.5px;min-height:18px;color:var(--paper-2)}
+  .ddNote.good{color:var(--good)}
+  .ddNote.warn{color:var(--ember)}
+  .ddZu{position:absolute;top:10px;right:12px;z-index:3;width:44px;height:44px;margin:0;padding:0;border-radius:50%;
+       background:transparent;border:0;color:var(--paper-2);font-size:28px;line-height:1}
+  .ddZu:hover{color:var(--paper)}
+  /* Flach (Telefon quer): Bühne links so hoch wie möglich, Angaben rechts. */
+  @media (max-height:520px){
+    .ddKarte{padding:12px 16px;gap:6px 16px;grid-template-columns:auto minmax(0,1fr)}
+    .ddBuehne{width:calc(100vh - 60px);width:calc(100dvh - 60px);max-width:52vw}
+    .ddInfo h2{font-size:26px}
+    .ddWie{font-size:12.5px;margin:2px 0}
+    .ddKnopf{min-height:46px;font-size:14.5px}
+  }
+  /* Schmal und hoch: untereinander. */
+  @media (max-width:640px) and (min-height:521px){
+    .ddKarte{grid-template-columns:1fr;padding:18px}
+    .ddBuehne{width:min(100%, 60vh)}
+  }
+  @media (prefers-reduced-motion:reduce){ #designDetail{animation:none} #paneHaut .tile{transition:none} }
+
+  /* ---- Spielerprofil und Bildwahl (v109) ------------------------------ */
+  .pfKarte{max-width:min(860px,100%)}
+  .pfKopf{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px 18px;align-items:center}
+  .pfBild{position:relative;width:104px;height:104px;margin:0;padding:0;border:0;border-radius:50%;background:transparent;
+       box-shadow:0 10px 30px rgba(0,0,0,.45);cursor:default}
+  .pfBild img{width:100%;height:100%;display:block;border-radius:50%}
+  .pfBild.eigen{cursor:pointer}
+  .pfBild.leer img{filter:grayscale(.6) brightness(.7)}
+  .pfBildTipp{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);white-space:nowrap;font-size:11px;
+       padding:2px 8px;border-radius:99px;background:var(--plate);border:1px solid var(--line-hell);color:var(--brass)}
+  .pfNamen{min-width:0}
+  .pfNamen h2{margin:0;font-family:var(--disp);font-size:clamp(24px,4vw,34px);font-weight:800;line-height:1.05;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pfNamen h2 .kz{font-style:normal;font-size:.55em;letter-spacing:.08em;color:var(--brass);margin-right:8px;vertical-align:middle}
+  .pfNamen h2 small{font-size:.45em;color:var(--paper-2);font-weight:400}
+  .pfZeile{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .pfZeile .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:3px 10px;border-radius:99px;
+       border:1px solid var(--line-hell);color:var(--paper)}
+  .pfZeile .chip.rang{border-color:rgba(233,176,99,.4);color:var(--brass-hell)}
+  .pfZeile .chip canvas{width:34px;height:20px}
+  .pfTitelZeile{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .pfTitel{font-size:11.5px;padding:2px 9px;border-radius:99px;background:rgba(233,176,99,.12);color:var(--brass-hell);
+       border:1px solid rgba(233,176,99,.4)}
+  .pfClan{margin:6px 0 0;font-size:12.5px;color:var(--paper-2)}
+  .pfDesign{display:flex;flex-direction:column;align-items:center;gap:0}
+  .pfDesign img{width:150px;height:150px;display:block;margin:-18px -10px -22px}
+  .pfDesign small{font-size:11.5px;color:var(--paper-2)}
+  .pfWerte{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:16px 0 14px}
+  .pfWerte div{padding:10px 8px;border-radius:12px;background:var(--block);border:1px solid var(--line);text-align:center}
+  .pfWerte b{display:block;font-family:var(--disp);font-size:20px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .pfWerte span{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--paper-2);margin-top:2px}
+  .pfVitrine{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin-top:10px}
+  .pfErf{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border-radius:12px;
+       background:var(--block);border:1px solid var(--line);text-align:center}
+  .pfErf.voll{border-color:rgba(233,176,99,.45)}
+  .pfErf .bild{width:34px;height:34px;color:var(--brass)}
+  .pfErf .bild svg{width:100%;height:100%}
+  .pfErf b{font-size:12px;font-weight:600}
+  .pfErf small{font-size:11px;color:var(--paper-2)}
+  .pfFuss{margin:14px 0 0;text-align:right}
+  .bildRaster{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:12px 0 4px}
+  .bildKachel{margin:0;padding:6px 4px 6px;border-radius:14px;background:var(--block);border:1px solid var(--line);
+       display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--paper-2)}
+  .bildKachel img{width:64px;height:64px;display:block;border-radius:50%}
+  .bildKachel:hover{border-color:rgba(233,176,99,.5);color:var(--paper)}
+  .bildKachel[aria-pressed=true]{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass);color:var(--brass-hell)}
+  /* Auf dem Willkommensbildschirm: eine schiebbare Reihe, klein. */
+  .bildRaster.klein{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px 2px;margin:0;
+       width:100%;justify-content:safe center}
+  /* Am Rechner: alle zwanzig auf einmal in zwei Reihen, die Karte breiter. */
+  @media (min-width:900px) and (min-height:600px){
+    .willkKarte{max-width:min(820px,100%)}
+    .bildRaster.klein{flex-wrap:wrap;justify-content:center;overflow:visible}
+  }
+  .bildRaster.klein::-webkit-scrollbar{display:none}
+  .bildRaster.klein .bildKachel{flex:0 0 auto;width:72px;padding:4px 2px;font-size:11px;gap:2px}
+  .bildRaster.klein .bildKachel img{width:48px;height:48px}
+  .willkFrage{margin:6px 0 0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-2)}
+  .heldBild{width:34px;height:34px;margin:0;padding:0;border:0;border-radius:50%;background:transparent;
+       flex:0 0 auto;display:block;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  /* Flach: sichtbar 28, Tippfläche 44 — die Polsterung ragt in die Zeile
+     darüber und darunter, die Zeile selbst bleibt 28 hoch. */
+  body.touch .heldBild{width:44px;height:44px;padding:5px;margin:-5px -5px -5px 0;box-sizing:border-box}
+  @media (max-height:470px){ body.touch .heldBild{padding:8px;margin:-8px -8px -8px 0} }
+  .heldBild img{width:100%;height:100%;display:block;border-radius:50%}
+  .heldBild.leer{opacity:.6}
+  .rankrow.tipp{cursor:pointer}
+  .rankrow.tipp:hover b{color:var(--brass-hell)}
+  @media (max-height:520px){
+    .pfKopf{gap:8px 14px}
+    .pfBild{width:72px;height:72px}
+    .pfDesign img{width:110px;height:110px;margin:-12px -8px -16px}
+    .pfWerte{margin:10px 0 8px;gap:6px}
+    .pfWerte div{padding:6px 6px}
+    .pfWerte b{font-size:16px}
+    .bildRaster.klein .bildKachel{width:60px}
+    .bildRaster.klein .bildKachel img{width:40px;height:40px}
+    .willkFrage{margin-top:2px}
+  }
+  @media (max-width:560px){
+    .pfKopf{grid-template-columns:auto minmax(0,1fr)}
+    .pfDesign{grid-column:1 / -1;flex-direction:row;justify-content:center;gap:8px}
+  }
+
+  /* Nach der Runde: die Happy-Hour-Zeile der Abrechnung in Gold. */
+  .tally.happy span{color:#f8d58c!important;font-weight:600}
+  .tally.happy span:first-child::before{content:"✦";margin-right:6px;color:#f8d58c}
   #startBtn{margin:0;width:auto;height:64px;padding:0 56px;border-radius:14px;
        background:linear-gradient(180deg, var(--gruen-hell), var(--gruen));
        color:var(--auf-gruen);font-family:var(--disp);font-size:24px;font-weight:700;
@@ -1193,6 +1537,100 @@
                   inset 0 2px 0 rgba(255,255,255,.5)}
   #startBtn:hover:not(:disabled){background:linear-gradient(180deg,#a5f8cd,#4ae692)}
   #startBtn:disabled{background:var(--plate);color:var(--paper-2);box-shadow:none}
+
+  /* ---- Willkommen: der erste Bildschirm eines Erstbesuchers (v109) ----
+     Ein Knopf, ein Satz, sonst nichts. Kein Formular, keine Auswahl — die
+     Portale zählen die Klicks bis zum Spiel, und erlaubt ist genau einer.
+     Der Knopf ist derselbe grüne Startknopf wie in der Konsole: Von hier
+     startet wirklich eine Runde, die Regel „nur ein grüner Punkt" bleibt
+     damit gewahrt. */
+  #willkVeil{display:grid;place-items:center;padding:20px}
+  #willkVeil[hidden]{display:none}
+  .willkKarte{width:100%;max-width:min(560px,100%);min-width:0;text-align:center;
+       display:flex;flex-direction:column;align-items:center;gap:14px}
+  .willkMarke{justify-content:center}
+  .willkMarke b{font-size:30px;letter-spacing:.16em}
+  .willkSatz{margin:0;max-width:30rem;color:var(--paper-2);font-size:15px;line-height:1.5}
+  .willkStart{margin:0;width:auto;height:64px;padding:0 56px;border-radius:14px;border:0;
+       background:linear-gradient(180deg, var(--gruen-hell), var(--gruen));
+       color:var(--auf-gruen);font-family:var(--disp);font-size:24px;font-weight:700;
+       letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+       box-shadow:0 0 0 1px rgba(141,245,189,.45), 0 16px 44px rgba(61,220,132,.38),
+                  inset 0 2px 0 rgba(255,255,255,.5)}
+  .willkStart:hover{background:linear-gradient(180deg,#a5f8cd,#4ae692)}
+  .willkZeile{margin:0}
+  .linkKnopf{margin:0;background:none;border:0;box-shadow:none;padding:6px 10px;
+       color:var(--brass);font-size:14px;text-decoration:underline;cursor:pointer;width:auto}
+  .willkRecht{margin:0;font-size:11.5px;line-height:1.5;color:var(--paper-2);max-width:32rem}
+  .willkRecht a{color:var(--brass)}
+  body.touch .willkRecht a{display:inline-block;padding:15px 2px;margin:-15px 0}
+  /* Auf einem flachen Telefon im Querformat rücken die Teile zusammen; der
+     Knopf bleibt so groß, dass er nicht zu verfehlen ist. */
+  @media (max-height:460px){
+    .willkKarte{gap:9px}
+    .willkMarke b{font-size:24px}
+    .willkSatz{font-size:13.5px}
+    .willkStart{height:54px;font-size:21px;padding:0 44px}
+    .willkRecht{font-size:11px}
+  }
+
+  /* ---- Tutorial: der Hinweiskasten im Spiel (v109) -------------------
+     Unten in der Mitte: links und rechts liegen die Daumen, oben der
+     Beenden-Knopf. Er hält sich aus dem Weg (halbdurchsichtig, keine
+     Schatten über das Spielfeld) und verschwindet von selbst, sobald der
+     Schritt getan ist — dann blitzt kurz ein Haken auf. */
+  .tutBox{position:fixed;left:50%;transform:translateX(-50%);
+       bottom:calc(14px + env(safe-area-inset-bottom));z-index:4;pointer-events:auto;
+       max-width:min(520px, calc(100vw - 40px));
+       display:flex;align-items:center;gap:12px;
+       padding:10px 14px;border-radius:13px;
+       background:rgba(14,10,7,.82);border:1px solid rgba(233,176,99,.4);
+       box-shadow:0 10px 30px rgba(0,0,0,.45);
+       animation:tutAuf .35s ease-out}
+  .tutBox[hidden]{display:none}
+  /* Die Führerin (v109): das gewählte Profilbild, links im Kasten. */
+  .tutFigur{flex:0 0 auto;width:44px;height:44px;border-radius:50%;display:block;
+       box-shadow:0 4px 14px rgba(0,0,0,.5)}
+  .tutFigur img{width:100%;height:100%;display:block;border-radius:50%}
+  .tutTippKopf{display:flex;align-items:flex-start;gap:10px}
+  .tutTippKopf p{flex:1 1 auto}
+  .tutBox p{margin:0;font-size:14px;line-height:1.35;color:var(--paper)}
+  .tutBox.fertig{border-color:rgba(61,220,132,.6)}
+  .tutHaken{font-style:normal;font-size:18px;color:var(--gruen-hell);flex:0 0 auto}
+  .tutHaken[hidden]{display:none}
+  .tutSkip{margin:0;flex:0 0 auto;width:auto;min-height:36px;padding:0 12px;
+       background:transparent;border:0;box-shadow:none;color:var(--paper-2);
+       font-size:12px;text-decoration:underline;cursor:pointer}
+  .tutSkip:hover{color:var(--paper)}
+  @keyframes tutAuf{from{opacity:0;transform:translate(-50%,10px)}
+                    to{opacity:1;transform:translate(-50%,0)}}
+  @media (max-height:420px){
+    .tutBox{bottom:calc(8px + env(safe-area-inset-bottom));padding:8px 12px}
+    .tutBox p{font-size:13px}
+  }
+  /* Auf Tippgeräten liegen die Daumentasten unten außen; der Kasten bleibt
+     mittig, darf sie aber nie überdecken. */
+  body.touch .tutBox{left:calc(14px + env(safe-area-inset-left));transform:none;
+       max-width:calc(100vw - 372px - env(safe-area-inset-left) - env(safe-area-inset-right))}
+  @keyframes tutAufLinks{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  body.touch .tutBox{animation-name:tutAufLinks}
+
+  /* ---- Tutorial: die Sprechblase für den Rundgang durchs Menü -------- */
+  .tutTipp{position:fixed;z-index:60;max-width:min(300px, calc(100vw - 28px));
+       padding:12px 14px;border-radius:13px;
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+       border:1px solid rgba(233,176,99,.5);
+       box-shadow:0 18px 50px rgba(0,0,0,.6);
+       animation:tutAuf .3s ease-out}
+  .tutTipp[hidden]{display:none}
+  .tutTipp p{margin:0 0 10px;font-size:13.5px;line-height:1.45;color:var(--paper)}
+  .tutTippFuss{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .tutTippZahl{font-size:11.5px;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .tutTippFuss button{margin:0;width:auto;min-height:36px;padding:0 14px;font-size:13px}
+  /* Das erklärte Element hebt sich ab, solange die Blase daneben steht. */
+  .tutZiel{position:relative;z-index:59;
+       box-shadow:0 0 0 2px var(--brass), 0 0 24px rgba(233,176,99,.5);
+       border-radius:12px}
   .konsStart .pow{margin:0;font-size:12.5px}
 
   /* --- Fenster ------------------------------------------------------ */
@@ -1324,7 +1762,11 @@
   .konsSek .rankrow.me i,.konsSek .rankrow.me b{color:var(--brass-hell)}
 
   /* --- Mitte: der eigene Körper ------------------------------------- */
-  .konsName{text-align:center;margin:0}
+  /* Name und Profilbild (v109) in **einer** Zeile: Als Block darüber
+     kostete das Bild 34 Punkte Höhe, und der Hangar scrollte auf dem
+     Telefon um 17 Punkte (gemessen mit scrollall.js). */
+  .konsName{text-align:center;margin:0;display:flex;align-items:center;justify-content:center;gap:8px;min-width:0}
+  .konsName b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .konsName b{display:block;font-family:var(--disp);font-size:29px;font-weight:700;
        color:var(--paper);line-height:1.1}
   /* Das Level zwischen Name und Körper (v105): „Level 24" und eine schmale
@@ -1423,12 +1865,10 @@
        font-weight:600;color:var(--paper)}
   .konsSp.r .modes button[aria-pressed=true] b{color:var(--brass-hell)}
   .konsSp.r .modes span{flex:0 0 100%;padding-left:20px;font-size:11px;margin-top:1px}
-  /* Beschreibung nur beim gewählten Modus, sobald die Höhe knapp wird. Auf
-     einem hohen Schirm stehen alle vier da, wie im Entwurf. */
-  @media (max-height:820px){
-    .konsSp.r .modes span{display:none}
-    .konsSp.r .modes button[aria-pressed=true] span{display:block}
-  }
+  /* Seit v109 stehen beide Beschreibungen immer da (Thomas, 20.09.2026).
+     Bis v108 verschwanden sie unter 821 Punkten Höhe, weil vier bis fünf
+     Spielarten dort nicht mehr hinpassten; mit zwei kurzen Sätzen tun sie
+     es. Die Regel für flache Schirme steht weiter oben bei `.modes span`. */
   .konsSp.r input[type=text]{height:44px;border-radius:11px;padding:0 14px;font-size:15px;
        background:rgba(255,255,255,.06);border:1px solid var(--line)}
   .konsSp.r input[type=text]:focus{border-color:var(--brass)}
@@ -1544,13 +1984,46 @@
   .konsKopfzeile p{margin:0;font-size:12.5px;color:var(--paper-2)}
   .konsStat{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start}
   /* Monde (Schritt 108) */
+  /* ---- Reiter Monde (v109) ------------------------------------------- */
+  .mondOben{display:grid;grid-template-columns:minmax(220px,420px) minmax(0,1fr);gap:18px 26px;align-items:start;margin-bottom:14px}
+  .mondLinks{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+  .mondBuehne{position:relative;width:100%;aspect-ratio:1;line-height:0}
+  .mondBuehne canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .mondBuehne canvas[hidden]{display:none}
+  /* Die vier Plätze: Mond oder „+", als Reihe unter der Welt. Ein Tipp auf
+     einen Mond nimmt ihn ab (× in der Ecke), ein Tipp auf „+" führt zum
+     Vorrat. */
+  .mondPlatzKn{display:flex;gap:10px;justify-content:center;margin-top:-6px}
+  .mondPlatzKn button{position:relative;width:56px;height:56px;margin:0;padding:0;border-radius:50%;
+       background:var(--block);border:1.5px dashed rgba(233,176,99,.45);
+       color:var(--brass);font-size:22px;line-height:1;display:grid;place-items:center}
+  .mondPlatzKn button canvas{width:44px;height:44px}
+  .mondPlatzKn button.voll{border:1.5px solid rgba(233,176,99,.55);background:rgba(233,176,99,.07)}
+  .mondPlatzKn button.voll::after{content:"×";position:absolute;right:-3px;top:-3px;width:18px;height:18px;border-radius:50%;
+       background:var(--plate);border:1px solid var(--line-hell);color:var(--paper-2);font-size:12px;line-height:16px;text-align:center}
+  .mondPlatzKn button.voll:hover::after{color:var(--paper);border-color:var(--brass)}
+  .mondPlatzKn button:hover{border-color:var(--brass)}
+  .mondSeite{display:flex;flex-direction:column;gap:12px;min-width:0}
+  .mondSeite .plate.recbox{margin:0}
+  .mondVorrat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+  .mondKarte{display:grid;grid-template-columns:56px minmax(0,1fr);gap:4px 12px;align-items:center;
+       padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--block)}
+  .mondKarte.an{border-color:rgba(233,176,99,.5)}
+  .mondKarte .stufen{display:flex;gap:6px;margin-top:3px}
+  .mondKarte .stufen span{font-size:11.5px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--paper-2)}
+  .mondKarte .stufen span.hat{color:var(--brass-hell);border-color:rgba(233,176,99,.45)}
+  @media (max-width:760px){ .mondOben{grid-template-columns:1fr} .mondBuehne{max-width:340px;margin:0 auto} }
+  @media (max-height:520px) and (min-width:640px){
+    .mondOben{grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:10px 16px;margin-bottom:8px}
+    .mondKarte{padding:8px 10px;grid-template-columns:44px minmax(0,1fr)}
+  }
   .mondPlaetze{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
   .mondPlatz{width:78px;height:92px;border:1px dashed rgba(233,176,99,.35);border-radius:12px;
        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
        font-size:11px;color:var(--paper-2);text-align:center;padding:4px;box-sizing:border-box}
   .mondPlatz.voll{border-style:solid;border-color:rgba(233,176,99,.6);background:rgba(233,176,99,.07);color:var(--paper)}
   .mondPlatz canvas{width:44px;height:44px}
-  .mondKarte{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;align-items:center;
+  .mondKarteAlt{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;align-items:center;
        padding:8px 0;border-top:1px solid var(--line);min-width:0}
   .mondKarte:first-of-type{border-top:0}
   .mondKarte canvas{width:52px;height:52px}
@@ -1756,9 +2229,25 @@
        in der Kopfzeile, und der Steuerungshinweis ist ein Satz, den man
        einmal liest. Übrig bleibt, was man **vor dem Start** braucht: der
        eigene Körper, die Wahl der Runde, der Bonus. */
-    #startVeil #naechstBox,
     #startVeil #freundBox,
     #startVeil #controls{display:none}
+    /* Die nächsten Errungenschaften stehen seit v109 wieder da — links unter
+       dem Startbonus, wo die Spalte leer war (Thomas, 22.09.2026: „Die
+       Aufgaben fehlen mir komplett auf dem Handy … Die hätten doch noch
+       unter dem Startbonus-Feld Platz. Mit Balken daneben"). Name oben,
+       Balken und Prozent darunter: In 225 Punkten Breite bliebe für den
+       Namen neben dem Balken sonst nur ein abgeschnittenes Wort. Körper und
+       Spielart reichen dafür über beide Zeilen. */
+    #startVeil #naechstBox{display:block;grid-column:1;grid-row:3;margin:0;
+         padding:2px 12px 10px;border:0;border-right:1px solid var(--line);
+         border-radius:0;background:none;min-width:0}
+    #startVeil #naechstBox h2{margin:0 0 4px;font-size:11px;line-height:1.2}
+    #startVeil #naechstBox .konsBlock{padding:0;background:none;border:0;box-shadow:none}
+    #startVeil #naechstBox .konsFort{display:grid;grid-template-columns:1fr auto;
+         grid-template-rows:auto 5px;gap:3px 8px;padding:4px 0;font-size:11.5px}
+    #startVeil #naechstBox .konsFort span:first-child{grid-column:1 / -1}
+    #startVeil #naechstBox .konsFort .bar{grid-column:1;grid-row:2;align-self:center}
+    #startVeil #naechstBox .konsFort b{grid-column:2;grid-row:2;font-size:11px;line-height:5px}
     /* Drei Spalten: Körper | Spielart | Name und Startbonus. Untereinander
        brauchte die rechte Spalte allein 309 Punkte — nebeneinander sind es
        zweimal rund 130, und damit passt der ganze Reiter in ein Fenster von
@@ -1778,7 +2267,7 @@
        Körper links. Die Breiten der beiden Randspalten sind die gemessenen
        von oben; die Mitte bekommt den Rest. */
     .konsPane.drei{grid-template-columns:minmax(0,225px) minmax(0,1fr) minmax(0,290px)}
-    .konsSp.m{grid-column:2;grid-row:2;order:0;align-items:center;
+    .konsSp.m{grid-column:2;grid-row:2 / span 2;order:0;align-items:center;
          border:0;border-right:1px solid var(--line);
          justify-content:flex-start;--mg:8px}
     /* Die Spalte selbst verschwindet als Kasten; ihre beiden Gruppen werden
@@ -1790,7 +2279,7 @@
        Das ist die Grenze, unter der auf einem Telefon nichts mehr lesbar
        ist. */
     .rGrp > label{line-height:1.2;font-size:11px}
-    .rGrp:first-of-type{grid-column:3;grid-row:2}
+    .rGrp:first-of-type{grid-column:3;grid-row:2 / span 2}
     .rGrp:last-of-type{grid-column:1;grid-row:2;border-right:1px solid var(--line)}
     .rGrp > label{margin:0}
     /* Faktor über den Preis statt daneben: So bleibt der Knopf eine Zeile
@@ -1881,6 +2370,18 @@
        der Oberfläche — in eine Zeile passt. */
     .konsSp.r .modes b{font-size:11px;line-height:1.15;white-space:nowrap;
          overflow:hidden;text-overflow:ellipsis}
+    /* Seit Schritt 109 stehen nur noch **zwei** Spielarten da — das
+       Zweierraster ohne Beschreibung war für vier gebaut. Jetzt wieder
+       untereinander, jede mit ihrem Satz (v109, Thomas 22.09.2026: „Kurze
+       Beschreibung zu den Spielarten darunter einfügen"). Die Spalte reicht
+       über Startbonus und Aufgaben hinweg und hat dafür die Höhe. */
+    .konsSp.r .modes{display:flex;flex-direction:column;gap:6px}
+    .konsSp.r .modes button{min-height:44px;display:flex;flex-direction:column;
+         align-items:flex-start;justify-content:center;gap:2px;padding:7px 10px}
+    .konsSp.r .modes b{font-size:13px;white-space:normal;flex:0 0 auto;width:100%}
+    .konsSp.r .modes span,
+    .konsSp.r .modes button[aria-pressed=true] span{display:block;font-size:11px;line-height:1.3;
+         color:var(--paper-2);white-space:normal;flex:0 0 auto;width:100%;padding-left:0;margin:0}
   }
   @media (max-height:420px) and (min-width:640px){
     #startVeil #heldCanvas{width:104px;height:auto}
@@ -1936,7 +2437,8 @@
     .card > button{margin-top:10px}
     /* Der Inhalt jeder Karte scrollt in sich, der Knopf bleibt stehen. */
     .setlist{max-height:calc(100vh - 176px)}
-    #rankList{max-height:calc(100vh - 286px);overflow:auto;margin-top:8px;min-height:0}
+    #setVeil .setlist{max-height:none}
+    #rankList{overflow:auto;margin-top:8px;min-height:0}
     #friendList{max-height:calc(100vh - 250px);overflow:auto}
     .legal{max-height:calc(100vh - 168px)}
     #rankVeil .notice,#friendsVeil .notice{min-height:0;margin-top:6px;font-size:11.5px}
@@ -1944,6 +2446,44 @@
        zwei Reihen Knöpfe kosteten 130 Punkte, nebeneinander sind es 65. */
       .rangWahl{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
     .rangWahl > label{margin:0 0 4px!important}
+  }
+
+  /* ---- Ranglisten auf einem flachen, breiten Schirm (v109) ------------
+     Thomas am 20.09.2026: „Auf der Rangliste sind auf meinem iPhone 14 nur
+     immer 3 Positionen sichtbar ohne Scrollen. Das ist zu wenig."
+     Nachgemessen (`ranglistemess.js`): genau 3 — Überschrift, Erklärsatz,
+     die beiden Filter, der Hinweis und der Knopf nahmen 230 der 390 Punkte,
+     und die Karte ragte trotzdem noch 36 Punkte hinaus.
+
+     Im Querformat ist **Breite** da und **Höhe** knapp. Deshalb dasselbe
+     wie in der Konsole: zwei Spalten. Links Überschrift, Filter, Hinweis und
+     Knopf, rechts die Liste über die volle Höhe. Aus 3 Plätzen werden so
+     neun bis zehn, ohne dass irgendetwas kleiner wird. */
+  @media (max-height:560px) and (min-width:600px){
+    #rankVeil .card{display:grid;grid-template-columns:minmax(190px,250px) 1fr;
+         column-gap:20px;align-items:start;align-content:start;
+         padding:14px 18px;max-width:min(980px,100%)}
+    #rankVeil .card > h1,#rankVeil .card > .rangWahl,
+    #rankVeil .card > .notice,#rankVeil .card > button{grid-column:1}
+    /* Der Erklärsatz („Nur Onlinerunden zählen") steht im Querformat nicht
+       mehr da: Er kostet 36 Punkte in der linken Spalte, und genau die
+       fehlten unten am Zurück-Knopf. Auf jedem höheren Schirm steht er. */
+    #rankVeil .card > .sub{display:none}
+    /* Die Liste steht rechts und reicht über alle Zeilen der linken Spalte.
+       Die Karte hat dafür eine feste Höhe (so hoch wie der Schirm erlaubt) und
+       die letzte Zeile nimmt den Rest — sonst wuchs das Raster mit der Liste,
+       und die Plätze 12 bis 20 hingen unten aus der Karte heraus (gemessen
+       auf dem iPhone 14 quer, v109). */
+    #rankVeil .card{height:calc(100vh - 2 * var(--rand-y) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+         height:calc(100dvh - 2 * var(--rand-y) - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+         grid-template-rows:repeat(5,auto) minmax(0,1fr);overflow:hidden}
+    #rankVeil #rankList{grid-column:2;grid-row:1 / -1;margin-top:0;min-height:0;max-height:100%;overflow:auto;
+         overscroll-behavior:contain}
+    /* Die Filter wieder untereinander — in der schmalen linken Spalte ist
+       nebeneinander enger als übereinander. */
+    #rankVeil .rangWahl{display:block}
+    #rankVeil .rangWahl label{margin-top:8px!important}
+    #rankVeil .card > button{margin-top:10px}
   }
 
   /* ---- Flache Schirme: Die Reiter zeigen, wonach man sie aufgemacht hat
@@ -2312,13 +2852,18 @@
   .widerrufKnopf[hidden]{display:none}
   #legalWiderruf{margin:10px 0 0}
   .setRecht{display:flex;justify-content:space-between;align-items:center;gap:14px;
-       padding:10px 0;border-bottom:1px solid var(--line)}
+       margin-top:10px;padding:7px 8px 7px 14px;border-radius:12px;
+       background:rgba(224,122,60,.07);border:1px solid rgba(224,122,60,.28)}
   .setRecht[hidden]{display:none}
   .setRecht > div{min-width:0}
   .setRecht b{display:block;font-weight:600;font-size:13.5px}
-  .setRecht small{display:block;color:var(--paper-2);font-size:11px;margin-top:2px;line-height:1.35}
+  .setRecht small{display:block;color:var(--paper-2);font-size:11.5px;line-height:1.35;min-width:0}
   .setRecht .widerrufKnopf{flex:0 0 auto}
   .widerrufKarte{max-width:min(560px,100%)}
+  /* Der Löschknopf (v109): Rost wie der Widerruf — endgültig, nicht grün. */
+  .klGo{background:rgba(224,122,60,.16);border:1.5px solid var(--ember);color:var(--brass-hell);font-weight:600}
+  .klGo:hover:not(:disabled){background:rgba(224,122,60,.28)}
+  #loeschVeil label{display:block;margin:12px 0 6px;font-size:12px;letter-spacing:.06em;color:var(--paper-2)}
   .widerrufKarte h1{font-size:28px;line-height:1.12;margin-bottom:8px}
   .wdEinl{margin:0 0 4px}
   .widerrufKarte label{margin:12px 0 6px}
@@ -2403,7 +2948,7 @@
   "@context": "https://schema.org",
   "@type": "VideoGame",
   "name": "Talumi",
-  "description": "Free browser io game. Start as a grain of dust, eat debris and rivals, grow into a world with rings and moons.",
+  "description": "Free browser io game. Start as a grain of dust, eat stardust and rivals, grow into a world with rings and moons.",
   "url": "https://talumi.io/",
   "image": "https://talumi.io/share-1200x630.png",
   "genre": ["Action", "io game", "Multiplayer"],
@@ -2421,7 +2966,7 @@
 <noscript>
   <h1>Talumi</h1>
   <p>Talumi is a free browser io game. You start as a grain of dust, swallow
-     debris and rivals, and grow into a world with rings and moons. The game
+     stardust and rivals, and grow into a world with rings and moons. The game
      needs JavaScript to run. <a href="about.html">Read more about it</a>.</p>
 </noscript>
 
@@ -2494,7 +3039,7 @@
     <div class="mass" id="mass">0<small data-i18n="mass">mass</small></div>
     <div class="stage">
       <b id="stageName">Dust</b>
-      <p id="stageHint">Sweep up debris.</p>
+      <p id="stageHint">Sweep up stardust.</p>
       <p id="safeLine" hidden></p>
       <div class="track"><i id="stageBar"></i></div>
     </div>
@@ -2529,6 +3074,19 @@
       <p id="intText">Input looks human.</p>
     </div>
   </div>
+
+  <!-- Tutorial (v109, Thomas 20.09.2026: „dass man durch ein Tutorial
+       geführt wird, damit man die Spielmechanik und das Menü kennenlernt").
+       Der Kasten sitzt unten in der Mitte — links und rechts liegen die
+       Daumen, oben der Beenden-Knopf. Er zeigt immer **einen** Schritt;
+       weiter geht es, sobald der Spieler ihn getan hat, nicht auf Knopfdruck
+       (CrazyGames: „implement the onboarding in gameplay"). -->
+  <div class="tutBox" id="tutBox" hidden>
+    <span class="tutFigur" id="tutFigur"></span>
+    <i class="tutHaken" id="tutHaken" hidden>✓</i>
+    <p id="tutText">…</p>
+    <button type="button" class="tutSkip" id="tutSkip" data-i18n="tut_skip">Skip</button>
+  </div>
 </div>
 
 <!-- =====================================================================
@@ -2541,6 +3099,56 @@
      Grün kommt hier **nicht** vor: Der Startknopf ist der einzige grüne
      Punkt der Oberfläche, und von hier startet noch keine Runde.
      ===================================================================== -->
+<!-- =====================================================================
+     Willkommen (v109, 20.09.2026)
+
+     Thomas: „Wichtig ist noch, dass man beim ersten Start des Spiels gleich
+     ins Spiel hüpft und dass man durch ein Tutorial geführt wird."
+
+     Das deckt sich mit den Vorgaben der Portale: CrazyGames verlangt
+     „Games should land new users in gameplay immediately. If this is not
+     feasible given the game specifics, a maximum of 1 click is allowed"
+     (docs.crazygames.com/requirements/gameplay, abgerufen 20.09.2026), Poki
+     rät „Skip splash screens, title screens, and level selects"
+     (developers.poki.com/guide/easy-access, ebenda).
+
+     Deshalb: **ein** Knopf, sonst nichts, was aufhält. Der Pflichthinweis
+     auf die Nutzungsbedingungen steht darunter — er stand bisher auf dem
+     Anmeldebildschirm, den ein Erstbesucher nun nicht mehr sieht.
+     Angemeldet wird über die kleine Zeile darunter oder später in den
+     Einstellungen. Grün ist hier erlaubt: Von diesem Knopf startet eine
+     Runde, er ist derselbe Startknopf wie in der Konsole.
+     ===================================================================== -->
+<div class="veil" id="willkVeil" hidden>
+  <div class="willkKarte">
+    <div class="konsMarke willkMarke"><i></i><b>Talumi</b></div>
+    <p class="willkSatz" data-i18n="w_satz">From a speck of dust to a planet with rings and moons.</p>
+    <!-- Wer bist du? Zwanzig Hüter (v109); ein Tipp wählt und startet. -->
+    <p class="willkFrage" data-i18n="w_wer">Who will guide you?</p>
+    <div class="bildRaster klein" id="willkBilder"></div>
+    <button type="button" id="willkStart" class="willkStart" data-i18n="w_start">Play</button>
+    <p class="willkZeile">
+      <button type="button" class="linkKnopf" id="willkKonto" data-i18n="w_konto">I have an account</button>
+    </p>
+    <p class="willkRecht">
+      <span data-i18n="agb_gast">As a guest the terms of use apply too.</span>
+      <a href="nutzungsbedingungen.html" target="_blank" rel="noopener" data-i18n="agb_lesen">Read the terms of use</a>
+      ·
+      <a href="datenschutz.html" target="_blank" rel="noopener" data-i18n="ds_link">Privacy</a>
+    </p>
+  </div>
+</div>
+
+<!-- Sprechblase für den Rundgang durch das Menü (v109). Sie wird vom
+     Tutorial an das Element gerückt, das sie erklärt. -->
+<div class="tutTipp" id="tutTipp" hidden>
+  <div class="tutTippKopf"><span class="tutFigur" id="tutTippFigur"></span><p id="tutTippText">…</p></div>
+  <div class="tutTippFuss">
+    <span class="tutTippZahl" id="tutTippZahl">1/3</span>
+    <button type="button" class="quiet" id="tutTippWeiter" data-i18n="tut_weiter">Next</button>
+  </div>
+</div>
+
 <div class="veil" id="accountVeil">
 
   <div class="anmKopf">
@@ -2554,7 +3162,7 @@
   <div class="anmFenster">
     <div class="anmSp anmLinks">
       <h1>Talumi</h1>
-      <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow debris, swallow rivals, and pull
+      <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow stardust, swallow rivals, and pull
         yourself into a world with rings and moons of your own.</p>
       <ul class="anmPunkte">
         <li data-i18n="a_pt1">Free, in the browser, no download.</li>
@@ -2722,7 +3330,7 @@
     <section class="about">
       <h2>What is Talumi?</h2>
       <p>Talumi is a free browser game in the io genre. You start as a single
-        grain of dust in an open field of debris. Everything you swallow makes
+        grain of dust in an open field of stardust. Everything you swallow makes
         you bigger, and everything bigger than you is trying to swallow you.
         Grow far enough and your body changes: craters, then molten cracks,
         then an atmosphere, then rings and moons of your own.</p>
@@ -2739,7 +3347,7 @@
       <p><strong>Open space</strong> puts you on one field with everyone else in
         the room, with the server deciding what happened rather than any player's
         browser. A room holds 190 bodies; while fewer people are online, the
-        rest are computer-controlled rivals that carry an [NPC] tag before their name. Without a
+        rest are computer-controlled rivals; the player number and the lasting leaderboards count only people. Without a
         connection the same round runs on your own device.
         <strong>Battle royale</strong> starts everyone equal and closes the
         field in stages until one body is left. <strong>Clan battle</strong>
@@ -2791,7 +3399,14 @@
         <!-- Tagesbonus (Schritt 114): kleines Bildchen, Klick öffnet das
              Fenster. Gemalt von bonusKnopfMalen(). -->
         <button type="button" id="bonusKnopf" class="bonusKnopf" hidden></button>
-        <button id="startBtn" data-i18n="forming" disabled>Forming…</button>
+        <!-- Die Hülle trägt die Happy-Hour-Plakette über dem Knopf (v109). Sie
+             sitzt **auf** dem Rand, damit der Knopf nicht größer wird — und
+             nicht im Knopf, weil dessen Text bei jedem Sprachwechsel neu
+             geschrieben wird. -->
+        <span class="startHuelle">
+          <button id="startBtn" data-i18n="forming" disabled>Forming…</button>
+          <span class="hhPlakette" id="hhPlakette" hidden></span>
+        </span>
       </div>
       <!-- Die Spielerzahl stand hier bis Schritt 101 — Thomas am 16.09.2026:
            „Noch niemand im Orbit" ist keine Werbung. Sie steht nur noch auf
@@ -2850,6 +3465,10 @@
               data-i18n="k_stat">Stats</button>
       <button type="button" data-reiter="monde" role="tab" aria-selected="false"
               data-i18n="k_monde" hidden>Moons</button>
+      <!-- Skillpunkte in einem eigenen Reiter (v109, Thomas: „Skillpunkte
+           sollen extra in einem Feld erscheinen"). Wie „Monde" nur im Aufstieg. -->
+      <button type="button" data-reiter="skill" role="tab" aria-selected="false"
+              data-i18n="k_skill" hidden>Skills</button>
       <!-- Seit v105 nur noch Ore und Ehre: Level und XP stehen in der Mitte
            zwischen Name und Körper, das Rangabzeichen mit Rangnamen unter
            dem Körper (Thomas, 18.09.2026). -->
@@ -2874,7 +3493,7 @@
       </div>
 
       <div class="konsSp m">
-        <div class="konsName"><b id="heldName">—</b></div>
+        <div class="konsName"><button type="button" class="heldBild" id="heldBild" aria-label="Profile"></button><b id="heldName">—</b></div>
         <!-- Das Level zwischen Name und Körper (v105, Thomas: „das Level im
              Hangar zwischen Spielername und Designbild"), für Gäste wie für
              Konten. Ersetzt die Plakette „Stufe 5 — Welt". Die XP-Zahlen
@@ -2991,17 +3610,103 @@
     </div>
     <!-- Monde (Schritt 108): erspielte Ausrüstung, wirkt nur in der Liga.
          Gebaut von buildMonde() in spiel.js. -->
+    <!-- Monde (v109): links die eigene Welt im gewählten Design mit vier
+         Plätzen auf dem Ring, rechts Mondstaub und die Wege zu Monden,
+         darunter der Vorrat mit Anlegen, Verschmelzen, Aufwerten. -->
     <div class="konsPane eine" id="paneMonde" hidden>
       <div class="konsKopfzeile"><h2 data-i18n="mo_kopf">Moons</h2><p data-i18n="mo_erkl"></p></div>
-      <!-- Skillpunkte (Schritt 109) stehen über den Monden: beides ist die
-           Ausrüstung für die Liga, gebaut von buildMonde(). -->
+      <div class="mondOben">
+        <div class="mondLinks">
+          <div class="mondBuehne" id="mondBuehne">
+            <canvas id="mondGL" width="720" height="720" hidden></canvas>
+            <canvas id="mondCanvas" width="720" height="720"></canvas>
+          </div>
+          <div class="mondPlatzKn" id="mondPlatzKn"></div>
+        </div>
+        <div class="mondSeite" id="mondSeite"></div>
+      </div>
+      <div id="mondeInhalt"></div>
+    </div>
+    <div class="konsPane eine" id="paneSkill" hidden>
+      <div class="konsKopfzeile"><h2 data-i18n="sp_kopf">Skill points</h2><p data-i18n="sp_erkl"></p></div>
       <div class="konsStat" id="skillInhalt"></div>
-      <div class="konsStat" id="mondeInhalt"></div>
     </div>
   </div>
 </div>
 
 <!-- Einstellungen -->
+<!-- Happy Hour, der große Auftritt (v109). Einmal je Stunde, ein Tipp
+     schließt. Kein Eintrag in VEILS: Er liegt über dem Hangar, nicht an
+     seiner Stelle. -->
+<div id="happyVeil" hidden role="dialog" aria-labelledby="hhKopf">
+  <div class="hhBuehne">
+    <div class="hhStrahlen" aria-hidden="true"></div>
+    <div class="hhKern">
+      <span class="hhErz" id="hhErz" aria-hidden="true"></span>
+      <small class="hhZeit" id="hhZeit"></small>
+      <b class="hhTitel" id="hhKopf">Happy Hour</b>
+      <strong class="hhFaktor" id="hhFaktor"></strong>
+      <p class="hhSatz" data-i18n="hh_satz">on every round, as long as the hour lasts</p>
+      <span class="hhTipp" data-i18n="hh_tipp">Tap to continue</span>
+    </div>
+  </div>
+</div>
+
+<!-- Design in groß (v109): das 3D-Modell drehend, mit dem Finger zu drehen,
+     darunter der eine Knopf. Eigene WebGL-Fläche (Detail3D), damit der
+     Hangar seinen Stand behält. Kein Eintrag in VEILS — liegt über dem
+     Reiter „Designs", schließt mit ×, Tipp daneben oder Escape. -->
+<div id="designDetail" hidden role="dialog" aria-labelledby="ddName">
+  <div class="ddKarte">
+    <button type="button" class="ddZu" id="ddZu" data-i18n-name="zu_schliessen" aria-label="Close">×</button>
+    <div class="ddBuehne" id="ddBuehne">
+      <canvas id="ddGL" width="880" height="880" hidden></canvas>
+      <canvas id="ddOben" width="880" height="880"></canvas>
+      <canvas id="ddBild" hidden></canvas>
+      <button type="button" class="ddPfeil l" id="ddZurueck" aria-label="‹">‹</button>
+      <button type="button" class="ddPfeil r" id="ddVor" aria-label="›">›</button>
+      <span class="ddDrehen" data-i18n="dd_drehen">Drag to turn</span>
+    </div>
+    <div class="ddInfo">
+      <small class="ddZahl" id="ddZahl"></small>
+      <h2 id="ddName">Design</h2>
+      <p class="ddChips"><span id="ddRang"></span><span id="ddMat"></span></p>
+      <p class="ddWie" id="ddWie"></p>
+      <button type="button" class="ddKnopf" id="ddKnopf"></button>
+      <p class="ddNote" id="ddNote" role="status"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Konto löschen (v109) -->
+<div class="veil" id="loeschVeil" hidden>
+  <div class="card widerrufKarte" role="dialog" aria-labelledby="klKopf">
+    <h1 id="klKopf" data-i18n="kl_kopf">Delete account</h1>
+    <p class="sub" data-i18n="kl_erkl">This deletes your account right away and for good: progress, Ore, designs, honour, rank, achievements, moons and your place in the leaderboards. Purchases cannot be refunded this way.</p>
+    <label for="klFeld" id="klFrage"></label>
+    <input type="text" id="klFeld" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="notice" id="klNote"></p>
+    <button type="button" class="klGo" id="klGo" data-i18n="kl_go">Delete my account</button>
+    <button type="button" class="quiet" id="klZu" data-i18n="wd_abbr">Cancel</button>
+  </div>
+</div>
+<!-- Spielerprofil (v109) -->
+<div class="veil" id="profilVeil" hidden>
+  <div class="card pfKarte">
+    <div id="profilInhalt"></div>
+    <button id="profilZu" data-i18n="back">Back</button>
+  </div>
+</div>
+<!-- Bildwahl (v109): die zwanzig Hüter -->
+<div class="veil" id="bildVeil" hidden>
+  <div class="card pfKarte">
+    <h1 style="font-size:30px;margin-bottom:4px" data-i18n="pf_bild_kopf">Your guardian</h1>
+    <p class="sub" data-i18n="pf_bild_erkl">The face beside your name — and the one who guides you through the tutorial.</p>
+    <div class="bildRaster" id="bildRaster"></div>
+    <button class="quiet" id="bildZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
 <div class="veil" id="setVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="settings">Settings</h1>
@@ -3014,18 +3719,30 @@
          „Einstellungen → Rechtliches → Vertrag widerrufen“ steht wörtlich in
          der Widerrufsbelehrung (nutzungsbedingungen.html, Abschnitt 11a) —
          wer den Knopf verlegt, ändert dort den Satz mit. -->
+    <!-- Seit v109 eine schmale Leiste statt eines Kastens mit Überschrift
+         (Thomas 22.09.2026: „Geht das nicht ästhetischer?"). Was das Gesetz
+         verlangt, bleibt: eindeutige Beschriftung „Vertrag widerrufen",
+         abgehoben in eigener Farbe, außerhalb der schiebbaren Liste, und nur
+         während der Frist — danach verschwindet sie von selbst. -->
     <div class="setRecht" id="setRecht" hidden>
-      <div><b data-i18n="legal">Legal</b>
-        <small data-i18n="wd_hinweis">You can withdraw from your free contract of use within
-          the period without giving a reason (terms of use, section 11a).</small></div>
+      <small id="setRechtFrist">You can withdraw from your free contract of use within
+          the period without giving a reason (terms of use, section 11a).</small>
       <button type="button" class="widerrufKnopf" id="setWiderruf" data-i18n="wd_knopf">Withdraw
         from contract here</button>
     </div>
-    <p class="foot" data-i18n="setnote">These live in this session.</p>
-    <p class="foot" id="setFassung" style="margin-top:4px;opacity:.7"></p>
-    <button class="quiet" id="setMelden" data-i18n="md_knopf" hidden>Report a problem</button>
-    <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
-    <button id="setClose" data-i18n="back">Back</button>
+    <!-- Seit v109 eine Zeile Fuß und eine Zeile Knöpfe (Thomas 22.09.2026: „Im
+         Einstellungsbereich gibt es zwei Felder zum Scrollen. Das ist
+         verwirrend"). Die Karte passt immer in den Schirm, nur die Liste
+         darüber scrollt. -->
+    <div class="setFuss">
+      <p class="foot" data-i18n="setnote">These live in this session.</p>
+      <p class="foot" id="setFassung"></p>
+    </div>
+    <div class="setKnoepfe">
+      <button class="quiet" id="setMelden" data-i18n="md_knopf" hidden>Report a problem</button>
+      <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
+      <button id="setClose" data-i18n="back">Back</button>
+    </div>
   </div>
 </div>
 
@@ -3376,7 +4093,7 @@
     <p class="sub" style="margin:0">Aus einem Staubkorn wird ein Planet. Alles, was du wissen musst, auf einer Seite.</p>
 
     <h2>Das Ziel</h2>
-    <p>Du beginnst als <b>Staubkorn</b>. Sammle die kleinen Trümmer ein und verschlinge Körper, die deutlich kleiner sind als du. So wächst du über <b>Geröll</b>, <b>Planetesimal</b> und <b>Protoplanet</b> zur <b>Welt</b> mit Ringen und Monden. Wer dich verschlingt, beendet deine Runde — und dann heißt es: Nochmal.</p>
+    <p>Du beginnst als <b>Staubkorn</b>. Sammle den Sternenstaub ein und verschlinge Körper, die deutlich kleiner sind als du. So wächst du über <b>Geröll</b>, <b>Planetesimal</b> und <b>Protoplanet</b> zur <b>Welt</b> mit Ringen und Monden. Wer dich verschlingt, beendet deine Runde — und dann heißt es: Nochmal.</p>
 
     <h2>Steuerung</h2>
     <ul>
@@ -3398,17 +4115,21 @@
       <li><b>Abwerfen</b> schleudert ein kleines Stück Masse in Blickrichtung. Damit wirst du etwas schneller, kannst Mitspieler füttern — und Pulsare.</li>
     </ul>
 
+    <h2>Warnpfeile</h2>
+    <p>Rote Pfeile um deinen Körper zeigen auf Gegner außerhalb des Bildes, die dich <b>durch Teilen</b> erreichen könnten — mindestens das Zweieinhalbfache deiner Masse, in Sprungweite. Wohin der Pfeil zeigt, dorthin nicht.</p>
+
     <h2>Pulsare</h2>
     <p>Die stacheligen, leuchtenden Körper sind <b>Pulsare</b>. Solange du klein bist, sind sie Deckung: Große, die einen Pulsar überdecken, werden in Stücke gerissen — und das gilt auch für dich, sobald du groß genug bist. Fütterst du einen Pulsar <b>fünfmal</b> mit abgeworfener Masse, stößt er einen neuen Pulsar in Wurfrichtung aus. So sprengt man Riesen.</p>
 
+    <p>Die meisten Pulsare liegen <b>am Rand der Karte</b>; in der Mitte sind sie selten. Aus der Ferne leuchtet um jeden Pulsar ein Hof — rot, sobald du groß genug bist, um zerrissen zu werden.</p>
+
     <h2>Spielarten</h2>
     <ul>
-      <li><b>Freier Raum</b> — online mit allen anderen, ohne Zeitlimit. Nur hier gibt es Ore, XP, Ehre und Ranglistenplätze; der Server rechnet alles selbst.</li>
-      <li><b>Battle Royale</b> — das Feld schließt sich, wer draußen ist, zehrt aus. Der Letzte gewinnt. Gegen Computergegner.</li>
-      <li><b>Clankampf</b> — zwei Mannschaften, fünf Minuten, die Mannschaft mit mehr Masse führt am Ende. Gegen Computergegner.</li>
-      <li><b>Freundschaftsspiel</b> — reine Übung ohne Belohnung.</li>
+      <li><b>Aufstieg</b> — online, ohne Zeitlimit. Hier zählen Level, Skillpunkte, Monde und der Startbonus. Ore, XP, Ehre und Ranglistenplätze gibt es in beiden Spielarten; der Server rechnet alles selbst.</li>
+      <li><b>Liga</b> — online, alle gleich stark: kein Levelbonus, keine Monde, kein Startbonus. Es zählen nur Geschick, Ehre und Rang. Am Ende jeder Saison bekommen die Besten Ore, Monde und Titel.</li>
+      <li><b>Clankampf</b> — zwei Clans, fünf Minuten, auf Herausforderung über das Clanmenü.</li>
     </ul>
-    <p>Computergegner tragen das Kürzel [NPC] vor dem Namen. Für jeden Menschen, der dazukommt, verschwindet einer. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
+    <p>Solange wenige Menschen online sind, füllen Computergegner die Räume auf. Sie sind im Spiel nicht gekennzeichnet, zählen aber nie als Spieler: Die Spielerzahl und die dauerhaften Ranglisten zählen nur Menschen. Für jeden Menschen, der dazukommt, verschwindet einer. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
 
     <h2>Ore, XP und Level</h2>
     <ul>
@@ -3416,8 +4137,23 @@
       <li><b>Happy Hour:</b> täglich von 20 bis 21 Uhr zahlt jede Onlinerunde das 2,5-Fache an Ore.</li>
       <li>XP bringen dich bis <b>Level 100</b>. Jedes Level ist ein Schritt näher an neuen Designs.</li>
       <li><b>Designs</b> sind das Aussehen deines Körpers: 46 Stück, freigeschaltet durch Level oder gekauft mit Ore. Kein Design bringt einen Vorteil im Spiel.</li>
-      <li>Der <b>Startbonus</b> lässt dich im Freien Raum mit doppelter oder dreifacher Masse beginnen — bezahlt mit erspieltem Ore. Größer heißt aber auch langsamer und auffälliger.</li>
-      <li>Der <b>Tagesbonus</b> wartet jeden Tag im Hangar; sieben Tage in Folge geben die volle Reihe.</li>
+      <li>Der <b>Startbonus</b> lässt dich im Aufstieg mit doppelter oder dreifacher Masse beginnen — bezahlt mit erspieltem Ore. Größer heißt aber auch langsamer und auffälliger.</li>
+      <li>Der <b>Tagesbonus</b> wartet jeden Tag im Hangar; sieben Tage in Folge geben die volle Reihe. Tag 5 bringt einen Mond, <b>Tag 7 ein Design deiner Wahl</b> — und nach zehn vollen Wochen das Design Rime.</li>
+      <li>Ein Design lässt sich im Reiter <b>Designs</b> groß und in 3D ansehen, bevor du es wählst oder kaufst.</li>
+    </ul>
+
+    <h2>Monde und Skillpunkte — nur im Aufstieg</h2>
+    <ul>
+      <li><b>Monde</b> sind erspielte Begleiter: fünf Arten, drei Stufen, bis zu <b>vier</b> gleichzeitig, höchstens 8 % Wirkung je Mond — weniger Zerfall, früheres Verschmelzen, weiteres Teilen, mehr aus Sternenstaub, mehr Startmasse. Kaufen kann man sie nicht.</li>
+      <li>Woher: alle zehn Level einer, fünf Errungenschaften, Tag 5 des Tagesbonus, die Liga-Saison (Platz 1–100) — und am Ende jeder Aufstiegsrunde ab einer Minute mit etwas Glück, deutlich öfter, wenn du Pulsare gefressen hast.</li>
+      <li><b>Drei gleiche Monde verschmelzen</b> garantiert zu einem der nächsten Stufe; alternativ steigt ein Mond gegen <b>Mondstaub</b> (1 je Aufstiegsrunde, 3 bei neuer Bestmasse).</li>
+      <li><b>Skillpunkte:</b> ein Punkt je Level. Gesetzte Punkte wirken doppelt (0,2 %) dort, wo du sie setzt — Teilweite 0,1 %. Ungesetzte wirken mit 0,1 % gleichmäßig auf alles.</li>
+    </ul>
+
+    <h2>Profil und Hüter</h2>
+    <ul>
+      <li>Beim ersten Start wählst du einen <b>Hüter</b> — dein Profilbild, und der Begleiter, der dich durch das Tutorial führt. Ändern kannst du ihn jederzeit über dein Profil (Tipp auf das Bild im Hangar).</li>
+      <li>Ein Tipp auf einen Namen in den Ranglisten öffnet sein <b>Profil</b>: Level, Rang, Design, Bestmasse, Ehre, Abschüsse, Errungenschaften und Saisontitel. Monde und Skillpunkte sind nicht zu sehen.</li>
     </ul>
 
     <h2>Ehre und Ränge</h2>
@@ -3425,7 +4161,7 @@
       <li><b>Ehre</b> verdienst du online, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — Computergegner zählen nicht. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag. Etwas Ehre steckt außerdem im Tagesbonus.</li>
       <li>Ehre bringt dich durch <b>20 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Flottenkapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
       <li><b>Errungenschaften</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
-      <li>Alle <b>28 Tage</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet, am Ende gibt es Ore nach Platz, dann beginnt alles von vorn.</li>
+      <li>Alle <b>28 Tage</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet; am Ende gibt es Ore nach Platz, für die Plätze 1–100 einen Mond und für die ersten zehn einen Titel im Profil. Dann beginnt alles von vorn.</li>
       <li><b>Clans:</b> Bis zu 30 Spieler, die Ehre aller Mitglieder zählt zusammen. Gründen oder beitreten über den Knopf <b>Clan</b>.</li>
     </ul>
 
@@ -3438,7 +4174,7 @@
       <li>Behalte die Rangliste im Blick: Wo die Größten stehen, sollte man wissen, bevor sie nah sind.</li>
       <li>Wer sich halbiert, halbiert auch, was er überlebt. Teile nur mit Ziel in Reichweite.</li>
       <li>Klein neben einem Pulsar ist sicherer als groß auf freier Fläche.</li>
-      <li>Im Battle Royale bei der ersten Warnung loslaufen, nicht bei der letzten.</li>
+      <li>Ein Pulsar zwischen dir und einem Riesen ist eine Waffe: fünfmal füttern, und er schießt in seine Richtung.</li>
     </ul>
 
     <button id="hilfeClose" data-i18n="back">Zurück</button>
