@@ -2842,9 +2842,7 @@ function step(dt){
       const d = Game.debris[i];
       if (!d) return;
       if (Math.hypot(f.x-d.x, f.y-d.y) < r){
-        /* Tutorial (v114): Der Staub gibt das Fünffache — es soll sichtbar
-           schnell gehen (Thomas: „was im Tutorial sehr schnell gehen soll"). */
-        f.m += PELLET * (f.mine && Tutorial.laufend ? 5 : 1);
+        f.m += PELLET;
         Grid.drop(d, i);                     // altes Feld räumen, solange d gilt
         /* Tutorial (v114): Nachschub bleibt in der freien Fläche, nicht
            unter den Tafeln. */
@@ -2872,7 +2870,9 @@ function step(dt){
         Sound.absorb(r.m); ring(r.x, r.y, radiusOf(r.m)*2.6, TH().brass);
         break;
       }
-      if (eats(r,c)){
+      /* Tutorial (v114): Stillstehende Übungsgegner fressen nicht — Kepler
+         ist größer als der Spieler, und der zielt dicht neben ihm. */
+      if (!r.still && eats(r,c)){
         /* Wer zuletzt zubeißt, ist der Täter. Zusätzlich festhalten, in
            welchem Zustand man war — daraus wird später die Lehre. */
         Game.lostPieces++;
@@ -12749,29 +12749,35 @@ const Tutorial = {
     { id:"steuern", hilfe:"steuern",
       text: () => t(tippGeraet() ? (document.body.classList.contains("lefty") ? "tu_steuern_tipp_r" : "tu_steuern_tipp") : "tu_steuern_maus"),
       fertig: () => Tutorial.strecke > 260 },
+    /* Zehn Körner mit dem normalen Zuwachs (Thomas, 24.09.: „übertrieben
+       gewachsen" — vorher das Fünffache). 24 + 30 = 54 Masse, und Vesta mit
+       20 ist dann ohnehin deutlich kleiner. */
     { id:"staub", text: () => t("tu_staub"),
       bei(){ this.glut = true; this.staubAb = Game.debrisEaten || 0; },
-      zaehler: () => [Math.min(8, (Game.debrisEaten || 0) - Tutorial.staubAb), 8],
-      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 8 },
-    { id:"masse", text: () => t("tu_masse"), zeit: 7,
+      zaehler: () => [Math.min(10, (Game.debrisEaten || 0) - Tutorial.staubAb), 10],
+      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 10 },
+    { id:"masse", text: () => t("tu_masse"), zeit: 5,
       bei(){ Tutorial.hudKlasse("mass", "tutBlink", true); },
       weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); this.glut = false; },
-      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 14 },
+      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 13 },
     { id:"vesta", hilfe:"teilen",
       text: () => t(tippGeraet() ? "tu_vesta_tipp" : "tu_vesta_maus"),
       bei(){
-        this.masseMindestens(130);
-        this.vesta = this.rivalSetzen("Vesta", 45, .58, .40, false);
+        this.masseMindestens(50);
+        this.vesta = this.rivalSetzen("Vesta", 20, .58, .40, false);
         this.ziel = () => this.vesta;
       },
       fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
+    /* Kepler braucht mindestens 240 Masse, sonst zerreißt ihn kein Pulsar;
+       fressen kann er den Spieler nicht (`still`). Die eigene Masse wird
+       nur nach unten aufgefüllt — Abwerfen kostet nichts, Fressen zählt. */
     { id:"abwerfen", hilfe:"abwerfen",
       text: () => t(tippGeraet() ? "tu_abwerfen_tipp" : "tu_abwerfen_maus"),
       bei(){
-        this.unendlich = 400;
-        this.masseMindestens(400);
+        this.unendlich = Math.max(50, Math.round(this.eigeneMasse()));
+        this.masseMindestens(50);
         this.pulsar = this.pulsarSetzen(.46, .46);
-        this.kepler = this.rivalSetzen("Kepler", 400, .64, .46, true);
+        this.kepler = this.rivalSetzen("Kepler", 260, .64, .46, true);
         this.titelGid = this.kepler.gid;
         this.ziel = () => this.pulsar;
         this.schussLinie = true;
@@ -12784,7 +12790,7 @@ const Tutorial = {
       fertig: () => !Tutorial.kepler || Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length !== 1 },
     { id:"stuecke", text: () => t("tu_stuecke"),
       bei(){
-        this.ziel = null; this.schussLinie = false;
+        this.ziel = null; this.schussLinie = false; this.unendlich = 0;
         this.stueckeAb = Math.max(1, Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length);
         /* Der feste Pulsar hat seinen Dienst getan — weg damit, sonst
            zerreißt ein Stück daran. */
@@ -12845,9 +12851,17 @@ const Tutorial = {
     const tot = this.eigeneMasse();
     if (tot < m && Game.cells.length) groesstes(Game.cells).m += m - tot;
   },
+  /* Der Zoom, den das Spiel für diese Masse wählt — dieselbe Rechnung wie
+     in `draw()` (Grundzoom nach Masse, Deckel 30 % der kurzen Kante, FIT
+     für die Bildschirmgröße). Steht doppelt, damit die Tutorialkarte genau
+     das Bild ist, das der Spieler auch im Spiel hätte. */
+  zoomWie(m){
+    const r = radiusOf(Math.max(m, 10));
+    const deckel = Math.max(0.04, 0.30 * Math.min(VW, VH) / r);
+    return Math.min(clamp(Math.pow(48 / r, .42), .3, 1.1), deckel) * FIT;
+  },
   /* Der Körper bleibt stehen, bis der Spieler steuert: Zeiger auf den
-     Körper (die Karte ist das Bild, also Weltpunkt = Bildpunkt bei Zoom 1
-     — sonst umrechnen), Daumenrichtung null. */
+     Körper (Weltpunkt in den Bildpunkt umgerechnet), Daumenrichtung null. */
   stillstehen(x, y){
     const z = cam.z || 1;
     ptr.x = (x - cam.x) * z + VW / 2; ptr.y = (y - cam.y) * z + VH / 2;
@@ -12898,9 +12912,15 @@ const Tutorial = {
     this.strecke = 0; this.start = null; this.seit = 0; this.schritt = null;
     this.glut = false; this.unendlich = 0; this.titelGid = null; this.mondDemo = null;
     this.ziel = null; this.schussLinie = false; this.vesta = this.kepler = this.pulsar = null;
-    WELT_B = Math.max(640, Math.round(VW)); WELT_H = Math.max(360, Math.round(VH));
-    this.kamera = { z: 1 };
-    cam.x = WELT_B / 2; cam.y = WELT_H / 2; cam.z = 1;
+    /* Derselbe Zoom wie im Spiel für ein Staubkorn (Thomas, 24.09.: bei
+       Zoom 1 „bewegt man sich komplett unnatürlich" — auf dem Telefon
+       ist der Spielzoom etwa 0,58, alles war fast doppelt so groß und
+       schnell). Er bleibt in Stufe A stehen, damit die Karte das Bild
+       bleibt. */
+    const z = this.zoomWie(24);
+    WELT_B = Math.max(640, Math.round(VW / z)); WELT_H = Math.max(360, Math.round(VH / z));
+    this.kamera = { z };
+    cam.x = WELT_B / 2; cam.y = WELT_H / 2; cam.z = z;
     Game.rivals = []; Game.pulsars = []; Game.pulsarBack = []; Game.shed = [];
     Game.rings = []; Game.sparks = []; Game.goals = [];
     const p = this.punkt(.22, .5);
@@ -12922,7 +12942,7 @@ const Tutorial = {
      (dieselbe Regel wie im Spiel), und die Welt ist wieder genau das Bild. */
   sprung(){
     const M = 100000;
-    const z = Math.max(.04, .30 * Math.min(VW, VH) / radiusOf(M));
+    const z = this.zoomWie(M);
     WELT_B = Math.round(VW / z); WELT_H = Math.round(VH / z);
     this.kamera = { z };
     cam.x = WELT_B / 2; cam.y = WELT_H / 2; cam.z = z;
@@ -13021,11 +13041,11 @@ const Tutorial = {
         this.start.x = c.x; this.start.y = c.y;
       }
     }
-    /* Unendliche Masse beim Schießen: die Summe wird gehalten — wer
-       abwirft, verliert nichts, wer frisst, wächst nicht über Kepler hinaus. */
+    /* Unendliche Masse beim Schießen: nach unten aufgefüllt — wer abwirft,
+       verliert nichts; wer frisst, wächst. */
     if (this.unendlich && Game.cells.length){
       const tot = this.eigeneMasse();
-      if (Math.abs(tot - this.unendlich) > .5) groesstes(Game.cells).m += this.unendlich - tot;
+      if (tot < this.unendlich - .5) groesstes(Game.cells).m += this.unendlich - tot;
     }
     /* Feste Pulsare bleiben, wo sie sind; verschossene, die ihr Ziel
        verfehlt haben, lösen sich nach ein paar Sekunden auf — sonst
