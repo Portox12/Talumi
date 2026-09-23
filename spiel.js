@@ -5488,7 +5488,9 @@ const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legal
                   Umfrage und Bewertungsbitte. */
                "widerrufVeil","ankerVeil","umfrageVeil","bewertVeil",
                /* v109: Spielerprofil und Bildwahl. */
-               "profilVeil","bildVeil","loeschVeil"];
+               "profilVeil","bildVeil","loeschVeil",
+               /* v110: Benachrichtigungen. */
+               "pushVeil"];
 
 
 const SET_UI = [
@@ -5719,6 +5721,22 @@ function mailZeileBauen(box){
   }
 }
 
+/* ---- Benachrichtigungen in den Einstellungen (v110) --------------------
+   Eine Zeile mit dem Stand und einem Knopf zum Fenster `#pushVeil`. Nur für
+   Konten und nur, wenn der Server einen Schlüssel nennt und der Browser es
+   kann — ein Schalter, der nichts tun kann, ist schlechter als keiner. */
+function pushZeileBauen(box){
+  if (!istAngemeldet() || !Konto.pushSchluessel || !Push.faehig()) return;
+  const wrap = document.createElement("div");
+  wrap.className = "opt"; wrap.dataset.key = "push";
+  wrap.innerHTML = `<div><b>${esc(t("s_push"))}</b><small>${esc(t("s_push_h"))}</small>` +
+    `<small id="setPushStand">…</small></div>` +
+    `<div class="seg"><button type="button" id="setPushBtn">${esc(t("ps_aendern"))}</button></div>`;
+  box.appendChild(wrap);
+  Push.standText().then(s => { const el = $("setPushStand"); if (el) el.textContent = s; }).catch(() => {});
+  $("setPushBtn").addEventListener("click", () => Push.fensterZeigen());
+}
+
 /* ---- Widerrufsfunktion nach § 356a BGB (v106) --------------------------
    Nur für Konten, und nur während der Widerrufsfrist: Der Server schickt
    im Profil `widerrufBis` (Ende der Frist, mit einem kleinen Puffer). Die
@@ -5836,6 +5854,7 @@ function buildSettings(){
   fassungZeigen();
   nameZeileBauen(box);
   mailZeileBauen(box);
+  pushZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
     if (row.key === "music" && !MUSIK_AKTIV) continue;
@@ -7725,6 +7744,9 @@ function freundBoxMalen(){
 
 function show(id){
   hideAll(); $(id).hidden = false; anmeldungLage();
+  /* Das Push-Angebot (v110) gehört zum Hangar; ein anderes Fenster darüber
+     wäre eines zu viel. */
+  if (id !== "startVeil"){ const pa = $("pushAngebot"); if (pa) pa.hidden = true; }
   if (id === "startVeil"){
     /* Der Clankampf ist keine Wahl im Hangar (Schritt 109): Zurueck im
        Hangar steht wieder die Liga, sonst bliebe „clan" als Spielart. */
@@ -7736,6 +7758,11 @@ function show(id){
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
     bestenlisteZeigen().catch(() => {});
+    /* Push (v110): das Abo einmal je Sitzung mit dem Server abgleichen und
+       das Ziel einer angetippten Nachricht öffnen. Abgesichert — `Push`
+       steht weiter unten in der Datei, und ein Prüfstand lädt Abschnitte
+       für sich. */
+    try { Push.beimHangar(); } catch(_){}
     /* Nach einer Runde (v106): Umfrage oder Bewertungsbitte, falls fällig —
        und ein Link aus einer Mail, der während der Runde kam. Mit kurzer
        Verzögerung, damit der Hangar erst steht; `nachRundeKarte()` prüft
@@ -8457,6 +8484,12 @@ const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 200 } : b.mond ? { xp:
    konten.js. Der Server schickt einem Konto in `bonus.wahl`, was noch fehlt;
    für Gäste rechnet `wochenWahl()` dasselbe aus dem Browserstand. */
 const WOCHE_POOL = ["sunflare", "coral", "abyss", "verdigris"], WOCHE_WAHL = 3;
+/* Push-Nachrichten (v110): die Arten und ihre Vorgabe beim Einschalten —
+   Spiegel von `PUSH_ARTEN`/`PUSH_VORGABE` in konten.js, `testpush.js`
+   vergleicht beide. Die Happy Hour ist bewusst nicht in der Vorgabe: Sie
+   ist eine Einladung, keine Erinnerung an etwas Eigenes. */
+const PUSH_ARTEN = ["bonus", "clan", "saison", "happy", "neu"];
+const PUSH_VORGABE = ["bonus", "clan", "saison", "neu"];
 function wochenWahl(){
   if (istAngemeldet()) return Array.isArray(Konto.bonus && Konto.bonus.wahl) ? Konto.bonus.wahl.slice(0, WOCHE_WAHL) : [];
   return WOCHE_POOL.filter(id => !Profile.owned.has(id)).slice(0, WOCHE_WAHL);
@@ -8616,6 +8649,10 @@ function paintBonus(){
       }
       if (e.eis) setTimeout(() => lohnZeigen("Rime", t("b_eis_da"), ikonBild(null, "rime")), e.design ? 4600 : 2300);
       paintPurse(); buildBoost(); buildGrid();
+      /* Push (v110): Das Angebot kommt genau hier — nach dem ersten Nutzen,
+         nie beim Öffnen. Nur für Konten, nur wenn der Browser noch nicht
+         gefragt wurde; `Push.anbieten` prüft alles Weitere. */
+      if (!gast) setTimeout(() => { try { Push.anbieten("bonus"); } catch(_){} }, 2600);
     }
     else toast(t(KONTO_FEHLER[e.fehler] || "e_net"));
     bonusVeilZu();
@@ -10287,6 +10324,10 @@ const Konto = {
   },
 
   async abmelden(){
+    /* Push (v110): Das Abo gehört zu Konto **und** Gerät — wer sich
+       abmeldet, will auf diesem Gerät keine Erinnerungen für dieses Konto.
+       Vor dem Abmelden, solange die Sitzung noch gilt. */
+    try { await Push.abmelden(); } catch(_){}
     if (this.token) await this.ruf("/konto/abmelden", {});
     this.merken(null);
     this.profil = null; this.stand = null; this.bonus = null;
@@ -10334,6 +10375,9 @@ const Konto = {
        übergangen — dann bleibt die Vorgabe stehen, und der Server weist eine
        falsche Zustimmung ohnehin ab. */
     if (a.status === 200 && Number.isInteger(a.agb) && a.agb > 0) this.agbFassung = a.agb;
+    /* Push (v110): der öffentliche Schlüssel, mit dem der Browser ein Abo
+       anlegt. Fehlt er, bietet das Spiel keine Benachrichtigungen an. */
+    this.pushSchluessel = a.status === 200 && typeof a.push === "string" && a.push.length > 60 ? a.push : null;
     /* Happy Hour (Schritt 100): Zeiten kommen vom Server, gerechnet wird
        hier nur die Anzeige. Gäste bekommen denselben Faktor auf ihr Ore. */
     this.happy = a.status === 200 && a.happy && typeof a.happy === "object"
@@ -11317,6 +11361,22 @@ async function markeAusAdresse(){
      Anker, nie in der Abfragezeichenfolge — ein Anker wird vom Browser nicht
      mitgeschickt und steht deshalb in keinem Serverprotokoll. */
   const tok = p.get("tok"), fremdFehler = p.get("oauth");
+  /* `#push=bonus|clan|rang` (v110): der Tipp auf eine Benachrichtigung.
+     Kein Schlüssel, nur ein Wegweiser — er wird gemerkt und gelöscht, und
+     der gewöhnliche Start läuft weiter (Anmeldung, dann Hangar, dann Ziel). */
+  const pz = p.get("push");
+  if (pz && !neu && !ok && !tok && !fremdFehler && !nl && !ab){
+    try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+    try {
+      Push.ziel = String(pz).replace(/[^a-z]/g, "").slice(0, 12);
+      Push.zielZeit = Date.now();
+      /* Kam der Anker in eine schon offene Seite (kein Neuladen), steht der
+         Hangar womöglich längst — dann jetzt, statt auf den nächsten zu
+         warten. */
+      if (istAngemeldet() && !Game.running && !$("startVeil").hidden) Push.beimHangar();
+    } catch(_){}
+    return false;
+  }
   if (!neu && !ok && !tok && !fremdFehler && !nl && !ab) return false;
 
   try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
@@ -11848,6 +11908,299 @@ const PWA = {
   },
 };
 PWA.start();
+
+/* =====================================================================
+   PUSH-NACHRICHTEN (v110, Thomas' Auftrag vom 18.09.2026)
+
+   Der Browser fragt erst nach einem Tipp des Spielers — deshalb steht die
+   Frage nie beim Öffnen, sondern nach dem ersten Nutzen: nach dem
+   Abholen des Tagesbonus („Erinnern, wenn der nächste bereitliegt?"). Wer
+   Nein sagt, wird zwei Wochen nicht mehr gefragt, nach dem dritten Nein
+   nie mehr; die Einstellungen bleiben immer. Was der Browser blockiert
+   hat, lässt sich nur dort wieder erlauben — das Spiel sagt das, statt
+   einen toten Knopf zu zeigen.
+
+   Auf iPhone und iPad gibt es Web-Push nur für Seiten auf dem
+   Home-Bildschirm (Apple, seit iOS 16.4). Im Safari-Tab führt das Angebot
+   deshalb zur Installationsanleitung.
+
+   Was hier liegt: `talumi.push` im localStorage — ob eingeschaltet, welche
+   Arten, wann zuletzt gefragt. Die Wahrheit (das Abo) liegt beim Browser
+   und beim Server; `abgleichen()` bringt beides einmal je Sitzung
+   zusammen. Der Dienst-Worker (sw.js) zeigt die Nachricht und meldet
+   einen Tipp darauf als `{push: ziel}` an dieses Fenster.
+   ===================================================================== */
+const PUSH_SCHLUESSEL = "talumi.push";
+const Push = {
+  ziel: null,            // Wegweiser aus `#push=…` oder vom Dienst-Worker
+  abgeglichen: false,
+
+  lokal(){
+    try { const j = JSON.parse(localStorage.getItem(PUSH_SCHLUESSEL) || "{}"); return j && typeof j === "object" ? j : {}; }
+    catch(_){ return {}; }
+  },
+  merken(aend){
+    try { localStorage.setItem(PUSH_SCHLUESSEL, JSON.stringify(Object.assign(this.lokal(), aend))); } catch(_){}
+  },
+
+  /* Kann dieser Browser überhaupt? (Portale nie: Sie verbieten Wege aus
+     ihrer Seite heraus.) */
+  faehig(){
+    try {
+      return !Portal.name && "serviceWorker" in navigator && "PushManager" in window &&
+             "Notification" in window && typeof Notification.requestPermission === "function";
+    } catch(_){ return false; }
+  },
+  iosOhneApp(){ return PWA.apple() && !PWA.installiert(); },
+  moeglich(){ return this.faehig() && !!Konto.pushSchluessel && istAngemeldet(); },
+  erlaubnis(){ try { return Notification.permission; } catch(_){ return "denied"; } },
+
+  async reg(){ try { return await navigator.serviceWorker.ready; } catch(_){ return null; } },
+  async abo(){
+    const r = await this.reg();
+    if (!r || !r.pushManager) return null;
+    try { return await r.pushManager.getSubscription(); } catch(_){ return null; }
+  },
+  schluesselBytes(s){
+    const b64 = String(s).replace(/-/g, "+").replace(/_/g, "/");
+    const roh = atob(b64 + "=".repeat((4 - b64.length % 4) % 4));
+    const u = new Uint8Array(roh.length);
+    for (let i = 0; i < roh.length; i++) u[i] = roh.charCodeAt(i);
+    return u;
+  },
+  /* Passt das Abo noch zum Schlüssel des Servers? Nach einem Schlüssel-
+     wechsel muss neu abonniert werden — sonst weist der Push-Dienst jede
+     Nachricht ab. */
+  schluesselGleich(abo){
+    try {
+      const k = abo && abo.options && abo.options.applicationServerKey;
+      if (!k) return true;
+      const a = new Uint8Array(k), b = this.schluesselBytes(Konto.pushSchluessel);
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+      return true;
+    } catch(_){ return true; }
+  },
+
+  /* Der Stand für die Einstellungen: nie / ios / block / aus / an. */
+  async stand(){
+    if (!this.faehig() || !Konto.pushSchluessel) return { zustand: "nie", arten: [] };
+    if (this.iosOhneApp()) return { zustand: "ios", arten: [] };
+    if (this.erlaubnis() === "denied") return { zustand: "block", arten: [] };
+    const L = this.lokal();
+    const abo = this.erlaubnis() === "granted" ? await this.abo() : null;
+    if (abo && L.an) return { zustand: "an", arten: Array.isArray(L.arten) ? L.arten : PUSH_VORGABE.slice() };
+    return { zustand: "aus", arten: Array.isArray(L.arten) ? L.arten : PUSH_VORGABE.slice() };
+  },
+  async standText(){
+    const s = await this.stand();
+    if (s.zustand === "an") return t("ps_an", s.arten.map(a => t("pa_" + a + "_k")).join(", "));
+    return t({ nie: "ps_nie", ios: "ps_ios", block: "ps_block", aus: "ps_aus" }[s.zustand] || "ps_aus");
+  },
+
+  /* Einschalten — nur aus einem Klick heraus, sonst fragt der Browser
+     nicht. Erst die Erlaubnis, dann das Abo, dann der Server. */
+  async anmelden(arten){
+    if (!this.moeglich()) return { fehler: "nie" };
+    if (this.iosOhneApp()) return { fehler: "ios" };
+    let p = this.erlaubnis();
+    if (p === "default"){
+      try { p = await Notification.requestPermission(); } catch(_){ p = "denied"; }
+    }
+    this.merken({ gefragt: Date.now() });
+    if (p !== "granted") return { fehler: "block" };
+    const r = await this.reg();
+    if (!r || !r.pushManager) return { fehler: "netz" };
+    let abo = await this.abo();
+    if (abo && !this.schluesselGleich(abo)){ try { await abo.unsubscribe(); } catch(_){} abo = null; }
+    if (!abo){
+      try { abo = await r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.schluesselBytes(Konto.pushSchluessel) }); }
+      catch(_){ return { fehler: "netz" }; }
+    }
+    const liste = (Array.isArray(arten) ? arten : PUSH_VORGABE).filter(a => PUSH_ARTEN.includes(a));
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang });
+    if (a.status !== 200) return { fehler: a.fehler || "netz" };
+    const arten2 = Array.isArray(a.arten) ? a.arten : liste;
+    this.merken({ an: true, arten: arten2, endpoint: abo.endpoint });
+    return { ok: true, neu: !!a.neu, arten: arten2 };
+  },
+
+  /* Ausschalten: Abo beim Server löschen (solange die Sitzung gilt), dann
+     beim Browser. Die Browser-Erlaubnis bleibt — sie gehört dem Nutzer. */
+  async abmelden(){
+    const abo = await this.abo();
+    if (abo){
+      try { if (istAngemeldet()) await Konto.ruf("/konto/push/aus", { endpoint: abo.endpoint }); } catch(_){}
+      try { await abo.unsubscribe(); } catch(_){}
+    }
+    this.merken({ an: false });
+    return { ok: true };
+  },
+
+  /* Arten ändern — dasselbe Abo, neue Liste. */
+  async artenSetzen(arten){
+    const abo = await this.abo();
+    if (!abo) return { fehler: "aus" };
+    const liste = (Array.isArray(arten) ? arten : []).filter(a => PUSH_ARTEN.includes(a));
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang });
+    if (a.status !== 200) return { fehler: a.fehler || "netz" };
+    this.merken({ an: true, arten: Array.isArray(a.arten) ? a.arten : liste });
+    return { ok: true };
+  },
+
+  /* Einmal je Sitzung: Browser, Speicher und Server zusammenbringen. Ein
+     verlorenes Abo (Browser hat es ausgetauscht) wird ohne Nachfrage neu
+     angelegt — die Erlaubnis steht ja. Sprache und Arten frisch melden. */
+  async abgleichen(){
+    if (this.abgeglichen || !this.moeglich()) return;
+    this.abgeglichen = true;
+    const L = this.lokal();
+    if (this.erlaubnis() !== "granted"){ if (L.an) this.merken({ an: false }); return; }
+    const abo = await this.abo();
+    if (!abo){ if (L.an) await this.anmelden(L.arten); return; }
+    if (!this.schluesselGleich(abo)){ await this.anmelden(L.arten || PUSH_VORGABE); return; }
+    if (L.an === false) return;          // bewusst ausgeschaltet, Abo nur noch Rest
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: Array.isArray(L.arten) ? L.arten : PUSH_VORGABE, sprache: lang });
+    if (a.status === 200) this.merken({ an: true, arten: Array.isArray(a.arten) ? a.arten : L.arten, endpoint: abo.endpoint });
+  },
+
+  beimHangar(){
+    this.abgleichen().catch(() => {});
+    /* Nicht sofort: `show("startVeil")` stößt selbst noch Fenster an
+       (Tagesbonus, Happy Hour nach 700 ms, Menürundgang nach 1100 ms).
+       Ein Ziel, das davor aufgeht, wäre gleich wieder zu. */
+    if (!this.ziel) return;
+    clearTimeout(this.zielWecker);
+    this.zielWecker = setTimeout(() => this.zielOeffnen(), 1400);
+  },
+
+  /* Das Ziel einer angetippten Nachricht öffnen — nur im Hangar, nie in
+     einer Runde. Steht gerade ein anderes Fenster (Tagesbonus, Rundgang),
+     verfällt das Ziel: Der Spieler ist schon da, wo er hinwollte, oder
+     hat etwas anderes vor. */
+  zielOeffnen(){
+    const z = this.ziel;
+    if (!z) return;
+    /* Ein Ziel verfällt nach drei Minuten — sonst spränge Minuten später
+       ein Fenster auf, das niemand mehr erwartet (Anmeldung dazwischen
+       ist noch drin). */
+    if (Date.now() - (this.zielZeit || 0) > 3 * 60000){ this.ziel = null; return; }
+    if (Game.running || $("startVeil").hidden) return;
+    this.ziel = null;
+    try { if (Tutorial.schritt) return; } catch(_){}
+    if (VEILS.some(id => id !== "startVeil" && !$(id).hidden)) return;
+    try {
+      if (z === "bonus"){ const k = $("bonusKnopf"); if (k && !k.hidden && $("bonusVeil").hidden) k.click(); }
+      else if (z === "clan"){ const b = $("clanBtn"); if (b && !b.hidden) b.click(); }
+      else if (z === "rang"){ const b = $("rankBtn"); if (b) b.click(); }
+    } catch(_){}
+  },
+
+  /* Das Angebot nach dem Tagesbonus: eine Zeile oben im Hangar, zwei
+     Knöpfe. Kommt nur, wenn noch nichts entschieden ist. */
+  anbieten(){
+    if (!this.moeglich() || this.erlaubnis() === "denied") return false;
+    const L = this.lokal();
+    if (L.an) return false;
+    if ((L.nein || 0) >= 3) return false;
+    if (Date.now() - (L.gefragt || 0) < 14 * 86400000) return false;
+    if (Game.running || $("startVeil").hidden) return false;
+    try { if (Tutorial.schritt) return false; } catch(_){}
+    const el = $("pushAngebot"), txt = $("pushAngebotText"), ja = $("pushAngebotJa"), nein = $("pushAngebotNein");
+    if (!el || !txt || !ja || !nein) return false;
+    const ios = this.iosOhneApp();
+    txt.textContent = t(ios ? "po_ios" : "po_frage");
+    ja.textContent = t(ios ? "pv_ios_knopf" : "po_ja");
+    ja.hidden = nein.hidden = false;
+    el.hidden = false;
+    this.merken({ gefragt: Date.now() });
+    const zu = () => { el.hidden = true; clearTimeout(this.angebotWecker); };
+    /* Von selbst wieder weg — eine Frage, die niemand beantwortet, soll
+       nicht stehen bleiben. Ein Nein ist das nicht: Gefragt wird in zwei
+       Wochen wieder. */
+    clearTimeout(this.angebotWecker);
+    this.angebotWecker = setTimeout(zu, 20000);
+    const sagen = text => { txt.textContent = text; ja.hidden = nein.hidden = true; setTimeout(zu, 3200); };
+    ja.onclick = async () => {
+      if (ios){ zu(); PWA.zeigen(); return; }
+      ja.disabled = true;
+      const r = await this.anmelden(PUSH_VORGABE);
+      ja.disabled = false;
+      sagen(t(r.ok ? "pv_ok" : r.fehler === "block" ? "ps_block" : "pv_fehler"));
+    };
+    nein.onclick = () => { zu(); this.merken({ nein: (L.nein || 0) + 1 }); };
+    return true;
+  },
+
+  /* Das Fenster aus den Einstellungen: Schalter, Arten, Hinweise. */
+  async fensterZeigen(){
+    const box = $("pushBody"); if (!box) return;
+    const s = await this.stand();
+    box.innerHTML = "";
+    const p = (klasse, html) => { const e = document.createElement(klasse === "p" ? "p" : "div"); if (klasse !== "p") e.className = klasse; e.innerHTML = html; box.appendChild(e); return e; };
+    p("p", esc(t("pv_erkl")));
+    if (s.zustand === "nie") p("p", `<span class="warn">${esc(t("ps_nie"))}</span>`);
+    else if (s.zustand === "ios"){
+      p("p", esc(t("pv_ios")));
+      const b = document.createElement("button"); b.type = "button"; b.textContent = t("pv_ios_knopf");
+      b.addEventListener("click", () => PWA.zeigen()); box.appendChild(b);
+    }
+    else if (s.zustand === "block") p("p", `<span class="warn">${esc(t("pv_block"))}</span>`);
+    else {
+      const an = s.zustand === "an";
+      const zeile = p("opt", `<div><b>${esc(t("s_push"))}</b><small id="pushStand">${esc(an ? t("ps_an_kurz") : t("ps_aus"))}</small></div><div class="seg" id="pushSeg"></div>`);
+      const seg = zeile.querySelector("#pushSeg");
+      for (const [text, wert] of [[t("o_on"), true], [t("o_off"), false]]){
+        const b = document.createElement("button");
+        b.type = "button"; b.textContent = text;
+        b.setAttribute("aria-pressed", String(an === wert));
+        b.addEventListener("click", async () => {
+          if (an === wert) return;
+          for (const x of seg.querySelectorAll("button")) x.disabled = true;
+          const r = wert ? await this.anmelden(s.arten) : await this.abmelden();
+          if (r.fehler){ const st = $("pushStand"); if (st){ st.textContent = t(r.fehler === "block" ? "ps_block" : "pv_fehler"); st.classList.add("warn"); } for (const x of seg.querySelectorAll("button")) x.disabled = false; return; }
+          this.fensterZeigen();
+        });
+        seg.appendChild(b);
+      }
+      if (an){
+        const liste = document.createElement("div"); liste.className = "pushArten";
+        for (const art of PUSH_ARTEN){
+          const l = document.createElement("label"); l.className = "pushArt";
+          const c = document.createElement("input"); c.type = "checkbox"; c.checked = s.arten.includes(art); c.dataset.art = art;
+          const sp = document.createElement("span"); sp.innerHTML = `<b>${esc(t("pa_" + art + "_k"))}</b><small>${esc(t("pa_" + art))}</small>`;
+          l.appendChild(c); l.appendChild(sp); liste.appendChild(l);
+          c.addEventListener("change", async () => {
+            const arten = [...liste.querySelectorAll("input")].filter(x => x.checked).map(x => x.dataset.art);
+            for (const x of liste.querySelectorAll("input")) x.disabled = true;
+            const r = await this.artenSetzen(arten);
+            for (const x of liste.querySelectorAll("input")) x.disabled = false;
+            if (r.fehler){ c.checked = !c.checked; const st = $("pushStand"); if (st){ st.textContent = t("pv_fehler"); st.classList.add("warn"); } }
+          });
+        }
+        box.appendChild(liste);
+      }
+    }
+    p("p", `<a class="hintline" href="datenschutz.html#push" target="_blank" rel="noopener">${esc(t("pv_ds"))}</a>`);
+    show("pushVeil");
+  }
+};
+(function(){
+  const zu = document.getElementById("pushClose");
+  if (zu) zu.addEventListener("click", () => { show("setVeil"); try { buildSettings(); } catch(_){} });
+  /* Ein Tipp auf eine Nachricht, während das Spiel schon offen ist: der
+     Dienst-Worker holt das Fenster nach vorn und nennt das Ziel. */
+  try {
+    if ("serviceWorker" in navigator)
+      navigator.serviceWorker.addEventListener("message", e => {
+        const z = e && e.data && e.data.push;
+        if (typeof z !== "string") return;
+        Push.ziel = z.replace(/[^a-z]/g, "").slice(0, 12);
+        Push.zielZeit = Date.now();
+        Push.zielOeffnen();
+      });
+  } catch(_){}
+})();
 
 /* Abgebrochene Gastrunde gutschreiben (v104) — erst, wenn die gemerkte
    Sitzung eine Chance hatte: Ein Konto bekommt seine Abrechnung vom Server. */

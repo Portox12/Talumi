@@ -367,6 +367,35 @@
      border:1px solid rgba(61,220,132,.5);background:rgba(61,220,132,.13);color:var(--gruen-hell);font-weight:600}
   .bonusKarte #bonusVeilGo:hover:not(:disabled){background:rgba(61,220,132,.22)}
   /* Belohnung strahlend in der Mitte */
+  /* Benachrichtigungen (v110): das Angebot oben im Hangar und das Fenster
+     mit den Arten. Das Angebot liegt über der Kopfzeile, mittig, und
+     rechnet die Kamera-Aussparung mit. */
+  #pushAngebot{position:fixed;z-index:22;bottom:calc(16px + env(safe-area-inset-bottom));
+     left:50%;transform:translateX(-50%);width:max-content;max-width:min(560px, calc(100% - 24px));
+     display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+     padding:10px 14px;border-radius:14px;border:1px solid var(--line-hell);
+     background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+     box-shadow:0 18px 50px rgba(0,0,0,.5);font-family:var(--sans);font-size:13.5px;color:var(--paper)}
+  #pushAngebot[hidden]{display:none}
+  /* Schmal und hoch (Telefon hochkant): Dort sitzt der Startknopf unten —
+     das Angebot rückt unter die Kopfzeile. */
+  @media (max-width:900px) and (min-height:641px){
+    #pushAngebot{bottom:auto;top:calc(62px + env(safe-area-inset-top))}
+  }
+  #pushAngebot button{margin:0;padding:0 14px;min-height:36px;width:auto;font-size:13px}
+  body.touch #pushAngebot button{min-height:44px}
+  #pushAngebot button[hidden]{display:none}
+  .pushKarte{max-width:min(560px,100%)}
+  .pushKarte p{font-size:13.5px;line-height:1.5;color:var(--paper-2);margin:0 0 12px}
+  .pushKarte p .warn{color:var(--ember)}
+  .pushKarte .opt{padding:10px 0}
+  .pushArten{display:flex;flex-direction:column;margin:0 0 6px}
+  .pushArt{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .pushArt input{width:20px;height:20px;margin:0;accent-color:var(--brass);flex:0 0 auto}
+  body.touch .pushArt{min-height:44px}
+  .pushArt b{font-weight:400;font-size:13.5px;display:block}
+  .pushArt small{display:block;color:var(--paper-2);font-size:11px;line-height:1.35;margin-top:2px}
+  .pushKarte #pushClose{margin-top:8px}
   #lohnGlanz{position:fixed;inset:0;z-index:21;display:grid;place-items:center;pointer-events:none}
   #lohnGlanz[hidden]{display:none}
   #lohnGlanz .glanz{display:grid;justify-items:center;gap:6px;padding:26px 40px;border-radius:22px;
@@ -3798,6 +3827,17 @@
   </div>
 </div>
 
+<!-- Benachrichtigungen (v110): Schalter, Arten, Hinweise. Inhalt baut
+     `Push.fensterZeigen()` je nach Stand (nie / iPhone ohne App / im Browser
+     blockiert / aus / an). -->
+<div class="veil" id="pushVeil" hidden>
+  <div class="card pushKarte" role="dialog" aria-labelledby="pushKopf">
+    <h1 id="pushKopf" style="font-size:30px" data-i18n="pv_kopf">Notifications</h1>
+    <div id="pushBody"></div>
+    <button class="quiet" id="pushClose" data-i18n="pv_zu">Done</button>
+  </div>
+</div>
+
 <!-- Passwort vergessen und neu setzen -->
 <div class="veil" id="pwVeil" hidden>
   <div class="card">
@@ -4196,6 +4236,13 @@
 <!-- Ein Design groß (v104): 3D-Standbild über dem Bonusfenster. -->
 <div id="designGross" hidden role="dialog" aria-modal="true">
   <div class="gross"><span id="designGrossBild"></span><b id="designGrossName"></b><small id="designGrossUnter"></small></div>
+</div>
+<!-- Das Angebot nach dem Tagesbonus (v110): „Erinnern, wenn der nächste
+     bereitliegt?" — eine Zeile oben im Hangar, kein Schleier; `Push.anbieten`. -->
+<div id="pushAngebot" hidden role="dialog" aria-live="polite">
+  <span id="pushAngebotText"></span>
+  <button type="button" id="pushAngebotJa"></button>
+  <button type="button" class="quiet" id="pushAngebotNein" data-i18n="po_nein">No thanks</button>
 </div>
 <!-- Belohnung strahlend in der Mitte (Schritt 106) -->
 <div id="lohnGlanz" hidden aria-live="polite">

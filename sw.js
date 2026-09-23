@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v109";
+const VERSION = "v110";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -17,6 +17,7 @@ const ASSETS = [
   "./icon-192.png",
   "./icon-512.png",
   "./icon-maskable-512.png",
+  "./icon-badge.png",
   "./about.html",
   "./impressum.html",
   "./datenschutz.html",
@@ -51,6 +52,54 @@ self.addEventListener("activate", e => {
       .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+/* ---- Push-Nachrichten (v110) -------------------------------------------
+   Der Server schickt eine verschlüsselte Nutzlast (RFC 8291) an den
+   Push-Dienst des Browsers; der Browser entschlüsselt sie und weckt diesen
+   Worker. Der Text steht fertig darin (`titel`, `text`, in der Sprache des
+   Geräts) — hier wird nur gezeigt, nicht übersetzt. `tag` = Art: Eine
+   neuere Nachricht derselben Art ersetzt die alte in der Leiste, statt sich
+   zu stapeln. Ein Tipp öffnet das Spiel und führt zum Ziel (`#push=…`),
+   oder holt ein schon offenes Fenster nach vorn und sagt ihm das Ziel. */
+self.addEventListener("push", e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch(_){ try { d = { text: e.data.text() }; } catch(__){} }
+  const titel = String(d.titel || (d.notification && d.notification.title) || "Talumi");
+  const text  = String(d.text  || (d.notification && d.notification.body)  || "");
+  const ziel  = String(d.ziel || "start").replace(/[^a-z]/g, "");
+  e.waitUntil(self.registration.showNotification(titel, {
+    body: text, lang: d.lang || undefined,
+    icon: "./icon-192.png", badge: "./icon-badge.png",
+    tag: String(d.art || "talumi"), renotify: false,
+    data: { ziel, url: "./index.html#push=" + ziel }
+  }));
+});
+
+self.addEventListener("notificationclick", e => {
+  e.notification.close();
+  const d = (e.notification && e.notification.data) || {};
+  const url = new URL(d.url || "./index.html", self.location.href).href;
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(liste => {
+    const offen = liste.find(c => "focus" in c);
+    if (offen){
+      try { offen.postMessage({ push: d.ziel || "start" }); } catch(_){}
+      return offen.focus();
+    }
+    return self.clients.openWindow(url);
+  }));
+});
+
+/* Der Push-Dienst hat das Abo ausgetauscht (selten; z. B. nach einem
+   Browser-Update). Neu abonnieren mit demselben Serverschlüssel; den neuen
+   Endpunkt meldet die Seite beim nächsten Öffnen von selbst
+   (`Push.abgleichen` in spiel.js) — dieser Worker hat keinen
+   Sitzungsschlüssel und soll auch keinen haben. */
+self.addEventListener("pushsubscriptionchange", e => {
+  const alt = e.oldSubscription;
+  const key = alt && alt.options && alt.options.applicationServerKey;
+  if (!key) return;
+  e.waitUntil(self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key }).catch(() => null));
 });
 
 self.addEventListener("fetch", e => {

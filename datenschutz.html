@@ -496,6 +496,63 @@
      dem Vertrag noch geltend gemacht werden können (§§ 195, 199 BGB), und
      löschen sie dann.</p>
 
+  <h2 id="push">6f. Push-Benachrichtigungen</h2>
+  <p>Mit einem Konto kannst du dir Benachrichtigungen aufs Gerät schicken
+     lassen – etwa, dass dein Tagesbonus bereitliegt, dass dein Clan
+     herausgefordert wurde oder wie eine Saison für dich ausgegangen ist.
+     Das passiert <strong>nur, wenn du es einschaltest</strong>: im Spiel
+     über die Frage nach dem Tagesbonus oder in den Einstellungen unter
+     „Benachrichtigungen“, und danach durch die Erlaubnis in deinem Browser.
+     Ohne Einschalten wird nichts eingerichtet und nichts gespeichert. Du
+     wählst, welche Arten du bekommen willst, und kannst jede Art und die
+     Benachrichtigungen insgesamt jederzeit in den Einstellungen abschalten –
+     oder in deinem Browser bzw. Betriebssystem.</p>
+  <h3>Welche Daten verarbeitet werden</h3>
+  <p>Beim Einschalten legt dein Browser beim Push-Dienst seines Herstellers
+     ein „Abo“ an und übergibt es dem Spielserver. Wir speichern zu deinem
+     Konto: die Adresse dieses Abos (eine lange, zufällige Internetadresse
+     beim Push-Dienst), zwei Schlüssel, mit denen nur dein Gerät die
+     Nachrichten entschlüsseln kann, die von dir gewählten Arten, die
+     Sprache des Spiels, den Zeitpunkt des Einschaltens und der letzten
+     Zustellung sowie die Zahl fehlgeschlagener Zustellversuche. Für die
+     Erinnerung an den Tagesbonus merken wir uns außerdem, wann du ihn
+     zuletzt abgeholt hast – die Erinnerung kommt am nächsten Tag zur selben
+     Uhrzeit, nicht nachts. Keine IP-Adresse, kein Standort, keine weitere
+     Gerätekennung.</p>
+  <p>Wir schicken wenig: höchstens eine Bonus-Erinnerung am Tag und nur,
+     solange du in den letzten zwei Wochen gespielt hast; Clan-Nachrichten
+     nur, wenn dein Clan betroffen ist; das Saisonergebnis einmal je Saison;
+     den Beginn der Happy Hour nur, wenn du diese Art eigens einschaltest;
+     und selten eine Nachricht von uns, etwa zu einer nachgewerteten Runde.
+     Werbung für Fremdes schicken wir nicht.</p>
+  <h3>Empfänger</h3>
+  <p>Jede Nachricht geht vom Spielserver an den Push-Dienst deines Browsers,
+     der sie an dein Gerät weiterleitet: bei Chrome, Edge, Samsung Internet
+     und anderen Chromium-Browsern Google (Firebase Cloud Messaging), bei
+     Firefox Mozilla, bei Safari, iPhone und iPad Apple. Der Inhalt ist
+     dabei nach dem Web-Push-Standard (RFC&nbsp;8291) so verschlüsselt, dass
+     nur dein Gerät ihn lesen kann; der Push-Dienst sieht die Adresse des
+     Abos, den Zeitpunkt und die Größe der Nachricht, nicht den Text. Diese
+     Dienste betreiben die Browserhersteller im Rahmen der Browserfunktion,
+     die du mit deiner Erlaubnis nutzt; ihre Server können außerhalb der EU
+     stehen (Google und Apple sind nach dem EU-US-Datenschutzrahmen
+     zertifiziert). Für den Push-Dienst gilt die Datenschutzerklärung deines
+     Browserherstellers.</p>
+  <h3>Rechtsgrundlage</h3>
+  <p>Deine Einwilligung, Art. 6 Abs. 1 lit. a DSGVO – erteilt durch das
+     Einschalten im Spiel und die Erlaubnis im Browser. Für das Abo, das
+     dein Browser dafür auf deinem Gerät anlegt, § 25 Abs. 1 TDDDG. Du kannst
+     die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen
+     (Einstellungen → Benachrichtigungen → Aus, oder in den
+     Seiteneinstellungen deines Browsers).</p>
+  <h3>Speicherdauer</h3>
+  <p>Das Abo löschen wir, sobald du die Benachrichtigungen ausschaltest,
+     dich auf dem Gerät abmeldest oder dein Konto löschst; ebenso, sobald der
+     Push-Dienst meldet, dass das Abo nicht mehr gilt (etwa nach dem
+     Entfernen der App oder dem Entzug der Erlaubnis), nach zehn
+     fehlgeschlagenen Zustellungen in Folge und spätestens ein Jahr nach der
+     letzten Zustellung.</p>
+
   <h2>7. Deine Rechte</h2>
   <p>Dir stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
   <ul>
@@ -526,7 +583,7 @@
         Einwilligungsverwaltung</li>
   </ul>
 
-  <p class="stand">Stand: 22. September 2026</p>
+  <p class="stand">Stand: 23. September 2026</p>
 
   <nav>
     <a href="index.html">Zum Spiel</a> ·
