@@ -4806,7 +4806,7 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
     /* Sparzeichnung (Schritt 117): Unter zehn Punkten Radius ist der Name
        länger als der Körper — weglassen spart bei vierzig Körpern die
        teuerste Arbeit des Bildes, das Textmessen. Die eigene Zeile bleibt. */
-    if (rr < 10 && !z.eigen) continue;
+    if (rr < 10 && !z.eigen && !z.immer) continue;
 
     const hatAbz = Number.isInteger(z.rang);
     const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
@@ -5141,10 +5141,13 @@ function draw(){
     }
     for (const teile of gruppen.values()){
       const c = groesstes(teile);
-      if (!c || radiusOf(c.m) * cam.z < 7) continue;
+      if (!c || (radiusOf(c.m) * cam.z < 7 && !c.still)) continue;
       if (unterPulsar(c.x, c.y, radiusOf(c.m))) continue;
       traeger.add(c);
       zeilen.push({x:c.x, y:c.y, r:radiusOf(c.m), name:c.name,
+                   /* Tutorial (v119): Übungsgegner tragen ihren Namen immer —
+                      sie sollen aussehen wie echte Spieler (Thomas, 24.09.). */
+                   immer: !!c.still,
                    titel: (Game.online && Net.kt > 0 && c.gid === Net.kt) || (Tutorial.laufend && Tutorial.titelGid === c.gid),
                    tag: c.tag || null,
                    level:Number.isInteger(c.lvl) ? c.lvl : null,
@@ -12774,7 +12777,10 @@ const Tutorial = {
         /* In Teilreichweite neben dem Spieler, nicht an einer festen Stelle
            der Karte (v118) — ein Teilstück fliegt nur gut 300 Einheiten. */
         const p = this.vestaPlatz();
-        this.vesta = this.rivalSetzen("Vesta", 18, p.x / WELT_B, p.y / WELT_H, false);
+        /* Außer Vesta ist niemand auf der Karte (v119 — doppelt gesichert
+           zum fehlenden Nachschub in der Tutorialrunde). */
+        Game.rivals = [];
+        this.vesta = this.rivalSetzen("Vesta", 18, p.x / WELT_B, p.y / WELT_H, false, { design: "coral", level: 3, rang: 1 });
         this.teiltAb = 0;
         this.ziel = () => this.vesta;
       },
@@ -12788,7 +12794,9 @@ const Tutorial = {
         this.unendlich = Math.max(50, Math.round(this.eigeneMasse()));
         this.masseMindestens(50);
         this.pulsar = this.pulsarSetzen(.46, .46);
-        this.kepler = this.rivalSetzen("Kepler", 260, .64, .46, true);
+        /* Nur Kepler — kein anderer Körper darf hier umherfliegen (v119). */
+        Game.rivals = [];
+        this.kepler = this.rivalSetzen("Kepler", 260, .64, .46, true, { design: "verdigris", level: 17, rang: 5 });
         this.titelGid = this.kepler.gid;
         this.ziel = () => this.pulsar;
         this.schussLinie = true;
@@ -12843,11 +12851,19 @@ const Tutorial = {
      das Anteile des Bildschirms. Die Spielfläche meidet die Tafeln des
      HUD: links oben die Masse, rechts die Rangliste, unten die Daumen. */
   punkt(fx, fy){ return { x: fx * WELT_B, y: fy * WELT_H }; },
-  rivalSetzen(name, m, fx, fy, titel){
+  /* Ein Übungsgegner, der aussieht wie ein echter Spieler (v119, Thomas:
+     „Es muss aussehen wie ein echter Spieler"): eigenes Design, Level und
+     Rangabzeichen in der Namenszeile — wie online. */
+  rivalSetzen(name, m, fx, fy, titel, aussehen = {}){
     const r = newRival(name);
     const p = this.punkt(fx, fy);
     r.x = p.x; r.y = p.y; r.m = m; r.still = true; r.vx = 0; r.vy = 0;
-    r.tier = titel ? 3 : 1; r.trait = titel ? "bands" : "plain"; r.tint = 0;
+    const pal = SKINS.find(k => k.id === aussehen.design);
+    if (pal){ r.pal = pal; r.tier = pal.tier || 1; r.trait = pal.trait || "plain"; }
+    else { r.tier = titel ? 3 : 1; r.trait = titel ? "bands" : "plain"; }
+    r.tint = 0;
+    if (Number.isInteger(aussehen.level)) r.lvl = aussehen.level;
+    if (Number.isInteger(aussehen.rang)) r.rang = aussehen.rang;
     Game.rivals.push(r);
     return r;
   },
