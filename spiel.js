@@ -320,6 +320,9 @@ function resize(){
   FIT = Math.sqrt(VW*VH) / REF_VIEW;
   checkOrientation();
   Einwilligung.platzMessen();   // Drehen ändert die Höhe des Kastens
+  /* Tutorial (v122): Die Karte ist das Bild — nach dem Drehen wächst sie
+     mit. Beim ersten Aufruf gibt es `Tutorial` noch nicht (`try`). */
+  try { if (Tutorial.laufend) Tutorial.anpassen(); } catch(_){}
 }
 addEventListener("resize", resize);
 addEventListener("orientationchange", () => setTimeout(resize, 120));
@@ -2051,6 +2054,8 @@ cvs.addEventListener("contextmenu", e => e.preventDefault());
 
 addEventListener("keydown", e => {
   if (!Game.running || Integrity.locked) return;
+  /* Tutorial (v122): Eingabe drückt „Verstanden", solange der Kasten steht. */
+  try { if (Tutorial.taste(e)) return; } catch(_){}
   if (e.code === "Space"){ e.preventDefault(); if (Integrity.mayAct()) split(); }
   if (e.code === "KeyW"){ if (Integrity.mayAct()) shed(); }
   if (e.code === "KeyM"){
@@ -2130,6 +2135,9 @@ function split(){
     if (Game.cells.some(c => c.m >= 36)){ Game.lastSplit = Game.t; Sound.split(); }
     return;
   }
+  /* Tutorial (v122): Teilen wirkt nur, wenn es gerade dran ist — bei Vesta
+     erst auf dem leuchtenden Platz. */
+  try { if (Tutorial.tasteGesperrt("teilen")) return; } catch(_){}
   const born = [];
   let [dx,dy] = aim();
   /* Tutorial (v118): Beim Schritt „Vesta" zielt das Teilen auf sie —
@@ -2167,6 +2175,8 @@ const SHED_COST = m => clamp(m*0.035, 8, 260);
 function shed(){
   /* Wie beim Teilen: `"shed"` als Text, nicht die Funktion `shed`. */
   if (Game.online){ Net.send("shed"); Sound.shedS(); return; }
+  /* Tutorial (v122): Abwerfen erst auf dem Schussplatz. */
+  try { if (Tutorial.tasteGesperrt("abwerfen")) return; } catch(_){}
   let [dx,dy] = aim();
   /* Tutorial (v120): Jeder Brocken fliegt in den Pulsar. */
   try { const h = Tutorial.wurfHilfe(); if (h) [dx,dy] = h; } catch(_){}
@@ -12719,6 +12729,12 @@ const Tutorial = {
   vesta: null, kepler: null, pulsar: null,
   staubAb: 0, pulsarAb: 0, stueckeAb: 0,
   zielJetzt: null,
+  /* v122: Der Kasten steht (`wartet`), der Körper wartet an seiner Stelle
+     (`halt`), bis „Verstanden" gedrückt ist. `platz` ist der leuchtende
+     Kreis eines Schritts mit `platz`; `gesperrt`: der Spieler steht darin
+     fest; `platzErledigt`: die Taste ist gedrückt, der Schuss ist raus. */
+  wartet: false, wartetAb: 0, halt: null,
+  platz: null, gesperrt: false, platzErledigt: false,
 
   /* --- Stand merken ------------------------------------------------- */
   laden(){
@@ -12757,11 +12773,17 @@ const Tutorial = {
   },
 
   /* --- Die Schritte -------------------------------------------------
-     `text` der Satz; `fertig` prüft, ob der Spieler es getan hat; `zeit`
-     lässt Erklärschritte nach so vielen Sekunden weitergehen; `bei` baut
-     die Lage auf (Rivale, Pulsar, Effekte), `weg` räumt sie; `zaehler`
-     liefert [ist, soll] für die Zeile unter dem Satz; `hilfe` nennt die
-     Steuerhilfe (Hand/Maus, Teilen, Abwerfen). */
+     Jeder Schritt beginnt mit dem Kasten: Er erklärt, der Körper wartet,
+     bis der Spieler „Verstanden" drückt (v122, Thomas 24.09.: „während der
+     Ausführung des Tutorials kein Textfeld"). Dann verschwindet er, und der
+     Spieler führt die Aufgabe aus.
+     `text` der Satz; `fertig` prüft, ob der Spieler es getan hat — ohne
+     `fertig` ist es ein Erklärschritt, der mit „Verstanden" endet; `bei`
+     baut die Lage auf (Rivale, Pulsar, Effekte), `weg` räumt sie;
+     `zaehler` liefert [ist, soll] für den Stand während der Aufgabe;
+     `hilfe` nennt die Steuerhilfe (Hand/Maus, Teilen, Abwerfen); `platz`
+     heißt: erst in den leuchtenden Kreis, dort steht man fest, dann die
+     Taste; `knopf` beschriftet den Knopf anders als „Verstanden". */
   A: [
     { id:"steuern", hilfe:"steuern",
       text: () => t(tippGeraet() ? (document.body.classList.contains("lefty") ? "tu_steuern_tipp_r" : "tu_steuern_tipp") : "tu_steuern_maus"),
@@ -12773,29 +12795,36 @@ const Tutorial = {
       bei(){ this.glut = true; this.staubAb = Game.debrisEaten || 0; },
       zaehler: () => [Math.min(10, (Game.debrisEaten || 0) - Tutorial.staubAb), 10],
       fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 10 },
-    { id:"masse", text: () => t("tu_masse"), zeit: 5,
+    { id:"masse", text: () => t("tu_masse"),
       bei(){ Tutorial.hudKlasse("mass", "tutBlink", true); },
-      weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); this.glut = false; },
-      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 13 },
-    { id:"vesta", hilfe:"teilen",
+      weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); this.glut = false; } },
+    /* Vesta mit dem Prinzip des Pulsar-Schusses (v122, Thomas 24.09.:
+       „Ich fliege in einen vorgesehenen Bereich. Dann drücke ich auf Teilen
+       und werde auf den Gegner geschossen"): Vesta steht ein Stück weg, der
+       Teilen-Platz liegt auf dem Weg zu ihr, genau eine Teilweite vor ihr.
+       Dort steht man fest; Teilen geht erst dort, zielt auf Vesta, und das
+       fliegende Stück zieht sie heran. */
+    { id:"vesta", hilfe:"teilen", platz: true,
       text: () => t(tippGeraet() ? "tu_vesta_tipp" : "tu_vesta_maus"),
       bei(){
         this.masseMindestens(50);
-        /* In Teilreichweite neben dem Spieler, nicht an einer festen Stelle
-           der Karte (v118) — ein Teilstück fliegt nur gut 300 Einheiten. */
         const p = this.vestaPlatz();
         /* Außer Vesta ist niemand auf der Karte (v119 — doppelt gesichert
            zum fehlenden Nachschub in der Tutorialrunde). */
         Game.rivals = [];
         this.vesta = this.rivalSetzen("Vesta", 18, p.x / WELT_B, p.y / WELT_H, false, { design: "coral", level: 3, rang: 1 });
+        this.teilPlatzSetzen();
         this.teiltAb = 0;
-        this.ziel = () => this.vesta;
+        this.ziel = () => (this.gesperrt || this.platzErledigt) ? this.vesta : this.platz;
       },
       fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
     /* Kepler braucht mindestens 240 Masse, sonst zerreißt ihn kein Pulsar;
        fressen kann er den Spieler nicht (`still`). Die eigene Masse wird
-       nur nach unten aufgefüllt — Abwerfen kostet nichts, Fressen zählt. */
-    { id:"abwerfen", hilfe:"abwerfen",
+       nur nach unten aufgefüllt — Abwerfen kostet nichts, Fressen zählt.
+       Seit v122 endet der Schritt erst mit dem Treffer (vorher ein eigener
+       Schritt „treffen" mit eigenem Satz — mit „Verstanden" wäre das ein
+       Knopfdruck ohne Aufgabe gewesen). */
+    { id:"abwerfen", hilfe:"abwerfen", platz: true,
       text: () => t(tippGeraet() ? "tu_abwerfen_tipp" : "tu_abwerfen_maus"),
       bei(){
         /* Die Stücke der Vesta-Teilung zu einem Körper vereinen (v121) —
@@ -12817,18 +12846,14 @@ const Tutorial = {
           const k = this.kepler, q = this.pulsar;
           let ux = q.x - k.x, uy = q.y - k.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
           const d = PULSAR_R + radiusOf(Math.max(50, this.eigeneMasse())) + 70;
-          this.schussPlatz = { x: clamp(q.x + ux * d, 40, WELT_B - 40), y: clamp(q.y + uy * d, 40, WELT_H - 40),
-                               m: this.eigeneMasse(), platz: true };
+          this.platz = { x: clamp(q.x + ux * d, 40, WELT_B - 40), y: clamp(q.y + uy * d, 40, WELT_H - 40),
+                         m: this.eigeneMasse() };
         }
-        this.gesperrt = false;
-        this.ziel = () => this.gesperrt ? this.pulsar : this.schussPlatz;
+        this.ziel = () => this.platzErledigt ? this.kepler : this.gesperrt ? this.pulsar : this.platz;
         this.schussLinie = true;
         this.schuesse = Game.pulsarSpawns || 0;
       },
-      zaehler: () => [Math.min(5, (Tutorial.pulsar && Tutorial.pulsar.fed) || 0), 5],
-      fertig: () => (Game.pulsarSpawns || 0) > Tutorial.schuesse },
-    { id:"treffen", text: () => t("tu_treffen"),
-      bei(){ this.ziel = () => this.kepler; },
+      zaehler: () => [Tutorial.platzErledigt ? 5 : Math.min(5, (Tutorial.pulsar && Tutorial.pulsar.fed) || 0), 5],
       fertig: () => !Tutorial.kepler || Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length !== 1 },
     { id:"stuecke", text: () => t("tu_stuecke"),
       bei(){
@@ -12841,7 +12866,7 @@ const Tutorial = {
       zaehler: () => { const n = Game.rivals.filter(r => Tutorial.kepler && r.gid === Tutorial.kepler.gid).length;
                        return [Math.max(0, Tutorial.stueckeAb - n), Tutorial.stueckeAb]; },
       fertig: () => !Tutorial.kepler || !Game.rivals.some(r => r.gid === Tutorial.kepler.gid) },
-    { id:"titel", text: () => t("tu_titel"), zeit: 9,
+    { id:"titel", text: () => t("tu_titel"),
       bei(){
         this.titelGid = "me"; this.unendlich = 0;
         this.hudKlasse("boardPlate", "tutGlow", true);
@@ -12850,7 +12875,7 @@ const Tutorial = {
       weg(){ this.hudKlasse("boardPlate", "tutGlow", false); } }
   ],
   B: [
-    { id:"welt", text: () => t("tu_welt"), zeit: 4.5, bei(){ this.sprung(); } },
+    { id:"welt", text: () => t("tu_welt"), bei(){ this.sprung(); } },
     { id:"teilen", hilfe:"teilen",
       text: () => t(tippGeraet() ? "tu_teilen_tipp" : "tu_teilen_maus"),
       zaehler: () => [Math.min(FEAST_CELLS, Game.cells.length), FEAST_CELLS],
@@ -12859,12 +12884,12 @@ const Tutorial = {
       bei(){ this.pulsareSetzen(); this.pulsarAb = Game.pulsarsEaten || 0; },
       zaehler: () => [Math.min(3, (Game.pulsarsEaten || 0) - Tutorial.pulsarAb), 3],
       fertig: () => (Game.pulsarsEaten || 0) - Tutorial.pulsarAb >= 3 },
-    { id:"mond", text: () => t("tu_mond"), zeit: 7.5,
+    { id:"mond", text: () => t("tu_mond"),
       bei(){
         this.mondDemo = ["eis"];
         try { const [cx, cy] = centre(); ring(cx, cy, radiusOf(Math.max(30, Tutorial.eigeneMasse())) * 2.2, "#bfe8ff"); Sound.levelUp(); } catch(_){}
       } },
-    { id:"fertig", text: () => t("tu_fertig"), zeit: 2.2, bei(){ try { Sound.levelUp(); } catch(_){} } }
+    { id:"fertig", text: () => t("tu_fertig"), knopf: "tu_zur_lohn", bei(){ try { Sound.levelUp(); } catch(_){} } }
   ],
   liste(){ return this.phase === "b" ? this.B : this.A; },
   eigeneMasse(){ return (Game.cells || []).reduce((a, c) => a + c.m, 0); },
@@ -12898,14 +12923,36 @@ const Tutorial = {
     return q;
   },
   /* Vesta lebt? Dann die Richtung vom eigenen Körper zu ihr — für das
-     Teilen (`split()`), damit das Stück sicher auf sie fliegt. */
+     Teilen (`split()`), damit das Stück sicher auf sie fliegt. Mit dem
+     Teilen ist der Platz erledigt: Der Körper ist wieder frei. */
   vestaLebt(){ return !!(this.vesta && Game.rivals.includes(this.vesta)); },
   teilHilfe(){
     if (!this.laufend || !this.schritt || this.schritt.id !== "vesta" || !this.vestaLebt() || !Game.cells.length) return null;
     const me = groesstes(Game.cells);
     const dx = this.vesta.x - me.x, dy = this.vesta.y - me.y, l = Math.hypot(dx, dy) || 1;
     this.teiltAb = Game.t;
+    if (this.gesperrt){ this.gesperrt = false; this.platzErledigt = true; this.hilfeAktualisieren(); }
     return [dx / l, dy / l];
+  },
+  /* Darf die Taste jetzt wirken? Nein, solange der Kasten steht oder
+     zwischen zwei Schritten; in Stufe A nur die Taste, um die es gerade
+     geht, und bei einem Platz erst, wenn man darin steht — sonst wirft ein
+     neugieriger Tipp beim Staubsammeln Masse weg oder teilt Vesta zu früh
+     in zu kleine Stücke. */
+  tasteGesperrt(art){
+    if (!this.laufend) return false;
+    const s = this.schritt;
+    if (this.wartet || !s) return true;
+    if (s.hilfe === art) return !!s.platz && !this.gesperrt;
+    return this.phase === "a";
+  },
+  /* Tastatur: Eingabe bestätigt den Kasten; Leertaste und W wirken nicht,
+     solange er steht. Gibt `true` zurück, wenn die Taste verbraucht ist. */
+  taste(e){
+    if (!this.laufend || !this.wartet) return false;
+    if (e.key === "Enter"){ e.preventDefault(); this.verstanden(); return true; }
+    if (e.code === "Space" || e.code === "KeyW"){ e.preventDefault(); return true; }
+    return false;
   },
   /* Pulsar-Schuss sicher treffen (v120): Brocken fliegen in den Pulsar,
      der Pulsar fliegt auf Kepler, und wer auf dem Schussplatz steht, bleibt
@@ -12922,25 +12969,52 @@ const Tutorial = {
     const k = this.kepler, dx = k.x - q.x, dy = k.y - q.y, l = Math.hypot(dx, dy) || 1;
     return [dx / l, dy / l];
   },
+  /* Nach der eigenen Bewegung: Solange der Kasten steht, bleibt jeder
+     eigene Körper, wo er war (v122); wer auf einem Platz steht, bleibt dort. */
   nachBewegung(){
-    if (!this.laufend || !this.gesperrt || !this.schussPlatz || !Game.cells.length) return;
+    if (!this.laufend || !Game.cells.length) return;
+    if (this.wartet && this.halt){
+      for (const h of this.halt) if (Game.cells.includes(h.c)){ h.c.x = h.x; h.c.y = h.y; h.c.vx = 0; h.c.vy = 0; }
+      return;
+    }
+    if (!this.gesperrt || !this.platz) return;
     const c = groesstes(Game.cells);
-    c.x = this.schussPlatz.x; c.y = this.schussPlatz.y; c.vx = 0; c.vy = 0;
+    c.x = this.platz.x; c.y = this.platz.y; c.vx = 0; c.vy = 0;
   },
-  /* Platz für Vesta: gut 200 Einheiten vor dem Körper, Richtung freie
-     Mitte der Karte, in der freien Fläche; notfalls in die Gegenrichtung. */
+  /* Wo Vesta steht (v122): nicht mehr gleich neben dem Spieler, sondern
+     ein Stück weg — gut 400 Einheiten, damit der Teilen-Platz auf dem Weg
+     liegt und man ein Stück hinfliegt; in der freien Fläche und in der
+     oberen Hälfte, damit der Kasten sie nicht verdeckt. */
   vestaPlatz(){
     const me = groesstes(Game.cells);
-    const x0 = WELT_B * .08, x1 = WELT_B * .70, y0 = WELT_H * .20, y1 = WELT_H * .76;
-    const D = radiusOf(me.m) + 200;
-    let ux = WELT_B * .45 - me.x, uy = WELT_H * .48 - me.y, l = Math.hypot(ux, uy);
-    if (l < 1){ ux = 1; uy = 0; l = 1; }
-    ux /= l; uy /= l;
-    for (const s of [1, -1]){
-      const x = clamp(me.x + ux * D * s, x0, x1), y = clamp(me.y + uy * D * s, y0, y1);
-      if (Math.hypot(x - me.x, y - me.y) >= radiusOf(me.m) + 120) return { x, y };
+    const D = radiusOf(Math.max(50, me.m)) + 200;
+    const kandidaten = [[.62, .40], [.30, .40], [.46, .30], [.62, .28], [.34, .28], [.46, .46], [.14, .42], [.76, .40]];
+    let best = null, wert = Infinity;
+    for (const [fx, fy] of kandidaten){
+      const p = this.punkt(fx, fy), d = Math.hypot(p.x - me.x, p.y - me.y);
+      if (d < D + 80) continue;
+      const w = Math.abs(d - (D + 200));
+      if (w < wert){ wert = w; best = p; }
     }
-    return { x: clamp(me.x + D, x0, x1), y: clamp(me.y, y0, y1) };
+    if (best) return best;
+    /* Steht der Spieler so, dass keine Stelle weit genug weg ist (auf der
+       kleinen Karte kaum möglich): die fernste. */
+    let fern = 0;
+    for (const [fx, fy] of kandidaten){
+      const p = this.punkt(fx, fy), d = Math.hypot(p.x - me.x, p.y - me.y);
+      if (d > fern){ fern = d; best = p; }
+    }
+    return best;
+  },
+  /* Der Teilen-Platz: auf der Linie Vesta → Spieler, genau eine Teilweite
+     vor Vesta (knapp 200 Einheiten Luft zwischen beiden — so weit fliegt ein
+     Teilstück sicher, und das Stück zieht sie auf den letzten Metern heran). */
+  teilPlatzSetzen(){
+    const me = groesstes(Game.cells), v = this.vesta;
+    let ux = me.x - v.x, uy = me.y - v.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+    const d = radiusOf(Math.max(50, this.eigeneMasse())) + 200;
+    this.platz = { x: clamp(v.x + ux * d, 40, WELT_B - 40), y: clamp(v.y + uy * d, 40, WELT_H - 40),
+                   m: Math.max(50, this.eigeneMasse()) };
   },
   masseMindestens(m){
     const tot = this.eigeneMasse();
@@ -13013,6 +13087,7 @@ const Tutorial = {
     this.strecke = 0; this.start = null; this.seit = 0; this.schritt = null;
     this.glut = false; this.unendlich = 0; this.titelGid = null; this.mondDemo = null;
     this.ziel = null; this.schussLinie = false; this.vesta = this.kepler = this.pulsar = null;
+    this.wartet = false; this.halt = null; this.platz = null; this.gesperrt = false; this.platzErledigt = false;
     /* Derselbe Zoom wie im Spiel für ein Staubkorn (Thomas, 24.09.: bei
        Zoom 1 „bewegt man sich komplett unnatürlich" — auf dem Telefon
        ist der Spielzoom etwa 0,58, alles war fast doppelt so groß und
@@ -13064,6 +13139,8 @@ const Tutorial = {
   },
 
   /* --- Ablauf ------------------------------------------------------- */
+  /* Der nächste Schritt: Lage bauen, Kasten zeigen, Körper warten lassen,
+     bis „Verstanden" gedrückt ist (v122). */
   naechster(){
     const box = document.getElementById("tutBox");
     if (!box) return;
@@ -13074,22 +13151,52 @@ const Tutorial = {
     }
     const s = L[this.nr];
     this.schritt = s; this.seit = 0;
+    this.platz = null; this.gesperrt = false; this.platzErledigt = false;
     try { if (s.bei) s.bei.call(this); } catch(e){ try { console.warn("Tutorial:", e); } catch(_){} }
+    this.wartet = true;
+    this.wartetAb = performance.now();
+    this.halten();
     box.hidden = false;
     box.classList.remove("fertig");
+    /* Neu einblenden, auch wenn er gerade erst zu war (Erklärschritte
+       folgen dicht aufeinander) — die Einblendung zeigt: ein neuer Satz. */
+    box.style.animation = "none"; void box.offsetWidth; box.style.animation = "";
     const fig = document.getElementById("tutFigur");
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
-    const haken = document.getElementById("tutHaken");
-    if (haken) haken.hidden = true;
     const txt = document.getElementById("tutText");
     if (txt) txt.textContent = s.text();
+    const ok = document.getElementById("tutOk");
+    if (ok) ok.textContent = t(s.knopf || "tu_verstanden");
     this.punkteMalen();
-    this.zaehlerMalen();
-    this.hilfeSetzen(s.hilfe || null);
+    this.hilfeAktualisieren();
     /* Der Stand im Speicher zählt Schritte über beide Phasen — für die
        Weiche und die Prüfstände. */
     this.stand.spiel = (this.phase === "b" ? this.A.length : 0) + this.nr;
     this.sichern();
+  },
+  /* Den Körper anhalten, solange der Kasten steht: Daumen und Zeiger auf
+     „stehen" und die Stellen aller eigenen Stücke merken (`nachBewegung`). */
+  halten(){
+    this.halt = (Game.cells || []).map(c => ({ c, x: c.x, y: c.y }));
+    const me = (Game.cells || []).length ? groesstes(Game.cells) : null;
+    if (me) this.stillstehen(me.x, me.y);
+  },
+  /* „Verstanden": Der Kasten geht, die Aufgabe beginnt. Ein Erklärschritt
+     ist damit schon erledigt. Die ersten 0,4 s zählen nicht — ein Tipp,
+     der noch dem vorigen Schritt galt, soll den neuen Satz nicht wegklicken. */
+  verstanden(){
+    if (!this.laufend || !this.wartet) return;
+    if (performance.now() - this.wartetAb < 400) return;
+    this.wartet = false; this.halt = null;
+    const box = document.getElementById("tutBox");
+    if (box) box.hidden = true;
+    const s = this.schritt;
+    if (!s) return;
+    const me = Game.cells.length ? groesstes(Game.cells) : null;
+    if (me) this.stillstehen(me.x, me.y);
+    if (!s.fertig) return this.geschafft();
+    this.seit = 0;
+    this.hilfeAktualisieren();
   },
   punkteMalen(){
     const el = document.getElementById("tutPunkte");
@@ -13097,36 +13204,62 @@ const Tutorial = {
     const L = this.liste();
     el.innerHTML = L.map((_, i) => `<i class="${i < this.nr ? "da" : i === this.nr ? "jetzt" : ""}"></i>`).join("");
   },
-  zaehlerMalen(){
-    const el = document.getElementById("tutStand");
-    if (!el) return;
-    const s = this.schritt;
-    if (!s || !s.zaehler){ el.hidden = true; return; }
-    let ist = 0, soll = 1;
-    try { [ist, soll] = s.zaehler(); } catch(_){}
-    el.hidden = false;
-    const anteil = Math.max(0, Math.min(1, ist / Math.max(1, soll)));
-    if (el.dataset.ist !== String(ist) || el.dataset.soll !== String(soll)){
-      el.dataset.ist = String(ist); el.dataset.soll = String(soll);
-      el.innerHTML = `<span class="bar"><i style="width:${Math.round(anteil * 100)}%"></i></span><b>${ist} / ${soll}</b>`;
+  /* Die kleine Plakette während der Aufgabe: Stand („4 / 10"), am Rechner
+     die Taste, die gerade gemeint ist, und am Ende der Haken. Kein Satz —
+     Thomas: „während der Ausführung … kein Textfeld". Leer bleibt sie weg. */
+  aufgabeMalen(haken){
+    const box = document.getElementById("tutAufgabe");
+    if (!box) return;
+    const st = document.getElementById("tutStand"), hk = document.getElementById("tutHaken"), ts = document.getElementById("tutTaste");
+    if (haken){
+      if (st) st.hidden = true;
+      if (ts) ts.hidden = true;
+      if (hk) hk.hidden = false;
+      box.classList.add("fertig");
+      box.hidden = false;
+      return;
     }
+    /* Läuft in jedem Bild: nur anfassen, was sich ändert. */
+    const zeig = (el, an) => { if (el && el.hidden === an) el.hidden = !an; };
+    if (box.classList.contains("fertig")) box.classList.remove("fertig");
+    zeig(hk, false);
+    const s = this.schritt;
+    const aktiv = this.laufend && !!s && !this.wartet;
+    let zahl = false, taste = false;
+    if (st){
+      if (aktiv && s.zaehler){
+        let ist = 0, soll = 1;
+        try { [ist, soll] = s.zaehler(); } catch(_){}
+        const anteil = Math.max(0, Math.min(1, ist / Math.max(1, soll)));
+        if (st.dataset.ist !== String(ist) || st.dataset.soll !== String(soll)){
+          st.dataset.ist = String(ist); st.dataset.soll = String(soll);
+          st.innerHTML = `<span class="bar"><i style="width:${Math.round(anteil * 100)}%"></i></span><b>${ist} / ${soll}</b>`;
+        }
+        zahl = true;
+      }
+      zeig(st, zahl);
+    }
+    if (ts){
+      const art = this.hilfeJetzt();
+      taste = !tippGeraet() && (art === "teilen" || art === "abwerfen");
+      zeig(ts, taste);
+      if (taste){ const w = t(art === "teilen" ? "tu_taste_leer" : "tu_taste_w"); if (ts.textContent !== w) ts.textContent = w; }
+    }
+    zeig(box, zahl || taste);
   },
 
-  /* Ein Schritt ist geschafft: kurz der Haken, dann der nächste. */
+  /* Ein Schritt ist geschafft: kurz der Haken, dann der nächste Kasten.
+     Erklärschritte (ohne Aufgabe) gehen ohne Haken gleich weiter. */
   geschafft(){
-    const box = document.getElementById("tutBox");
-    if (box){
-      box.classList.add("fertig");
-      const haken = document.getElementById("tutHaken");
-      if (haken) haken.hidden = false;
-    }
     const s = this.schritt;
     this.schritt = null;
     try { if (s && s.weg) s.weg.call(this); } catch(_){}
     this.hilfeSetzen(null);
-    try { Sound.pop(); } catch(_){}
+    const aufgabe = !!(s && s.fertig);
+    if (aufgabe){ this.aufgabeMalen(true); try { Sound.pop(); } catch(_){} }
+    else this.aufgabeMalen();
     this.nr++;
-    setTimeout(() => { if (this.laufend) this.naechster(); }, 850);
+    setTimeout(() => { if (this.laufend){ this.aufgabeMalen(); this.naechster(); } }, aufgabe ? 850 : 180);
   },
 
   /* Läuft aus der Bildschleife, nicht aus einem Zeitgeber: Ein verdeckter
@@ -13167,6 +13300,11 @@ const Tutorial = {
        (Thomas, 24.09.: „die Masse hat nicht gereicht"). */
     if (this.phase === "b" && this.nr >= 1 && this.nr <= 3)
       for (const c of Game.cells) if (c.merge < 1) c.merge = 1;
+    /* Vesta bleibt bei 18 Masse (v122): Sie stand still im Sternenstaub und
+       fraß ihn — auf 21 gewachsen, war keine der beiden Hälften mehr groß
+       genug, sie zu fressen, und das Teilen ging ins Leere (Prüfstand am
+       Rechner, 24.09.). */
+    if (this.vestaLebt() && this.vesta.m > 18) this.vesta.m = 18;
     /* Vesta sicher erwischen (v118): Nach dem Teilen zieht das nächste
        eigene Stück, das groß genug ist, sie auf den letzten Metern heran. */
     if (this.schritt && this.schritt.id === "vesta" && this.teiltAb && Game.t - this.teiltAb < 3 && this.vestaLebt()){
@@ -13182,21 +13320,31 @@ const Tutorial = {
         v.x += (best.x - v.x) * k; v.y += (best.y - v.y) * k;
       }
     }
-    if (this.schritt && this.schritt.id === "abwerfen" && !this.gesperrt && this.schussPlatz && Game.cells.length){
+    /* Der leuchtende Kreis (Vesta: Teilen-Platz, Abwerfen: Schussplatz):
+       Wer ihn erreicht, steht dort fest, ein Ring und ein Ton sagen „jetzt",
+       und die Taste beginnt zu pulsieren (v120, seit v122 für beide). */
+    const s = this.schritt;
+    if (s && s.platz && !this.wartet && !this.gesperrt && !this.platzErledigt && this.platz && Game.cells.length){
       const c = groesstes(Game.cells);
-      if (Math.hypot(c.x - this.schussPlatz.x, c.y - this.schussPlatz.y) < radiusOf(c.m) * .8 + 25){
+      if (Math.hypot(c.x - this.platz.x, c.y - this.platz.y) < radiusOf(c.m) * .8 + 25){
         this.gesperrt = true;
-        const txt = document.getElementById("tutText");
-        if (txt) txt.textContent = t(tippGeraet() ? "tu_fest_tipp" : "tu_fest_maus");
-        try { ring(this.schussPlatz.x, this.schussPlatz.y, radiusOf(c.m) * 2.4, "#e9b063"); Sound.pop(); } catch(_){}
+        /* Teilen braucht zwei Hälften, die Vesta fressen dürfen (das
+           1,22-Fache ihrer Masse, `eats`): 56 → zweimal 28 gegen 18. */
+        if (s.id === "vesta") this.masseMindestens(56);
+        try { ring(this.platz.x, this.platz.y, radiusOf(c.m) * 2.4, "#e9b063"); Sound.pop(); } catch(_){}
+        this.hilfeAktualisieren();
       }
     }
-    if (!this.schritt) return;
+    /* Der Pulsar ist abgefeuert: Der Pfeil zeigt auf Kepler, die Taste
+       hört auf zu pulsieren. */
+    if (s && s.id === "abwerfen" && !this.platzErledigt && (Game.pulsarSpawns || 0) > this.schuesse){
+      this.platzErledigt = true;
+      this.hilfeAktualisieren();
+    }
+    if (!s || this.wartet) return;
     this.seit += dt;
-    const s = this.schritt;
-    this.zaehlerMalen();
+    this.aufgabeMalen();
     if (s.fertig && s.fertig()) return this.geschafft();
-    if (s.zeit && this.seit >= s.zeit) return this.geschafft();
   },
 
   /* --- Effekte im Spielfeld (aus `draw()`, Weltkoordinaten) ------------ */
@@ -13213,10 +13361,18 @@ const Tutorial = {
       g.beginPath(); g.moveTo(p.x - dx / l * 900, p.y - dy / l * 900); g.lineTo(k.x + dx / l * 60, k.y + dy / l * 60); g.stroke();
       g.restore();
     }
-    /* Der Schussplatz (v120): eine leuchtende Scheibe auf der Linie, bis
-       der Spieler darin steht. */
-    if (this.schritt && this.schritt.id === "abwerfen" && this.schussPlatz && !this.gesperrt){
-      const sp = this.schussPlatz, rr = radiusOf(Math.max(30, sp.m)) + 10 / z;
+    /* Teillinie (v122): vom Teilen-Platz auf Vesta — so fliegt das Stück. */
+    if (this.schritt && this.schritt.id === "vesta" && this.platz && !this.platzErledigt && this.vestaLebt()){
+      const p = this.platz, v = this.vesta;
+      g.save(); g.setLineDash([10 / z, 12 / z]); g.lineWidth = w;
+      g.strokeStyle = "rgba(233,176,99,.55)";
+      g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(v.x, v.y); g.stroke();
+      g.restore();
+    }
+    /* Der Platz (v120 Schussplatz, seit v122 auch Teilen-Platz): eine
+       leuchtende Scheibe, bis der Spieler darin steht. */
+    if (this.schritt && this.schritt.platz && this.platz && !this.gesperrt && !this.platzErledigt){
+      const sp = this.platz, rr = radiusOf(Math.max(30, sp.m)) + 10 / z;
       const gr = g.createRadialGradient(sp.x, sp.y, rr * .2, sp.x, sp.y, rr * 1.35);
       gr.addColorStop(0, "rgba(248,220,171," + (.28 + .22 * puls).toFixed(3) + ")");
       gr.addColorStop(1, "rgba(248,220,171,0)");
@@ -13281,29 +13437,70 @@ const Tutorial = {
     const el = document.getElementById(id);
     if (el) el.classList.toggle(klasse, !!an);
   },
+  /* Welche Hilfe gerade gilt (v122): keine, solange der Kasten steht —
+     erst nach „Verstanden" zeigt die Hand, pulsiert die Taste. Bei einem
+     Platz pulsiert die Taste erst, wenn man darin steht, und nicht mehr,
+     sobald sie gewirkt hat. */
+  hilfeJetzt(){
+    const s = this.schritt;
+    if (!this.laufend || !s || this.wartet) return null;
+    const art = s.hilfe || null;
+    if (s.platz && (art === "teilen" || art === "abwerfen") && (!this.gesperrt || this.platzErledigt)) return null;
+    return art;
+  },
+  hilfeAktualisieren(){ this.hilfeSetzen(this.hilfeJetzt()); this.aufgabeMalen(); },
   hilfeSetzen(art){
-    const hand = document.getElementById("tutHand"), maus = document.getElementById("tutMaus"),
-          taste = document.getElementById("tutTaste");
+    const hand = document.getElementById("tutHand"), maus = document.getElementById("tutMaus");
     const tipp = tippGeraet();
     if (hand) hand.hidden = !(art === "steuern" && tipp);
     if (maus) maus.hidden = !(art === "steuern" && !tipp);
     if (hand) hand.classList.toggle("rechts", document.body.classList.contains("lefty"));
     this.hudKlasse("padSplit", "tutPuls", art === "teilen" && tipp);
     this.hudKlasse("padShed",  "tutPuls", art === "abwerfen" && tipp);
-    if (taste){
-      const zeigen = !tipp && (art === "teilen" || art === "abwerfen");
-      taste.hidden = !zeigen;
-      if (zeigen) taste.textContent = t(art === "teilen" ? "tu_taste_leer" : "tu_taste_w");
-    }
   },
   aufraeumen(){
     this.hilfeSetzen(null);
     this.hudKlasse("mass", "tutBlink", false);
     this.hudKlasse("boardPlate", "tutGlow", false);
     this.glut = false; this.unendlich = 0; this.mondDemo = null; this.ziel = null;
-    this.schussLinie = false; this.kamera = null; this.titelGid = null; this.gesperrt = false;
+    this.schussLinie = false; this.kamera = null; this.titelGid = null;
+    this.wartet = false; this.halt = null; this.platz = null; this.gesperrt = false; this.platzErledigt = false;
     const box = document.getElementById("tutBox");
     if (box) box.hidden = true;
+    const auf = document.getElementById("tutAufgabe");
+    if (auf) auf.hidden = true;
+  },
+
+  /* Die Karte an das Bild anpassen (v122). Thomas, 24.09.: „im ersten Teil
+     ist das Spielfeld nur noch so breit wie das Infofenster" — das Tutorial
+     war hochkant gestartet (der Willkommensbildschirm geht auch hochkant),
+     die Karte hatte die Breite des Hochformats, und nach dem Drehen stand
+     sie als schmaler Streifen in der Mitte. Jetzt wächst sie mit, bei jeder
+     Änderung der Fenstergröße (Drehen, Safari-Leisten), und alles darauf
+     rückt im selben Verhältnis mit. Hochkant ruht das Spiel ohnehin. */
+  anpassen(){
+    if (!this.laufend || !this.kamera || portrait) return;
+    const b = this.phase === "b";
+    const z = this.zoomWie(b ? 100000 : 24);
+    const B = b ? Math.round(VW / z) : Math.max(640, Math.round(VW / z));
+    const H = b ? Math.round(VH / z) : Math.max(360, Math.round(VH / z));
+    if (B === WELT_B && H === WELT_H && Math.abs(z - this.kamera.z) < 1e-4) return;
+    const sx = B / WELT_B, sy = H / WELT_H;
+    const zieh = o => { if (o && typeof o.x === "number" && typeof o.y === "number"){ o.x *= sx; o.y *= sy; } };
+    for (const liste of [Game.cells, Game.rivals, Game.pulsars, Game.shed, Game.debris])
+      if (Array.isArray(liste)) liste.forEach(zieh);
+    zieh(this.platz); zieh(this.start);
+    if (this.halt) this.halt.forEach(zieh);
+    WELT_B = B; WELT_H = H;
+    this.kamera.z = z;
+    cam.x = B / 2; cam.y = H / 2; cam.z = z;
+    Game.debrisVer = (Game.debrisVer | 0) + 1;
+    Grid.cells = null; Grid.rebuild(Game.debris);
+    try { seedStars(); } catch(_){}
+    /* Wer gerade wartet oder auf dem Platz steht, bleibt stehen — der
+       Zeiger zeigt sonst auf eine Stelle der alten Karte. */
+    const me = Game.cells.length ? groesstes(Game.cells) : null;
+    if (me && (this.wartet || this.gesperrt)) this.stillstehen(me.x, me.y);
   },
 
   /* --- Rundenende --------------------------------------------------- */
@@ -13539,6 +13736,8 @@ const Tutorial = {
     this.laden();
     const skip = document.getElementById("tutSkip");
     if (skip) skip.addEventListener("click", () => this.ueberspringen());
+    const ok = document.getElementById("tutOk");
+    if (ok) ok.addEventListener("click", () => this.verstanden());
     const weiter = document.getElementById("tutTippWeiter");
     if (weiter) weiter.addEventListener("click", () => this.tippWeiter());
     const lw = document.getElementById("tutLohnWeiter");

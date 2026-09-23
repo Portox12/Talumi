@@ -2587,18 +2587,17 @@ for (const c in LANGS_KERN) Object.assign(LANGS[c], LANGS_KERN[c]);
 const LANGS_TUT2 = {
   en:{tu_steuern_maus:"Move the mouse — your body follows it.", tu_steuern_tipp:"Drag your left thumb across the screen — your body follows.", tu_steuern_tipp_r:"Drag your right thumb across the screen — your body follows.",
       tu_staub:"Sweep up ten grains of glowing stardust.", tu_masse:"Top left is your mass. It grows with every grain.",
-      tu_vesta_maus:"Vesta is much smaller than you. Aim at her and press Space: you shoot forward and swallow her.",
-      tu_vesta_tipp:"Vesta is much smaller than you. Aim at her and tap Split: you shoot forward and swallow her.",
-      tu_abwerfen_maus:"Shed (W) throws mass forward — to friends or into a pulsar. Move into the glowing circle; you will stop there.", tu_fest_maus:"You are in place. Press W five times — then the pulsar fires at Kepler.",
-      tu_abwerfen_tipp:"Shed throws mass forward — to friends or into a pulsar. Move into the glowing circle; you will stop there.", tu_fest_tipp:"You are in place. Tap Shed five times — then the pulsar fires at Kepler.",
-      tu_treffen:"The pulsar takes off — straight at Kepler.",
+      tu_vesta_maus:"Vesta is smaller than you. Move into the glowing circle; you will stop there. Then press Space: you shoot at Vesta and swallow her.",
+      tu_vesta_tipp:"Vesta is smaller than you. Move into the glowing circle; you will stop there. Then tap Split: you shoot at Vesta and swallow her.",
+      tu_abwerfen_maus:"Shed (W) throws mass forward. Move into the glowing circle and press W five times: the pulsar fires at Kepler.",
+      tu_abwerfen_tipp:"Shed throws mass forward. Move into the glowing circle and tap Shed five times: the pulsar fires at Kepler.",
       tu_stuecke:"Hit! Kepler shattered. Swallow the pieces.",
       tu_titel:"You now hold the title ♛. Keep it as long as you can, and keep growing: both move you up the leaderboard.",
       tu_welt:"Leap ahead: you are now a world of 100,000 mass.",
       tu_teilen_maus:"Split as often as you can (Space) — up to 16 pieces.", tu_teilen_tipp:"Split as often as you can (Split) — up to 16 pieces.",
       tu_pulsare:"Split this wide, you can swallow pulsars — they give lots of mass. Eat three.",
       tu_mond:"In the Ascent, accounts find moons this way: they orbit you and make you a little stronger.",
-      tu_fertig:"Done!", tu_sprung:"Leap", tu_taste_leer:"Space", tu_taste_w:"W",
+      tu_fertig:"Done!", tu_verstanden:"Got it", tu_zur_lohn:"To your reward", tu_sprung:"Leap", tu_taste_leer:"Space", tu_taste_w:"W",
       tu_l_auge:"Tutorial complete", tu_l_kopf:"Your reward", tu_l_design:"Your first design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Moondust",
       tu_l_konto:"With an account you also get {0} Iridium and {1} moondust — free, and your progress stays on every device.",
       tu_l_weiter:"On to the menu", tu_l_konto_kn:"Create account",
@@ -2606,18 +2605,17 @@ const LANGS_TUT2 = {
       tu_hilfe_tutorial:"Play the tutorial again", tu_viel_spass:"Good luck!"},
   de:{tu_steuern_maus:"Bewege die Maus — dein Körper folgt ihr.", tu_steuern_tipp:"Zieh mit dem linken Daumen über den Schirm — dein Körper folgt.", tu_steuern_tipp_r:"Zieh mit dem rechten Daumen über den Schirm — dein Körper folgt.",
       tu_staub:"Sammle zehn Körner leuchtenden Sternenstaub ein.", tu_masse:"Oben links steht deine Masse. Sie wächst mit jedem Korn.",
-      tu_vesta_maus:"Vesta ist deutlich kleiner als du. Zeig auf sie und drück die Leertaste: Du schießt nach vorn und verschlingst sie.",
-      tu_vesta_tipp:"Vesta ist deutlich kleiner als du. Zeig auf sie und tipp auf Teilen: Du schießt nach vorn und verschlingst sie.",
-      tu_abwerfen_maus:"Abwerfen (W) wirft Masse nach vorn — an Freunde oder in einen Pulsar. Fahr in den leuchtenden Kreis, dort bleibst du stehen.", tu_fest_maus:"Du stehst richtig. Drück jetzt fünfmal W — dann feuert der Pulsar auf Kepler.",
-      tu_abwerfen_tipp:"Abwerfen wirft Masse nach vorn — an Freunde oder in einen Pulsar. Fahr in den leuchtenden Kreis, dort bleibst du stehen.", tu_fest_tipp:"Du stehst richtig. Tipp jetzt fünfmal auf Abwerfen — dann feuert der Pulsar auf Kepler.",
-      tu_treffen:"Der Pulsar fliegt los — genau auf Kepler.",
+      tu_vesta_maus:"Vesta ist kleiner als du. Fahr in den leuchtenden Kreis, dort bleibst du stehen. Dann drück die Leertaste: Du schießt auf Vesta und verschlingst sie.",
+      tu_vesta_tipp:"Vesta ist kleiner als du. Fahr in den leuchtenden Kreis, dort bleibst du stehen. Dann tipp auf Teilen: Du schießt auf Vesta und verschlingst sie.",
+      tu_abwerfen_maus:"Abwerfen (W) wirft Masse nach vorn. Fahr in den leuchtenden Kreis und drück fünfmal W: Der Pulsar feuert auf Kepler.",
+      tu_abwerfen_tipp:"Abwerfen wirft Masse nach vorn. Fahr in den leuchtenden Kreis und tipp fünfmal auf Abwerfen: Der Pulsar feuert auf Kepler.",
       tu_stuecke:"Treffer! Kepler ist zersplittert. Verschling die Stücke.",
       tu_titel:"Du trägst jetzt den Titel ♛. Halte ihn so lange wie möglich, und wachse weiter: Beides bringt dich in der Rangliste nach oben.",
       tu_welt:"Sprung nach vorn: Du bist jetzt eine Welt mit 100.000 Masse.",
       tu_teilen_maus:"Teile dich, so oft es geht (Leertaste) — bis zu 16 Stücke.", tu_teilen_tipp:"Teile dich, so oft es geht (Teilen) — bis zu 16 Stücke.",
       tu_pulsare:"So weit geteilt kannst du Pulsare verschlingen — sie geben viel Masse. Friss drei.",
       tu_mond:"Im Aufstieg finden Konten dabei Monde: Sie kreisen um dich und machen dich ein wenig stärker.",
-      tu_fertig:"Geschafft!", tu_sprung:"Sprung", tu_taste_leer:"Leertaste", tu_taste_w:"W",
+      tu_fertig:"Geschafft!", tu_verstanden:"Verstanden", tu_zur_lohn:"Zur Belohnung", tu_sprung:"Sprung", tu_taste_leer:"Leertaste", tu_taste_w:"W",
       tu_l_auge:"Tutorial geschafft", tu_l_kopf:"Deine Belohnung", tu_l_design:"Dein erstes Design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Mondstaub",
       tu_l_konto:"Mit einem Konto bekommst du dazu {0} Iridium und {1} Mondstaub — kostenlos, und dein Fortschritt bleibt auf jedem Gerät.",
       tu_l_weiter:"Weiter ins Menü", tu_l_konto_kn:"Konto anlegen",
@@ -2629,7 +2627,6 @@ const LANGS_TUT2 = {
       tu_vesta_tipp:"Vesta tiene solo la mitad de tu tamaño. Apunta hacia ella y toca Dividir: sales disparado y la tragas.",
       tu_abwerfen_maus:"Soltar (W) lanza masa hacia delante — a amigos, o a un púlsar. Lanza cinco trozos al púlsar y disparará.",
       tu_abwerfen_tipp:"Soltar lanza masa hacia delante — a amigos, o a un púlsar. Lanza cinco trozos al púlsar y disparará.",
-      tu_treffen:"El púlsar vuela en la dirección del lanzamiento. Ponte en la línea y alcanza a Kepler — aquí tienes masa sin fin.",
       tu_stuecke:"¡Impacto! Kepler se ha hecho pedazos. Traga los trozos.",
       tu_titel:"Ahora llevas el título ♛. Consérvalo todo lo que puedas y sigue creciendo: ambas cosas te suben en la clasificación.",
       tu_welt:"Salto adelante: ahora eres un mundo de 100.000 de masa.",
@@ -2648,7 +2645,6 @@ const LANGS_TUT2 = {
       tu_vesta_tipp:"Vesta tem só metade do seu tamanho. Aponte para ela e toque em Dividir: você dispara para a frente e a engole.",
       tu_abwerfen_maus:"Soltar (W) lança massa para a frente — para amigos, ou num pulsar. Lance cinco pedaços no pulsar e ele dispara.",
       tu_abwerfen_tipp:"Soltar lança massa para a frente — para amigos, ou num pulsar. Lance cinco pedaços no pulsar e ele dispara.",
-      tu_treffen:"O pulsar voa na direção do lançamento. Fique na linha e acerte Kepler — aqui você tem massa sem fim.",
       tu_stuecke:"Acertou! Kepler se despedaçou. Engula os pedaços.",
       tu_titel:"Agora você carrega o título ♛. Mantenha-o o máximo que puder e continue crescendo: os dois sobem você na classificação.",
       tu_welt:"Salto à frente: agora você é um mundo com 100.000 de massa.",
@@ -2667,7 +2663,6 @@ const LANGS_TUT2 = {
       tu_vesta_tipp:"Vesta ne fait que la moitié de votre taille. Visez-la et touchez Diviser : vous bondissez en avant et l’avalez.",
       tu_abwerfen_maus:"Larguer (W) projette de la masse devant vous — à des amis, ou dans un pulsar. Lancez cinq morceaux dans le pulsar, et il tire.",
       tu_abwerfen_tipp:"Larguer projette de la masse devant vous — à des amis, ou dans un pulsar. Lancez cinq morceaux dans le pulsar, et il tire.",
-      tu_treffen:"Le pulsar part dans la direction du lancer. Placez-vous sur la ligne et touchez Kepler — ici, la masse est sans fin.",
       tu_stuecke:"Touché ! Kepler a volé en éclats. Avalez les morceaux.",
       tu_titel:"Vous portez maintenant le titre ♛. Gardez-le le plus longtemps possible et continuez à grandir : les deux vous font monter au classement.",
       tu_welt:"Bond en avant : vous êtes maintenant un monde de 100 000 de masse.",
@@ -2686,7 +2681,6 @@ const LANGS_TUT2 = {
       tu_vesta_tipp:"Vesta senin yarın kadar. Ona doğru tut ve Böl’e dokun: öne fırlar ve onu yutarsın.",
       tu_abwerfen_maus:"Atmak (W) kütleyi öne fırlatır — arkadaşlara ya da bir pulsara. Pulsara beş parça at, sonra ateşler.",
       tu_abwerfen_tipp:"Atmak kütleyi öne fırlatır — arkadaşlara ya da bir pulsara. Pulsara beş parça at, sonra ateşler.",
-      tu_treffen:"Pulsar atış yönünde uçar. Çizgiye geç ve Kepler’i vur — burada kütlen bitmez.",
       tu_stuecke:"İsabet! Kepler parçalandı. Parçaları yut.",
       tu_titel:"Artık ♛ unvanını taşıyorsun. Onu olabildiğince uzun tut ve büyümeye devam et: ikisi de seni sıralamada yükseltir.",
       tu_welt:"İleri sıçrama: artık 100.000 kütleli bir dünyasın.",
@@ -2705,7 +2699,6 @@ const LANGS_TUT2 = {
       tu_vesta_tipp:"Веста вдвое меньше вас. Наведитесь на неё и нажмите «Разделить»: вы рванёте вперёд и поглотите её.",
       tu_abwerfen_maus:"Сброс (W) бросает массу вперёд — друзьям или в пульсар. Бросьте в пульсар пять кусков, и он выстрелит.",
       tu_abwerfen_tipp:"Сброс бросает массу вперёд — друзьям или в пульсар. Бросьте в пульсар пять кусков, и он выстрелит.",
-      tu_treffen:"Пульсар летит туда, куда вы бросали. Встаньте на линию и попадите в Кеплера — масса здесь бесконечна.",
       tu_stuecke:"Попадание! Кеплер раскололся. Поглотите осколки.",
       tu_titel:"Теперь титул ♛ у вас. Держите его как можно дольше и продолжайте расти: и то и другое поднимает вас в таблице.",
       tu_welt:"Прыжок вперёд: теперь вы мир с массой 100 000.",
@@ -2720,13 +2713,14 @@ const LANGS_TUT2 = {
       tu_hilfe_tutorial:"Пройти обучение ещё раз", tu_viel_spass:"Удачи!"}
 };
 for (const c in LANGS_TUT2) Object.assign(LANGS[c], LANGS_TUT2[c]);
-/* Tutorial v120: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
+/* Tutorial v120/v122: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
    Thomas' Regel (24.09.2026): „zuerst nur Deutsch, alle Sprachen nach meiner
    Freigabe". Bis dahin steht in den übrigen Sprachen bewusst der englische
    Text. Nach der Freigabe übersetzen und diese Liste leeren; dann auch die
-   geänderten Sätze tu_staub, tu_vesta_*, tu_abwerfen_*, tu_treffen in
-   es/pt/fr/tr/ru nachziehen (sie tragen dort noch den Inhalt von v114). */
-const TUT_NOCH_ZU_UEBERSETZEN = ["tu_fest_maus", "tu_fest_tipp"];
+   geänderten Sätze tu_staub, tu_vesta_* und tu_abwerfen_* (v122: Fahr in
+   den leuchtenden Kreis …) in es/pt/fr/tr/ru nachziehen (sie tragen dort
+   noch den Inhalt von v114). */
+const TUT_NOCH_ZU_UEBERSETZEN = ["tu_verstanden", "tu_zur_lohn"];
 for (const c of ["es", "pt", "fr", "tr", "ru"])
   for (const k of TUT_NOCH_ZU_UEBERSETZEN) if (LANGS[c][k] === undefined) LANGS[c][k] = LANGS.en[k];
 
