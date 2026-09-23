@@ -9758,8 +9758,10 @@ $("meldeSenden").addEventListener("click", async () => {
   const a = await Konto.ruf("/konto/melden", { text, email, art: meldeArtJetzt, name: spielerName() || "",
                                                runde: meldeRunde, fassung: fassungText || "", sprache: lang });
   if (a && a.ok){
-    $("meldeText").value = ""; note.textContent = t("md_danke");
-    setTimeout(() => { if (!$("meldeVeil").hidden) show(meldeZurueck); }, 1600);
+    /* v111: Mit Adresse ist eine Eingangsbestätigung unterwegs — das darf
+       der Spieler wissen, dann sucht er sie im Postfach. */
+    $("meldeText").value = ""; note.textContent = t(a.bestaetigt ? "md_danke_mail" : "md_danke");
+    setTimeout(() => { if (!$("meldeVeil").hidden) show(meldeZurueck); }, a.bestaetigt ? 2600 : 1600);
   } else {
     knopf.disabled = false;
     note.textContent = a && a.status === 429 ? t("md_oft") : a && a.fehler === "zu_kurz" ? t("md_kurz")
