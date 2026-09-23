@@ -1773,6 +1773,12 @@
   .konsFr{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:4px 0}
   .konsFr span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .konsFr small{color:var(--paper-2);font-size:12px}
+  /* Online-Status (v112): Text in Messing, kein grüner Punkt — Grün ist
+     der Spielen-Knopf. „Online" etwas heller als „Kürzlich aktiv". */
+  .konsFr small.fst,.friend small.fst{color:var(--brass);font-size:11.5px;white-space:nowrap;opacity:.75}
+  .konsFr small.fst.online,.friend small.fst.online{opacity:1}
+  .fst:empty{display:none}
+  .friend small.fst{display:block;margin-top:2px}
 
   /* Saison im Hangar (Schritt 100): eine Zeile, zwei Zahlen. */
   .saisonBlock{display:flex;align-items:center;gap:14px;font-size:12.5px;color:var(--paper-2);padding:9px 14px}
@@ -3878,7 +3884,7 @@
 
 <div class="veil" id="friendsVeil" hidden>
   <div class="card">
-    <h1 style="font-size:34px">Friends
+    <h1 style="font-size:34px"><span data-i18n="friends">Friends</span>
       <button class="qmark" id="friendsHelp" type="button"
               aria-label="How adding friends works">?</button>
     </h1>

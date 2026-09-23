@@ -5727,6 +5727,9 @@ function mailZeileBauen(box){
    kann — ein Schalter, der nichts tun kann, ist schlechter als keiner. */
 function pushZeileBauen(box){
   if (!istAngemeldet() || !Konto.pushSchluessel || !Push.faehig()) return;
+  /* Unter dem Einwilligungsalter des Landes (oder ohne Geburtsdatum) kein
+     Schalter — wie bei der Mail-Einwilligung. */
+  if (Konto.profil && Konto.profil.mailDarf === false) return;
   const wrap = document.createElement("div");
   wrap.className = "opt"; wrap.dataset.key = "push";
   wrap.innerHTML = `<div><b>${esc(t("s_push"))}</b><small>${esc(t("s_push_h"))}</small>` +
@@ -5735,6 +5738,36 @@ function pushZeileBauen(box){
   box.appendChild(wrap);
   Push.standText().then(s => { const el = $("setPushStand"); if (el) el.textContent = s; }).catch(() => {});
   $("setPushBtn").addEventListener("click", () => Push.fensterZeigen());
+}
+
+/* ---- Online-Status in den Einstellungen (v112) --------------------------
+   Sichtbar / Verborgen — nur für Konten; Gäste haben keinen Status. Der
+   Server merkt sich die Wahl (`statusVerbergen` im Profil). */
+let statusMeldung = null;
+function statusZeileBauen(box){
+  if (!istAngemeldet() || !Konto.profil) return;
+  const wrap = document.createElement("div");
+  wrap.className = "opt"; wrap.dataset.key = "status";
+  const verborgen = !!Konto.profil.statusVerbergen;
+  wrap.innerHTML = `<div><b>${esc(t("s_status"))}</b><small>${esc(t("s_status_h"))}</small>` +
+    (statusMeldung ? `<small class="warn">${esc(statusMeldung)}</small>` : "") +
+    `</div><div class="seg" id="setStatusSeg"></div>`;
+  statusMeldung = null;
+  box.appendChild(wrap);
+  const seg = wrap.querySelector("#setStatusSeg");
+  for (const [text, wert] of [[t("o_sichtbar"), false], [t("o_verborgen"), true]]){
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = text;
+    b.setAttribute("aria-pressed", String(verborgen === wert));
+    b.addEventListener("click", async () => {
+      if (verborgen === wert) return;
+      for (const x of seg.querySelectorAll("button")) x.disabled = true;
+      const e = await Konto.einstellen({ statusVerbergen: wert });
+      if (e.fehler) statusMeldung = t(KONTO_FEHLER[e.fehler] || "e_net");
+      buildSettings();
+    });
+    seg.appendChild(b);
+  }
 }
 
 /* ---- Widerrufsfunktion nach § 356a BGB (v106) --------------------------
@@ -5855,6 +5888,7 @@ function buildSettings(){
   nameZeileBauen(box);
   mailZeileBauen(box);
   pushZeileBauen(box);
+  statusZeileBauen(box);
   for (const row of SET_UI){
     if (row.touch && !isTouch) continue;
     if (row.key === "music" && !MUSIK_AKTIV) continue;
@@ -7727,6 +7761,10 @@ function naechsteErfolgeMalen(){
 /* Freundekasten im Startbildschirm. Bewusst **ohne** Onlineanzeige: Die gibt
    es noch nicht (`friendspending`), und ein grauer Punkt, der „offline"
    behauptet, wäre eine Angabe, die das Spiel gar nicht hat. */
+/* Seit v112 mit Online-Status (Thomas, 19.09.2026): „Online" oder „Kürzlich
+   aktiv" in Messing neben dem Namen — Text, kein grüner Punkt (Grün ist der
+   Spielen-Knopf). Die Zeile wird leer gemalt und von `Status.malen()`
+   gefüllt, sobald der Server geantwortet hat. */
 function freundBoxMalen(){
   const box = $("freundBox");
   if (!box) return;
@@ -7734,12 +7772,13 @@ function freundBoxMalen(){
                `${esc(t("k_manage"))}</button></em></h2>`;
   const liste = Profile.friends.slice(0, 4);
   box.innerHTML = kopf + `<div class="konsBlock">` + (liste.length
-    ? liste.map(n => `<div class="konsFr"><span>${esc(n)}</span></div>`).join("") +
+    ? liste.map(n => `<div class="konsFr" data-name="${esc(n.toLowerCase())}"><span>${esc(n)}</span><small class="fst"></small></div>`).join("") +
       (Profile.friends.length > liste.length
         ? `<div class="konsFr"><small>+${Profile.friends.length - liste.length}</small></div>` : "")
     : `<p class="hintline" style="margin:0">${esc(t("nofriends"))}</p>`) + `</div>`;
   const b = $("freundMehr");
   if (b) b.addEventListener("click", () => { buildFriends(); friendNote(""); show("friendsVeil"); });
+  try { Status.malen(); } catch(_){}
 }
 
 function show(id){
@@ -8236,11 +8275,14 @@ function buildFriends(){
   for (const name of Profile.friends){
     const row = document.createElement("div");
     row.className = "friend";
+    row.dataset.name = name.toLowerCase();
     const label = document.createElement("div");
-    /* Kein Hinweis mehr unter jedem Namen: Der alte Satz „Einladungen und
-       Online-Status kommen mit dem Server“ war seit dem Server falsch (Thomas,
-       18.09.2026). Was die Liste tut, steht einmal unten im Fenster. */
+    /* Der Name, darunter seit v112 der Online-Status (füllt `Status.malen`).
+       Der alte Satz „Einladungen und Online-Status kommen mit dem Server“
+       war seit dem Server falsch (Thomas, 18.09.2026). */
     label.textContent = name;
+    const st = document.createElement("small"); st.className = "fst";
+    label.appendChild(st);
     const del = document.createElement("button");
     del.type = "button"; del.textContent = t("remove");
     del.addEventListener("click", () => {
@@ -8251,6 +8293,7 @@ function buildFriends(){
     row.appendChild(label); row.appendChild(del);
     list.appendChild(row);
   }
+  try { Status.malen(); } catch(_){}
 }
 function addFriend(){
   const raw = $("friendName").value;
@@ -11954,7 +11997,10 @@ const Push = {
     } catch(_){ return false; }
   },
   iosOhneApp(){ return PWA.apple() && !PWA.installiert(); },
-  moeglich(){ return this.faehig() && !!Konto.pushSchluessel && istAngemeldet(); },
+  /* Erst ab dem Einwilligungsalter des Landes (`mailDarf` im Profil, wie
+     die Mail-Einwilligung) — der Server weist es sonst ohnehin ab. */
+  moeglich(){ return this.faehig() && !!Konto.pushSchluessel && istAngemeldet() && !(Konto.profil && Konto.profil.mailDarf === false); },
+  tz(){ try { return new Date().getTimezoneOffset(); } catch(_){ return null; } },
   erlaubnis(){ try { return Notification.permission; } catch(_){ return "denied"; } },
 
   async reg(){ try { return await navigator.serviceWorker.ready; } catch(_){ return null; } },
@@ -12020,7 +12066,7 @@ const Push = {
       catch(_){ return { fehler: "netz" }; }
     }
     const liste = (Array.isArray(arten) ? arten : PUSH_VORGABE).filter(a => PUSH_ARTEN.includes(a));
-    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang });
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang, tz: this.tz() });
     if (a.status !== 200) return { fehler: a.fehler || "netz" };
     const arten2 = Array.isArray(a.arten) ? a.arten : liste;
     this.merken({ an: true, arten: arten2, endpoint: abo.endpoint });
@@ -12044,7 +12090,7 @@ const Push = {
     const abo = await this.abo();
     if (!abo) return { fehler: "aus" };
     const liste = (Array.isArray(arten) ? arten : []).filter(a => PUSH_ARTEN.includes(a));
-    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang });
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: liste, sprache: lang, tz: this.tz() });
     if (a.status !== 200) return { fehler: a.fehler || "netz" };
     this.merken({ an: true, arten: Array.isArray(a.arten) ? a.arten : liste });
     return { ok: true };
@@ -12062,7 +12108,7 @@ const Push = {
     if (!abo){ if (L.an) await this.anmelden(L.arten); return; }
     if (!this.schluesselGleich(abo)){ await this.anmelden(L.arten || PUSH_VORGABE); return; }
     if (L.an === false) return;          // bewusst ausgeschaltet, Abo nur noch Rest
-    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: Array.isArray(L.arten) ? L.arten : PUSH_VORGABE, sprache: lang });
+    const a = await Konto.ruf("/konto/push/an", { abo: abo.toJSON(), arten: Array.isArray(L.arten) ? L.arten : PUSH_VORGABE, sprache: lang, tz: this.tz() });
     if (a.status === 200) this.merken({ an: true, arten: Array.isArray(a.arten) ? a.arten : L.arten, endpoint: abo.endpoint });
   },
 
@@ -12187,6 +12233,60 @@ const Push = {
     show("pushVeil");
   }
 };
+/* =====================================================================
+   ONLINE-STATUS DER FREUNDE (v112, Thomas' Auftrag vom 19.09.2026)
+
+   Die Freundesliste bleibt im Browser. Für die Anzeige schickt der Client
+   die Namen an `/status` (wie für die Freundes-Rangliste) und bekommt je
+   Name „online" oder „kuerzlich" — oder nichts. Abgefragt wird, wenn der
+   Hangar oder das Freundefenster gemalt wird, höchstens alle 45 Sekunden.
+   Dazu das Lebenszeichen: Angemeldet und mit sichtbarem Hangar meldet sich
+   der Client jede Minute bei `/konto/puls`, damit Freunde „Online" sehen,
+   auch wenn man gerade keine Runde spielt.
+   ===================================================================== */
+const Status = {
+  stand: {}, wann: 0, laeuft: null,
+  async holen(){
+    const namen = Profile.friends.slice(0, 50);
+    /* Nur angemeldet: Der Server beantwortet die Frage nur mit Sitzung —
+       Gäste sehen keinen Status (und haben selbst keinen). */
+    if (!namen.length || !Konto.erreichbar || !istAngemeldet()){ this.stand = {}; return this.stand; }
+    if (Date.now() - this.wann < 45000) return this.stand;
+    if (this.laeuft) return this.laeuft;
+    this.laeuft = (async () => {
+      const a = await Konto.ruf("/konto/status?namen=" + encodeURIComponent(namen.join(",")));
+      this.wann = Date.now();
+      if (a.status === 200 && a.stand && typeof a.stand === "object") this.stand = a.stand;
+      this.laeuft = null;
+      return this.stand;
+    })();
+    return this.laeuft;
+  },
+  /* Die Zeilen füllen, die gerade im Bild sind (Hangar und Freundefenster). */
+  async malen(){
+    const stand = await this.holen();
+    for (const el of document.querySelectorAll(".konsFr[data-name], .friend[data-name]")){
+      const s = el.querySelector(".fst"); if (!s) continue;
+      const z = stand[el.dataset.name];
+      s.textContent = z === "online" ? t("fr_online") : z === "kuerzlich" ? t("fr_kuerzlich") : "";
+      s.classList.toggle("online", z === "online");
+    }
+  },
+  /* Lebenszeichen: nur angemeldet, nur mit sichtbarem Fenster, nicht in
+     einer Runde (dort weiß der Server es selbst). */
+  puls(){
+    try {
+      if (!istAngemeldet() || Game.running || document.hidden) return;
+      Konto.ruf("/konto/puls", {}).catch(() => {});
+    } catch(_){}
+  },
+  start(){
+    setInterval(() => this.puls(), 60000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden){ this.puls(); this.wann = 0; try { this.malen(); } catch(_){} } });
+  }
+};
+Status.start();
+
 (function(){
   const zu = document.getElementById("pushClose");
   if (zu) zu.addEventListener("click", () => { show("setVeil"); try { buildSettings(); } catch(_){} });

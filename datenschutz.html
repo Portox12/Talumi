@@ -221,10 +221,24 @@
      Profilbild (eine von zwanzig gezeichneten Figuren, kein Foto), dein
      gewähltes Design, Anzahl der Runden und Abschüsse, Spielzeit, der Monat
      der Kontoeröffnung, erreichte Errungenschaften und Saisontitel. Nicht im
-     Profil: Monde, Skillpunkte, Ore, Freunde, ob du gerade online bist.
-     Deine E-Mail-Adresse ist es nie. Wähle deinen Spielernamen entsprechend —
-     er muss nicht dein echter Name sein. Über „Spieler melden“ im Profil
-     kannst du einen Namen an uns melden (Abschnitt 6c).</p>
+     Profil: Monde, Skillpunkte, Ore, Freunde. Deine E-Mail-Adresse ist es
+     nie. Wähle deinen Spielernamen entsprechend — er muss nicht dein echter
+     Name sein. Über „Spieler melden“ im Profil kannst du einen Namen an uns
+     melden (Abschnitt 6c).</p>
+  <p><strong>Online-Status:</strong> Angemeldete Spieler, die deinen
+     Spielernamen in ihrer Freundesliste führen, sehen dort „Online“, wenn du
+     gerade im Spiel bist, und „Kürzlich aktiv“, wenn du in den letzten
+     24 Stunden da warst – sonst nichts; nie eine genaue Uhrzeit. Empfänger
+     sind ausschließlich diese angemeldeten Spieler; Gäste sehen keinen
+     Status. Der Server speichert dafür nichts Neues: Er nutzt den Zeitpunkt
+     deines letzten Besuchs, den er ohnehin hält (bei jedem Besuch
+     überschrieben, mit dem Konto gelöscht), und weiß, wer gerade verbunden
+     ist. Die Namen, nach denen ein Spieler fragt, werden nicht gespeichert.
+     Du kannst den Status jederzeit in den Einstellungen unter
+     „Online-Status“ verbergen; dann wird er niemandem gezeigt. Konten von
+     Spielern unter 18 Jahren sind von Anfang an verborgen und werden nur
+     sichtbar, wenn du es selbst einschaltest. Rechtsgrundlage ist Art. 6
+     Abs. 1 lit. b DSGVO (Bestandteil der Freundesfunktion).</p>
 
   <h3>Rechtsgrundlage</h3>
   <p>Für Anlage und Führung des Kontos ist das
@@ -517,8 +531,10 @@
      Konto: die Adresse dieses Abos (eine lange, zufällige Internetadresse
      beim Push-Dienst), zwei Schlüssel, mit denen nur dein Gerät die
      Nachrichten entschlüsseln kann, die von dir gewählten Arten, die
-     Sprache des Spiels, den Zeitpunkt des Einschaltens und der letzten
-     Zustellung sowie die Zahl fehlgeschlagener Zustellversuche. Für die
+     Sprache des Spiels, den Zeitzonenversatz deines Geräts (nur die
+     Stundenverschiebung, kein Ort – damit nichts nachts ankommt), den
+     Zeitpunkt des Einschaltens und der letzten Zustellung sowie die Zahl
+     fehlgeschlagener Zustellversuche. Für die
      Erinnerung an den Tagesbonus merken wir uns außerdem, wann du ihn
      zuletzt abgeholt hast – die Erinnerung kommt am nächsten Tag zur selben
      Uhrzeit, nicht nachts. Keine IP-Adresse, kein Standort, keine weitere
@@ -531,24 +547,35 @@
      Werbung für Fremdes schicken wir nicht.</p>
   <h3>Empfänger</h3>
   <p>Jede Nachricht geht vom Spielserver an den Push-Dienst deines Browsers,
-     der sie an dein Gerät weiterleitet: bei Chrome, Edge, Samsung Internet
-     und anderen Chromium-Browsern Google (Firebase Cloud Messaging), bei
-     Firefox Mozilla, bei Safari, iPhone und iPad Apple. Der Inhalt ist
-     dabei nach dem Web-Push-Standard (RFC&nbsp;8291) so verschlüsselt, dass
-     nur dein Gerät ihn lesen kann; der Push-Dienst sieht die Adresse des
-     Abos, den Zeitpunkt und die Größe der Nachricht, nicht den Text. Diese
-     Dienste betreiben die Browserhersteller im Rahmen der Browserfunktion,
-     die du mit deiner Erlaubnis nutzt; ihre Server können außerhalb der EU
-     stehen (Google und Apple sind nach dem EU-US-Datenschutzrahmen
-     zertifiziert). Für den Push-Dienst gilt die Datenschutzerklärung deines
-     Browserherstellers.</p>
+     der sie an dein Gerät weiterleitet: bei Chrome, Samsung Internet und
+     anderen Chromium-Browsern Google (Firebase Cloud Messaging), bei
+     Microsoft Edge Microsoft (Windows Push Notification Services), bei
+     Firefox Mozilla (Mozilla Push Service), bei Safari, iPhone und iPad
+     Apple (Apple Push Notification service). Der Inhalt ist dabei nach dem
+     Web-Push-Standard (RFC&nbsp;8291) so verschlüsselt, dass nur dein Gerät
+     ihn lesen kann; der Push-Dienst sieht die Adresse des Abos, den
+     Zeitpunkt und die Größe der Nachricht, nicht den Text. Diese Dienste
+     betreiben die Browserhersteller im Rahmen der Browserfunktion, die du
+     mit deiner Erlaubnis nutzt; ihre Server können außerhalb der EU
+     stehen, insbesondere in den USA. Google und Microsoft sind nach dem
+     EU-US-Datenschutzrahmen zertifiziert; für die übrigen gelten die
+     Standardvertragsklauseln der Europäischen Kommission bzw. die
+     Datenschutzerklärung deines Browserherstellers, die für den Push-Dienst
+     maßgeblich ist.</p>
   <h3>Rechtsgrundlage</h3>
   <p>Deine Einwilligung, Art. 6 Abs. 1 lit. a DSGVO – erteilt durch das
-     Einschalten im Spiel und die Erlaubnis im Browser. Für das Abo, das
-     dein Browser dafür auf deinem Gerät anlegt, § 25 Abs. 1 TDDDG. Du kannst
-     die Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen
-     (Einstellungen → Benachrichtigungen → Aus, oder in den
-     Seiteneinstellungen deines Browsers).</p>
+     Einschalten im Spiel und die Erlaubnis im Browser; die Frage im Spiel
+     nennt vorher alle Arten von Nachrichten und den Abschalter. Für das Abo,
+     das dein Browser dafür auf deinem Gerät anlegt, § 25 Abs. 1 TDDDG. Die
+     Nachricht zum Beginn der Happy Hour ist eine Aktion und damit Werbung;
+     sie kommt nur, wenn du diese Art eigens einschaltest (§ 7 Abs. 2 Nr. 2
+     UWG), nur tagsüber in deiner Ortszeit und nie an Spieler unter 18.
+     Benachrichtigungen lassen sich erst ab dem Einwilligungsalter deines
+     Landes einschalten (in Deutschland 16 Jahre, Art. 8 DSGVO); dafür
+     nutzen wir das Geburtsdatum aus deinem Konto. Du kannst die Einwilligung
+     jederzeit mit Wirkung für die Zukunft widerrufen (Einstellungen →
+     Benachrichtigungen → Aus, oder in den Seiteneinstellungen deines
+     Browsers).</p>
   <h3>Speicherdauer</h3>
   <p>Das Abo löschen wir, sobald du die Benachrichtigungen ausschaltest,
      dich auf dem Gerät abmeldest oder dein Konto löschst; ebenso, sobald der
