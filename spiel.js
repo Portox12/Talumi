@@ -2167,7 +2167,9 @@ const SHED_COST = m => clamp(m*0.035, 8, 260);
 function shed(){
   /* Wie beim Teilen: `"shed"` als Text, nicht die Funktion `shed`. */
   if (Game.online){ Net.send("shed"); Sound.shedS(); return; }
-  const [dx,dy] = aim();
+  let [dx,dy] = aim();
+  /* Tutorial (v120): Jeder Brocken fliegt in den Pulsar. */
+  try { const h = Tutorial.wurfHilfe(); if (h) [dx,dy] = h; } catch(_){}
   let fired = false;
   for (const c of Game.cells){
     const cost = SHED_COST(c.m);
@@ -2642,6 +2644,8 @@ function step(dt){
 
   const [tx,ty] = aimTarget();
   moveOwnCells(dt, tx, ty);
+  /* Tutorial (v120): Steht der Spieler auf dem Schussplatz, bleibt er dort. */
+  try { Tutorial.nachBewegung(); } catch(_){}
   /* Zwei Zustände, vorher vermischt:
      Wartezeit läuft  → auseinanderdrücken, aber nur so weit wie nötig.
      Wartezeit vorbei → zueinander ziehen und verschmelzen. Vorher konnte das
@@ -2780,6 +2784,9 @@ function step(dt){
            treffen, den man vor sich hat. `schuss` schaltet die schwächere
            Bremsung frei; danach driftet er wie jeder andere. */
         q.vx = s.vx/l*1150; q.vy = s.vy/l*1150; q.schuss = 1.6;
+        /* Tutorial (v120): Der Schuss geht sicher auf Kepler (Thomas:
+           „mehr oder weniger gesichert, dass man trifft"). */
+        try { const r = Tutorial.schussRichtung(q); if (r){ q.vx = r[0]*1150; q.vy = r[1]*1150; } } catch(_){}
         Game.pulsars.push(q);
         Game.pulsarSpawns++;
         Sound.pop();
@@ -12798,7 +12805,17 @@ const Tutorial = {
         Game.rivals = [];
         this.kepler = this.rivalSetzen("Kepler", 260, .64, .46, true, { design: "verdigris", level: 17, rang: 5 });
         this.titelGid = this.kepler.gid;
-        this.ziel = () => this.pulsar;
+        /* Der Schussplatz (v120): auf der Linie Kepler → Pulsar, hinter dem
+           Pulsar. Wer ihn erreicht, bleibt dort stehen (`gesperrt`). */
+        {
+          const k = this.kepler, q = this.pulsar;
+          let ux = q.x - k.x, uy = q.y - k.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+          const d = PULSAR_R + radiusOf(Math.max(50, this.eigeneMasse())) + 70;
+          this.schussPlatz = { x: clamp(q.x + ux * d, 40, WELT_B - 40), y: clamp(q.y + uy * d, 40, WELT_H - 40),
+                               m: this.eigeneMasse(), platz: true };
+        }
+        this.gesperrt = false;
+        this.ziel = () => this.gesperrt ? this.pulsar : this.schussPlatz;
         this.schussLinie = true;
         this.schuesse = Game.pulsarSpawns || 0;
       },
@@ -12809,7 +12826,7 @@ const Tutorial = {
       fertig: () => !Tutorial.kepler || Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length !== 1 },
     { id:"stuecke", text: () => t("tu_stuecke"),
       bei(){
-        this.ziel = null; this.schussLinie = false; this.unendlich = 0;
+        this.ziel = null; this.schussLinie = false; this.unendlich = 0; this.gesperrt = false;
         this.stueckeAb = Math.max(1, Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length);
         /* Der feste Pulsar hat seinen Dienst getan — weg damit, sonst
            zerreißt ein Stück daran. */
@@ -12883,6 +12900,26 @@ const Tutorial = {
     const dx = this.vesta.x - me.x, dy = this.vesta.y - me.y, l = Math.hypot(dx, dy) || 1;
     this.teiltAb = Game.t;
     return [dx / l, dy / l];
+  },
+  /* Pulsar-Schuss sicher treffen (v120): Brocken fliegen in den Pulsar,
+     der Pulsar fliegt auf Kepler, und wer auf dem Schussplatz steht, bleibt
+     dort. */
+  keplerLebt(){ return !!(this.kepler && Game.rivals.some(r => r.gid === this.kepler.gid)); },
+  wurfHilfe(){
+    if (!this.laufend || !this.schritt || this.schritt.id !== "abwerfen" || !this.pulsar || !Game.cells.length) return null;
+    const me = groesstes(Game.cells);
+    const dx = this.pulsar.x - me.x, dy = this.pulsar.y - me.y, l = Math.hypot(dx, dy) || 1;
+    return [dx / l, dy / l];
+  },
+  schussRichtung(q){
+    if (!this.laufend || this.phase !== "a" || !this.keplerLebt()) return null;
+    const k = this.kepler, dx = k.x - q.x, dy = k.y - q.y, l = Math.hypot(dx, dy) || 1;
+    return [dx / l, dy / l];
+  },
+  nachBewegung(){
+    if (!this.laufend || !this.gesperrt || !this.schussPlatz || !Game.cells.length) return;
+    const c = groesstes(Game.cells);
+    c.x = this.schussPlatz.x; c.y = this.schussPlatz.y; c.vx = 0; c.vy = 0;
   },
   /* Platz für Vesta: gut 200 Einheiten vor dem Körper, Richtung freie
      Mitte der Karte, in der freien Fläche; notfalls in die Gegenrichtung. */
@@ -13139,6 +13176,15 @@ const Tutorial = {
         v.x += (best.x - v.x) * k; v.y += (best.y - v.y) * k;
       }
     }
+    if (this.schritt && this.schritt.id === "abwerfen" && !this.gesperrt && this.schussPlatz && Game.cells.length){
+      const c = groesstes(Game.cells);
+      if (Math.hypot(c.x - this.schussPlatz.x, c.y - this.schussPlatz.y) < radiusOf(c.m) * .8 + 25){
+        this.gesperrt = true;
+        const txt = document.getElementById("tutText");
+        if (txt) txt.textContent = t(tippGeraet() ? "tu_fest_tipp" : "tu_fest_maus");
+        try { ring(this.schussPlatz.x, this.schussPlatz.y, radiusOf(c.m) * 2.4, "#e9b063"); Sound.pop(); } catch(_){}
+      }
+    }
     if (!this.schritt) return;
     this.seit += dt;
     const s = this.schritt;
@@ -13160,6 +13206,15 @@ const Tutorial = {
       g.strokeStyle = "rgba(233,176,99,.55)";
       g.beginPath(); g.moveTo(p.x - dx / l * 900, p.y - dy / l * 900); g.lineTo(k.x + dx / l * 60, k.y + dy / l * 60); g.stroke();
       g.restore();
+    }
+    /* Der Schussplatz (v120): eine leuchtende Scheibe auf der Linie, bis
+       der Spieler darin steht. */
+    if (this.schritt && this.schritt.id === "abwerfen" && this.schussPlatz && !this.gesperrt){
+      const sp = this.schussPlatz, rr = radiusOf(Math.max(30, sp.m)) + 10 / z;
+      const gr = g.createRadialGradient(sp.x, sp.y, rr * .2, sp.x, sp.y, rr * 1.35);
+      gr.addColorStop(0, "rgba(248,220,171," + (.28 + .22 * puls).toFixed(3) + ")");
+      gr.addColorStop(1, "rgba(248,220,171,0)");
+      g.save(); g.fillStyle = gr; g.beginPath(); g.arc(sp.x, sp.y, rr * 1.35, 0, 7); g.fill(); g.restore();
     }
     /* Pfeil vom eigenen Körper zum Ziel und ein pulsierender Ring darum. */
     const ziel = this.ziel ? this.ziel() : null;
@@ -13240,7 +13295,7 @@ const Tutorial = {
     this.hudKlasse("mass", "tutBlink", false);
     this.hudKlasse("boardPlate", "tutGlow", false);
     this.glut = false; this.unendlich = 0; this.mondDemo = null; this.ziel = null;
-    this.schussLinie = false; this.kamera = null; this.titelGid = null;
+    this.schussLinie = false; this.kamera = null; this.titelGid = null; this.gesperrt = false;
     const box = document.getElementById("tutBox");
     if (box) box.hidden = true;
   },
