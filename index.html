@@ -1643,12 +1643,12 @@
     .tutBox{bottom:calc(8px + env(safe-area-inset-bottom));padding:8px 12px}
     .tutBox p{font-size:13px}
   }
-  /* Auf Tippgeräten liegen die Daumentasten unten außen; der Kasten bleibt
-     mittig, darf sie aber nie überdecken. */
-  body.touch .tutBox{left:calc(14px + env(safe-area-inset-left));transform:none;
+  /* Auf Tippgeräten unten in der Mitte (Thomas, 24.09.), so breit, dass
+     rechts der Abwerfen-Knopf frei bleibt (die Daumentasten sind 160 px
+     breit und sitzen 16 px vom Rand) — und damit links unten Platz für den
+     steuernden Daumen ist. Bis v116 stand er links unten. */
+  body.touch .tutBox{left:50%;transform:translateX(-50%);
        max-width:calc(100vw - 372px - env(safe-area-inset-left) - env(safe-area-inset-right))}
-  @keyframes tutAufLinks{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  body.touch .tutBox{animation-name:tutAufLinks}
 
   /* ---- Tutorial v114: Kasten mit Stand, Punkten und Taste ----------------
      Größer und wärmer als der Hinweiskasten von v109 — er ist der erste
