@@ -12865,7 +12865,10 @@ const Tutorial = {
   stillstehen(x, y){
     const z = cam.z || 1;
     ptr.x = (x - cam.x) * z + VW / 2; ptr.y = (y - cam.y) * z + VH / 2;
-    stick.dx = 0; stick.dy = 0; stick.active = false;
+    /* Liegt der Daumen gerade auf dem Schirm, bleibt der Stick unberührt —
+       `active` auf falsch zu setzen ließ jede weitere Bewegung des liegenden
+       Daumens ins Leere laufen (Thomas, 24.09.: „konnte mich nicht bewegen"). */
+    if (!stick.active){ stick.dx = 0; stick.dy = 0; }
   },
   /* Sternenstaub nur in der freien Fläche, dicht genug, dass man ihn
      ohne Suchen findet. */
@@ -12883,21 +12886,24 @@ const Tutorial = {
      frei, dort steht die Rangliste. */
   pulsareSetzen(){
     Game.pulsars = []; Game.pulsarBack = [];
-    const cx = WELT_B / 2, cy = WELT_H / 2, R = Math.min(WELT_B, WELT_H) * .30;
-    /* Nicht auf ein eigenes Stück setzen — die liegen nach dem Teilen weit
-       verstreut, und ein Pulsar, der gleich beim Erscheinen gefressen wird,
-       erklärt nichts. Notfalls weiter außen. */
-    const frei = (x, y) => Game.cells.every(c => Math.hypot(c.x - x, c.y - y) > radiusOf(c.m) + PULSAR_R + 40);
+    const cx = WELT_B / 2, cy = WELT_H / 2;
+    /* Dicht an die eigenen Stücke, aber nicht darauf: Große Stücke kriechen
+       (Tempo am Boden, 70 je Sekunde), und ein Pulsar tausend Einheiten
+       weiter draußen war nicht zu erreichen (Thomas, 24.09.). Je Richtung
+       von innen nach außen die erste freie Stelle knapp neben dem Rand der
+       Stücke — wer am Beginn gefressen würde, erklärt nichts. */
+    const frei = (x, y) => Game.cells.every(c => Math.hypot(c.x - x, c.y - y) > radiusOf(c.m) + PULSAR_R + 60);
+    const maxR = Math.min(WELT_B, WELT_H) * .48;
     for (let i = 0; i < 8; i++){
       const a = .6 + i * (5.08 / 7);
-      let x = cx, y = cy, gefunden = false;
-      for (const f of [1, 1.15, 1.3, 1.45]){
-        x = clamp(cx + Math.cos(a) * R * f, PULSAR_R * 2, WELT_B - PULSAR_R * 2);
-        y = clamp(cy + Math.sin(a) * R * f, PULSAR_R * 2, WELT_H - PULSAR_R * 2);
-        if (frei(x, y)){ gefunden = true; break; }
+      let gefunden = null;
+      for (let d = 200; d <= maxR; d += 120){
+        const x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+        if (x < PULSAR_R * 2 || x > WELT_B - PULSAR_R * 2 || y < PULSAR_R * 2 || y > WELT_H - PULSAR_R * 2) break;
+        if (frei(x, y)){ gefunden = { x, y }; break; }
       }
       if (!gefunden) continue;
-      const p = newPulsar(x, y);
+      const p = newPulsar(gefunden.x, gefunden.y);
       p.vx = 0; p.vy = 0;
       Game.pulsars.push(p);
     }
@@ -13060,6 +13066,12 @@ const Tutorial = {
         Game.pulsars.splice(i, 1);
       }
     }
+    /* Vom Teilen bis zum Mond bleiben die Stücke getrennt — auch in der
+       Pause zwischen zwei Schritten: Nach 24 s verschmölzen sie, man wäre
+       nicht mehr „weit geteilt", und der nächste Pulsar zerrisse einen
+       (Thomas, 24.09.: „die Masse hat nicht gereicht"). */
+    if (this.phase === "b" && this.nr >= 1 && this.nr <= 3)
+      for (const c of Game.cells) if (c.merge < 1) c.merge = 1;
     if (!this.schritt) return;
     this.seit += dt;
     const s = this.schritt;
