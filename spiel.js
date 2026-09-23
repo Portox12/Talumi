@@ -2130,7 +2130,11 @@ function split(){
     if (Game.cells.some(c => c.m >= 36)){ Game.lastSplit = Game.t; Sound.split(); }
     return;
   }
-  const born = [], [dx,dy] = aim();
+  const born = [];
+  let [dx,dy] = aim();
+  /* Tutorial (v118): Beim Schritt „Vesta" zielt das Teilen auf sie —
+     der Spieler soll sie sicher erwischen (Thomas, 24.09.). */
+  try { const h = Tutorial.teilHilfe(); if (h) [dx,dy] = h; } catch(_){}
   for (const c of Game.cells){
     if (c.m < 36 || Game.cells.length+born.length >= MAX_CELLS) continue;
     c.m /= 2;
@@ -2885,7 +2889,10 @@ function step(dt){
     }
     if (gone){
       Game.rivals.splice(i,1);
-      if (!Game.royale) Game.rivals.push(newRival(r.name));   // Royale: einmal tot, tot
+      /* Tutorial (v118): kein Nachschub — sonst kam für jeden gefressenen
+         Übungsgegner ein neuer, jagender an eine Zufallsstelle (Thomas,
+         24.09.: „kommen noch weitere Gegner von allen Seiten"). */
+      if (!Game.royale && !MODE().tutorial) Game.rivals.push(newRival(r.name));   // Royale: einmal tot, tot
     }
   }
   for (let i=Game.rivals.length-1;i>=0;i--){
@@ -2896,7 +2903,7 @@ function step(dt){
       if (eats(Game.rivals[j], Game.rivals[i])){
         Game.rivals[j].m += Game.rivals[i].m;
         Game.rivals.splice(i,1);
-        if (!Game.royale)
+        if (!Game.royale && !MODE().tutorial)
           Game.rivals.push(newRival(RIVALS[(Math.random()*RIVALS.length)|0]));
         break;
       }
@@ -12764,7 +12771,11 @@ const Tutorial = {
       text: () => t(tippGeraet() ? "tu_vesta_tipp" : "tu_vesta_maus"),
       bei(){
         this.masseMindestens(50);
-        this.vesta = this.rivalSetzen("Vesta", 20, .58, .40, false);
+        /* In Teilreichweite neben dem Spieler, nicht an einer festen Stelle
+           der Karte (v118) — ein Teilstück fliegt nur gut 300 Einheiten. */
+        const p = this.vestaPlatz();
+        this.vesta = this.rivalSetzen("Vesta", 18, p.x / WELT_B, p.y / WELT_H, false);
+        this.teiltAb = 0;
         this.ziel = () => this.vesta;
       },
       fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
@@ -12846,6 +12857,31 @@ const Tutorial = {
     q.fest = true; q.vx = 0; q.vy = 0;
     Game.pulsars.push(q);
     return q;
+  },
+  /* Vesta lebt? Dann die Richtung vom eigenen Körper zu ihr — für das
+     Teilen (`split()`), damit das Stück sicher auf sie fliegt. */
+  vestaLebt(){ return !!(this.vesta && Game.rivals.includes(this.vesta)); },
+  teilHilfe(){
+    if (!this.laufend || !this.schritt || this.schritt.id !== "vesta" || !this.vestaLebt() || !Game.cells.length) return null;
+    const me = groesstes(Game.cells);
+    const dx = this.vesta.x - me.x, dy = this.vesta.y - me.y, l = Math.hypot(dx, dy) || 1;
+    this.teiltAb = Game.t;
+    return [dx / l, dy / l];
+  },
+  /* Platz für Vesta: gut 200 Einheiten vor dem Körper, Richtung freie
+     Mitte der Karte, in der freien Fläche; notfalls in die Gegenrichtung. */
+  vestaPlatz(){
+    const me = groesstes(Game.cells);
+    const x0 = WELT_B * .08, x1 = WELT_B * .70, y0 = WELT_H * .20, y1 = WELT_H * .76;
+    const D = radiusOf(me.m) + 200;
+    let ux = WELT_B * .45 - me.x, uy = WELT_H * .48 - me.y, l = Math.hypot(ux, uy);
+    if (l < 1){ ux = 1; uy = 0; l = 1; }
+    ux /= l; uy /= l;
+    for (const s of [1, -1]){
+      const x = clamp(me.x + ux * D * s, x0, x1), y = clamp(me.y + uy * D * s, y0, y1);
+      if (Math.hypot(x - me.x, y - me.y) >= radiusOf(me.m) + 120) return { x, y };
+    }
+    return { x: clamp(me.x + D, x0, x1), y: clamp(me.y, y0, y1) };
   },
   masseMindestens(m){
     const tot = this.eigeneMasse();
@@ -13072,6 +13108,21 @@ const Tutorial = {
        (Thomas, 24.09.: „die Masse hat nicht gereicht"). */
     if (this.phase === "b" && this.nr >= 1 && this.nr <= 3)
       for (const c of Game.cells) if (c.merge < 1) c.merge = 1;
+    /* Vesta sicher erwischen (v118): Nach dem Teilen zieht das nächste
+       eigene Stück, das groß genug ist, sie auf den letzten Metern heran. */
+    if (this.schritt && this.schritt.id === "vesta" && this.teiltAb && Game.t - this.teiltAb < 3 && this.vestaLebt()){
+      const v = this.vesta;
+      let best = null, bd = Infinity;
+      for (const c of Game.cells){
+        if (c.m < v.m * 1.25) continue;
+        const d = Math.hypot(c.x - v.x, c.y - v.y);
+        if (d < bd){ bd = d; best = c; }
+      }
+      if (best && bd < radiusOf(best.m) + radiusOf(v.m) + 260){
+        const k = Math.min(1, dt * 7);
+        v.x += (best.x - v.x) * k; v.y += (best.y - v.y) * k;
+      }
+    }
     if (!this.schritt) return;
     this.seit += dt;
     const s = this.schritt;
