@@ -12798,6 +12798,12 @@ const Tutorial = {
     { id:"abwerfen", hilfe:"abwerfen",
       text: () => t(tippGeraet() ? "tu_abwerfen_tipp" : "tu_abwerfen_maus"),
       bei(){
+        /* Die Stücke der Vesta-Teilung zu einem Körper vereinen (v121) —
+           sonst liegt die zweite Hälfte irgendwo herum und lenkt ab. */
+        if (Game.cells.length > 1){
+          const c = groesstes(Game.cells), m = this.eigeneMasse();
+          c.m = m; c.merge = 0; c.vx = 0; c.vy = 0; Game.cells = [c];
+        }
         this.unendlich = Math.max(50, Math.round(this.eigeneMasse()));
         this.masseMindestens(50);
         this.pulsar = this.pulsarSetzen(.46, .46);

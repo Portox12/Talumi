@@ -2720,6 +2720,15 @@ const LANGS_TUT2 = {
       tu_hilfe_tutorial:"Пройти обучение ещё раз", tu_viel_spass:"Удачи!"}
 };
 for (const c in LANGS_TUT2) Object.assign(LANGS[c], LANGS_TUT2[c]);
+/* Tutorial v120: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
+   Thomas' Regel (24.09.2026): „zuerst nur Deutsch, alle Sprachen nach meiner
+   Freigabe". Bis dahin steht in den übrigen Sprachen bewusst der englische
+   Text. Nach der Freigabe übersetzen und diese Liste leeren; dann auch die
+   geänderten Sätze tu_staub, tu_vesta_*, tu_abwerfen_*, tu_treffen in
+   es/pt/fr/tr/ru nachziehen (sie tragen dort noch den Inhalt von v114). */
+const TUT_NOCH_ZU_UEBERSETZEN = ["tu_fest_maus", "tu_fest_tipp"];
+for (const c of ["es", "pt", "fr", "tr", "ru"])
+  for (const k of TUT_NOCH_ZU_UEBERSETZEN) if (LANGS[c][k] === undefined) LANGS[c][k] = LANGS.en[k];
 
 /* Sicherheitsnetz: Fehlt einer Sprache ein Schlüssel aus `LANGS_GL`, steht
    dort der englische Text statt eines leeren Schlüssels. Am 22.09.2026
