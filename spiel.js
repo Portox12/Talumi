@@ -954,6 +954,8 @@ const rivalTier = () => {
 
 const Profile = {
   level:1, xp:0, ore:0, skin:"basalt", best:0, friends:[], hints:new Set(),
+  /* Iridium und Kern (v113): nur mit Konto, beides kommt vom Server. */
+  iridium:0, kern:null,
   /* Zähler der Runden, seit die Hinweise eingeschaltet wurden. Nach zwei
      Runden ist Schluss — wer dreimal gespielt hat, kennt die Steuerung, und
      dann werden Hinweise zur Bevormundung. Über die Einstellungen holt man
@@ -1719,7 +1721,7 @@ const HINTS = [
 ];
 
 const Game = {running:false, online:false, debris:[], rivals:[], shed:[], cells:[], pulsars:[],
-              rings:[], name:"", t:0, kills:0, shake:0,
+              rings:[], kapseln:[], name:"", t:0, kills:0, shake:0,
               teams:false, left:0, result:"", safe:0,
               killer:null, lastSplit:-99, lostPieces:0,
               royale:false, zoneR:0, zoneDeath:false, placed:0, won:false,
@@ -1876,6 +1878,7 @@ function start(name){
   /* Gespiegelte Arena: Pulsare paarweise punktsymmetrisch, Startplätze der
      beiden Hälften ebenso. Damit hat keine Seite die bessere Deckung. */
   Game.pulsars = [];
+  Game.kapseln = [];           // Kapseln (v113) gibt es nur online — der Server schickt sie
   if (M.mirror){
     for (let i=0;i<M.pulsars;i+=2){
       const x = rnd(WELT_B*.12, WELT_B*.88), y = rnd(WELT_H*.12, WELT_H*.5);
@@ -3090,6 +3093,8 @@ function finish(timeUp){
     if (T.rekord) zeilen.push([t("newbest"), T.rekord]);
     if (T.sieg)   zeilen.push([t("wonround"), T.sieg]);
     if (T.happy)  zeilen.push([t("hh_zeile"), T.happy, "happy"]);
+    /* Kern-Bonus (v113): eigene Zeile wie die Happy Hour. */
+    if (T.kern)   zeilen.push([t("ke_zeile"), T.kern, "kern"]);
 
     let html = zeilen.filter(z => z[1] > 0)
       .map(z => `<div class="tally${z[2] ? " " + z[2] : ""}"><span>${z[0]}</span><span>+${z[1]}</span></div>`).join("");
@@ -3124,6 +3129,23 @@ function finish(timeUp){
     }
     if (Net.staubDazu > 0)
       html += `<div class="tally"><span>${esc(t("mo_staub_dazu"))}</span><span>+${Net.staubDazu}</span></div>`;
+    /* Iridium dieser Runde (v113): erfüllte Aufträge, der Tagesbonus für
+       alle drei, geöffnete Kapseln — und die Summe. Alles vom Server. */
+    {
+      const A = Net.auftraege, Kp = Net.kapselnRunde;
+      let iri = 0, zeilenIri = "";
+      if (A && Array.isArray(A.fertig)) for (const f of A.fertig){
+        zeilenIri += `<div class="tally iri"><span>${esc(t("au_fertig", auftragText(f)))}</span><span>+${+f.lohn || 0}</span></div>`;
+        iri += +f.lohn || 0;
+      }
+      if (A && +A.bonus > 0){ zeilenIri += `<div class="tally iri"><span>${esc(t("au_alle"))}</span><span>+${+A.bonus}</span></div>`; iri += +A.bonus; }
+      if (Kp && +Kp.n > 0){
+        zeilenIri += `<div class="tally iri"><span>${esc(t("ka_zeile", +Kp.n))}</span><span>${+Kp.iridium > 0 ? "+" + (+Kp.iridium) : ""}</span></div>`;
+        iri += +Kp.iridium || 0;
+      }
+      if (zeilenIri) html += zeilenIri + `<div class="tally iri sum"><span>${esc(t("iridium"))}</span><span>+${iri}</span></div>`;
+      if (Net.kernNeu) html += `<div class="tally kern"><span>${esc(Net.kernNeu.ersatz ? t("ke_ersatz", +Net.kernNeu.ersatz) : t("ke_neu", t("ke_" + (Net.kernNeu.art || "eisen"))))}</span><span></span></div>`;
+    }
     if (Net.ehre){
       html += Net.ehre.dazu > 0
         ? `<div class="tally sum"><span>${t("ehredazu")}</span>` +
@@ -3134,9 +3156,22 @@ function finish(timeUp){
     $("endZiel").innerHTML = naechstesZiel();
     $("endRw").innerHTML = "";
     $("endGains").innerHTML = html;
+    try { const ka = Net.profil.kern && Net.profil.kern.aktiv; $("endGains").style.setProperty("--kern", KERN_FARBE[ka] || "#e9b063"); } catch(_){}
     feierMalen();
 
     Konto.uebernehmen({profil: Net.profil, stand: Net.stand});
+    /* Die Aufträge des Tages nachführen (v113) — der Kasten im Hangar zeigt
+       sonst den Stand von vor der Runde. */
+    if (Net.auftraege && Array.isArray(Net.auftraege.liste) && Konto.auftraege && Konto.auftraege.auftraege){
+      const A = Konto.auftraege.auftraege;
+      A.liste = Net.auftraege.liste; A.tausch = +Net.auftraege.tausch || 0;
+      if (Number.isFinite(+Net.auftraege.tag)) A.tag = +Net.auftraege.tag;
+      if (+Net.auftraege.bonus > 0 || A.liste.every(x => x.fertig)) A.bonus = A.liste.every(x => x.fertig) ? 1 : A.bonus;
+    }
+    if (Net.kernNeu && !Net.kernNeu.ersatz){
+      kernStand = null;
+      setTimeout(() => { try { lohnZeigen(t("ke_" + (Net.kernNeu ? Net.kernNeu.art : "eisen")), t("ke_neu", ""), ""); } catch(_){} }, 1200);
+    }
     /* Den Wert vorher festhalten: Zwei Zeilen tiefer wird Net.rangNeu
        zurückgesetzt, und die verzögerte Meldung las dann immer Stufe 0 —
        jeder Aufstieg hieß „Rang erreicht: Kadett“. */
@@ -3151,6 +3186,7 @@ function finish(timeUp){
     Konto.kampfPruefen();
     Net.lohn = null; Net.profil = null; Net.ehre = null;
     Net.erfolge = []; Net.rangNeu = 0; Net.monde = []; Net.staubDazu = 0;
+    Net.auftraege = null; Net.kapselnRunde = null;
     paintPurse(); buildGrid(); paintRank();
     hideAll(); $("endVeil").hidden = false;
     $("again").focus();
@@ -5176,6 +5212,13 @@ function draw(){
     ctx.restore();
   }
 
+  /* Kapseln (v113), vor den Körpern wie die Pulsare — sie liegen frei im
+     Raum, und wer sie überfährt, öffnet sie. */
+  for (const k of Game.kapseln){
+    if (!seen(k)) continue;
+    kapselZeichnen(ctx, k, Game.t);
+  }
+
   for (const g of Game.rings){
     ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, 7);
     ctx.strokeStyle = hexA(g.colour, Math.max(0, g.life)*.55);
@@ -6239,7 +6282,7 @@ function mondReiterMalen(aktiv){
   const R = S * heldAnteil(stufe, skin, monde.length ? monde : null);
   if (glc && Mond3D.moeglich(glc)){
     glc.hidden = false;
-    Mond3D.zeigen({ pal: skin, masse, stufe, monde: monde.length ? monde : null, R, S });
+    Mond3D.zeigen({ pal: skin, masse, stufe, monde: monde.length ? monde : null, R, S, kern: kernAngelegt() });
   } else {
     if (glc) glc.hidden = true;
     const g = c.getContext("2d");
@@ -6250,6 +6293,8 @@ function mondReiterMalen(aktiv){
     if (monde.length) mondeMalen(g, S/2, S/2, R, monde, 1.2);
     MENUE_VOLL = false; Game.t = saveT;
   }
+  /* Der Kernplatz in der Mitte (v113). */
+  try { kernKnopfMalen(); } catch(_){}
   /* Die vier Plätze als Reihe unter der Welt: Mond oder „+". */
   const kn = $("mondPlatzKn");
   if (!kn) return;
@@ -6300,13 +6345,15 @@ function buildMonde(){
     if (seite){
       const F = m.fund || { basis: .06, jePulsar: .15, deckel: .6 };
       const pz = n => Math.round(n * 100) + " %";
-      seite.innerHTML =
+      /* Zuerst der Kern (v113), dann Mondstaub und die Wege zu Monden. */
+      seite.innerHTML = kernSeiteHtml() +
         `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><small class="hintline">${esc(t("mo_platz_erkl", aktiv.length, m.plaetze || 4))}</small>` +
         `<h3 style="margin-top:12px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
         `<small class="hintline">${esc(t("mo_staub_erkl"))}</small></div>` +
         `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
         [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
           .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
+      kernKnoepfe(seite, zeichnen);
     }
     box.innerHTML = `<h3 class="dGruppe" style="margin:4px 0 10px">${esc(t("mo_besitz"))}<em>${MOND_ARTEN.filter(a => besitz[a]).length} / ${MOND_ARTEN.length}</em></h3><div class="mondVorrat" id="mondListe"></div>`;
     const liste = $("mondListe");
@@ -6358,6 +6405,9 @@ function buildMonde(){
     }
   };
   if (mondeStand && mondeStand.konto === Konto.profil.id) zeichnen();
+  /* Kern (v113): Tabelle und Stand vom Server, dann neu zeichnen. */
+  if (!(kernStand && kernStand.konto === Konto.profil.id))
+    kernLaden().then(() => { if (reiterJetzt === "monde") zeichnen(); }).catch(() => {});
   Konto.ruf("/konto/monde").then(a => {
     if (!a || !a.ok) return;
     a.konto = Konto.profil ? Konto.profil.id : 0;
@@ -6402,7 +6452,7 @@ function heldMalen(){
      Scheibe von `body()`. */
   if (gl3 && Held3D.moeglich(gl3)){
     gl3.hidden = false;
-    Held3D.zeigen({ pal: skin, masse: schauMasse, stufe, monde, R, S });
+    Held3D.zeigen({ pal: skin, masse: schauMasse, stufe, monde, R, S, kern: kernAngelegt() });
   } else {
     if (gl3) gl3.hidden = true;
     const g = c.getContext("2d");
@@ -6556,6 +6606,7 @@ const Held3D = {
     varying vec3 vN; varying vec2 vUv;
     uniform sampler2D uTex; uniform vec3 uLicht, uHot, uAir;
     uniform float uAmb, uSpec, uShine, uFres, uFpow, uPuls, uZeit, uSchlund;
+    uniform float uKern; uniform vec3 uKernFarbe;
     void main(){
       vec4 t = texture2D(uTex, vUv);
       vec3 N = normalize(vN); vec3 V = vec3(0.0, 0.0, 1.0); vec3 L = normalize(uLicht);
@@ -6570,6 +6621,13 @@ const Held3D = {
       col += spec * mix(vec3(1.0), uAir, 0.35);
       col += uAir * fres * uFres * (0.40 + 0.60 * clamp(nl * 0.5 + 0.5, 0.0, 1.0));
       col += uHot * t.a * uPuls;
+      /* Der Kern (v113): glüht in seiner Farbe durch die Mitte der Kugel und
+         durch die Spalten der Oberfläche, mit leisem Pulsschlag. */
+      if (uKern > 0.0){
+        float schlag = 0.62 + 0.38 * sin(uZeit * 1.9);
+        col += uKernFarbe * uKern * pow(nv, 5.0) * schlag;
+        col += uKernFarbe * t.a * uKern * 0.9;
+      }
       if (uSchlund > 0.0){
         /* Ein Loch, das trotzdem Eindruck macht: pechschwarzer Kern, der
            Lichtring genau am Rand, wandernde Beugungsbögen. */
@@ -7042,7 +7100,12 @@ const Held3D = {
   bild(foto){
     const gl = this.gl, st = this.stand;
     if (!gl || !st) return;
-    const pal = st.pal, S = st.S, R = st.R, M = this.MAT[pal.mat] || this.MAT.fels;
+    const pal = st.pal, S = st.S, R = st.R, M0 = this.MAT[pal.mat] || this.MAT.fels;
+    /* Der angelegte Kern (v113) glüht durch die Oberfläche — Stärke nach
+       Stufe, Farbe nach Art (`KERN_FARBE`). */
+    const M = st.kern && KERN_FARBE[st.kern.art]
+      ? Object.assign({}, M0, { kern: .30 + .10 * Math.max(1, Math.min(5, st.kern.stufe | 0)), kernFarbe: this.rgb(KERN_FARBE[st.kern.art]) })
+      : M0;
     const gr = 2 * R / S;              // Radius in Bildkoordinaten (−1…1)
     const T = pal.tier || 1, zeit = this.zeit;
     const air = this.rgb(pal.air), hot = this.rgb(pal.hot);
@@ -7103,6 +7166,8 @@ const Held3D = {
       gl.uniform1f(K.u.uPuls, mat.puls ? mat.puls * (.78 + .22 * Math.sin(zeit * 1.7)) : 0);
       gl.uniform1f(K.u.uZeit, zeit);
       gl.uniform1f(K.u.uSchlund, mat.schlund ? (pal.wucht || 1) : 0);
+      gl.uniform1f(K.u.uKern, mat.kern || 0);
+      gl.uniform3fv(K.u.uKernFarbe, mat.kernFarbe || [0, 0, 0]);
       gl.drawElements(gl.TRIANGLES, form.n, gl.UNSIGNED_SHORT, 0);
     };
     kugel(this.form.kugel, this.textur(pal), rot, [0, 0, 0], gr, M, air, hot);
@@ -7733,6 +7798,182 @@ function erfolgStand(id){
   return ist === null ? null : { ist, ziel };
 }
 
+/* ---- Aufträge, Kern, Iridium (v113, KONZEPT-KERN-IRIDIUM.md) ------------
+   Alle Zahlen kommen vom Server (`/konto/ich` bringt die Aufträge des
+   Tages mit, `/konto/kern` die Kerntabelle). Hier wird nur gezeigt und
+   angefragt — nichts davon rechnet der Client. */
+const KERN_FARBE = { eisen: "#e9b063", kristall: "#8fd3ff", glut: "#ff7a2a" };
+const KERN_ARTEN = ["eisen", "kristall", "glut"];
+const ROEM_KERN = ["", "I", "II", "III", "IV", "V"];
+/* Der angelegte Kern {art, stufe} für das 3D-Modell — nur mit Konto. */
+function kernAngelegt(){
+  const k = istAngemeldet() && Profile.kern;
+  return k && k.aktiv && k.besitz && k.besitz[k.aktiv] ? { art: k.aktiv, stufe: k.besitz[k.aktiv] } : null;
+}
+/* Restzeit bis zum nächsten Tag, kurz: „5 h 12 min" oder „42 min". */
+function restText(ms){
+  const min = Math.max(0, Math.ceil(ms / 60000)), h = Math.floor(min / 60), m = min % 60;
+  return h ? h + " h " + String(m).padStart(2, "0") + " min" : m + " min";
+}
+function auftragText(a){
+  const z = a.ziel || 0;
+  if (a.art === "zeit") return t("au_zeit", Math.round(z / 60));
+  if (a.art === "masse") return t("au_masse", z.toLocaleString(lang));
+  return t("au_" + a.art, z.toLocaleString(lang));
+}
+/* Der Kasten „Aufträge" im Hangar: drei Zeilen mit Fortschritt und Lohn,
+   Tauschknopf an offenen Aufträgen (einmal am Tag), Bonuszeile darunter.
+   Gäste sehen nichts — nichts anzeigen, was es nicht gibt. */
+function auftraegeMalen(){
+  const box = $("auftragBox");
+  if (!box) return;
+  const A = istAngemeldet() && Konto.auftraege;
+  if (!A || !A.auftraege || !Array.isArray(A.auftraege.liste)){ box.hidden = true; return; }
+  /* Der Tag ist um (0 Uhr UTC), der Hangar blieb offen: neue Aufträge holen. */
+  if (A.ende && Date.now() > A.ende && !A.holt){
+    A.holt = true;
+    Konto.ruf("/konto/auftraege").then(a => { if (a && a.ok){ Konto.auftraege = a; auftraegeMalen(); } }).catch(() => {});
+  }
+  box.hidden = false;
+  const liste = A.auftraege.liste, lohn = A.lohn || {};
+  const tauschFrei = (A.auftraege.tausch || 0) < (A.tauschMax || 1);
+  const fertig = liste.filter(a => a.fertig).length;
+  const kopf = `<h2>${esc(t("au_kopf"))}<em title="${esc(t("au_rest", restText((A.ende || 0) - Date.now())))}">${fertig}/${liste.length}</em></h2>`;
+  box.innerHTML = kopf + `<div class="konsBlock">` + liste.map((a, i) => {
+    const anteil = Math.min(1, (a.stand || 0) / Math.max(1, a.ziel));
+    return `<div class="konsFort${a.fertig ? " fertig" : ""}">` +
+      `<span>${esc(auftragText(a))}</span>` +
+      `<span class="bar"><i style="width:${Math.round(anteil * 100)}%"></i></span>` +
+      `<b>${a.fertig ? "✓" : Math.round(anteil * 100) + " %"}</b>` +
+      `<span class="lohn">+${lohn[a.art] || 0}</span>` +
+      (!a.fertig && tauschFrei ? `<button type="button" class="tausch" data-tausch="${i}">${esc(t("au_tausch"))}</button>` : "") +
+      `</div>`;
+  }).join("") +
+  `<div class="auftragBonus${A.auftraege.bonus ? " fertig" : ""}">${esc(t("au_bonus", A.bonus || 0))}${A.auftraege.bonus ? " ✓" : ""}` +
+  ` · <small>${esc(t("au_rest", restText((A.ende || 0) - Date.now())))}</small></div></div>`;
+  for (const b of box.querySelectorAll("[data-tausch]")) b.addEventListener("click", async () => {
+    b.disabled = true;
+    const a = await Konto.ruf("/konto/auftraege/tauschen", { i: +b.dataset.tausch });
+    if (a && a.ok){ Konto.auftraege = a; toast(t("au_getauscht")); auftraegeMalen(); }
+    else { toast(t("net_fail")); b.disabled = false; }
+  });
+}
+/* Kern: Stand vom Server (`/konto/kern`), einmal je Öffnen des Reiters. */
+let kernStand = null;
+async function kernLaden(){
+  if (!istAngemeldet()) return null;
+  const a = await Konto.ruf("/konto/kern");
+  if (!a || !a.ok) return null;
+  a.konto = Konto.profil ? Konto.profil.id : 0;
+  kernStand = a;
+  kernUebernehmen(a);
+  return a;
+}
+function kernUebernehmen(a){
+  if (!a || !a.kern) return;
+  Profile.kern = { besitz: a.kern.besitz || {}, aktiv: a.kern.aktiv || null };
+  if (Number.isFinite(+a.iridium)){ Profile.iridium = +a.iridium; if (Konto.profil) Konto.profil.iridium = +a.iridium; }
+  if (Konto.profil) Konto.profil.kern = Profile.kern;
+  paintPurse();
+}
+/* Der Kernplatz in der Mitte der Welt im Reiter „Monde": Glühen in der
+   Kernfarbe, ohne Kern ein gestrichelter Ring. Ein Tipp führt zur Kernkarte. */
+function kernKnopfMalen(){
+  const b = $("kernKnopf");
+  if (!b) return;
+  if (!istAngemeldet()){ b.hidden = true; return; }
+  const k = kernAngelegt();
+  b.hidden = false;
+  b.classList.toggle("voll", !!k);
+  b.style.setProperty("--kern", k ? KERN_FARBE[k.art] : "rgba(233,176,99,.35)");
+  b.title = k ? t("ke_" + k.art) + " · " + t("ke_stufe", ROEM_KERN[k.stufe] || k.stufe) : t("ke_keiner");
+  b.setAttribute("aria-label", b.title);
+  b.onclick = () => { const z = $("kernSeite"); if (z) z.scrollIntoView({ behavior: "smooth", block: "start" }); };
+}
+function kernWirkung(art, stufe, K){
+  const st = Math.max(0, Math.min(5, stufe | 0));
+  if (art === "eisen")    return t("ke_eisen_w", (K.orePct || [0, 5, 10, 15, 20, 25])[st]);
+  if (art === "kristall") return t("ke_kristall_w", (K.xpPct || [0, 4, 8, 12, 16, 20])[st]);
+  return t("ke_glut_w", (K.staub || [0, 1, 1, 2, 2, 3])[st], (K.fundPp || [0, 2, 4, 6, 8, 10])[st]);
+}
+/* Die Kernkarten in der rechten Spalte des Monde-Reiters: Iridium-Stand,
+   je Art eine Karte mit Stufe, Wirkung und Knöpfen (Anlegen/Ablegen,
+   Aufwerten, Freischalten), darunter die drei Wege zum Iridium. */
+function kernSeiteHtml(){
+  const K = kernStand || {}, k = (K.kern) || (Profile.kern ? { besitz: Profile.kern.besitz, aktiv: Profile.kern.aktiv } : { besitz: {}, aktiv: null });
+  const iri = Number.isFinite(+K.iridium) ? +K.iridium : (Profile.iridium || 0);
+  const preis = K.preis || 120, kosten = K.kosten || [0, 0, 150, 250, 400, 600], stufen = K.stufen || 5;
+  let html = `<div class="plate recbox" id="kernSeite"><h3>${esc(t("ke_kopf"))}</h3><small class="hintline">${esc(t("ke_erkl"))}</small>` +
+    `<div class="iriZahl" style="margin-top:10px">${iri.toLocaleString(lang)} <small style="font-size:13px;color:var(--paper-2)">${esc(t("iridium"))}</small></div>` +
+    `<small class="hintline">${esc(t("ir_nichtkauf"))}</small><div style="display:grid;gap:8px;margin-top:10px">`;
+  for (const art of KERN_ARTEN){
+    const st = k.besitz[art] || 0, an = k.aktiv === art;
+    html += `<div class="kernKarte${an ? " an" : ""}" style="--kern:${KERN_FARBE[art]}"><div class="kernBild${st ? "" : " aus"}"></div><div>` +
+      `<b>${esc(t("ke_" + art))}${st ? " · " + esc(t("ke_stufe", ROEM_KERN[st])) : ""}</b>` +
+      `<small>${esc(st ? kernWirkung(art, st, K) : kernWirkung(art, 1, K))}</small>` +
+      `<div class="kernStufen">${Array.from({ length: stufen }, (_, i) => `<i class="${i < st ? "hat" : ""}"></i>`).join("")}</div></div>` +
+      `<div class="kn">`;
+    if (st){
+      html += `<button type="button" data-kern-an="${art}"${an ? "" : ' class="quiet"'}>${esc(t(an ? "ke_ablegen" : "ke_anlegen"))}</button>`;
+      if (st < stufen){
+        const c = kosten[st + 1];
+        html += `<button type="button" class="quiet" data-kern-auf="${art}" ${iri < c ? "disabled" : ""} title="${iri < c ? esc(t("ke_fehlt", c - iri)) : ""}">${esc(t("ke_aufwerten", c))}</button>`;
+      } else html += `<button type="button" class="quiet" disabled>${esc(t("ke_max"))}</button>`;
+    } else {
+      html += `<button type="button" class="quiet" data-kern-frei="${art}" ${iri < preis ? "disabled" : ""} title="${iri < preis ? esc(t("ke_fehlt", preis - iri)) : ""}">${esc(t("ke_frei", preis))}</button>`;
+      if (art === (K.geschenk || "eisen") && !(Profile.kern && Profile.kern.geschenkt)) html += `<small style="align-self:center">${esc(t("ke_geschenk"))}</small>`;
+    }
+    html += `</div></div>`;
+  }
+  html += `</div></div>` +
+    `<div class="plate recbox"><h3>${esc(t("ir_woher"))}</h3><ol class="mondWoher">` +
+    [t("ir_w_auf"), t("ir_w_saison"), t("ir_w_kapsel")].map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
+  return html;
+}
+function kernKnoepfe(wurzel, neuZeichnen){
+  const ruf = async (b, pfad, art) => {
+    b.disabled = true;
+    const a = await Konto.ruf(pfad, { art });
+    if (a && a.ok){
+      kernStand = Object.assign(a, { konto: Konto.profil ? Konto.profil.id : 0 });
+      kernUebernehmen(a);
+      if (pfad !== "/konto/kern/anlegen") Sound.levelUp();
+      neuZeichnen(); heldMalen();
+    } else { b.disabled = false; toast(t(a && a.fehler === "zu_wenig_iridium" ? "ke_fehlt" : "net_fail", a && a.kosten ? Math.max(0, a.kosten - (a.iridium || 0)) : 0)); }
+  };
+  for (const b of wurzel.querySelectorAll("[data-kern-an]"))
+    b.addEventListener("click", () => ruf(b, "/konto/kern/anlegen", (Profile.kern && Profile.kern.aktiv === b.dataset.kernAn) ? "" : b.dataset.kernAn));
+  for (const b of wurzel.querySelectorAll("[data-kern-auf]"))
+    b.addEventListener("click", () => ruf(b, "/konto/kern/aufwerten", b.dataset.kernAuf));
+  for (const b of wurzel.querySelectorAll("[data-kern-frei]"))
+    b.addEventListener("click", () => ruf(b, "/konto/kern/freischalten", b.dataset.kernFrei));
+}
+/* Kapseln im Spiel (v113): eine treibende Sonde — metallische Sechseckdose
+   mit blinkendem Licht, gut sichtbar auch von fern. KAPSEL_R steht doppelt
+   in sim.js (Trefferfläche); `test.js` vergleicht. */
+const KAPSEL_R = 30;
+function kapselZeichnen(g, k, zeit){
+  const blink = .55 + .45 * Math.sin(zeit * 4 + (k.id || 0));
+  g.save(); g.translate(k.x, k.y); g.rotate(zeit * .4 + (k.id || 0));
+  /* Hof, damit sie auch weit herausgezoomt noch ins Auge fällt. */
+  const hof = Math.max(KAPSEL_R * 1.8, 14 / cam.z);
+  const gl = g.createRadialGradient(0, 0, KAPSEL_R * .4, 0, 0, hof);
+  gl.addColorStop(0, "rgba(159,216,255," + (.28 * blink).toFixed(3) + ")"); gl.addColorStop(1, "rgba(159,216,255,0)");
+  g.fillStyle = gl; g.beginPath(); g.arc(0, 0, hof, 0, 7); g.fill();
+  g.beginPath();
+  for (let i = 0; i < 6; i++){ const a = i / 6 * 6.2832; i ? g.lineTo(Math.cos(a) * KAPSEL_R, Math.sin(a) * KAPSEL_R) : g.moveTo(Math.cos(a) * KAPSEL_R, Math.sin(a) * KAPSEL_R); }
+  g.closePath();
+  const m = g.createLinearGradient(-KAPSEL_R, -KAPSEL_R, KAPSEL_R, KAPSEL_R);
+  m.addColorStop(0, "#d8dde6"); m.addColorStop(.5, "#8b93a1"); m.addColorStop(1, "#3c4250");
+  g.fillStyle = m; g.fill();
+  g.strokeStyle = "rgba(20,24,32,.8)"; g.lineWidth = 2.2; g.stroke();
+  g.beginPath(); g.moveTo(-KAPSEL_R * .55, 0); g.lineTo(KAPSEL_R * .55, 0); g.strokeStyle = "rgba(20,24,32,.5)"; g.lineWidth = 1.4; g.stroke();
+  g.beginPath(); g.arc(0, 0, KAPSEL_R * .22, 0, 7);
+  g.fillStyle = "rgba(159,216,255," + (.35 + .65 * blink).toFixed(3) + ")"; g.fill();
+  g.strokeStyle = "rgba(255,255,255,.5)"; g.lineWidth = 1; g.stroke();
+  g.restore();
+}
+
 function naechsteErfolgeMalen(){
   const box = $("naechstBox");
   if (!box) return;
@@ -7796,6 +8037,7 @@ function show(id){
     paintPurse();
     buildStrip(); buildBoost(); buildRecords(); paintBonus(); onlineZeigen();
     naechsteErfolgeMalen(); freundBoxMalen(); heldMalen(); clanKnopfMalen();
+    try { auftraegeMalen(); } catch(_){}
     bestenlisteZeigen().catch(() => {});
     /* Push (v110): das Abo einmal je Sitzung mit dem Server abgleichen und
        das Ziel einer angetippten Nachricht öffnen. Abgesichert — `Push`
@@ -7851,6 +8093,12 @@ function paintPurse(){
     leiste.setAttribute("aria-valuetext", $("heldXpText") ? $("heldXpText").textContent : "");
   }
   setze("oreNum", Profile.ore.toLocaleString(lang));
+  /* Iridium (v113): nur mit Konto — Gäste haben keins. */
+  const iri = $("iriZeile");
+  if (iri){
+    iri.hidden = !istAngemeldet();
+    if (!iri.hidden) setze("iriNum", (Profile.iridium || 0).toLocaleString(lang));
+  }
   setze("bestNum", Profile.best.toLocaleString(lang));
   setze("runNum", (Profile.rec.runs || 0).toLocaleString(lang));
   setze("hautNum", Profile.owned.size + " / " + SKINS_ZAHL);
@@ -10107,6 +10355,7 @@ function kontoBasis(){
 
 const Konto = {
   token:null, profil:null, stand:null, bonus:null,
+  auftraege:null,                // die Aufträge des Tages (v113), aus /konto/ich
   /* null = noch nicht versucht, true/false = Ergebnis des letzten Versuchs */
   erreichbar:null,
   /* Kann der Server Mails verschicken? Steht in der Antwort von `/health`.
@@ -10179,7 +10428,9 @@ const Konto = {
        kurz nach der Begrüßung, damit er nicht von ihr überschrieben wird. */
     const lohn = antwort.saisonLohn;
     if (lohn && typeof lohn === "object")
-      setTimeout(() => toast(t("s_lohn", lohn.nr, lohn.platz, (+lohn.ore || 0).toLocaleString(lang))), 2200);
+      setTimeout(() => toast(+lohn.iridium > 0
+        ? t("s_lohn2", lohn.nr, lohn.platz, (+lohn.ore || 0).toLocaleString(lang), (+lohn.iridium).toLocaleString(lang))
+        : t("s_lohn", lohn.nr, lohn.platz, (+lohn.ore || 0).toLocaleString(lang))), 2200);
     /* Nachricht vom Server (v109), z. B. eine Nachwertung: einmal, groß. */
     const n = antwort.nachricht;
     if (n && typeof n === "object" && n.art === "nachwertung")
@@ -10210,6 +10461,15 @@ const Konto = {
     if (p.monde && typeof p.monde === "object")
       Profile.monde = { besitz: p.monde.besitz || {}, aktiv: Array.isArray(p.monde.aktiv) ? p.monde.aktiv : [], staub: +p.monde.staub || 0 };
     if (p.skill && typeof p.skill === "object") Profile.skill = Object.assign({}, p.skill);
+    /* Iridium, Kern und die Aufträge des Tages (v113). */
+    Profile.iridium = Math.max(0, +p.iridium || 0);
+    Profile.kern = p.kern && typeof p.kern === "object"
+      ? { besitz: p.kern.besitz || {}, aktiv: p.kern.aktiv || null, geschenkt: !!p.kern.geschenkt } : null;
+    if (antwort.auftraege && typeof antwort.auftraege === "object") this.auftraege = antwort.auftraege;
+    /* Nach Anmeldung oder Registrierung kommen die Aufträge nicht mit —
+       einmal nachholen, damit der Kasten nicht erst nach dem Neuladen steht. */
+    else if (!this.auftraege && this.token)
+      this.ruf("/konto/auftraege").then(a => { if (a && a.ok){ this.auftraege = a; try { auftraegeMalen(); } catch(_){} } }).catch(() => {});
   },
 
   angemeldet(){ return !!(this.token && this.profil); },
@@ -10656,6 +10916,8 @@ const Net = {
   ehre:null,                     // {dazu, gesamt, rang} — nur mit Konto
   erfolge:[], rangNeu:0,         // in dieser Runde neu erreicht
   monde:[], staubDazu:0,         // Monde und Mondstaub dieser Runde (Liga)
+  /* Aufträge, Kapseln und ein geschenkter Kern dieser Runde (v113). */
+  auftraege:null, kapselnRunde:null, kernNeu:null,
   letzteEingabe:0,
 
   join(info){
@@ -10670,6 +10932,8 @@ const Net = {
     this.weltB = 0; this.weltH = 0;
     this.lebende = 0; this.tms = null; this.koerper = 0; this.ergebnis = null;
     this.kt = 0; this.kts = 0;
+    this.auftraege = null; this.kapselnRunde = null; this.kernNeu = null;
+    Game.kapseln = [];
     const url = serverUrl();
     try { this.socket = new WebSocket(url); }
     catch(e){ this.lage = "fehler"; this.grund = String(e && e.message || e); return; }
@@ -10741,6 +11005,21 @@ const Net = {
       return;
     }
 
+    /* Kapsel geöffnet (v113): Der Server hat schon gutgeschrieben; hier nur
+       die Meldung. Gäste erfahren, dass es Iridium nur mit Konto gibt. */
+    if (m.t === "kapsel"){
+      if (m.gast) toast(t("ka_gast"));
+      else if (m.mond && typeof m.mond === "object") toast(t("ka_mond", t((MONDE[m.mond.art] || {}).name || "mo_eis")));
+      else if (+m.staub > 0) toast(t("ka_staub", +m.staub));
+      else toast(t("ka_iridium", +m.iridium || 0));
+      if (!m.gast && Konto.profil){
+        if (+m.iridium > 0){ Konto.profil.iridium = (+Konto.profil.iridium || 0) + (+m.iridium); Profile.iridium = Konto.profil.iridium; }
+        if (+m.staub > 0 && Profile.monde) Profile.monde.staub = (+Profile.monde.staub || 0) + (+m.staub);
+      }
+      try { Sound.levelUp(); } catch(_){}
+      return;
+    }
+
     if (m.t === "dead"){
       this.tot = {peak:+m.peak||0, kills:+m.kills||0, sek:+m.sek||0,
                   ende: !!m.ende, gewonnen: !!m.gewonnen, platz: +m.platz || 0, zone: !!m.zone,
@@ -10770,6 +11049,10 @@ const Net = {
       if (m.mondFund && typeof m.mondFund === "object" && m.mondFund.art)
         this.monde = this.monde.concat([{ art: String(m.mondFund.art), stufe: +m.mondFund.stufe || 1, fund: true }]);
       this.staubDazu = +m.staubDazu || 0;
+      /* Aufträge, Kapseln, geschenkter Kern (v113) — alles vom Server. */
+      this.auftraege = m.auftraege && typeof m.auftraege === "object" ? m.auftraege : null;
+      this.kapselnRunde = m.kapseln && typeof m.kapseln === "object" ? m.kapseln : null;
+      this.kernNeu = m.kern && typeof m.kern === "object" ? m.kern : null;
       this.rangNeu = +m.rangNeu || 0;
       this.stand = m.stand || null;
       this.aufgestiegen = m.aufgestiegen || 0;
@@ -10792,6 +11075,9 @@ const Net = {
          Basalt. Geht ein NPC, ohne gefressen zu sein (`npc:1`, v105: ein
          Mensch ist dazugekommen), blendet ein Ring ihn an seiner zuletzt
          gezeichneten Stelle aus, statt dass er wortlos verschwindet. */
+      /* Kapsel geöffnet (v113): ein blauer Ring an ihrer Stelle, für alle,
+         die es sehen. Die Kapsel selbst fehlt im nächsten Zustand. */
+      if (e.t === "kap" && Number.isFinite(+e.x)) ring(+e.x, +e.y, 150, "#9fd8ff");
       if (e.t === "left"){
         const id = +e.id, w = this.wer.get(id);
         if (w){
@@ -10883,6 +11169,7 @@ const Net = {
     this.schnapp.push({
       at: jetzt(), gruppen,
       pul: Array.isArray(m.pul) ? m.pul : [],
+      kap: Array.isArray(m.kap) ? m.kap : [],
       wurf: Array.isArray(m.shed) ? m.shed : [],
       safe: +m.safe || 0
     });
@@ -10975,6 +11262,8 @@ const Net = {
       x:e[0], y:e[1], vx:0, vy:0, fed:+e[2]||0,
       spin:((e[0]*0.7 + e[1]*0.3) % 6.28)      // aus der Lage, damit er nicht flackert
     }));
+    /* Kapseln (v113): Lage und Kennung, gezeichnet von `kapselZeichnen`. */
+    Game.kapseln = (a.kap || []).map(e => ({ x:+e[0] || 0, y:+e[1] || 0, id:+e[2] || 0 }));
     Game.shed = a.wurf.map(e => ({
       x:e[0], y:e[1], vx:0, vy:0, m:+e[2]||0, r:radiusOf(+e[2]||0),
       c:TH().rival.rock, hot:TH().rival.hot, tier:1

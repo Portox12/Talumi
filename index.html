@@ -59,6 +59,7 @@
        Startbildschirm keine Rangfolge hatte. */
     --gruen:#3ddc84; --gruen-hell:#8ef5bd; --auf-gruen:#0a2c1a;
     --brass-hell:#f8dcab; --line-hell:rgba(255,255,255,.16);
+    --iri:#9fd8ff; /* Iridium (v113): die zweite Währung, kühl neben dem Messing */
     --glas:rgba(20,26,41,.68); --block:rgba(255,255,255,.035);
     --fenster-1:rgba(15,20,32,.93); --fenster-2:rgba(10,14,23,.95);
     --serif:"Talumi Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
@@ -1558,6 +1559,11 @@
   /* Nach der Runde: die Happy-Hour-Zeile der Abrechnung in Gold. */
   .tally.happy span{color:#f8d58c!important;font-weight:600}
   .tally.happy span:first-child::before{content:"✦";margin-right:6px;color:#f8d58c}
+  /* Kern-Bonus (v113): eine Zeile wie die Happy Hour, Kernfarbe kommt als `--kern`. */
+  .tally.kern span:first-child::before{content:"●";margin-right:6px;color:var(--kern,#e9b063)}
+  /* Iridium-Zeilen (v113): Aufträge, Kapseln, Summe. */
+  .tally.iri span:last-child{color:var(--iri)}
+  .tally.iri.sum span:last-child{color:var(--iri);font-weight:700}
   #startBtn{margin:0;width:auto;height:64px;padding:0 56px;border-radius:14px;
        background:linear-gradient(180deg, var(--gruen-hell), var(--gruen));
        color:var(--auf-gruen);font-family:var(--disp);font-size:24px;font-weight:700;
@@ -1710,6 +1716,10 @@
        border-radius:9px;background:rgba(233,176,99,.10);border:1px solid rgba(233,176,99,.32)}
   .konsW .chip b{font-family:var(--disp);font-size:16px;color:var(--brass-hell)}
   .konsW .chip[hidden]{display:none}
+  /* Iridium (v113): kühles Blau neben dem Messing des Ore — zwei Währungen,
+     zwei Farben, damit niemand sie verwechselt. */
+  .konsW .iri b{color:var(--iri);font-family:var(--disp);font-size:15px}
+  .konsW .iri[hidden]{display:none}
 
   .konsPane{overflow:auto;min-height:0}
   /* `!important`, weil die Regeln für flache und schmale Schirme weiter
@@ -1769,6 +1779,22 @@
   .konsFort b{color:var(--paper-2);font-weight:400;font-size:12px;
        font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:34px;text-align:right}
   .konsFort.fertig b{color:var(--brass)}
+  /* Aufträge (v113): dieselbe Zeile wie „Nächste Ziele", dazu der Lohn in
+     Iridium-Blau und ein schmaler Tauschknopf. */
+  .konsFort .lohn{color:var(--iri);font-weight:600;font-size:12px;white-space:nowrap}
+  .konsFort.fertig .lohn{opacity:.75}
+  .konsFort button.tausch{margin:0;width:auto;min-height:0;padding:2px 8px;font-size:11px;
+       background:none;border:1px solid var(--line);color:var(--paper-2);border-radius:99px}
+  .konsFort button.tausch:hover:not(:disabled){color:var(--paper);border-color:var(--brass)}
+  body.touch .konsFort button.tausch{min-height:32px;padding:0 10px}
+  /* Zwei Zeilen je Auftrag: oben der ganze Text (die Spalte ist schmal —
+     „Überlebe 5 Minuten in einer Runde" passt sonst nur als „Üb…"), unten
+     Balken, Prozent, Lohn und Tausch. */
+  #auftragBox .konsFort{display:grid;grid-template-columns:1fr auto auto auto;gap:3px 8px;align-items:center;padding:7px 0}
+  #auftragBox .konsFort span:first-child{grid-column:1 / -1;white-space:normal;line-height:1.25}
+  #auftragBox .konsFort .bar{flex:none;width:auto;min-width:40px}
+  .auftragBonus{font-size:12px;color:var(--paper-2);padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
+  .auftragBonus.fertig{color:var(--iri)}
 
   .konsFr{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:4px 0}
   .konsFr span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2040,6 +2066,30 @@
   .mondPlatzKn button:hover{border-color:var(--brass)}
   .mondSeite{display:flex;flex-direction:column;gap:12px;min-width:0}
   .mondSeite .plate.recbox{margin:0}
+  /* Der Kernplatz (v113): in der Mitte der Welt, ein Glühen in der Farbe
+     des Kerns (`--kern`), ohne Kern ein gestrichelter Ring. */
+  .kernKnopf{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
+       border-radius:50%;padding:0;min-height:0;z-index:2;line-height:0;
+       border:1.5px dashed rgba(233,176,99,.45);background:radial-gradient(circle,rgba(233,176,99,.18) 0%,rgba(233,176,99,0) 70%)}
+  .kernKnopf.voll{border:1.5px solid var(--kern);
+       background:radial-gradient(circle,var(--kern) 0%,rgba(0,0,0,0) 72%);box-shadow:0 0 26px var(--kern);opacity:.92}
+  .kernKnopf:hover{border-color:var(--brass);opacity:1}
+  .kernKnopf[hidden]{display:none}
+  body.touch .kernKnopf{width:56px;height:56px;margin:-28px 0 0 -28px}
+  .kernKarte{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 12px;align-items:center;
+       padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--block)}
+  .kernKarte.an{border-color:rgba(233,176,99,.5)}
+  .kernKarte .kernBild{width:44px;height:44px;border-radius:50%;
+       background:radial-gradient(circle at 38% 36%,#fff 0%,var(--kern) 28%,rgba(0,0,0,.55) 100%);box-shadow:0 0 14px var(--kern)}
+  .kernKarte .kernBild.aus{background:radial-gradient(circle at 38% 36%,rgba(255,255,255,.35) 0%,rgba(120,120,130,.6) 30%,rgba(0,0,0,.55) 100%);box-shadow:none}
+  .kernKarte .kn{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap}
+  .kernKarte .kn button{margin:0;width:auto;padding:6px 12px;font-size:12.5px;min-height:0}
+  body.touch .kernKarte .kn button{min-height:44px}
+  .kernKarte small{display:block;color:var(--paper-2);font-size:12px}
+  .kernStufen{display:flex;gap:4px;margin-top:3px}
+  .kernStufen i{width:14px;height:5px;border-radius:99px;background:rgba(255,255,255,.14)}
+  .kernStufen i.hat{background:var(--kern)}
+  .iriZahl{font-family:var(--disp);font-size:26px;color:var(--iri);line-height:1.1}
   .mondVorrat{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
   .mondKarte{display:grid;grid-template-columns:56px minmax(0,1fr);gap:4px 12px;align-items:center;
        padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--block)}
@@ -2182,6 +2232,7 @@
     .konsW .chip{height:auto;padding:0;border:0;background:none;gap:4px}
     .konsW .chip b{font-size:13px}
     .konsW .ore b{font-size:13px}
+    .konsW .iri b{font-size:13px}
     /* „Designs" steht hier als Reiter direkt darunter — der Knopf in der
        Kopfzeile wäre derselbe Weg zweimal und macht den Streifen zu breit. */
     #hautBtn{display:none}
@@ -3509,6 +3560,9 @@
            dem Körper (Thomas, 18.09.2026). -->
       <div class="konsW">
         <span class="ore"><b id="oreNum">0</b> Ore</span>
+        <!-- Iridium (v113): die zweite Währung, nur erspielbar. Nur mit
+             Konto — Gäste haben keins, und was es nicht gibt, steht nicht da. -->
+        <span class="iri" id="iriZeile" hidden><b id="iriNum">0</b> <span data-i18n="iridium">Iridium</span></span>
         <span class="chip" id="ehreZeile" hidden><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
       </div>
     </div>
@@ -3521,6 +3575,9 @@
              Clan ein Kampf läuft. Gemalt von kampfKarteMalen(). -->
         <div class="konsSek" id="kampfBox" hidden></div>
         <div class="konsSek" id="bonusBox" hidden></div>
+        <!-- Aufträge (v113): drei am Tag, Fortschritt und Lohn in Iridium.
+             Nur mit Konto; gemalt von `auftraegeMalen()`. -->
+        <div class="konsSek" id="auftragBox" hidden></div>
         <div class="konsSek" id="naechstBox"></div>
         <div class="konsSek" id="freundBox"></div>
         <p class="foot" id="controls"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
@@ -3655,6 +3712,9 @@
           <div class="mondBuehne" id="mondBuehne">
             <canvas id="mondGL" width="720" height="720" hidden></canvas>
             <canvas id="mondCanvas" width="720" height="720"></canvas>
+            <!-- Der Kernplatz (v113): ein Knopf in der Mitte der Welt, leuchtet
+                 in der Farbe des angelegten Kerns. Gemalt von `kernKnopfMalen()`. -->
+            <button type="button" class="kernKnopf" id="kernKnopf" hidden aria-label="Core slot"></button>
           </div>
           <div class="mondPlatzKn" id="mondPlatzKn"></div>
         </div>
