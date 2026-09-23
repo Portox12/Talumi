@@ -1283,8 +1283,13 @@ const Sound = {
   wachhalten(){
     if (this.keep) return;
     try {
-      const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEA" +
-        "RKwAAIhYAQACABAAZGF0YQAAAAA=");
+      /* Eine Zehntelsekunde echte Stille (8 kHz, 8 Bit, mono). Bis v113 war
+         es eine WAV-Datei mit **null** Abtastwerten in Dauerschleife — eine
+         Schleife ohne Länge, an der sich der Browser festfrisst: Im
+         Headless-Chromium wurde die Seite nach dem Tutorial binnen einer
+         Minute zäh und starb (24.09.2026, mit den Prüfständen eingekreist);
+         auf einem Telefon kostet so eine Schleife mindestens Akku. */
+      const a = new Audio("data:audio/wav;base64," + "UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==");
       a.loop = true; a.volume = 0.0001;
       const p = a.play();
       if (p && p.catch) p.catch(() => {});
@@ -1594,6 +1599,14 @@ const MODES = {
     label:"League", blurb:"Levels and moons count. Stronger prey pays more.",
     ...a4(14142), debris:0, rivals:0, pulsars:0, start:24,
     teams:false, mirror:false, time:0, rewards:0, online:true, liga:true
+  },
+  /* Tutorial (v114): lokal, ohne Verbindung, auf einer Karte so groß wie
+     das Bild. Trümmer, Rivalen und Pulsare setzt `Tutorial.rundeStart()`
+     selbst; `rewards:0` — nichts davon ist eine Runde. */
+  tutorial: {
+    label:"Tutorial", blurb:"",
+    wb:1280, wh:800, debris:0, rivals:0, pulsars:0, start:24,
+    teams:false, mirror:false, time:0, rewards:0, tutorial:true
   }
 };
 /* Seit Schritt 69 gibt es „Freier Raum" nur noch einmal.
@@ -2664,6 +2677,14 @@ function step(dt){
   for (const r of Game.rivals){
     r.retarget -= dt;
     r.merge = Math.max(0, r.merge - dt);
+    /* Tutorial (v114): Vesta und Kepler stehen still — nur ein Stoß aus
+       dem Zersplittern rollt aus, damit die Stücke auseinanderliegen. */
+    if (r.still){
+      r.x += r.vx*dt; r.y += r.vy*dt;
+      r.vx *= decay; r.vy *= decay;
+      bound(r, dt);
+      continue;
+    }
     if (r.retarget <= 0 || !r.goal){
       r.retarget = rnd(.4,1.3);
       r.goal = rivalGoal(r);
@@ -2821,9 +2842,14 @@ function step(dt){
       const d = Game.debris[i];
       if (!d) return;
       if (Math.hypot(f.x-d.x, f.y-d.y) < r){
-        f.m += PELLET;
+        /* Tutorial (v114): Der Staub gibt das Fünffache — es soll sichtbar
+           schnell gehen (Thomas: „was im Tutorial sehr schnell gehen soll"). */
+        f.m += PELLET * (f.mine && Tutorial.laufend ? 5 : 1);
         Grid.drop(d, i);                     // altes Feld räumen, solange d gilt
-        Game.debris[i] = newDebris(); Game.debrisVer = (Game.debrisVer | 0) + 1;
+        /* Tutorial (v114): Nachschub bleibt in der freien Fläche, nicht
+           unter den Tafeln. */
+        Game.debris[i] = Tutorial.laufend && Tutorial.phase === "a" ? Tutorial.neuerStaub() : newDebris();
+        Game.debrisVer = (Game.debrisVer | 0) + 1;
         Grid.put(Game.debris[i], i);         // neues Feld eintragen
         if (f.mine){ Game.debrisEaten++; Sound.eat(f.m); }
       }
@@ -2918,7 +2944,12 @@ function finish(timeUp){
   Game.running = false;
   document.body.classList.remove("playing");
   $("hud").hidden = true;
+  /* Tutorial (v114): Endet die Tutorialrunde von außen (Beenden-Knopf,
+     gefressen), gibt es weder Abrechnung noch Ergebnisbildschirm — nichts
+     davon war eine Runde. `rundeEnde()` führt zurück in den Hangar. */
+  const warTutorial = !!MODE().tutorial;
   try { Tutorial.rundeEnde(); } catch(_){}
+  if (warTutorial) return;
   Portal.gameplayStop();
   if (!timeUp) Portal.countDeath();
   if (!timeUp) Sound.death();
@@ -4903,7 +4934,15 @@ function draw(){
   const eigenR = radiusOf(Math.max(gm,10));
   const deckel = Math.max(0.04, 0.30 * Math.min(VW, VH) / eigenR);
   const target = Math.min(clamp(Math.pow(48/eigenR, .42), .3, 1.1), deckel) * FIT;
-  cam.x += (mx-cam.x)*.14; cam.y += (my-cam.y)*.14; cam.z += (target-cam.z)*.05;
+  /* Tutorial (v114): Die Kamera steht fest über der Mitte, die Welt ist
+     genau das Bild — es gibt nichts außerhalb, dem sie folgen müsste. */
+  if (Tutorial.laufend && Tutorial.kamera){
+    cam.x = WELT_B/2; cam.y = WELT_H/2;
+    cam.z += (Tutorial.kamera.z - cam.z)*.2;
+    if (Math.abs(Tutorial.kamera.z - cam.z) < .002) cam.z = Tutorial.kamera.z;
+  } else {
+    cam.x += (mx-cam.x)*.14; cam.y += (my-cam.y)*.14; cam.z += (target-cam.z)*.05;
+  }
 
   const pad = 60/cam.z;
   const view = {x0:cam.x-VW/2/cam.z-pad, x1:cam.x+VW/2/cam.z+pad,
@@ -5000,9 +5039,13 @@ function draw(){
       ctx.fillStyle = farbe;
       for (const d of liste){ const k = Math.max(kante, d.r * 2); ctx.fillRect(d.x - k/2, d.y - k/2, k, k); }
     }
-  } else for (const d of Game.debris){
-    if (!seen(d)) continue;
-    ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fillStyle = d.c; ctx.fill();
+  } else {
+    /* Tutorial (v114): Der Staub, den man sammeln soll, leuchtet. */
+    if (Tutorial.laufend && Tutorial.glut){ try { Tutorial.staubMalen(ctx, seen); } catch(_){} }
+    for (const d of Game.debris){
+      if (!seen(d)) continue;
+      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fillStyle = d.c; ctx.fill();
+    }
   }
   for (const s of Game.shed){
     if (!seen(s)) continue;
@@ -5095,7 +5138,7 @@ function draw(){
       if (unterPulsar(c.x, c.y, radiusOf(c.m))) continue;
       traeger.add(c);
       zeilen.push({x:c.x, y:c.y, r:radiusOf(c.m), name:c.name,
-                   titel: Game.online && Net.kt > 0 && c.gid === Net.kt,
+                   titel: (Game.online && Net.kt > 0 && c.gid === Net.kt) || (Tutorial.laufend && Tutorial.titelGid === c.gid),
                    tag: c.tag || null,
                    level:Number.isInteger(c.lvl) ? c.lvl : null,
                    rang: Number.isInteger(c.rang) ? c.rang : null});
@@ -5109,7 +5152,7 @@ function draw(){
          (Kennung `online`, dort schickt der Server keins), und nie „NPC". */
       const eigenTag = istAngemeldet() && Konto.profil.clan ? Konto.profil.clan.tag : null;
       zeilen.push({x:meins.x, y:meins.y, r:radiusOf(meins.m), name:Game.name, eigen:true,
-                   titel: Game.online && Net.kt > 0 && Net.kt === Net.you,
+                   titel: (Game.online && Net.kt > 0 && Net.kt === Net.you) || (Tutorial.laufend && Tutorial.titelGid === "me"),
                    tag: eigenTag && modeId !== "online" && String(eigenTag).toUpperCase() !== "NPC" ? eigenTag : null,
                    level:Profile.level,
                    rang: istAngemeldet() && Number.isInteger(Konto.profil.rang)
@@ -5218,6 +5261,9 @@ function draw(){
     if (!seen(k)) continue;
     kapselZeichnen(ctx, k, Game.t);
   }
+
+  /* Tutorial (v114): Pfeil, Zielring, Schusslinie — in Weltkoordinaten. */
+  if (Tutorial.laufend){ try { Tutorial.malen(ctx); } catch(_){} }
 
   for (const g of Game.rings){
     ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, 7);
@@ -5415,10 +5461,11 @@ function paintBoard(gm){
     const byGid = new Map();
     for (const r of Game.rivals){
       const e = byGid.get(r.gid);
-      if (e) e.m += r.m; else byGid.set(r.gid, {name:mitMarke(r.name, true), m:r.m});
+      if (e) e.m += r.m; else byGid.set(r.gid, {name:mitMarke(r.name, true), m:r.m,
+                                                 titel: Tutorial.laufend && Tutorial.titelGid === r.gid});
     }
     list = [...byGid.values()];
-    if (gm > 0) list.push({name:Game.name, m:gm, me:true});
+    if (gm > 0) list.push({name:Game.name, m:gm, me:true, titel: Tutorial.laufend && Tutorial.titelGid === "me"});
   }
   list.sort((a,b) => b.m-a.m);
 
@@ -5533,7 +5580,9 @@ const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legal
                /* v109: Spielerprofil und Bildwahl. */
                "profilVeil","bildVeil","loeschVeil",
                /* v110: Benachrichtigungen. */
-               "pushVeil"];
+               "pushVeil",
+               /* v114: die Belohnung nach dem Tutorial. */
+               "tutLohnVeil"];
 
 
 const SET_UI = [
@@ -6189,6 +6238,8 @@ function mondeMalen(g, x, y, r, arten, zeit, hinten = false){
 }
 /* Die eigenen Monde im Spiel: nur online in der Liga, nur mit Konto. */
 function eigeneMonde(){
+  /* Tutorial (v114): ein Mond zum Zeigen, ohne Wirkung. */
+  if (Tutorial.laufend && Tutorial.mondDemo) return Tutorial.mondDemo;
   if (!Game.online || Net.modus !== "liga" || !Profile.monde) return null;
   return Profile.monde.aktiv.length ? Profile.monde.aktiv : null;
 }
@@ -9462,21 +9513,12 @@ function willkBilderBauen(){
   });
 }
 willkBilderBauen();
+/* Seit v114 startet der Knopf die Tutorialrunde (`MODES.tutorial`, lokal,
+   Karte so groß wie das Bild) — `Tutorial.rundeStarten()` hält die Wahl
+   der Spielart im Hangar unberührt. */
 if ($("willkStart")) $("willkStart").addEventListener("click", () => {
-  Sound.unlock();                     // Nutzergeste: erst hier darf Ton starten
-  const vorher = modeId;
-  modeId = "open";
-  ersatz = true;                      // lokale Runde, kein Verbindungsversuch
-  paintPurse(); buildGrid();
   $("willkVeil").hidden = true;
-  try { goImmersive(); } catch(_){}
-  /* Der Name muss mit: `start()` ohne ihn schreibt „undefined" unter den
-     Körper und in die Bestenliste. Ein Gast hat seinen Namen aus
-     `Gast.laden()`; hat er noch keinen, springt `spielerName()` ein. */
-  start((spielerName() || "").trim().slice(0,14));
-  /* Die Wahl im Hangar bleibt, was sie war — die Tutorialrunde ist ein
-     einmaliger Sonderfall und darf die Spielart nicht verstellen. */
-  modeId = vorher;
+  Tutorial.rundeStarten();
 });
 if ($("willkKonto")) $("willkKonto").addEventListener("click", () => {
   $("willkVeil").hidden = true;
@@ -10465,6 +10507,9 @@ const Konto = {
     Profile.iridium = Math.max(0, +p.iridium || 0);
     Profile.kern = p.kern && typeof p.kern === "object"
       ? { besitz: p.kern.besitz || {}, aktiv: p.kern.aktiv || null, geschenkt: !!p.kern.geschenkt } : null;
+    /* Tutorial (v114): Wer es als Gast gemacht hat und jetzt ein Konto hat,
+       bekommt die Kontobelohnung nachgereicht — einmal je Konto. */
+    try { if (Tutorial.stand.kontoLohn && this.token) Tutorial.kontoLohnHolen(); } catch(_){}
     if (antwort.auftraege && typeof antwort.auftraege === "object") this.auftraege = antwort.auftraege;
     /* Nach Anmeldung oder Registrierung kommen die Aufträge nicht mit —
        einmal nachholen, damit der Kasten nicht erst nach dem Neuladen steht. */
@@ -10666,6 +10711,8 @@ const Konto = {
   async anklopfen(){
     const a = await this.ruf("/health");
     this.versand = !!a.mail;
+    /* Tutorial-Belohnung (v114) vom Server, für die Anzeige beim Gast. */
+    this.tutorialLohn = a.tutorial && typeof a.tutorial === "object" ? a.tutorial : null;
     /* Meldestelle: Knöpfe nur, wenn der Server sie anbietet. */
     this.melden = a.status === 200 && !!a.melden;
     for (const id of ["endMelden", "setMelden"]){ const k = document.getElementById(id); if (k) k.hidden = !this.melden; }
@@ -12598,37 +12645,33 @@ Status.start();
 setTimeout(() => { try { offeneRundeEinloesen(); } catch(_){} }, 2500);
 
 /* =====================================================================
-   TUTORIAL (v109, 20.09.2026)
+   TUTORIAL (v114, 24.09.2026 — neu gebaut nach Thomas' Auftrag vom 23.09.)
 
-   Thomas: „Wichtig ist noch, dass man beim ersten Start des Spiels gleich
-   ins Spiel hüpft und dass man durch ein Tutorial geführt wird, damit man
-   die Spielmechanik und das Menü kennenlernt."
+   Thomas: „Was jetzt noch fehlt ist ein einwandfreies und perfektes
+   Tutorial. Dieses sollte auf einer ganz kleinen Map stattfinden, die nur
+   so groß ist wie der Bildschirm des Geräts. Dort soll man durch alle
+   Funktionen geführt werden. … Dieses Tutorial ist das wichtigste, was wir
+   bisher gemacht haben."
 
-   Recherchiert am 20.09.2026, und die Quellen sagen dasselbe:
-   - CrazyGames (docs.crazygames.com/requirements/gameplay): „Games should
-     land new users in gameplay immediately. If this is not feasible given
-     the game specifics, a maximum of 1 click is allowed." Dazu in den
-     Qualitätsrichtlinien: das Onboarding **im Spiel** umsetzen, überspringbar
-     halten, wenig Text, die Steuerung zeigen.
-   - Poki (developers.poki.com/guide/easy-access): „Skip splash screens,
-     title screens, and level selects. Let them jump straight into the good
-     part", und: Bilder, Animationen, Gesten statt Textwänden.
+   Bauweise (die Vorgaben von CrazyGames und Poki bleiben, siehe v109):
+   ein Klick bis ins Spiel, gelernt wird beim Tun, ein Satz auf einmal,
+   jederzeit überspringbar, alles lokal ohne Verbindung.
 
-   Daraus die Bauweise:
-   1. **Ein Klick.** `#willkVeil` zeigt einem Erstbesucher nur den grünen
-      Startknopf; der Anmeldebildschirm kommt erst, wenn er ihn sucht.
-   2. **Gelernt wird beim Spielen**, nicht in einem Fenster davor. Jeder
-      Schritt endet damit, dass der Spieler ihn **getan** hat — nicht damit,
-      dass er „Weiter" drückt.
-   3. **Eine Sache auf einmal**, höchstens ein Satz, und der Kasten
-      verschwindet dazwischen.
-   4. **Überspringbar**, jederzeit, mit einem Tipp.
-   5. Die erste Runde läuft **lokal** gegen Computergegner: Sie beginnt ohne
-      Verbindung sofort, und niemand wird in den ersten zwanzig Sekunden von
-      einem geübten Spieler gefressen.
+   Zwei Stufen auf einer Karte, die genau das Bild füllt (`kamera` steht
+   fest, Welt = Bildschirm):
+   A  Staubkorn: steuern → Sternenstaub (leuchtet) → Masse oben links
+      blinkt → Vesta (halb so groß, steht still) durch Teilen verschlingen →
+      Abwerfen in einen Pulsar → Pulsar trifft Kepler (steht still, trägt
+      den Titel; Masse ist hier unendlich, bis es klappt) → die Stücke
+      verschlingen, Titel übernehmen → Rangliste und Titel erklärt.
+   B  Welt: Sprung auf 100.000 Masse → so oft wie möglich teilen → Pulsare
+      verschlingen → ein Mond kreist als Vorgeschmack → geschafft.
+   Danach die Belohnung (Basalt in 3D, Ore; mit Konto Iridium und
+   Mondstaub) und der Rundgang durch das Menü.
 
-   Der Stand liegt im `localStorage` (`talumi.tutorial`) — er ist reine
-   Anzeige, nichts davon geht an den Server.
+   Nichts davon zählt als Runde und nichts geht an den Server — bis auf
+   die Belohnung eines Kontos (`/konto/tutorial`, einmal je Konto). Der
+   Stand liegt im `localStorage` (`talumi.tutorial`).
    ===================================================================== */
 
 /* Tippgerät oder Maus — Poki verlangt, dass die Steuerung passend zum Gerät
@@ -12636,15 +12679,28 @@ setTimeout(() => { try { offeneRundeEinloesen(); } catch(_){} }, 2500);
 function tippGeraet(){
   try { return document.body.classList.contains("touch"); } catch(_){ return false; }
 }
+/* Die Belohnung — steht doppelt in konten.js (`TUTORIAL_LOHN`); `/health`
+   bringt die Serverzahlen mit, sobald er erreichbar ist. */
+const TUT_LOHN = { ore: 200, iridium: 20, staub: 3 };
 
 const Tutorial = {
   SCHLUESSEL: "talumi.tutorial",
-  stand: { spiel: 0, menue: 0, fertig: false },
+  stand: { spiel: 0, menue: 0, fertig: false, belohnt: false, kontoLohn: false },
   laufend: false,          // Tutorialrunde läuft gerade
-  schritt: null,           // aktueller Schritt im Spiel
-  seit: 0,                 // Sekunden, die er schon steht
-  start: null,             // letzte Stelle, für „hat er sich bewegt?"
-  strecke: 0,
+  phase: "a",              // a = Staubkorn, b = Welt
+  nr: 0,                   // Schritt in der Phase
+  schritt: null,
+  seit: 0,
+  start: null, strecke: 0,
+  kamera: null,            // {z}: feste Kamera, die Welt ist das Bild
+  glut: false,             // Sternenstaub leuchtet
+  unendlich: 0,            // Masse wird auf diesen Wert gehalten (Pulsar-Schießen)
+  titelGid: null,          // wer den Titel trägt: gid eines Rivalen oder "me"
+  mondDemo: null,          // Monde, die zum Zeigen um den Körper kreisen
+  ziel: null,              // Funktion → Objekt, auf das der Pfeil zeigt
+  schussLinie: false,
+  vesta: null, kepler: null, pulsar: null,
+  staubAb: 0, pulsarAb: 0, stueckeAb: 0,
   zielJetzt: null,
 
   /* --- Stand merken ------------------------------------------------- */
@@ -12658,6 +12714,7 @@ const Tutorial = {
           this.stand.menue  = Math.max(0, Math.min(99, +o.menue || 0));
           this.stand.fertig = !!o.fertig;
           this.stand.belohnt = !!o.belohnt;
+          this.stand.kontoLohn = !!o.kontoLohn;
         }
       }
     } catch(_){}
@@ -12672,103 +12729,266 @@ const Tutorial = {
      bekäme ein wiederkehrender Gast den Willkommensbildschirm noch einmal. */
   erstbesuch(){
     if (this.stand.fertig) return false;
-    if (this.stand.spiel > 0 || this.stand.menue > 0) return false;
+    /* Ein angefangenes, nicht beendetes Tutorial (Seite neu geladen) fängt
+       von vorn an — 99 heißt: die Runde ist geschafft, nur der Rundgang
+       steht noch aus. */
+    if (this.stand.spiel >= 99 || this.stand.menue > 0) return false;
     try { if (Konto.gemerkt()) return false; } catch(_){}
     try { if (Portal.name) return false; } catch(_){}   // Portale springen selbst ins Menü
     try { if (location.hash) return false; } catch(_){} // Link aus einer Mail geht vor
     return !((Profile.rec && Profile.rec.runs) > 0);
   },
 
-  /* --- Die Schritte im Spiel ---------------------------------------- */
-  /* `fertig` prüft, ob der Spieler es getan hat. `wenn` (nur bei „Gefahr")
-     entscheidet, ob der Schritt überhaupt an der Reihe ist; `zeit` lässt
-     ihn nach so vielen Sekunden von selbst weitergehen. */
-  /* Acht Schritte (v109, nach Thomas' Liste vom 22.09.: sammeln, lenken,
-     teilen, abwerfen, Pulsare, Spieler fressen, Pulsare schießen). Jeder
-     endet, wenn der Spieler es **getan** hat; Erklärschritte (Gefahr,
-     Pulsar) gehen nach ein paar Sekunden von selbst weiter. Der letzte Satz
-     nennt die Belohnung. */
-  SCHRITTE: [
-    { id:"bewegen",  text:() => t(tippGeraet() ? "tut_bewegen_tipp" : "tut_bewegen_maus"),
-      fertig: () => Tutorial.strecke > 420 },
-    { id:"truemmer", text:() => t("tut_truemmer"),
-      fertig: () => (Game.debrisEaten || 0) >= 12 },
-    { id:"gefahr",   text:() => t("tut_gefahr"),
-      wenn: () => Tutorial.grosseNah(), zeit: 7 },
-    { id:"fressen",  text:() => t("tut_fressen"),
-      fertig: () => (Game.kills || 0) >= 1 },
-    { id:"teilen",   text:() => t(tippGeraet() ? "tut_teilen_tipp" : "tut_teilen_maus"),
-      fertig: () => Game.lastSplit > 0 },
-    { id:"abwerfen", text:() => t(tippGeraet() ? "tut_abwerfen_tipp" : "tut_abwerfen_maus"),
-      fertig: () => (Game.shedCount || 0) >= 1 },
-    { id:"pulsar",   text:() => t("tut_pulsar"),
-      wenn: () => Tutorial.pulsarNah(), zeit: 8 },
-    { id:"schuss",   text:() => t(tippGeraet() ? "tut_schuss_tipp" : "tut_schuss_maus"),
-      wenn: () => Tutorial.pulsarNah() && Tutorial.eigeneMasse() >= 260,
-      fertig: () => (Game.pulsarSpawns || 0) >= 1, zeit: 25 },
-    { id:"fertig",   text:() => t("tut_fertig"), zeit: 6 }
+  /* --- Die Schritte -------------------------------------------------
+     `text` der Satz; `fertig` prüft, ob der Spieler es getan hat; `zeit`
+     lässt Erklärschritte nach so vielen Sekunden weitergehen; `bei` baut
+     die Lage auf (Rivale, Pulsar, Effekte), `weg` räumt sie; `zaehler`
+     liefert [ist, soll] für die Zeile unter dem Satz; `hilfe` nennt die
+     Steuerhilfe (Hand/Maus, Teilen, Abwerfen). */
+  A: [
+    { id:"steuern", hilfe:"steuern",
+      text: () => t(tippGeraet() ? (document.body.classList.contains("lefty") ? "tu_steuern_tipp_r" : "tu_steuern_tipp") : "tu_steuern_maus"),
+      fertig: () => Tutorial.strecke > 260 },
+    { id:"staub", text: () => t("tu_staub"),
+      bei(){ this.glut = true; this.staubAb = Game.debrisEaten || 0; },
+      zaehler: () => [Math.min(8, (Game.debrisEaten || 0) - Tutorial.staubAb), 8],
+      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 8 },
+    { id:"masse", text: () => t("tu_masse"), zeit: 7,
+      bei(){ Tutorial.hudKlasse("mass", "tutBlink", true); },
+      weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); this.glut = false; },
+      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 14 },
+    { id:"vesta", hilfe:"teilen",
+      text: () => t(tippGeraet() ? "tu_vesta_tipp" : "tu_vesta_maus"),
+      bei(){
+        this.masseMindestens(130);
+        this.vesta = this.rivalSetzen("Vesta", 45, .58, .40, false);
+        this.ziel = () => this.vesta;
+      },
+      fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
+    { id:"abwerfen", hilfe:"abwerfen",
+      text: () => t(tippGeraet() ? "tu_abwerfen_tipp" : "tu_abwerfen_maus"),
+      bei(){
+        this.unendlich = 400;
+        this.masseMindestens(400);
+        this.pulsar = this.pulsarSetzen(.46, .46);
+        this.kepler = this.rivalSetzen("Kepler", 400, .64, .46, true);
+        this.titelGid = this.kepler.gid;
+        this.ziel = () => this.pulsar;
+        this.schussLinie = true;
+        this.schuesse = Game.pulsarSpawns || 0;
+      },
+      zaehler: () => [Math.min(5, (Tutorial.pulsar && Tutorial.pulsar.fed) || 0), 5],
+      fertig: () => (Game.pulsarSpawns || 0) > Tutorial.schuesse },
+    { id:"treffen", text: () => t("tu_treffen"),
+      bei(){ this.ziel = () => this.kepler; },
+      fertig: () => !Tutorial.kepler || Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length !== 1 },
+    { id:"stuecke", text: () => t("tu_stuecke"),
+      bei(){
+        this.ziel = null; this.schussLinie = false;
+        this.stueckeAb = Math.max(1, Game.rivals.filter(r => r.gid === Tutorial.kepler.gid).length);
+        /* Der feste Pulsar hat seinen Dienst getan — weg damit, sonst
+           zerreißt ein Stück daran. */
+        if (this.pulsar){ const i = Game.pulsars.indexOf(this.pulsar); if (i >= 0) Game.pulsars.splice(i, 1); this.pulsar = null; }
+      },
+      zaehler: () => { const n = Game.rivals.filter(r => Tutorial.kepler && r.gid === Tutorial.kepler.gid).length;
+                       return [Math.max(0, Tutorial.stueckeAb - n), Tutorial.stueckeAb]; },
+      fertig: () => !Tutorial.kepler || !Game.rivals.some(r => r.gid === Tutorial.kepler.gid) },
+    { id:"titel", text: () => t("tu_titel"), zeit: 9,
+      bei(){
+        this.titelGid = "me"; this.unendlich = 0;
+        this.hudKlasse("boardPlate", "tutGlow", true);
+        try { const [cx, cy] = centre(); ring(cx, cy, 240, "#f2c14e"); burst(cx, cy, 26, "#f2c14e", 380); Sound.levelUp(); } catch(_){}
+      },
+      weg(){ this.hudKlasse("boardPlate", "tutGlow", false); } }
   ],
+  B: [
+    { id:"welt", text: () => t("tu_welt"), zeit: 4.5, bei(){ this.sprung(); } },
+    { id:"teilen", hilfe:"teilen",
+      text: () => t(tippGeraet() ? "tu_teilen_tipp" : "tu_teilen_maus"),
+      zaehler: () => [Math.min(FEAST_CELLS, Game.cells.length), FEAST_CELLS],
+      fertig: () => Game.cells.length >= FEAST_CELLS },
+    { id:"pulsare", text: () => t("tu_pulsare"),
+      bei(){ this.pulsareSetzen(); this.pulsarAb = Game.pulsarsEaten || 0; },
+      zaehler: () => [Math.min(3, (Game.pulsarsEaten || 0) - Tutorial.pulsarAb), 3],
+      fertig: () => (Game.pulsarsEaten || 0) - Tutorial.pulsarAb >= 3 },
+    { id:"mond", text: () => t("tu_mond"), zeit: 7.5,
+      bei(){
+        this.mondDemo = ["eis"];
+        try { const [cx, cy] = centre(); ring(cx, cy, radiusOf(Math.max(30, Tutorial.eigeneMasse())) * 2.2, "#bfe8ff"); Sound.levelUp(); } catch(_){}
+      } },
+    { id:"fertig", text: () => t("tu_fertig"), zeit: 2.2, bei(){ try { Sound.levelUp(); } catch(_){} } }
+  ],
+  liste(){ return this.phase === "b" ? this.B : this.A; },
   eigeneMasse(){ return (Game.cells || []).reduce((a, c) => a + c.m, 0); },
-  /* Ein Pulsar im Bild? Dann lässt er sich zeigen. */
-  pulsarNah(){
-    const c = Game.cells && Game.cells[0];
-    if (!c) return false;
-    for (const p of (Game.pulsars || [])) if (Math.hypot(p.x - c.x, p.y - c.y) < 700) return true;
-    return false;
-  },
 
-  /* Ist ein Körper in Sicht, der einen fressen könnte? Dieselbe Grenze wie
-     im Spiel (1,22), damit der Satz nicht bei jemandem erscheint, der gar
-     nicht gefährlich ist. */
-  grosseNah(){
-    const c = Game.cells && Game.cells[0];
-    if (!c) return false;
-    const liste = Game.rivals || [];
-    for (const r of liste){
-      if (!r || r.dead) continue;
-      const zellen = r.cells || (r.m !== undefined ? [r] : null);
-      if (!zellen) continue;
-      for (const z of zellen){
-        if (!z || !(z.m >= c.m * 1.22)) continue;
-        if (Math.hypot((z.x || 0) - c.x, (z.y || 0) - c.y) < 900) return true;
+  /* --- Die Lage bauen ----------------------------------------------- */
+  /* Ein Punkt in Anteilen der Karte — die Karte ist das Bild, also sind
+     das Anteile des Bildschirms. Die Spielfläche meidet die Tafeln des
+     HUD: links oben die Masse, rechts die Rangliste, unten die Daumen. */
+  punkt(fx, fy){ return { x: fx * WELT_B, y: fy * WELT_H }; },
+  rivalSetzen(name, m, fx, fy, titel){
+    const r = newRival(name);
+    const p = this.punkt(fx, fy);
+    r.x = p.x; r.y = p.y; r.m = m; r.still = true; r.vx = 0; r.vy = 0;
+    r.tier = titel ? 3 : 1; r.trait = titel ? "bands" : "plain"; r.tint = 0;
+    Game.rivals.push(r);
+    return r;
+  },
+  pulsarSetzen(fx, fy){
+    const p = this.punkt(fx, fy);
+    const q = newPulsar(p.x, p.y);
+    q.fest = true; q.vx = 0; q.vy = 0;
+    Game.pulsars.push(q);
+    return q;
+  },
+  masseMindestens(m){
+    const tot = this.eigeneMasse();
+    if (tot < m && Game.cells.length) groesstes(Game.cells).m += m - tot;
+  },
+  /* Der Körper bleibt stehen, bis der Spieler steuert: Zeiger auf den
+     Körper (die Karte ist das Bild, also Weltpunkt = Bildpunkt bei Zoom 1
+     — sonst umrechnen), Daumenrichtung null. */
+  stillstehen(x, y){
+    const z = cam.z || 1;
+    ptr.x = (x - cam.x) * z + VW / 2; ptr.y = (y - cam.y) * z + VH / 2;
+    stick.dx = 0; stick.dy = 0; stick.active = false;
+  },
+  /* Sternenstaub nur in der freien Fläche, dicht genug, dass man ihn
+     ohne Suchen findet. */
+  neuerStaub(){
+    const d = newDebris();
+    d.x = rnd(WELT_B * .06, WELT_B * .72); d.y = rnd(WELT_H * .16, WELT_H * .80);
+    return d;
+  },
+  staubStreuen(n){
+    Game.debris = Array.from({ length: n }, () => this.neuerStaub());
+    Game.debrisVer = (Game.debrisVer | 0) + 1;
+    Grid.cells = null; Grid.rebuild(Game.debris);
+  },
+  /* Phase B: acht Pulsare im Ring um die Mitte — die rechte Seite bleibt
+     frei, dort steht die Rangliste. */
+  pulsareSetzen(){
+    Game.pulsars = []; Game.pulsarBack = [];
+    const cx = WELT_B / 2, cy = WELT_H / 2, R = Math.min(WELT_B, WELT_H) * .30;
+    /* Nicht auf ein eigenes Stück setzen — die liegen nach dem Teilen weit
+       verstreut, und ein Pulsar, der gleich beim Erscheinen gefressen wird,
+       erklärt nichts. Notfalls weiter außen. */
+    const frei = (x, y) => Game.cells.every(c => Math.hypot(c.x - x, c.y - y) > radiusOf(c.m) + PULSAR_R + 40);
+    for (let i = 0; i < 8; i++){
+      const a = .6 + i * (5.08 / 7);
+      let x = cx, y = cy, gefunden = false;
+      for (const f of [1, 1.15, 1.3, 1.45]){
+        x = clamp(cx + Math.cos(a) * R * f, PULSAR_R * 2, WELT_B - PULSAR_R * 2);
+        y = clamp(cy + Math.sin(a) * R * f, PULSAR_R * 2, WELT_H - PULSAR_R * 2);
+        if (frei(x, y)){ gefunden = true; break; }
       }
+      if (!gefunden) continue;
+      const p = newPulsar(x, y);
+      p.vx = 0; p.vy = 0;
+      Game.pulsars.push(p);
     }
-    return false;
   },
 
-  /* --- Ablauf im Spiel ---------------------------------------------- */
+  /* Die Runde einrichten — aus `start()`, sobald alles andere steht. Die
+     Welt ist so groß wie das Bild bei Zoom 1; alles Zufällige aus `start()`
+     wird hier ersetzt. */
   rundeStart(){
-    if (this.stand.fertig || this.stand.spiel >= this.SCHRITTE.length){ this.laufend = false; return; }
-    this.laufend = true;
-    this.strecke = 0;
-    this.start = null;
-    this.seit = 0;
-    this.schritt = null;
+    if (!MODE().tutorial){ this.laufend = false; return; }
+    this.laufend = true; this.phase = "a"; this.nr = 0;
+    this.strecke = 0; this.start = null; this.seit = 0; this.schritt = null;
+    this.glut = false; this.unendlich = 0; this.titelGid = null; this.mondDemo = null;
+    this.ziel = null; this.schussLinie = false; this.vesta = this.kepler = this.pulsar = null;
+    WELT_B = Math.max(640, Math.round(VW)); WELT_H = Math.max(360, Math.round(VH));
+    this.kamera = { z: 1 };
+    cam.x = WELT_B / 2; cam.y = WELT_H / 2; cam.z = 1;
+    Game.rivals = []; Game.pulsars = []; Game.pulsarBack = []; Game.shed = [];
+    Game.rings = []; Game.sparks = []; Game.goals = [];
+    const p = this.punkt(.22, .5);
+    Game.cells = [newCell(p.x, p.y, 24)];
+    Game.safe = 0;
+    /* Stillstehen, bis der Spieler steuert: Der Zeiger liegt sonst noch bei
+       (0,0) und der Daumen zeigt nach oben — der Körper liefe in der ersten
+       Sekunde aus dem Bild (so auf den ersten Fotos, 24.09.2026). */
+    this.stillstehen(p.x, p.y);
+    this.staubStreuen(46);
+    seedStars();
+    const box = document.getElementById("tutBox");
+    if (box) box.classList.remove("fertig");
     this.naechster();
   },
 
+  /* Der Sprung in Phase B: eine Welt mit 100.000 Masse, die Kamera fährt so
+     weit heraus, dass der Körper knapp ein Drittel der kurzen Kante füllt
+     (dieselbe Regel wie im Spiel), und die Welt ist wieder genau das Bild. */
+  sprung(){
+    const M = 100000;
+    const z = Math.max(.04, .30 * Math.min(VW, VH) / radiusOf(M));
+    WELT_B = Math.round(VW / z); WELT_H = Math.round(VH / z);
+    this.kamera = { z };
+    cam.x = WELT_B / 2; cam.y = WELT_H / 2; cam.z = z;
+    Game.cells = [newCell(WELT_B / 2, WELT_H / 2, M)];
+    Game.rivals = []; Game.pulsars = []; Game.pulsarBack = []; Game.shed = [];
+    Game.rings = []; Game.sparks = [];
+    Game.safe = 0;
+    this.stillstehen(WELT_B / 2, WELT_H / 2);
+    Game.debris = Array.from({ length: 700 }, newDebris);
+    Game.debrisVer = (Game.debrisVer | 0) + 1;
+    Grid.cells = null; Grid.rebuild(Game.debris);
+    seedStars();
+    this.titelGid = "me";
+    const f = document.getElementById("tutSprung");
+    if (f){ f.hidden = false; f.classList.remove("an"); void f.offsetWidth; f.classList.add("an");
+            setTimeout(() => { f.hidden = true; }, 1500); }
+    try { Sound.levelUp(); } catch(_){}
+  },
+
+  /* --- Ablauf ------------------------------------------------------- */
   naechster(){
     const box = document.getElementById("tutBox");
     if (!box) return;
-    if (this.stand.spiel < this.SCHRITTE.length){
-      const s = this.SCHRITTE[this.stand.spiel];
-      /* Ein Schritt, dessen Lage noch nicht eingetreten ist („Gefahr"),
-         wartet: Der Kasten bleibt leer, bis es so weit ist. */
-      if (s.wenn && !s.wenn()){ this.schritt = null; box.hidden = true; return; }
-      this.schritt = s; this.seit = 0;
-      box.hidden = false;
-      box.classList.remove("fertig");
-      /* Die Führerin (v109): das gewählte Profilbild spricht. */
-      const fig = document.getElementById("tutFigur");
-      if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
-      const haken = document.getElementById("tutHaken");
-      if (haken) haken.hidden = true;
-      const txt = document.getElementById("tutText");
-      if (txt) txt.textContent = s.text();
-      return;
+    const L = this.liste();
+    if (this.nr >= L.length){
+      if (this.phase === "a"){ this.phase = "b"; this.nr = 0; return this.naechster(); }
+      return this.abschliessenRunde();
     }
-    this.schritt = null;
-    box.hidden = true;
+    const s = L[this.nr];
+    this.schritt = s; this.seit = 0;
+    try { if (s.bei) s.bei.call(this); } catch(e){ try { console.warn("Tutorial:", e); } catch(_){} }
+    box.hidden = false;
+    box.classList.remove("fertig");
+    const fig = document.getElementById("tutFigur");
+    if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
+    const haken = document.getElementById("tutHaken");
+    if (haken) haken.hidden = true;
+    const txt = document.getElementById("tutText");
+    if (txt) txt.textContent = s.text();
+    this.punkteMalen();
+    this.zaehlerMalen();
+    this.hilfeSetzen(s.hilfe || null);
+    /* Der Stand im Speicher zählt Schritte über beide Phasen — für die
+       Weiche und die Prüfstände. */
+    this.stand.spiel = (this.phase === "b" ? this.A.length : 0) + this.nr;
+    this.sichern();
+  },
+  punkteMalen(){
+    const el = document.getElementById("tutPunkte");
+    if (!el) return;
+    const L = this.liste();
+    el.innerHTML = L.map((_, i) => `<i class="${i < this.nr ? "da" : i === this.nr ? "jetzt" : ""}"></i>`).join("");
+  },
+  zaehlerMalen(){
+    const el = document.getElementById("tutStand");
+    if (!el) return;
+    const s = this.schritt;
+    if (!s || !s.zaehler){ el.hidden = true; return; }
+    let ist = 0, soll = 1;
+    try { [ist, soll] = s.zaehler(); } catch(_){}
+    el.hidden = false;
+    const anteil = Math.max(0, Math.min(1, ist / Math.max(1, soll)));
+    if (el.dataset.ist !== String(ist) || el.dataset.soll !== String(soll)){
+      el.dataset.ist = String(ist); el.dataset.soll = String(soll);
+      el.innerHTML = `<span class="bar"><i style="width:${Math.round(anteil * 100)}%"></i></span><b>${ist} / ${soll}</b>`;
+    }
   },
 
   /* Ein Schritt ist geschafft: kurz der Haken, dann der nächste. */
@@ -12779,10 +12999,13 @@ const Tutorial = {
       const haken = document.getElementById("tutHaken");
       if (haken) haken.hidden = false;
     }
-    this.stand.spiel++;
-    this.sichern();
+    const s = this.schritt;
     this.schritt = null;
-    setTimeout(() => { if (this.laufend) this.naechster(); }, 900);
+    try { if (s && s.weg) s.weg.call(this); } catch(_){}
+    this.hilfeSetzen(null);
+    try { Sound.pop(); } catch(_){}
+    this.nr++;
+    setTimeout(() => { if (this.laufend) this.naechster(); }, 850);
   },
 
   /* Läuft aus der Bildschleife, nicht aus einem Zeitgeber: Ein verdeckter
@@ -12798,61 +13021,290 @@ const Tutorial = {
         this.start.x = c.x; this.start.y = c.y;
       }
     }
-    if (!this.schritt){
-      /* Ein wartender Schritt kann jederzeit an die Reihe kommen — einmal
-         je Sekunde nachsehen reicht. */
-      this.seit += dt;
-      if (this.seit > 1){ this.seit = 0; this.naechster(); }
-      return;
+    /* Unendliche Masse beim Schießen: die Summe wird gehalten — wer
+       abwirft, verliert nichts, wer frisst, wächst nicht über Kepler hinaus. */
+    if (this.unendlich && Game.cells.length){
+      const tot = this.eigeneMasse();
+      if (Math.abs(tot - this.unendlich) > .5) groesstes(Game.cells).m += this.unendlich - tot;
     }
+    /* Feste Pulsare bleiben, wo sie sind; verschossene, die ihr Ziel
+       verfehlt haben, lösen sich nach ein paar Sekunden auf — sonst
+       sammeln sie sich auf der kleinen Karte. */
+    if (this.pulsar){ this.pulsar.vx = 0; this.pulsar.vy = 0; }
+    for (let i = Game.pulsars.length - 1; i >= 0; i--){
+      const p = Game.pulsars[i];
+      if (p.fest) continue;
+      if (p.schuss > 0 && !p.tutAb) p.tutAb = Game.t;
+      if (this.phase === "a" && p.tutAb && Game.t - p.tutAb > 4.5){
+        ring(p.x, p.y, PULSAR_R * 2, TH().paper2);
+        Game.pulsars.splice(i, 1);
+      }
+    }
+    if (!this.schritt) return;
     this.seit += dt;
     const s = this.schritt;
+    this.zaehlerMalen();
     if (s.fertig && s.fertig()) return this.geschafft();
     if (s.zeit && this.seit >= s.zeit) return this.geschafft();
   },
 
-  /* Beim Tod oder Beenden: Kasten weg. Der Rundgang durchs Menü kommt,
-     sobald der Hangar wieder zu sehen ist. */
-  rundeEnde(){
-    this.laufend = false;
-    this.schritt = null;
+  /* --- Effekte im Spielfeld (aus `draw()`, Weltkoordinaten) ------------ */
+  malen(g){
+    if (!this.laufend) return;
+    const z = cam.z || 1, w = 2 / z;
+    const puls = .5 + .5 * Math.sin(Game.t * 4);
+    /* Schusslinie: durch Pulsar und Kepler, weit nach beiden Seiten. */
+    if (this.schussLinie && this.pulsar && this.kepler){
+      const p = this.pulsar, k = this.kepler;
+      const dx = k.x - p.x, dy = k.y - p.y, l = Math.hypot(dx, dy) || 1;
+      g.save(); g.setLineDash([10 / z, 12 / z]); g.lineWidth = w;
+      g.strokeStyle = "rgba(233,176,99,.55)";
+      g.beginPath(); g.moveTo(p.x - dx / l * 900, p.y - dy / l * 900); g.lineTo(k.x + dx / l * 60, k.y + dy / l * 60); g.stroke();
+      g.restore();
+    }
+    /* Pfeil vom eigenen Körper zum Ziel und ein pulsierender Ring darum. */
+    const ziel = this.ziel ? this.ziel() : null;
+    if (ziel && Game.cells.length){
+      const me = groesstes(Game.cells);
+      const zr = ziel.fed !== undefined ? PULSAR_R : radiusOf(ziel.m || 20);
+      const dx = ziel.x - me.x, dy = ziel.y - me.y, l = Math.hypot(dx, dy) || 1;
+      const a = radiusOf(me.m) + 16 / z, b = l - zr - 18 / z;
+      g.save();
+      g.strokeStyle = "rgba(233,176,99," + (.55 + .4 * puls).toFixed(3) + ")";
+      g.lineWidth = 3 / z; g.setLineDash([]);
+      g.beginPath(); g.arc(ziel.x, ziel.y, zr + (8 + 6 * puls) / z, 0, 7); g.stroke();
+      if (b > a + 24 / z){
+        const ux = dx / l, uy = dy / l;
+        g.lineWidth = 3.5 / z; g.lineCap = "round";
+        g.beginPath(); g.moveTo(me.x + ux * a, me.y + uy * a); g.lineTo(me.x + ux * b, me.y + uy * b); g.stroke();
+        const hx = me.x + ux * b, hy = me.y + uy * b, s = 12 / z;
+        g.beginPath(); g.moveTo(hx, hy); g.lineTo(hx - ux * s - uy * s * .6, hy - uy * s + ux * s * .6);
+        g.lineTo(hx - ux * s + uy * s * .6, hy - uy * s - ux * s * .6); g.closePath();
+        g.fillStyle = g.strokeStyle; g.fill();
+      }
+      g.restore();
+    }
+    /* Phase B: die Pulsare, die man verschlingen soll, bekommen einen
+       blauen Hof und Ring — weit herausgezoomt sind sie sonst fünf Punkte
+       groß und leicht zu übersehen. */
+    if (this.schritt && this.schritt.id === "pulsare"){
+      g.save();
+      const hof = PULSAR_R + 34 / z, ringR = PULSAR_R + (18 + 6 * puls) / z;
+      for (const p of Game.pulsars){
+        const gr = g.createRadialGradient(p.x, p.y, PULSAR_R * .5, p.x, p.y, hof);
+        gr.addColorStop(0, "rgba(159,216,255," + (.30 + .25 * puls).toFixed(3) + ")");
+        gr.addColorStop(1, "rgba(159,216,255,0)");
+        g.fillStyle = gr; g.beginPath(); g.arc(p.x, p.y, hof, 0, 7); g.fill();
+        g.lineWidth = 3 / z; g.strokeStyle = "rgba(191,232,255," + (.55 + .4 * puls).toFixed(3) + ")";
+        g.beginPath(); g.arc(p.x, p.y, ringR, 0, 7); g.stroke();
+      }
+      g.restore();
+    }
+  },
+  /* Leuchtender Sternenstaub (Schritt „Staub"/„Masse"): ein Hof je Korn. */
+  staubMalen(g, seen){
+    if (!this.glut) return;
+    const puls = .6 + .4 * Math.sin(Game.t * 3.2);
+    g.save();
+    for (const d of Game.debris){
+      if (!seen(d)) continue;
+      const gr = g.createRadialGradient(d.x, d.y, 1, d.x, d.y, 13);
+      gr.addColorStop(0, "rgba(255,236,170," + (.55 * puls).toFixed(3) + ")");
+      gr.addColorStop(1, "rgba(255,236,170,0)");
+      g.fillStyle = gr; g.beginPath(); g.arc(d.x, d.y, 13, 0, 7); g.fill();
+    }
+    g.restore();
+  },
+
+  /* --- Steuerhilfen im Bild --------------------------------------------- */
+  hudKlasse(id, klasse, an){
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle(klasse, !!an);
+  },
+  hilfeSetzen(art){
+    const hand = document.getElementById("tutHand"), maus = document.getElementById("tutMaus"),
+          taste = document.getElementById("tutTaste");
+    const tipp = tippGeraet();
+    if (hand) hand.hidden = !(art === "steuern" && tipp);
+    if (maus) maus.hidden = !(art === "steuern" && !tipp);
+    if (hand) hand.classList.toggle("rechts", document.body.classList.contains("lefty"));
+    this.hudKlasse("padSplit", "tutPuls", art === "teilen" && tipp);
+    this.hudKlasse("padShed",  "tutPuls", art === "abwerfen" && tipp);
+    if (taste){
+      const zeigen = !tipp && (art === "teilen" || art === "abwerfen");
+      taste.hidden = !zeigen;
+      if (zeigen) taste.textContent = t(art === "teilen" ? "tu_taste_leer" : "tu_taste_w");
+    }
+  },
+  aufraeumen(){
+    this.hilfeSetzen(null);
+    this.hudKlasse("mass", "tutBlink", false);
+    this.hudKlasse("boardPlate", "tutGlow", false);
+    this.glut = false; this.unendlich = 0; this.mondDemo = null; this.ziel = null;
+    this.schussLinie = false; this.kamera = null; this.titelGid = null;
     const box = document.getElementById("tutBox");
     if (box) box.hidden = true;
   },
 
-  ueberspringen(){
-    this.laufend = false;
-    this.schritt = null;
-    this.stand.spiel = this.SCHRITTE.length;
-    this.stand.menue = 99;
-    this.stand.fertig = true;
+  /* --- Rundenende --------------------------------------------------- */
+  /* Aus `finish()`: Die Runde endet von außen (gefressen — kaum möglich,
+     Beenden-Knopf). Dann gilt das Tutorial als übersprungen. */
+  rundeEnde(){
+    if (!this.laufend) return;
+    this.rundeVerlassen();
+    if (!this.stand.fertig){ this.stand.fertig = true; this.stand.menue = 99; this.sichern(); }
+    try { Sound.death(); } catch(_){}
+    try { paintPurse(); buildGrid(); show("startVeil"); } catch(_){}
+  },
+  /* Die Runde beenden, ohne Abrechnung — nichts davon war eine Runde. */
+  rundeVerlassen(){
+    this.laufend = false; this.schritt = null;
+    this.aufraeumen();
+    if (modeId === "tutorial") modeId = this.modusVorher || "liga";
+    Game.running = false;
+    document.body.classList.remove("playing");
+    const hud = document.getElementById("hud"); if (hud) hud.hidden = true;
+    try { Portal.gameplayStop(); } catch(_){}
+    try { Net.leave(); } catch(_){}
+    try { offeneRundeWeg(); } catch(_){}
+  },
+  abschliessenRunde(){
+    this.rundeVerlassen();
+    this.stand.spiel = 99;
     this.sichern();
-    const box = document.getElementById("tutBox");
-    if (box) box.hidden = true;
+    this.lohnZeigen();
+  },
+  ueberspringen(){
+    const lief = this.laufend;
+    this.stand.spiel = 99; this.stand.menue = 99; this.stand.fertig = true;
+    this.sichern();
     this.tippZu();
+    if (lief){ this.rundeVerlassen(); try { paintPurse(); buildGrid(); show("startVeil"); } catch(_){} }
+    else this.aufraeumen();
+  },
+  /* Von vorn — aus der Spielanleitung (auch zum Ansehen für Thomas). */
+  neuStarten(){
+    this.stand = { spiel: 0, menue: 0, fertig: false, belohnt: this.stand.belohnt, kontoLohn: this.stand.kontoLohn };
+    this.sichern();
+    this.tippZu();
+    this.rundeStarten();
+  },
+  /* Die Tutorialrunde starten — vom Willkommensbildschirm und aus der
+     Anleitung. Lokal, ohne Verbindungsversuch; die Wahl der Spielart im
+     Hangar bleibt unberührt. */
+  rundeStarten(){
+    try { Sound.unlock(); } catch(_){}
+    /* Die Spielart bleibt für die Dauer der Runde „tutorial" — `MODE()`
+       entscheidet unterwegs über Belohnung und Pulsare. Zurückgestellt wird
+       sie in `rundeVerlassen()`, bevor der Hangar wieder aufgeht. */
+    if (modeId !== "tutorial") this.modusVorher = modeId;
+    modeId = "tutorial";
+    ersatz = false;
+    try { paintPurse(); buildGrid(); } catch(_){}
+    try { hideAll(); } catch(_){}
+    try { goImmersive(); } catch(_){}
+    start((spielerName() || "").trim().slice(0, 14));
+    /* `start()` stellt den Daumen nach dem Einrichten wieder auf „oben" —
+       deshalb erst hier: stehen bleiben, bis der Spieler steuert. */
+    try { const c = Game.cells[0]; if (c) this.stillstehen(c.x, c.y); } catch(_){}
+  },
+
+  /* --- Die Belohnung ------------------------------------------------ */
+  lohnZeigen(){
+    const veil = document.getElementById("tutLohnVeil");
+    if (!veil){ this.lohnWeiter(); return; }
+    const pal = SKINS.find(s => s.id === "basalt") || SKINS[0];
+    const konto = istAngemeldet();
+    const L = (Konto.tutorialLohn && typeof Konto.tutorialLohn === "object") ? Konto.tutorialLohn : TUT_LOHN;
+    const name = document.getElementById("tutLohnDesign");
+    if (name) name.textContent = t("tu_l_design", pal.label || pal.id);
+    const zeilen = document.getElementById("tutLohnZeilen");
+    if (zeilen){
+      const z = [[`<span class="ik ore">${ICON_ORE}</span>`, "+" + (L.ore || 0).toLocaleString(lang), t("tu_l_ore")]];
+      if (konto){
+        z.push([`<span class="ik iri"></span>`, "+" + (L.iridium || 0).toLocaleString(lang), t("tu_l_iri")]);
+        z.push([`<span class="ik staub"></span>`, "+" + (L.staub || 0).toLocaleString(lang), t("tu_l_staub")]);
+      }
+      zeilen.innerHTML = z.map((r, i) => `<div class="tutLohnZeile" style="--n:${i}">${r[0]}<b>${esc(r[1])}</b><small>${esc(r[2])}</small></div>`).join("");
+    }
+    const hinweis = document.getElementById("tutLohnKonto"), kn = document.getElementById("tutLohnKontoKn");
+    if (hinweis){ hinweis.hidden = konto; hinweis.textContent = t("tu_l_konto", L.iridium || 0, L.staub || 0); }
+    if (kn) kn.hidden = konto;
+    hideAll();
+    veil.hidden = false;
+    veil.classList.remove("an"); void veil.offsetWidth; veil.classList.add("an");
+    try { Sound.levelUp(); } catch(_){}
+    /* Der Körper in 3D, drehend — dieselbe Bühne wie im Hangar. */
+    try {
+      const c = document.getElementById("tutLohnOben"), glc = document.getElementById("tutLohnGL");
+      if (c){
+        const S = c.width, stufe = STAGES.length - 1, masse = STAGES[stufe].at;
+        const R = S * heldAnteil(stufe, pal, null);
+        if (glc && Lohn3D.moeglich(glc)){
+          glc.hidden = false;
+          Lohn3D.zeigen({ pal, masse, stufe, monde: null, R, S });
+        } else {
+          if (glc) glc.hidden = true;
+          const g = c.getContext("2d");
+          g.clearRect(0, 0, S, S);
+          const saveT = Game.t; Game.t = 1.2; MENUE_VOLL = true;
+          try { body(g, S/2, S/2, R, masse, pal, 0, "", true); } catch(_){}
+          MENUE_VOLL = false; Game.t = saveT;
+        }
+      }
+    } catch(_){}
+    const w = document.getElementById("tutLohnWeiter");
+    if (w) w.focus();
+  },
+  /* Die Belohnung verbuchen und in den Hangar — dort beginnt der Rundgang. */
+  lohnWeiter(){
+    const veil = document.getElementById("tutLohnVeil");
+    if (veil) veil.hidden = true;
+    /* Das große Tagesbonus-Fenster (einmal am Tag) käme jetzt vor den
+       Rundgang — heute nicht; der Bonus ist eine Station des Rundgangs. */
+    try { localStorage.setItem("talumi.bonusGezeigt", String(Gast.heute())); } catch(_){}
+    if (istAngemeldet()) this.kontoLohnHolen();
+    else if (!this.stand.belohnt){
+      this.stand.belohnt = true; this.stand.kontoLohn = true; this.sichern();
+      Profile.ore += TUT_LOHN.ore; Gast.sichern();
+    }
+    this.stand.menue = 0; this.sichern();
+    try { paintPurse(); buildGrid(); show("startVeil"); } catch(_){}
+  },
+  /* Ein Konto bekommt seine Belohnung vom Server — genau einmal je Konto.
+     Auch nachgeholt, wenn ein Gast das Tutorial gemacht hat und sich
+     danach ein Konto anlegt (`stand.kontoLohn`). */
+  async kontoLohnHolen(){
+    if (!istAngemeldet()) return;
+    try {
+      const a = await Konto.ruf("/konto/tutorial", {});
+      if (a && a.ok){
+        this.stand.belohnt = true; this.stand.kontoLohn = false; this.sichern();
+        if (!a.schon){
+          Konto.uebernehmen(a);
+          try { paintPurse(); buildGrid(); } catch(_){}
+          try { lohnZeigen("+" + (a.ore || 0) + " Ore · +" + (a.iridium || 0) + " " + t("iridium"), t("tu_l_auge"), ikonBild("ore")); } catch(_){}
+        }
+      }
+    } catch(_){}
   },
 
   /* --- Rundgang durch das Menü -------------------------------------- */
-  /* Drei Sprechblasen, mehr nicht: Der Spieler hat gerade eine Runde
-     gespielt und will die nächste, nicht eine Führung. */
-  /* Gezeigt wird die **Bühne**, nicht `#heldCanvas`: Läuft das 3D-Modell,
-     ist die obere Fläche leer und kann unsichtbar sein — dann hätte die
-     Blase ihr Ziel verloren und der Schritt wäre stillschweigend
-     übersprungen worden (genau so geschehen beim ersten Lauf). */
+  /* Sechs Blasen, jede an dem Element, das sie erklärt. Elemente, die es
+     auf dieser Größe oder ohne Server nicht gibt, werden übersprungen. */
   MENUE: [
     { ziel: ".heldBuehne", text: "tut_m_koerper" },
     { ziel: "#konsReiter button[data-reiter=haut]", text: "tut_m_designs" },
     { ziel: "#modes", text: "tut_m_modi" },
-    { ziel: "#bonusKnopf", text: "tut_m_bonus" }
+    { ziel: "#boardBox", text: "tu_m_rangliste" },
+    { ziel: "#bonusKnopf", text: "tut_m_bonus" },
+    { ziel: "#startBtn", text: "tu_m_spielen" }
   ],
 
   menueVersuchen(){
     if (this.stand.fertig) return;
-    if (this.stand.spiel < this.SCHRITTE.length) return;   // Spielteil noch offen
+    if (this.stand.spiel < 99) return;   // Spielteil noch offen
     if (this.stand.menue >= this.MENUE.length) return this.abschliessen();
-    /* Steht die Blase schon, bleibt sie stehen. `show()` ruft hier nach
-       jedem Öffnen des Hangars an; ohne diese Zeile würde eine offene Blase
-       neu aufgebaut und der Spieler verlöre sie mitten im Lesen. */
     const offenSchon = document.getElementById("tutTipp");
     if (offenSchon && !offenSchon.hidden) return;
     const sv = document.getElementById("startVeil");
@@ -12873,7 +13325,7 @@ const Tutorial = {
     const ziel = document.querySelector(s.ziel);
     /* Fehlt das Element auf dieser Größe, wird der Schritt übersprungen,
        statt eine Blase ins Leere zu setzen. */
-    if (!ziel || !ziel.offsetParent){ this.stand.menue++; this.sichern(); return this.menueVersuchen(); }
+    if (!ziel || !ziel.offsetParent || ziel.hidden){ this.stand.menue++; this.sichern(); return this.menueVersuchen(); }
 
     const txt = document.getElementById("tutTippText");
     if (txt) txt.textContent = t(s.text);
@@ -12881,6 +13333,8 @@ const Tutorial = {
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
     const zahl = document.getElementById("tutTippZahl");
     if (zahl) zahl.textContent = (this.stand.menue + 1) + "/" + this.MENUE.length;
+    const weiter = document.getElementById("tutTippWeiter");
+    if (weiter) weiter.textContent = t(this.stand.menue >= this.MENUE.length - 1 ? "tu_m_fertig" : "tut_weiter");
     blase.hidden = false;
     ziel.classList.add("tutZiel");
     this.zielJetzt = ziel;
@@ -12917,15 +13371,7 @@ const Tutorial = {
     this.stand.fertig = true;
     this.sichern();
     this.tippZu();
-    /* Belohnung (v109): einmal 200 Ore für den Rundgang — als Gast lokal,
-       ein Konto hat das Tutorial schon hinter sich. Recherche: Ein kleiner,
-       sicherer Lohn am Ende hält mehr Spieler als ein großer, der Zufall
-       verspricht. */
-    if (!war && !istAngemeldet() && !this.stand.belohnt){
-      this.stand.belohnt = true; this.sichern();
-      Profile.ore += 200; Gast.sichern();
-      try { paintPurse(); lohnZeigen("200 Ore", t("tut_lohn"), ikonBild("ore")); } catch(_){}
-    }
+    if (!war){ try { toast(t("tu_viel_spass")); } catch(_){} }
   },
 
   /* --- Einhängen ---------------------------------------------------- */
@@ -12935,6 +13381,19 @@ const Tutorial = {
     if (skip) skip.addEventListener("click", () => this.ueberspringen());
     const weiter = document.getElementById("tutTippWeiter");
     if (weiter) weiter.addEventListener("click", () => this.tippWeiter());
+    const lw = document.getElementById("tutLohnWeiter");
+    if (lw) lw.addEventListener("click", () => this.lohnWeiter());
+    const lk = document.getElementById("tutLohnKontoKn");
+    if (lk) lk.addEventListener("click", () => {
+      this.stand.kontoLohn = true;
+      if (!this.stand.belohnt){ this.stand.belohnt = true; Profile.ore += TUT_LOHN.ore; try { Gast.sichern(); } catch(_){} }
+      this.stand.menue = 0; this.sichern();
+      const veil = document.getElementById("tutLohnVeil"); if (veil) veil.hidden = true;
+      try { anlegen = true; anlegenSchritt = 1; kontoFormZeichnen(); } catch(_){}
+      try { kontoMeldung(""); show("accountVeil"); } catch(_){}
+    });
+    const ht = document.getElementById("hilfeTutorial");
+    if (ht) ht.addEventListener("click", () => this.neuStarten());
     /* Wird das Fenster gedreht, sitzt die Blase falsch — dann neu setzen.
        In `try`, weil dieser Abschnitt auch in Prüfständen ohne Fenster
        geladen wird (die Falle aus v105). */
@@ -12946,5 +13405,20 @@ const Tutorial = {
     } catch(_){}
   }
 };
+
+/* Die drehende Welt auf dem Belohnungsbildschirm — dieselbe Bühne wie im
+   Hangar (`Held3D`), auf eigener Fläche. */
+const Lohn3D = Object.assign(Object.create(Held3D), {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  kosten: 0, bilder: 0, stehen: false, fotos: {},
+  obenId: "tutLohnOben", ohneBaender: true, dreh: 0,
+  sichtbar(){
+    const v = document.getElementById("tutLohnVeil");
+    return !!v && !v.hidden && !document.hidden;
+  }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Lohn3D.weiter(); });
 
 try { Tutorial.einhaengen(); } catch(_){}

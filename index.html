@@ -1650,6 +1650,111 @@
   @keyframes tutAufLinks{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   body.touch .tutBox{animation-name:tutAufLinks}
 
+  /* ---- Tutorial v114: Kasten mit Stand, Punkten und Taste ----------------
+     Größer und wärmer als der Hinweiskasten von v109 — er ist der erste
+     Eindruck vom Spiel. Der Haken und ein grüner Rand feiern jeden Schritt. */
+  .tutBox{max-width:min(600px, calc(100vw - 40px));padding:12px 16px;gap:14px;
+       background:linear-gradient(180deg, rgba(22,16,10,.92), rgba(12,9,6,.94));
+       border:1px solid rgba(233,176,99,.55);
+       box-shadow:0 14px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)}
+  .tutFigur{width:52px;height:52px;box-shadow:0 0 0 2px rgba(233,176,99,.55), 0 6px 18px rgba(0,0,0,.5)}
+  .tutMitte{flex:1 1 auto;min-width:0;display:grid;gap:6px}
+  .tutBox p{font-size:15px;line-height:1.35}
+  .tutStand{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .tutStand[hidden]{display:none}
+  .tutStand .bar{flex:1 1 auto;height:5px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  .tutStand .bar i{display:block;height:100%;background:var(--brass);box-shadow:0 0 10px var(--brass);transition:width .25s ease-out}
+  .tutPunkte{display:flex;gap:5px}
+  .tutPunkte i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.18)}
+  .tutPunkte i.da{background:var(--brass)}
+  .tutPunkte i.jetzt{background:var(--brass-hell);box-shadow:0 0 8px var(--brass)}
+  kbd.tutTaste{flex:0 0 auto;font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--paper);
+       padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.35);border-bottom-width:3px;
+       background:rgba(255,255,255,.08);animation:tutTaste 1s ease-in-out infinite}
+  kbd.tutTaste[hidden]{display:none}
+  @keyframes tutTaste{0%,100%{transform:translateY(0);box-shadow:0 0 0 rgba(233,176,99,0)}50%{transform:translateY(2px);box-shadow:0 0 14px rgba(233,176,99,.6)}}
+  .tutBox.fertig{border-color:rgba(61,220,132,.7);box-shadow:0 14px 44px rgba(0,0,0,.55), 0 0 26px rgba(61,220,132,.25)}
+  @media (max-height:420px){ .tutBox p{font-size:13.5px} .tutFigur{width:40px;height:40px} }
+  /* Steuerhilfen: Hand (Telefon) und Zeiger (Rechner) im ersten Schritt. */
+  .tutHilfe{position:fixed;inset:0;pointer-events:none;z-index:3}
+  .tutHand{position:absolute;left:calc(12% + env(safe-area-inset-left));bottom:24%;width:96px;height:96px;
+       animation:tutHand 2.4s ease-in-out infinite}
+  .tutHand.rechts{left:auto;right:calc(12% + env(safe-area-inset-right))}
+  .tutHand svg{width:100%;height:100%;filter:drop-shadow(0 6px 14px rgba(0,0,0,.6))}
+  .tutHand i{position:absolute;left:14px;top:60px;width:26px;height:26px;border-radius:50%;
+       border:2px solid rgba(233,176,99,.8);box-shadow:0 0 16px rgba(233,176,99,.5);animation:tutRing 2.4s ease-in-out infinite}
+  .tutHand[hidden],.tutMaus[hidden]{display:none}
+  @keyframes tutHand{0%,100%{transform:translate(0,0)}25%{transform:translate(38px,-26px)}50%{transform:translate(60px,10px)}75%{transform:translate(22px,26px)}}
+  @keyframes tutRing{0%,100%{opacity:.4;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}}
+  .tutMaus{position:absolute;left:34%;top:38%;width:44px;height:44px;animation:tutMaus 2.8s ease-in-out infinite}
+  .tutMaus svg{width:100%;height:100%;filter:drop-shadow(0 4px 10px rgba(0,0,0,.6))}
+  @keyframes tutMaus{0%,100%{transform:translate(0,0)}30%{transform:translate(70px,-30px)}60%{transform:translate(120px,20px)}}
+  #pads button.tutPuls{border-color:var(--brass);animation:tutPuls 1.1s ease-out infinite}
+  @keyframes tutPuls{0%{box-shadow:0 0 0 0 rgba(233,176,99,.65)}100%{box-shadow:0 0 0 18px rgba(233,176,99,0)}}
+  #mass.tutBlink{animation:tutBlink 1s ease-in-out infinite;transform-origin:left top}
+  @keyframes tutBlink{0%,100%{transform:scale(1);text-shadow:none}50%{transform:scale(1.14);color:var(--brass-hell);text-shadow:0 0 22px rgba(233,176,99,.9)}}
+  #boardPlate.tutGlow{box-shadow:0 0 0 2px var(--brass), 0 0 34px rgba(233,176,99,.55);animation:tutGlow 1.4s ease-in-out infinite}
+  @keyframes tutGlow{50%{box-shadow:0 0 0 2px var(--brass-hell), 0 0 50px rgba(233,176,99,.85)}}
+  /* Der Sprung in die zweite Stufe. */
+  #tutSprung{position:fixed;inset:0;z-index:5;pointer-events:none;display:grid;place-items:center;opacity:0;
+       background:radial-gradient(circle at 50% 50%, rgba(233,176,99,.55), rgba(233,176,99,.12) 40%, rgba(0,0,0,0) 70%)}
+  #tutSprung[hidden]{display:none}
+  #tutSprung b{font-family:var(--disp);font-size:clamp(34px,7vw,72px);letter-spacing:.14em;text-transform:uppercase;color:var(--brass-hell);
+       text-shadow:0 0 30px rgba(233,176,99,.9)}
+  #tutSprung.an{animation:tutSprung 1.5s ease-out forwards}
+  @keyframes tutSprung{0%{opacity:0;transform:scale(.8)}18%{opacity:1;transform:scale(1)}70%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+  /* Die Belohnung. */
+  #tutLohnVeil{display:grid;place-items:center;padding:16px}
+  #tutLohnVeil[hidden]{display:none}
+  .tutLohnKarte{position:relative;width:min(560px,100%);max-height:100%;overflow:auto;text-align:center;
+       display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 22px 20px;border-radius:22px;
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));border:1px solid rgba(233,176,99,.5);
+       box-shadow:0 36px 100px rgba(0,0,0,.6)}
+  .tutLohnAuge{margin:0;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--brass)}
+  .tutLohnKarte h1{margin:0;font-family:var(--serif);font-size:32px;color:var(--paper)}
+  .tutLohnBuehne{position:relative;width:min(260px, 42vh);aspect-ratio:1;margin:2px 0;flex:0 0 auto}
+  .tutLohnBuehne canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .tutLohnBuehne canvas[hidden]{display:none}
+  .tutLohnStrahlen{position:absolute;inset:-30%;border-radius:50%;pointer-events:none;
+       background:repeating-conic-gradient(from 0deg, rgba(233,176,99,0) 0deg 12deg, rgba(233,176,99,.16) 18deg, rgba(233,176,99,0) 24deg 30deg);
+       -webkit-mask:radial-gradient(circle, #000 18%, transparent 66%);mask:radial-gradient(circle, #000 18%, transparent 66%);
+       animation:tutStrahlen 28s linear infinite}
+  @keyframes tutStrahlen{to{transform:rotate(360deg)}}
+  .tutLohnDesign{margin:0;font-family:var(--serif);font-size:18px;color:var(--brass-hell)}
+  .tutLohnZeilen{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:4px}
+  .tutLohnZeile{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;align-items:center;column-gap:10px;
+       padding:8px 14px;border-radius:12px;background:var(--block);border:1px solid var(--line);
+       opacity:0;transform:translateY(8px);animation:tutZeile .5s ease-out forwards;animation-delay:calc(.45s + var(--n) * .3s)}
+  .tutLohnZeile .ik{grid-row:1 / 3;width:34px;height:34px;display:grid;place-items:center}
+  .tutLohnZeile .ik svg{width:30px;height:30px;color:var(--brass-hell)}
+  .tutLohnZeile .ik.iri{border-radius:50%;background:radial-gradient(circle at 38% 36%,#fff 0%,var(--iri) 30%,rgba(0,0,0,.5) 100%);box-shadow:0 0 12px var(--iri)}
+  .tutLohnZeile .ik.staub{border-radius:50%;background:radial-gradient(circle at 38% 36%,#fff 0%,#d9c9a6 30%,rgba(0,0,0,.5) 100%)}
+  .tutLohnZeile b{font-family:var(--disp);font-size:22px;color:var(--brass-hell);line-height:1.1;text-align:left}
+  .tutLohnZeile small{font-size:11.5px;color:var(--paper-2);text-align:left;letter-spacing:.06em;text-transform:uppercase}
+  @keyframes tutZeile{to{opacity:1;transform:none}}
+  #tutLohnVeil .hintline{max-width:30rem;margin:4px 0 0}
+  .tutLohnKn{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+  .tutLohnKn button{margin:0;width:auto;min-width:180px;padding:0 22px;min-height:48px}
+  #tutLohnWeiter{background:linear-gradient(180deg, var(--brass-hell), var(--brass));color:#1c1207;border:0;font-weight:700}
+  #tutLohnVeil.an .tutLohnKarte{animation:tutKarteAuf .45s ease-out}
+  @keyframes tutKarteAuf{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    .tutHand,.tutMaus,kbd.tutTaste,#pads button.tutPuls,#mass.tutBlink,#boardPlate.tutGlow,.tutLohnStrahlen,#tutSprung.an,.tutLohnZeile,#tutLohnVeil.an .tutLohnKarte{animation:none}
+    .tutLohnZeile{opacity:1;transform:none}
+    #tutSprung.an{opacity:1}
+  }
+  @media (max-height:460px){
+    .tutLohnKarte{padding:12px 16px 14px;gap:5px;flex-direction:row;flex-wrap:wrap;justify-content:center}
+    .tutLohnKarte h1{font-size:22px}
+    .tutLohnAuge{width:100%}
+    .tutLohnKarte h1{width:100%}
+    .tutLohnBuehne{width:min(150px, 40vh)}
+    .tutLohnZeile{padding:6px 10px}
+    .tutLohnZeile b{font-size:18px}
+    .tutLohnKn{width:100%;margin-top:4px}
+    .tutLohnKn button{min-height:44px}
+  }
+
   /* ---- Tutorial: die Sprechblase für den Rundgang durchs Menü -------- */
   .tutTipp{position:fixed;z-index:60;max-width:min(300px, calc(100vw - 28px));
        padding:12px 14px;border-radius:13px;
@@ -3138,7 +3243,7 @@
       <h2 data-i18n="objectives">Objectives</h2>
       <div id="goalList"></div>
     </div>
-    <div class="plate">
+    <div class="plate" id="boardPlate">
       <h2 data-i18n="largest">Largest bodies</h2>
       <div id="board"></div>
     </div>
@@ -3167,12 +3272,32 @@
        Daumen, oben der Beenden-Knopf. Er zeigt immer **einen** Schritt;
        weiter geht es, sobald der Spieler ihn getan hat, nicht auf Knopfdruck
        (CrazyGames: „implement the onboarding in gameplay"). -->
+  <!-- Seit v114: dazu die Zeile mit Stand („3 / 8"), die Punkte der Stufe
+       und am Rechner die Taste, die gerade gemeint ist. -->
   <div class="tutBox" id="tutBox" hidden>
     <span class="tutFigur" id="tutFigur"></span>
+    <div class="tutMitte">
+      <p id="tutText">…</p>
+      <div class="tutStand" id="tutStand" hidden></div>
+      <div class="tutPunkte" id="tutPunkte"></div>
+    </div>
+    <kbd class="tutTaste" id="tutTaste" hidden>Space</kbd>
     <i class="tutHaken" id="tutHaken" hidden>✓</i>
-    <p id="tutText">…</p>
     <button type="button" class="tutSkip" id="tutSkip" data-i18n="tut_skip">Skip</button>
   </div>
+  <!-- Steuerhilfen (v114): am Telefon eine Hand, die über den Schirm zieht,
+       am Rechner ein Zeiger, der wandert. Nur im ersten Schritt. -->
+  <div class="tutHilfe" id="tutHilfe" aria-hidden="true">
+    <div class="tutHand" id="tutHand" hidden>
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M24 58V30a4 4 0 0 1 8 0v14M32 44V22a4 4 0 0 1 8 0v22M40 44V26a4 4 0 0 1 8 0v18M48 44V32a4 4 0 0 1 8 0v12c0 10-6 16-16 16h-4c-6 0-9-2-12-7L14 44a4 4 0 0 1 6-5l4 5" fill="rgba(255,255,255,.12)" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <i></i>
+    </div>
+    <div class="tutMaus" id="tutMaus" hidden>
+      <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M12 6l28 24-12 2 7 14-6 3-7-14-8 9z" fill="rgba(255,255,255,.9)" stroke="#1c1207" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <!-- Der Sprung in die zweite Stufe (v114): ein Lichtblitz mit Wort. -->
+  <div id="tutSprung" hidden><b data-i18n="tu_sprung">Leap</b></div>
 </div>
 
 <!-- =====================================================================
@@ -4197,6 +4322,8 @@
   <div class="card hilfe">
     <h1 style="font-size:34px;margin-bottom:4px" data-i18n="hilfe">Spielanleitung</h1>
     <p class="sub" style="margin:0">Aus einem Staubkorn wird ein Planet. Alles, was du wissen musst, auf einer Seite.</p>
+    <!-- Tutorial noch einmal (v114): die geführte Runde auf der kleinen Karte. -->
+    <p style="margin:10px 0 0"><button type="button" class="quiet" id="hilfeTutorial" style="width:auto;margin:0;padding:0 16px" data-i18n="tu_hilfe_tutorial">Tutorial noch einmal spielen</button></p>
 
     <h2>Das Ziel</h2>
     <p>Du beginnst als <b>Staubkorn</b>. Sammle den Sternenstaub ein und verschlinge Körper, die deutlich kleiner sind als du. So wächst du über <b>Geröll</b>, <b>Planetesimal</b> und <b>Protoplanet</b> zur <b>Welt</b> mit Ringen und Monden. Wer dich verschlingt, beendet deine Runde — und dann heißt es: Nochmal.</p>
@@ -4311,6 +4438,29 @@
   <button type="button" class="quiet" id="pushAngebotNein" data-i18n="po_nein">No thanks</button>
 </div>
 <!-- Belohnung strahlend in der Mitte (Schritt 106) -->
+<!-- Die Belohnung nach dem Tutorial (v114): das erste Design als drehende
+     Welt in 3D (`Lohn3D` in spiel.js), darunter Ore — und mit Konto Iridium
+     und Mondstaub. Gäste sehen, was ein Konto dazu bringt. Kein Grün: Der
+     Startknopf bleibt der einzige grüne Punkt. -->
+<div class="veil" id="tutLohnVeil" hidden>
+  <div class="tutLohnKarte">
+    <p class="tutLohnAuge" data-i18n="tu_l_auge">Tutorial complete</p>
+    <h1 data-i18n="tu_l_kopf">Your reward</h1>
+    <div class="tutLohnBuehne" id="tutLohnBuehne">
+      <i class="tutLohnStrahlen"></i>
+      <canvas id="tutLohnGL" width="720" height="720" hidden></canvas>
+      <canvas id="tutLohnOben" width="720" height="720"></canvas>
+    </div>
+    <p class="tutLohnDesign" id="tutLohnDesign"></p>
+    <div class="tutLohnZeilen" id="tutLohnZeilen"></div>
+    <p class="hintline" id="tutLohnKonto" hidden></p>
+    <div class="tutLohnKn">
+      <button type="button" id="tutLohnWeiter" data-i18n="tu_l_weiter">On to the menu</button>
+      <button type="button" class="quiet" id="tutLohnKontoKn" data-i18n="tu_l_konto_kn" hidden>Create account</button>
+    </div>
+  </div>
+</div>
+
 <div id="lohnGlanz" hidden aria-live="polite">
   <div class="glanz"><span id="lohnBild"></span><b id="lohnText"></b><small id="lohnSub"></small></div>
 </div>
