@@ -5316,122 +5316,142 @@ function kleinBild(o, pal){
   return c;
 }
 
-/* Himmel im Spielfeld (Entwurf, 24.09.2026 abends). Bis hierher lag hinter
-   dem Spiel eine glatte, fast schwarze Fläche — genau das, was Spieler an
-   Slither.io als „weiten, öden Raum" bemängeln. Ein Nebel gibt Tiefe: einmal
-   in ein Bild gemalt (1024 × 576) und danach nur verschoben, kostet er so
-   viel wie die glatte Fläche vorher (ein Bild über den ganzen Schirm statt
-   eines Rechtecks). Er zieht sehr langsam mit der Kamera (über die ganze
-   Karte etwa ein halbes Bild) und weitet sich beim Herauszoomen etwas.
-   `NEBEL_ART`: "aus" = wie bisher, sonst einer der Entwürfe. Im Sparmodus
-   immer aus. */
+/* Himmel im Spielfeld: ein Nebel, der zur Karte gehört (v146).
+   Bis v145 hing er fast am Bildschirm — über die ganze Karte verschob er
+   sich nur um ein halbes Bild, der warme Kern saß immer an derselben Stelle
+   (Thomas, 24.09. spät: „der leuchtende Nebel ist immer gleich auf meinem
+   Bildschirm … sollte abwechslungsreich sein und mit der Map zusammenhängen").
+   Jetzt ist er eine eigene, weit entfernte Ebene über der ganzen Karte:
+   - Er zieht mit 60 % der Kamerabewegung (`P`) — langsamer als Staub und
+     Sterne, also weiter weg. Bei Startgröße wandert er beim Fliegen gut
+     40 Punkte je Sekunde übers Bild.
+   - Jede Gegend hat ihren eigenen Himmel: 40 Wolkenzüge quer über die Ebene,
+     meist kühl, dazwischen warme Kerne und dunkle Leeren. Fester Zufall —
+     für alle Spieler an derselben Stelle der Karte derselbe Himmel.
+   - Beim Herauszoomen weitet er sich nur mit der Wurzel des Zooms und ab
+     Zoom 0,2 gar nicht mehr (ferne Dinge schrumpfen kaum).
+   Einmal gemalt (960 × 609) und auf halbe Größe verkleinert (480 × 305,
+   ~0,6 MB), danach je Bild nur ein Ausschnitt kopiert — kostet so viel wie
+   die glatte Fläche.
+   Vorbereitet wird er kurz nach dem Laden im Menü, damit der Rundenstart
+   nicht stockt. `NEBEL_ART`: "aus" = glatte Fläche, sonst eine Farbwelt.
+   Im Sparmodus immer aus. */
 let NEBEL_ART = "tief";   // Thomas 24.09.2026 abends: „okay, push" auf die Empfehlung B
 const Nebel = {
   bild: null, art: "", thema: "",
-  /* Ein Entwurf = einige Wolkenzüge. Ein Zug läuft auf einer geschwungenen
-     Bahn (Anfang, Biegepunkt, Ende — Anteile der Bildgröße) und wechselt
-     entlang der Bahn von Farbe a nach Farbe b. Gemalt wird additiv
-     („lighter"): Wo Tupfer sich überlagern, leuchtet es — statt wie ein
-     trüber Schleier über allem zu liegen (so sahen die ersten Versuche aus).
-     Dazwischen bleibt fast überall das dunkle Grundschwarz. */
+  P: .6, A: .45, Z_MIN: .2,
+  /* Die Ebene: Kamerawege der Standardkarte (16818 × 11892) mal P, dazu ein
+     Rand für das, was man beim Herauszoomen sieht. Größere Karten reichen
+     über den Rand hinaus — dort blendet das Bild weich ins Grundschwarz. */
+  UX0: -3100, UY0: -1600, UX1: 16818 * .6 + 3100, UY1: 11892 * .6 + 1600,
+  BREITE: 960,
   ENTWUERFE: {
-    /* A „Glut und Eis": die beiden Gegenfarben des Spiels — Glut-Orange und
-       Türkis — als zwei Wolkenzüge, die sich in der Mitte berühren. */
-    glut:  { zuege: [
-      { p: [-.05,.78, .38,.30, .78,.62], a: [224,122,60],  b: [216,167,95],  n: 90, r: 70, k: .030 },
-      { p: [ .30,1.05, .62,.55, 1.08,.18], a: [52,150,150], b: [96,120,176], n: 80, r: 64, k: .026 } ],
-      staub: 22, kerne: [[.40,.34,"255,196,130"], [.66,.52,"150,230,220"]] },
-    /* B „Tiefsee": kühl — Blaugrün und Violett, ein kleiner Messingkern. */
-    tief:  { zuege: [
-      { p: [-.05,.30, .40,.72, .95,.40], a: [40,110,150],  b: [104,70,160], n: 95, r: 72, k: .030 },
-      { p: [ .55,-.05, .70,.40, 1.05,.95], a: [70,60,150],  b: [40,130,140], n: 60, r: 58, k: .024 } ],
-      staub: 18, kerne: [[.52,.56,"230,180,120"]] },
-    /* C „Sternenband": eine Milchstraße quer übers Bild, warmweiß, mit
-       einer dunklen Staubbahn in der Mitte und türkisem Saum. */
-    band:  { zuege: [
-      { p: [-.10,.92, .45,.48, 1.10,.10], a: [236,206,160], b: [226,170,110], n: 150, r: 60, k: .026, breit: 80 },
-      { p: [-.10,.98, .45,.56, 1.10,.18], a: [50,120,140],  b: [70,110,160],  n: 60,  r: 46, k: .018, breit: 60 } ],
-      bahn: true, staub: 34, kerne: [[.45,.48,"255,230,190"]] }
+    /* Tiefsee (gewählt): kühle Züge, selten ein warmes Ende, warme Kerne. */
+    tief: { kuehl: [[40,110,150],[104,70,160],[70,60,150],[40,130,140],[30,80,120],[90,60,140]],
+            warm: [[230,180,120],[224,150,95],[240,200,150]], warmAnteil: .15 },
+    /* Glut: warm, mit kühlem Gegenton. */
+    glut: { kuehl: [[224,122,60],[216,167,95],[150,72,40],[190,110,60]],
+            warm: [[60,140,150],[255,210,150]], warmAnteil: .2 },
+    /* Sternenband: warmweiß und blass. */
+    band: { kuehl: [[236,206,160],[226,170,110],[200,160,120]],
+            warm: [[60,120,140],[255,230,190]], warmAnteil: .2 }
   },
   bauen(){
-    /* Klein gemalt (400 × 225) und beim Zeichnen weich vergrößert: Groß
-       gemalt zeigten die Wolken nach dem Vergrößern ein feines Punktraster
-       (die Farbstreuung des Browsers in dunklen Verläufen). `q` rechnet die
-       Maße der Entwürfe (für 1280 Breite gedacht) um. */
-    const W = 400, H = 225, q = W / 1280, E = this.ENTWUERFE[NEBEL_ART];
+    const E = this.ENTWUERFE[NEBEL_ART];
+    const upp = (this.UX1 - this.UX0) / this.BREITE;           // Ebenen-Einheiten je Bildpunkt
+    const W = this.BREITE, H = Math.round((this.UY1 - this.UY0) / upp);
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const g = c.getContext("2d");
     g.fillStyle = TH().ink; g.fillRect(0, 0, W, H);
     let s = 90217; const z = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const X = u => (u - this.UX0) / upp, Y = v => (v - this.UY0) / upp;
     const tupfer = (x, y, r, rgb, a) => {
       const gr = g.createRadialGradient(x, y, 0, x, y, r);
       gr.addColorStop(0, `rgba(${rgb},${a.toFixed(4)})`); gr.addColorStop(.45, `rgba(${rgb},${(a * .42).toFixed(4)})`); gr.addColorStop(1, `rgba(${rgb},0)`);
       g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
     };
-    const punkt = (p, t) => { const u = 1 - t;   // quadratische Bézierkurve
-      return [(u*u*p[0] + 2*u*t*p[2] + t*t*p[4]) * W, (u*u*p[1] + 2*u*t*p[3] + t*t*p[5]) * H]; };
+    const farbe = (liste) => liste[Math.floor(z() * liste.length) % liste.length];
+    const zuege = [];
     g.globalCompositeOperation = "lighter";
-    for (const zug of E.zuege){
-      for (let i = 0; i < zug.n; i++){
-        const t = z(), [x, y] = punkt(zug.p, t);
-        /* Quer zur Bahn gestreut, zur Mitte hin dichter (Summe zweier Würfel). */
-        const quer = ((z() + z()) - 1) * (zug.breit || 110) * q;
+    for (let i = 0; i < 40; i++){
+      /* Ein Zug: quadratische Bézierkurve durch die Ebene. */
+      const x0 = this.UX0 + z() * (this.UX1 - this.UX0), y0 = this.UY0 + z() * (this.UY1 - this.UY0);
+      const w = z() * 6.2832, l = 2200 + z() * 3000;
+      const x2 = x0 + Math.cos(w) * l, y2 = y0 + Math.sin(w) * l;
+      const bieg = (z() - .5) * .6 * l;
+      const x1 = (x0 + x2) / 2 - Math.sin(w) * bieg, y1 = (y0 + y2) / 2 + Math.cos(w) * bieg;
+      const a = z() < E.warmAnteil ? farbe(E.warm) : farbe(E.kuehl), b = farbe(E.kuehl);
+      const n = 45 + Math.floor(z() * 35), rBasis = 260 + z() * 260;
+      zuege.push([x0, y0, x1, y1, x2, y2]);
+      for (let k = 0; k < n; k++){
+        const t = z(), u = 1 - t;
+        const px = u*u*x0 + 2*u*t*x1 + t*t*x2, py = u*u*y0 + 2*u*t*y1 + t*t*y2;
+        const quer = ((z() + z()) - 1) * 520;
         const f = clamp(t + (z() - .5) * .3, 0, 1);
-        const rgb = [0, 1, 2].map(k => Math.round(zug.a[k] + (zug.b[k] - zug.a[k]) * f)).join(",");
-        tupfer(x + quer * .6, y + quer, zug.r * q * (.35 + z() * 1.1), rgb, zug.k * 2.3 * (.5 + z()));
+        const rgb = [0, 1, 2].map(j => Math.round(a[j] + (b[j] - a[j]) * f)).join(",");
+        tupfer(X(px - Math.sin(w) * quer), Y(py + Math.cos(w) * quer), rBasis * (.35 + z() * 1.1) / upp, rgb, .069 * (.5 + z()));
       }
     }
-    /* Helle Kerne: wenige kleine, kräftigere Stellen — das Auge braucht
-       einen Punkt, an dem es hängen bleibt. */
-    for (const [kx, ky, rgb] of E.kerne){
-      tupfer(kx * W, ky * H, 90 * q, rgb, .14);
-      tupfer(kx * W, ky * H, 34 * q, rgb, .18);
+    /* Warme Kerne: wenige helle Stellen, an denen das Auge hängen bleibt. */
+    for (let i = 0; i < 12; i++){
+      const kx = X(this.UX0 + z() * (this.UX1 - this.UX0)), ky = Y(this.UY0 + z() * (this.UY1 - this.UY0));
+      const rgb = farbe(E.warm).join(",");
+      tupfer(kx, ky, 700 / upp, rgb, .14); tupfer(kx, ky, 260 / upp, rgb, .18);
     }
     g.globalCompositeOperation = "source-over";
-    /* Dunkle Staubbahnen über dem Leuchten: erst sie machen aus Wolken
-       Nebel mit Form. Beim Band liegen sie auf dessen Mittellinie. */
-    const zug0 = E.zuege[0];
-    for (let i = 0; i < E.staub; i++){
-      const t = z(), [x, y] = punkt(zug0.p, t);
-      const quer = (E.bahn ? (z() - .5) * 20 : (z() - .5) * 160) * q;
-      tupfer(x + quer * .6 + (E.bahn ? 0 : (z() - .5) * 120 * q), y + quer, (16 + z() * (E.bahn ? 34 : 60)) * q, "6,4,3", .30 + z() * .25);
+    /* Dunkle Staubbahnen entlang der Züge und große Leeren dazwischen. */
+    for (let i = 0; i < 120; i++){
+      const [x0, y0, x1, y1, x2, y2] = zuege[i % zuege.length], t = z(), u = 1 - t;
+      const px = u*u*x0 + 2*u*t*x1 + t*t*x2 + (z() - .5) * 700, py = u*u*y0 + 2*u*t*y1 + t*t*y2 + (z() - .5) * 700;
+      tupfer(X(px), Y(py), (80 + z() * 160) / upp, "6,4,3", .30 + z() * .25);
     }
-    /* Einmal weichzeichnen (dreimal Kastenmittel, Radius 2 ≈ Gaußsche
-       Unschärfe): Der Browser streut in Verläufe feine Farbpunkte, damit
-       keine Stufen entstehen. Sechsfach vergrößert wurden daraus sichtbare
-       Kästchen. Kostet einmal wenige Millisekunden. */
-    try { this.glaetten(g, W, H); } catch(_){}
-    this.bild = c; this.art = NEBEL_ART; this.thema = Settings.theme;
-  },
-  glaetten(g, W, H){
-    const bild = g.getImageData(0, 0, W, H), d = bild.data, tmp = new Float32Array(W * H * 3), R = 2, n = R * 2 + 1;
-    for (let durchgang = 0; durchgang < 3; durchgang++){
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){          // waagrecht
-        let r = 0, gg = 0, b = 0;
-        for (let k = -R; k <= R; k++){ const i = (y * W + clamp(x + k, 0, W - 1)) * 4; r += d[i]; gg += d[i+1]; b += d[i+2]; }
-        const o = (y * W + x) * 3; tmp[o] = r / n; tmp[o+1] = gg / n; tmp[o+2] = b / n;
-      }
-      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){          // senkrecht
-        let r = 0, gg = 0, b = 0;
-        for (let k = -R; k <= R; k++){ const o = (clamp(y + k, 0, H - 1) * W + x) * 3; r += tmp[o]; gg += tmp[o+1]; b += tmp[o+2]; }
-        const i = (y * W + x) * 4; d[i] = r / n; d[i+1] = gg / n; d[i+2] = b / n; d[i+3] = 255;
-      }
-    }
-    g.putImageData(bild, 0, 0);
+    for (let i = 0; i < 6; i++)
+      tupfer(X(this.UX0 + z() * (this.UX1 - this.UX0)), Y(this.UY0 + z() * (this.UY1 - this.UY0)), (1500 + z() * 1000) / upp, "6,4,3", .5);
+    /* Ränder weich ins Grundschwarz — jenseits der Ebene gibt es nur Schwarz. */
+    const ink = TH().ink, rw = W * .06, rh = H * .06;
+    const kante = (x0, y0, x1, y1, x, y, w, h) => { const lg = g.createLinearGradient(x0, y0, x1, y1); lg.addColorStop(0, ink); lg.addColorStop(1, "rgba(0,0,0,0)"); g.fillStyle = lg; g.fillRect(x, y, w, h); };
+    kante(0, 0, rw, 0, 0, 0, rw, H); kante(W, 0, W - rw, 0, W - rw, 0, rw, H);
+    kante(0, 0, 0, rh, 0, 0, W, rh); kante(0, H, 0, H - rh, 0, H - rh, W, rh);
+    /* Auf halbe Größe verkleinern: Das mittelt die feinen Farbpunkte weg, die
+       der Browser in Verläufe streut (vergrößert wurden daraus sichtbare
+       Kästchen), läuft auf der Grafikeinheit und spart drei Viertel Speicher.
+       Vorher Bildpunkt für Bildpunkt in JavaScript: 0,7 s auf einem
+       gedrosselten Handy. */
+    let fertig = c, fupp = upp;
+    try {
+      const k = document.createElement("canvas"); k.width = Math.round(W / 2); k.height = Math.round(H / 2);
+      const kg = k.getContext("2d"); kg.imageSmoothingEnabled = true; kg.imageSmoothingQuality = "high";
+      kg.drawImage(c, 0, 0, k.width, k.height);
+      fertig = k; fupp = upp * W / k.width;
+      c.width = c.height = 0;   // große Fläche sofort freigeben (Safari)
+    } catch(_){}
+    this.bild = fertig; this.upp = fupp; this.art = NEBEL_ART; this.thema = Settings.theme;
   },
   malen(g){
     if (Settings.lowPower || !this.ENTWUERFE[NEBEL_ART]){ g.fillStyle = TH().ink; g.fillRect(0, 0, VW, VH); return; }
     if (!this.bild || this.art !== NEBEL_ART || this.thema !== Settings.theme) this.bauen();
-    const B = this.bild.width, H = this.bild.height;
-    const weit = Math.pow(.58 / clamp(cam.z, .02, 2), .12);
-    let fw = B * clamp(.52 * weit, .3, .9), fh = fw * VH / Math.max(1, VW);
-    if (fh > H * .96){ fh = H * .96; fw = fh * VW / Math.max(1, VH); }
-    const u = WELT_B > 0 ? clamp(cam.x / WELT_B, 0, 1) : .5, v = WELT_H > 0 ? clamp(cam.y / WELT_H, 0, 1) : .5;
-    g.imageSmoothingQuality = "high";
-    g.drawImage(this.bild, u * (B - fw), v * (H - fh), fw, fh, 0, 0, VW, VH);
-    g.imageSmoothingQuality = "low";   // Vorgabe des Browsers — für die Bildchen der Körper reicht sie
+    /* Ebene → Bildschirm: Maßstab wächst nur mit der Wurzel des Zooms. */
+    const zn = clamp(cam.z / (FIT || 1), this.Z_MIN, 2);
+    const sk = (FIT || 1) * this.A * Math.sqrt(zn / .58);
+    const upp = this.upp, B = this.bild.width, H = this.bild.height;
+    const halbB = VW / 2 / sk, halbH = VH / 2 / sk;
+    const sx = (cam.x * this.P - halbB - this.UX0) / upp, sy = (cam.y * this.P - halbH - this.UY0) / upp;
+    const sw = 2 * halbB / upp, sh = 2 * halbH / upp;
+    /* Von Hand auf das Bild beschneiden — ältere Safari zeichnen nichts, wenn
+       der Ausschnitt über das Bild hinausragt. */
+    const ix0 = Math.max(0, sx), iy0 = Math.max(0, sy), ix1 = Math.min(B, sx + sw), iy1 = Math.min(H, sy + sh);
+    if (ix0 > sx || iy0 > sy || ix1 < sx + sw || iy1 < sy + sh){ g.fillStyle = TH().ink; g.fillRect(0, 0, VW, VH); }
+    if (ix1 > ix0 && iy1 > iy0){
+      const kx = VW / sw, ky = VH / sh;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(this.bild, ix0, iy0, ix1 - ix0, iy1 - iy0, (ix0 - sx) * kx, (iy0 - sy) * ky, (ix1 - ix0) * kx, (iy1 - iy0) * ky);
+      g.imageSmoothingQuality = "low";   // Vorgabe des Browsers — für die Bildchen der Körper reicht sie
+    }
   }
 };
+/* Kurz nach dem Laden im Menü vorbereiten, damit der erste Rundenstart nicht
+   stockt. */
+setTimeout(() => { try { if (!Settings.lowPower && Nebel.ENTWUERFE[NEBEL_ART] && !Nebel.bild) Nebel.bauen(); } catch(_){} }, 900);
 
 /* Pulsare (Entwurf, 24.09.2026 abends): bisher eine dunkle Zackenscheibe mit
    Messingrand — auf den Spielfotos wirkten sie wie flache Zahnräder. Der
@@ -6113,24 +6133,28 @@ function paintBoard(gm){
      sonst sähe man ausgerechnet die eigene Platzierung nicht. Er ersetzt
      dabei niemanden: Es werden dann sechs Zeilen, und die sechste ist die
      eigene. */
+  /* Reihenfolge (Thomas, 24.09.2026 spät): die fünf Besten, darunter der
+     Titelträger, ganz unten der eigene Platz — solange man nicht selbst
+     unter den fünf ist. Vorher stand der eigene Platz über dem Titelträger. */
   const BOARD_PLAETZE = 5;
   const meIdx = list.findIndex(e => e.me);
   const zeigen = list.slice(0, BOARD_PLAETZE).map((e,i) => ({e, rang:i+1}));
+  let eigenZeile = null;
   if (meIdx >= BOARD_PLAETZE){
     const eigener = list[meIdx];
-    zeigen.push({e:eigener, rang: eigener.platz > meIdx ? eigener.platz : meIdx+1});
+    eigenZeile = {e:eigener, rang: eigener.platz > meIdx ? eigener.platz : meIdx+1};
   }
   let titelZeile = "";
-  if (Game.online && Net.kt > 0 && !zeigen.some(z => z.e.titel)){
+  if (Game.online && Net.kt > 0 && !zeigen.some(z => z.e.titel) && !(eigenZeile && eigenZeile.e.titel)){
     const w = Net.kt === Net.you ? {n: Game.name} : Net.wer.get(Net.kt);
     titelZeile = `<div class="row"><span><b style="color:#f2c14e">♛</b> ${esc((w && mitMarke(w.n, w.b)) || "?")}</span>` +
                  `<span>${dauerText(Net.kts)}</span></div>`;
   }
-  $("board").innerHTML = zeigen.map(({e,rang}) =>
+  const zeile = ({e,rang}) =>
     `<div class="row${e.me?" me":""}"><span>${rang}. ${e.titel ? '<b style="color:#f2c14e">♛</b> ' : ""}` +
     `${e.tag ? '<i class="kz">' + esc(e.tag) + '</i>' : ""}${esc(e.name)}</span>` +
-    `<span>${Math.round(e.m)}</span></div>`
-  ).join("") + titelZeile;
+    `<span>${Math.round(e.m)}</span></div>`;
+  $("board").innerHTML = zeigen.map(zeile).join("") + titelZeile + (eigenZeile ? zeile(eigenZeile) : "");
 }
 
 /* =====================================================================
