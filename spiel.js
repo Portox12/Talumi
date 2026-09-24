@@ -5816,6 +5816,8 @@ const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legal
                "widerrufVeil","ankerVeil","umfrageVeil","bewertVeil",
                /* v109: Spielerprofil und Bildwahl. */
                "profilVeil","bildVeil","loeschVeil",
+               /* v137: Aufträge als Fenster (Handy quer). */
+               "auftragVeil",
                /* v110: Benachrichtigungen. */
                "pushVeil",
                /* v114: die Belohnung nach dem Tutorial. */
@@ -6216,8 +6218,17 @@ if (document.getElementById("wdForm")) document.getElementById("wdForm").addEven
    Konto zeigte, darf dessen Fortschritt nicht weiter anzeigen. */
 if (document.getElementById("wdZu")) document.getElementById("wdZu").addEventListener("click", () => location.reload());
 
+/* Die Widerrufs-Leiste (§ 356a BGB) steht seit v136 als letzte Zeile in der
+   Liste und scrollt mit (Thomas 24.09.: „Vertrag widerrufen muss auf jeden
+   Fall ganz unten in den Einstellungen erscheinen") — vorher fest unter der
+   Liste. Sie bleibt farbig abgehoben (das Gesetz will sie hervorgehoben)
+   und erscheint weiter nur während der Frist (`widerrufKnoepfe`). Das
+   Element wird festgehalten, weil die Liste bei jedem Aufbau geleert wird. */
+let setRechtEl = null;
 function buildSettings(){
   const box = $("setList");
+  setRechtEl = setRechtEl || document.getElementById("setRecht");
+  if (setRechtEl && setRechtEl.parentNode) setRechtEl.remove();
   box.innerHTML = "";
   fassungZeigen();
   nameZeileBauen(box);
@@ -6344,6 +6355,8 @@ function buildSettings(){
   lb.addEventListener("click", kontoLoeschenOeffnen);
   lw.appendChild(lt); lw.appendChild(lb);
   box.appendChild(lw);
+  /* Ganz unten: „Vertrag widerrufen" (nur während der Frist sichtbar). */
+  if (setRechtEl){ box.appendChild(setRechtEl); widerrufKnoepfe(); }
 }
 /* „Rechtliches" als Zeile am Ende der Liste (v136, Thomas 24.09.: „soll
    ganz unten erscheinen, wenn man in den Einstellungen ganz nach unten
@@ -6478,6 +6491,13 @@ function buildShop(){
      teuersten je Stück, also nie geschönt. */
   const p0 = (S.pakete || [])[0];
   const inEuro = n => p0 ? euro(Math.round(n * p0.cent / p0.iridium)) : "";
+  /* Den Euro-Gegenwert bei Käufen mit Iridium (Design, Raubmond) nur, wenn
+     Iridium wirklich für Geld verkauft wird (v137, Thomas 24.09.: „die
+     Angabe 900 Iridium reicht vollkommen"). Solange es keinen Zahlungs-
+     anbieter gibt, ist Iridium keine gekaufte Währung. Sobald der Verkauf
+     startet, verlangen die CPC-Leitlinien vom 21.03.2025 den Echtgeld-Preis
+     genau hier — dann zeigt er sich von selbst wieder (Anwalt fragen). */
+  const mitEuro = !!S.zahlung;
 
   /* 1. Iridium */
   const basis = p0 ? p0.cent / p0.iridium : 0;
@@ -6520,7 +6540,7 @@ function buildShop(){
     else if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
     else if (hat){ kn.textContent = t("sh_besitz"); kn.disabled = true; }
     else {
-      kn.innerHTML = `${esc(t("sh_kaufen", D.preis.toLocaleString(lang)))} <small>${esc(t("sh_euro", inEuro(D.preis)))}</small>`;
+      kn.innerHTML = `${esc(t("sh_kaufen", D.preis.toLocaleString(lang)))}${mitEuro ? ` <small>${esc(t("sh_euro", inEuro(D.preis)))}</small>` : ""}`;
       if (meins < D.preis){ kn.disabled = true; kn.title = t("sh_fehlt", (D.preis - meins).toLocaleString(lang)); }
       kn.onclick = async () => {
         kn.disabled = true;
@@ -6555,7 +6575,7 @@ function buildShop(){
   else if (st >= R.stufen){ rk.textContent = t("mo_max"); rk.disabled = true; }
   else {
     const preis = R.preis[st + 1];
-    rk.innerHTML = `${esc(t(st ? "sh_stufe_kaufen" : "sh_kaufen", st ? ["I", "II", "III"][st] : preis.toLocaleString(lang), preis.toLocaleString(lang)))} <small>${esc(t("sh_euro", inEuro(preis)))}</small>`;
+    rk.innerHTML = `${esc(t(st ? "sh_stufe_kaufen" : "sh_kaufen", st ? ["I", "II", "III"][st] : preis.toLocaleString(lang), preis.toLocaleString(lang)))}${mitEuro ? ` <small>${esc(t("sh_euro", inEuro(preis)))}</small>` : ""}`;
     if (meins < preis){ rk.disabled = true; rk.title = t("sh_fehlt", (preis - meins).toLocaleString(lang)); }
     rk.onclick = async () => {
       rk.disabled = true;
@@ -7915,7 +7935,8 @@ function angebotZeigen(S, pal){
   const p0 = (S.pakete || [])[0];
   const pr = $("angebotPreis");
   if (pr) pr.innerHTML = `${esc(t("an_preis", D.preis.toLocaleString(lang)))}` +
-    (p0 ? ` <small>${esc(t("sh_euro", euro(Math.round(D.preis * p0.cent / p0.iridium))))}</small>` : "");
+    /* Euro-Gegenwert nur mit Zahlungsanbieter (v137, wie im Shop). */
+    (p0 && S.zahlung ? ` <small>${esc(t("sh_euro", euro(Math.round(D.preis * p0.cent / p0.iridium))))}</small>` : "");
   setze("angebotShop", t("an_zum_shop")); setze("angebotSpaeter", t("an_spaeter")); setze("angebotAusText", t("an_aus"));
   const aus = $("angebotAus"); if (aus) aus.checked = false;
   VEILS.forEach(id => { if (id !== "angebotVeil" && id !== "startVeil"){ const x = $(id); if (x) x.hidden = true; } });
@@ -8549,8 +8570,11 @@ function auftragText(a){
 function auftraegeMalen(){
   const box = $("auftragBox");
   if (!box) return;
+  /* Auf dem Handy quer (v137): eine Zeile im Hangar und das Fenster
+     `#auftragVeil` mit demselben Inhalt wie der Kasten am Rechner. */
+  const kurz = $("auftragKurz"), voll = $("auftragVoll");
   const A = istAngemeldet() && Konto.auftraege;
-  if (!A || !A.auftraege || !Array.isArray(A.auftraege.liste)){ box.hidden = true; return; }
+  if (!A || !A.auftraege || !Array.isArray(A.auftraege.liste)){ box.hidden = true; if (kurz) kurz.hidden = true; return; }
   /* Der Tag ist um (0 Uhr UTC), der Hangar blieb offen: neue Aufträge holen. */
   if (A.ende && Date.now() > A.ende && !A.holt){
     A.holt = true;
@@ -8573,13 +8597,27 @@ function auftraegeMalen(){
   }).join("") +
   `<div class="auftragBonus${A.auftraege.bonus ? " fertig" : ""}">${esc(t("au_bonus", A.bonus || 0))}${A.auftraege.bonus ? " ✓" : ""}` +
   ` · <small>${esc(t("au_rest", restText((A.ende || 0) - Date.now())))}</small></div></div>`;
-  for (const b of box.querySelectorAll("[data-tausch]")) b.addEventListener("click", async () => {
+  if (voll) voll.innerHTML = box.innerHTML;
+  for (const b of [...box.querySelectorAll("[data-tausch]"), ...(voll ? voll.querySelectorAll("[data-tausch]") : [])]) b.addEventListener("click", async () => {
     b.disabled = true;
     const a = await Konto.ruf("/konto/auftraege/tauschen", { i: +b.dataset.tausch });
     if (a && a.ok){ Konto.auftraege = a; toast(t("au_getauscht")); auftraegeMalen(); }
     else { toast(t("net_fail")); b.disabled = false; }
   });
+  if (kurz){
+    /* Was heute noch zu holen ist: Lohn der offenen Aufträge plus der Bonus
+       für alle drei, solange er aussteht. */
+    const offen = liste.filter(a => !a.fertig).reduce((s, a) => s + (lohn[a.art] || 0), 0) + (A.auftraege.bonus ? 0 : (A.bonus || 0));
+    kurz.hidden = false;
+    kurz.innerHTML = `<span class="ak"><b>${esc(t("au_kopf"))}</b><small>${offen > 0 ? esc(t("au_kurz", offen)) : "✓"}</small></span><em>${fertig}/${liste.length}</em>`;
+  }
 }
+/* Die Zeile öffnet das Fenster; „Zurück" führt in den Hangar. */
+(function auftragFensterEinhaengen(){
+  const k = document.getElementById("auftragKurz"), z = document.getElementById("auftragZu");
+  if (k) k.addEventListener("click", () => { auftraegeMalen(); show("auftragVeil"); });
+  if (z) z.addEventListener("click", () => show("startVeil"));
+})();
 /* Kern: Stand vom Server (`/konto/kern`), einmal je Öffnen des Reiters. */
 let kernStand = null;
 async function kernLaden(){

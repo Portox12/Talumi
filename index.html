@@ -93,6 +93,12 @@
                calc(var(--edge-x) + env(safe-area-inset-left));
        display:grid;grid-template-columns:1fr auto;align-content:start;gap:12px}
   .hud[hidden]{display:none}
+  /* Solange der Tutorial-Kasten steht, liegt die Anzeige über den Daumen-
+     tasten (v136): Der Kasten steckt in `.hud`, und `.hud` (fest
+     positioniert, eigene Ebene) lag unter `#pads` (z-index 3) — auf
+     568 × 320 verdeckte „Abwerfen" den Knopf „Verstanden". Die Tasten sind
+     in der Zeit ohnehin gesperrt. */
+  .hud:has(#tutBox:not([hidden])){z-index:5}
 
   /* Rechte Spalte darf nie bis zu den Daumentasten reichen. Läuft sie über,
      wird unten abgeschnitten — die wichtigste Tafel steht oben.
@@ -1201,7 +1207,12 @@
   #startVeil[hidden]{display:none}
 
   /* --- Kopfzeile --------------------------------------------------- */
-  .konsKopf{position:absolute;top:20px;left:calc(26px + env(safe-area-inset-left));right:calc(26px + env(safe-area-inset-right));height:62px;z-index:4;
+  /* Seitenrand des Menüs (v137): Auf iPhones mit Dynamic Island meldet der
+     Sicherheitsrand im Querformat 59 Punkte je Seite, die Insel reicht aber nur
+     rund 48 Punkte ins Bild (11 Abstand + 37 breit). Deshalb Rand minus 8 —
+     3 Punkte Luft neben der Insel, knapp 5 mm mehr Menü je Seite (Thomas,
+     iPhone 16). Ohne Insel bleibt der alte Abstand (26 bzw. 14). */
+  .konsKopf{position:absolute;top:20px;left:max(26px, calc(env(safe-area-inset-left) - 8px));right:max(26px, calc(env(safe-area-inset-right) - 8px));height:62px;z-index:4;
        display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}
   .konsG{display:flex;gap:8px;align-items:center;min-width:0}
   .konsG.r{justify-content:flex-end}
@@ -1637,7 +1648,11 @@
      sichtbaren Fläche (Safari-Leisten) — gesetzt von `sichtbarUnten()` in
      spiel.js. Ohne das rutschte der Kasten mit „Verstanden" unter den Rand
      (Thomas, 24.09.). */
-  .tutBox{position:fixed;left:50%;transform:translateX(-50%);
+  /* Mittig über `left:0; right:0; margin:auto; width:fit-content` (v136).
+     Vorher `left:50%` + `translateX(-50%)` — damit bekam der Kasten höchstens
+     die halbe Bildschirmbreite, egal was `max-width` erlaubte (auf 568 × 320
+     nur 284 Punkte, auf jedem Gerät zu schmal). */
+  .tutBox{position:fixed;left:0;right:0;margin:0 auto;width:fit-content;
        bottom:calc(14px + env(safe-area-inset-bottom) + var(--vv-unten, 0px));z-index:4;pointer-events:auto;
        max-width:min(520px, calc(100vw - 40px));
        display:flex;align-items:center;gap:12px;
@@ -1660,8 +1675,8 @@
        background:transparent;border:0;box-shadow:none;color:var(--paper-2);
        font-size:12px;text-decoration:underline;cursor:pointer}
   .tutSkip:hover{color:var(--paper)}
-  @keyframes tutAuf{from{opacity:0;transform:translate(-50%,10px)}
-                    to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes tutAuf{from{opacity:0;transform:translateY(10px)}
+                    to{opacity:1;transform:none}}
   @media (max-height:420px){
     .tutBox{bottom:calc(8px + env(safe-area-inset-bottom) + var(--vv-unten, 0px));padding:8px 12px}
     .tutBox p{font-size:13px}
@@ -1670,16 +1685,13 @@
      rechts der Abwerfen-Knopf frei bleibt (die Daumentasten sind 160 px
      breit und sitzen 16 px vom Rand) — und damit links unten Platz für den
      steuernden Daumen ist. Bis v116 stand er links unten. */
-  body.touch .tutBox{left:50%;transform:translateX(-50%);
-       max-width:calc(100vw - 372px - env(safe-area-inset-left) - env(safe-area-inset-right))}
-  /* Kleine Handys (v135, alle Bildschirme): Dort blieben neben den Daumen nur
-     196 Punkte (568 breit) — lange Sätze ragten oben aus dem Bild. Seit
-     v122 steht der Kasten nur, solange der Körper wartet und die Tasten
-     gesperrt sind; er darf die Daumentasten dann überdecken. Ab 761 Punkten
-     (iPhone 14: 844) bleibt es wie freigegeben. */
-  @media (max-width:760px){
-    body.touch .tutBox{max-width:min(560px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
-  }
+  /* Seit v136 auf allen Tippgeräten bis 560 Punkte breit (Thomas 24.09.,
+     iPhone 16: „könnte nach rechts und links ruhig noch ein wenig breiter
+     sein"). Bis v135 hielt er rechts und links je 186 Punkte für die
+     Daumentasten frei — seit v122 steht er aber nur, solange der Körper
+     wartet und die Tasten gesperrt sind; dann liegt er über ihnen
+     (`.hud:has(#tutBox…)`). */
+  body.touch .tutBox{max-width:min(560px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
 
   /* ---- Tutorial v114: Kasten mit Stand, Punkten und Taste ----------------
      Größer und wärmer als der Hinweiskasten von v109 — er ist der erste
@@ -1888,7 +1900,7 @@
   /* 112 statt 98: Unter dem Startknopf steht die Spielerzahl, und die lag
      genau auf der Oberkante des Fensters — zwei Ebenen, die einander
      überschneiden, sehen aus wie ein Fehler und waren auch einer. */
-  .konsFenster{position:absolute;left:calc(26px + env(safe-area-inset-left));right:calc(26px + env(safe-area-inset-right));top:112px;bottom:22px;z-index:3;
+  .konsFenster{position:absolute;left:max(26px, calc(env(safe-area-inset-left) - 8px));right:max(26px, calc(env(safe-area-inset-right) - 8px));top:112px;bottom:22px;z-index:3;
        border-radius:18px;border:1px solid var(--line-hell);
        /* Kein `backdrop-filter`: Der eigene Grund deckt zu 93 Prozent, der
           Weichzeichner war also unsichtbar — kostete aber, seit hinter dem
@@ -2047,7 +2059,7 @@
   /* Auf Tippgeräten braucht auch ein Textknopf eine Fläche, die der Daumen
      trifft. Der negative Rand hält die Überschrift trotzdem schmal —
      gewachsen ist nur, was man antippen kann. */
-  body.touch .konsSek h2 em button{min-height:44px;padding:0 10px;margin:-15px -10px}
+  body.touch .konsSek h2 em button{min-height:44px;min-width:44px;padding:0 10px;margin:-15px -10px}
   #startVeil .plate.recbox{background:var(--block);border-radius:12px;margin:0;min-width:0}
   /* Wie viele Plätze der Startbildschirm zeigt, hängt daran, wie viel Platz
      die rechte Spalte hat. Fünf sind es im Entwurf und auf einem normalen
@@ -2078,9 +2090,32 @@
   /* Zwei Zeilen je Auftrag: oben der ganze Text (die Spalte ist schmal —
      „Überlebe 5 Minuten in einer Runde" passt sonst nur als „Üb…"), unten
      Balken, Prozent, Lohn und Tausch. */
-  #auftragBox .konsFort{display:grid;grid-template-columns:1fr auto auto auto;gap:3px 8px;align-items:center;padding:7px 0}
-  #auftragBox .konsFort span:first-child{grid-column:1 / -1;white-space:normal;line-height:1.25}
-  #auftragBox .konsFort .bar{flex:none;width:auto;min-width:40px}
+  #auftragBox .konsFort,#auftragVoll .konsFort{display:grid;grid-template-columns:1fr auto auto auto;gap:3px 8px;align-items:center;padding:7px 0}
+  #auftragBox .konsFort span:first-child,#auftragVoll .konsFort span:first-child{grid-column:1 / -1;white-space:normal;line-height:1.25}
+  #auftragBox .konsFort .bar,#auftragVoll .konsFort .bar{flex:none;width:auto;min-width:40px}
+  /* Die Zeile „Aufträge" (v137) gibt es nur auf dem Handy quer (unten im
+     Block „Flach UND breit"); am Rechner steht der ganze Kasten. */
+  #auftragKurz{display:none}
+  .auftragKurz{margin:0;width:100%;min-height:44px;padding:6px 12px;border-radius:0;background:none;
+       border:0;border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;text-align:left;cursor:pointer;
+       font-family:var(--sans);color:var(--paper)}
+  .auftragKurz .ak{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .auftragKurz .ak b{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--paper-2);font-weight:600}
+  .auftragKurz .ak small{font-size:11.5px;color:var(--iri);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .auftragKurz em{font-style:normal;font-family:var(--disp);font-size:14px;color:var(--brass-hell)}
+  .auftragKurz::after{content:"›";font-size:20px;line-height:1;color:var(--brass)}
+  /* Das Fenster passt immer in den Schirm: Die Aufträge scrollen innen,
+     „Zurück" steht fest darunter (844 × 340, Safari mit Leisten). */
+  .auftragKarte{max-width:min(460px,100%);max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);
+       display:flex;flex-direction:column;padding:18px 20px}
+  .auftragKarte #auftragVoll{padding:0;background:none;border:0;overflow:auto;min-height:0;flex:1 1 auto}
+  .auftragKarte #auftragZu{flex:0 0 auto;margin-top:10px}
+  /* Sehr flach (Safari mit Leisten, 340 hoch): im Hangar zwei statt drei
+     nächste Ziele — die dritte Zeile kostete genau das Stück, das den
+     Hangar sonst scrollen ließ (v137, `testhangar.js`). */
+  @media (max-height:350px) and (min-width:640px){
+    #startVeil #naechstBox .konsFort:nth-child(n+3){display:none}
+  }
   .auftragBonus{font-size:12px;color:var(--paper-2);padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
   .auftragBonus.fertig{color:var(--iri)}
 
@@ -2458,7 +2493,7 @@
        „Ranglisten“ und „Einstellungen“ deshalb übereinander. Aus zwei
        Gruppen wird hier **ein** Streifen, der sich seitlich schieben lässt:
        Er teilt den Platz nach Bedarf statt nach Hälften. */
-    .konsKopf{top:12px;left:calc(14px + env(safe-area-inset-left));right:calc(14px + env(safe-area-inset-right));height:46px;
+    .konsKopf{top:12px;left:max(14px, calc(env(safe-area-inset-left) - 8px));right:max(14px, calc(env(safe-area-inset-right) - 8px));height:46px;
          display:flex;align-items:center;gap:8px;
          overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
     .konsKopf::-webkit-scrollbar{display:none}
@@ -2468,7 +2503,7 @@
     .konsMarke{margin-right:6px}
     .konsMarke b{font-size:13px;letter-spacing:.2em}
     .konsNav{height:38px;padding:0 12px;font-size:12.5px}
-    .konsFenster{left:calc(14px + env(safe-area-inset-left));right:calc(14px + env(safe-area-inset-right));top:66px;bottom:88px;border-radius:14px;
+    .konsFenster{left:max(14px, calc(env(safe-area-inset-left) - 8px));right:max(14px, calc(env(safe-area-inset-right) - 8px));top:66px;bottom:88px;border-radius:14px;
          grid-template-rows:48px 1fr}
     /* Der Startknopf: Im **Querformat** sitzt er kompakt in der Kopfzeile
        (Block „Der Startknopf im Querformat" weiter unten). In einem
@@ -2660,6 +2695,17 @@
     .rGrp:first-of-type{grid-column:3;grid-row:2 / span 2}
     .rGrp:last-of-type{grid-column:1;grid-row:2;border-right:1px solid var(--line)}
     .rGrp > label{margin:0}
+    /* Aufträge (v137): Der Kasten hatte in diesem Raster keinen Platz und
+       rutschte ins erste freie Feld — ganz nach oben, 300 Punkte hoch, der
+       Körper und die Spielarten unter den Rand (Thomas 24.09.: „am Handy
+       stehen die Aufgaben oben, sonst ist nichts vom Hangar sichtbar").
+       Jetzt eine Zeile unter dem Startbonus, die den Kasten als Fenster
+       öffnet; Körper und Spielart reichen über drei Zeilen. */
+    #startVeil #auftragBox{display:none}
+    #startVeil #auftragKurz:not([hidden]){display:flex;grid-column:1;grid-row:3;border-right:1px solid var(--line)}
+    #startVeil #naechstBox{grid-row:4}
+    .konsSp.m{grid-row:2 / span 3}
+    .rGrp:first-of-type{grid-row:2 / span 3}
     /* Faktor über den Preis statt daneben: So bleibt der Knopf eine Zeile
        hoch, auch wenn die Spalte nur 215 Punkte breit ist. */
     #boostPick button{display:flex;flex-direction:column;align-items:center;
@@ -3915,6 +3961,10 @@
         <!-- Aufträge (v113): drei am Tag, Fortschritt und Lohn in Iridium.
              Nur mit Konto; gemalt von `auftraegeMalen()`. -->
         <div class="konsSek" id="auftragBox" hidden></div>
+        <!-- Auf dem Handy quer (v137, Thomas 24.09.: „seit der Einführung der
+             Aufgaben durcheinander"): statt des großen Kastens eine Zeile; ein
+             Tipp öffnet `#auftragVeil` mit allen drei Aufträgen. -->
+        <button type="button" class="auftragKurz" id="auftragKurz" hidden></button>
         <div class="konsSek" id="naechstBox"></div>
         <div class="konsSek" id="freundBox"></div>
         <p class="foot" id="controls"><b>Move</b> mouse · <b>Space</b> split · <b>W</b> shed mass<br>
@@ -4145,6 +4195,14 @@
     <p class="sub" data-i18n="pf_bild_erkl">The face beside your name — and the one who guides you through the tutorial.</p>
     <div class="bildRaster" id="bildRaster"></div>
     <button class="quiet" id="bildZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- Aufträge des Tages als Fenster (v137) — geöffnet von der Zeile im Hangar. -->
+<div class="veil" id="auftragVeil" hidden>
+  <div class="card auftragKarte">
+    <div id="auftragVoll" class="konsSek"></div>
+    <button id="auftragZu" data-i18n="back">Back</button>
   </div>
 </div>
 
