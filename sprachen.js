@@ -2044,7 +2044,7 @@ const LANGS_TUT = {
       tut_weiter:"Next",
       tut_m_koerper:"This is your body. It grows with your best round.",
       tut_m_designs:"New designs are unlocked here — and you can see what comes next.",
-      tut_m_modi:"Ascent counts levels and moons; in the League everyone is equal. Then hit Play."},
+      tut_m_modi:"Choose a game mode, then press “Start”."},
   de:{w_satz:"Aus einem Staubkorn wird ein Planet mit Ringen und Monden. Verschling, was kleiner ist, und weich aus, was größer ist.",
       w_start:"Spielen", w_konto:"Ich habe schon ein Konto",
       tut_skip:"Überspringen",
@@ -2059,7 +2059,7 @@ const LANGS_TUT = {
       tut_weiter:"Weiter",
       tut_m_koerper:"Das ist dein Körper. Er wächst mit deiner besten Runde.",
       tut_m_designs:"Hier schaltest du neue Designs frei — und siehst, was als Nächstes kommt.",
-      tut_m_modi:"Im Aufstieg zählen Level und Monde, in der Liga sind alle gleich. Dann auf Spielen."},
+      tut_m_modi:"Wähle einen Spielmodus und drücke anschließend auf „Spielen“."},
   es:{w_satz:"De una mota de polvo a un planeta con anillos y lunas. Traga lo más pequeño, esquiva lo más grande.",
       w_start:"Jugar", w_konto:"Ya tengo una cuenta",
       tut_skip:"Saltar",
@@ -2721,12 +2721,18 @@ const LANGS_TUT3 = {
       tu_r_auge:"Your first rank", tu_r_satz:"You are now {0} — the first of {1} ranks. Keep playing, climb the ranks and rise above your fellow players.",
       tu_r_gast:"With an account, your wins count towards the next rank.",
       tu_schon:"The reward is only given the first time.",
-      s_warn:"Warning arrows", s_warn_h:"Red arrows point to big opponents off-screen who could swallow you by splitting."},
+      s_warn:"Warning arrows", s_warn_h:"Red arrows point to big opponents off-screen who could swallow you by splitting.",
+      tu_beenden:"End tutorial?",
+      tu_m_profil:"Your profile picture opens your player profile — that is how other players see you too.",
+      tu_m_profil_gast:"Your profile picture opens your player profile. With an account, other players can see it too."},
   de:{tu_pfeil:"Siehst du den roten Warnpfeil? Er warnt dich vor einem großen Gegner außerhalb des Bildes, der sich auf dich teilen und dich verschlingen könnte. Halte Abstand!",
       tu_r_auge:"Dein erster Rang", tu_r_satz:"Du bist jetzt {0} — der erste von {1} Rängen. Spiel weiter, steig im Rang auf und erheb dich über deine Mitspieler.",
       tu_r_gast:"Mit einem Konto zählen deine Siege für den nächsten Rang.",
       tu_schon:"Die Belohnung gibt es nur beim ersten Mal.",
-      s_warn:"Warnpfeile", s_warn_h:"Rote Pfeile zeigen große Gegner außerhalb des Bildes, die dich durch Teilen verschlingen könnten."}
+      s_warn:"Warnpfeile", s_warn_h:"Rote Pfeile zeigen große Gegner außerhalb des Bildes, die dich durch Teilen verschlingen könnten.",
+      tu_beenden:"Tutorial beenden?",
+      tu_m_profil:"Über dein Profilbild kommst du zu deinem Spielerprofil — so sehen dich auch die anderen Spieler.",
+      tu_m_profil_gast:"Über dein Profilbild kommst du zu deinem Spielerprofil. Mit einem Konto können es auch die anderen Spieler sehen."}
 };
 for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 /* Tutorial v120/v122: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —

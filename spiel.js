@@ -10098,6 +10098,8 @@ function offeneRundeEinloesen(){
     e.preventDefault(); e.stopPropagation();
     if (!Game.running) return;
     if (!k.classList.contains("frage")){
+      /* Im Tutorial ist das der Ausgang (v124, statt „Überspringen"). */
+      if (frage) frage.textContent = t(MODE().tutorial ? "tu_beenden" : "q_frage");
       k.classList.add("frage"); if (frage) frage.hidden = false;
       wecker = setTimeout(ruhe, 3500);
       return;
@@ -12866,7 +12868,7 @@ const Tutorial = {
        Pfeilen fehlt mir noch"). Im Spiel zeigen sie große Gegner außerhalb
        des Bildes, die einen durch Teilen verschlingen könnten — im Tutorial
        ist die ganze Karte im Bild, es gäbe nie einen. Deshalb ein Übungspfeil
-       nach rechts, wo gleich Kepler auftaucht (`demoPfeil`); er erscheint
+       nach links, wo gleich Kepler auftaucht (`demoPfeil`); er erscheint
        auch, wenn die Warnpfeile in den Einstellungen aus sind. */
     { id:"pfeil", text: () => t("tu_pfeil") },
     /* Kepler braucht mindestens 240 Masse, sonst zerreißt ihn kein Pulsar;
@@ -12886,10 +12888,15 @@ const Tutorial = {
         }
         this.unendlich = Math.max(50, Math.round(this.eigeneMasse()));
         this.masseMindestens(50);
-        this.pulsar = this.pulsarSetzen(.46, .46);
+        /* Kepler links, der Pulsar in der Mitte, der Schussplatz rechts davon
+           (v124, Thomas: „Man schießt sich beim Verschlingen auf die rechte
+           Seite der Minikarte. Also sollte Kepler … auf der linken Seite
+           erscheinen") — man kommt von Vesta rechts und fliegt nur ein Stück
+           zurück zum Platz. */
+        this.pulsar = this.pulsarSetzen(.5, .46);
         /* Nur Kepler — kein anderer Körper darf hier umherfliegen (v119). */
         Game.rivals = [];
-        this.kepler = this.rivalSetzen("Kepler", 260, .64, .46, true, { design: "verdigris", level: 17, rang: 5 });
+        this.kepler = this.rivalSetzen("Kepler", 260, .27, .46, true, { design: "verdigris", level: 17, rang: 5 });
         this.titelGid = this.kepler.gid;
         /* Der Schussplatz (v120): auf der Linie Kepler → Pulsar, hinter dem
            Pulsar. Wer ihn erreicht, bleibt dort stehen (`gesperrt`). */
@@ -13032,11 +13039,12 @@ const Tutorial = {
   /* Pulsar-Schuss sicher treffen (v120): Brocken fliegen in den Pulsar,
      der Pulsar fliegt auf Kepler, und wer auf dem Schussplatz steht, bleibt
      dort. */
-  /* Der Übungspfeil im Schritt „pfeil" (v123) — nach rechts, wo gleich
-     Kepler auftaucht. `demo`: erscheint auch bei abgeschalteten Warnpfeilen. */
+  /* Der Übungspfeil im Schritt „pfeil" (v123) — nach links, wo gleich
+     Kepler auftaucht (seit v124). `demo`: erscheint auch bei abgeschalteten
+     Warnpfeilen. */
   demoPfeil(){
     if (!this.laufend || !this.schritt || this.schritt.id !== "pfeil") return null;
-    return { dx: 1000, dy: 0, m: 0, nah: 1, demo: true };
+    return { dx: -1000, dy: 0, m: 0, nah: 1, demo: true };
   },
   keplerLebt(){ return !!(this.kepler && Game.rivals.some(r => r.gid === this.kepler.gid)); },
   wurfHilfe(){
@@ -13850,13 +13858,17 @@ const Tutorial = {
   /* --- Rundgang durch das Menü -------------------------------------- */
   /* Sechs Blasen, jede an dem Element, das sie erklärt. Elemente, die es
      auf dieser Größe oder ohne Server nicht gibt, werden übersprungen. */
+  /* v124 (Thomas): Aufstieg und Liga nicht erklären — „Wähle einen
+     Spielmodus und drücke anschließend auf Spielen" als letzte Blase (sie
+     ersetzt die eigene Blase am Startknopf); neu das Profilbild. `text`
+     darf eine Funktion sein. */
   MENUE: [
     { ziel: ".heldBuehne", text: "tut_m_koerper" },
     { ziel: "#konsReiter button[data-reiter=haut]", text: "tut_m_designs" },
-    { ziel: "#modes", text: "tut_m_modi" },
     { ziel: "#boardBox", text: "tu_m_rangliste" },
     { ziel: "#bonusKnopf", text: "tut_m_bonus" },
-    { ziel: "#startBtn", text: "tu_m_spielen" }
+    { ziel: "#heldBild", text: () => istAngemeldet() ? "tu_m_profil" : "tu_m_profil_gast" },
+    { ziel: "#modes", text: "tut_m_modi" }
   ],
 
   menueVersuchen(){
@@ -13886,7 +13898,7 @@ const Tutorial = {
     if (!ziel || !ziel.offsetParent || ziel.hidden){ this.stand.menue++; this.sichern(); return this.menueVersuchen(); }
 
     const txt = document.getElementById("tutTippText");
-    if (txt) txt.textContent = t(s.text);
+    if (txt) txt.textContent = t(typeof s.text === "function" ? s.text() : s.text);
     const fig = document.getElementById("tutTippFigur");
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
     const zahl = document.getElementById("tutTippZahl");
