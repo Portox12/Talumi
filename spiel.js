@@ -5325,7 +5325,7 @@ function kleinBild(o, pal){
    Karte etwa ein halbes Bild) und weitet sich beim Herauszoomen etwas.
    `NEBEL_ART`: "aus" = wie bisher, sonst einer der Entwürfe. Im Sparmodus
    immer aus. */
-let NEBEL_ART = "aus";
+let NEBEL_ART = "tief";   // Thomas 24.09.2026 abends: „okay, push" auf die Empfehlung B
 const Nebel = {
   bild: null, art: "", thema: "",
   /* Ein Entwurf = einige Wolkenzüge. Ein Zug läuft auf einer geschwungenen
@@ -5441,7 +5441,7 @@ const Nebel = {
                  Lichtstrahlen (ein Pulsar ist ein Leuchtturm), heller Rand.
      "kristall": Zacken als Facetten, die zum Licht hin hell sind (eine
                  Lichtquelle wie bei den Körpern), heller Kern. */
-let PULSAR_ART = "alt";
+let PULSAR_ART = "glut";   // Thomas 24.09.2026 abends: „okay, push" auf die Empfehlung A
 function sternPfad(g, p){
   g.beginPath();
   for (let i = 0; i < 20; i++){
