@@ -2742,7 +2742,7 @@ for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 const LANGS_SHOP = {
   en:{sh_kopf:"Shop", sh_iri_kopf:"Iridium", sh_stand:"You have {0}",
       sh_iri_erkl:"For the core, the Leech Moon and the design of the month.",
-      sh_zahlung_bald:"Payment is coming soon — until then Iridium is earned in play.",
+      sh_zahlung_bald:"Payment is coming soon.",
       sh_design_kopf:"Design of the month", sh_design_erkl:"Only in the shop — cannot be earned.",
       sh_design_bald:"The first design of the month is coming soon.",
       sh_konto:"Buy with an account", sh_besitz:"Owned", sh_kaufen:"Buy · {0} Iridium",
@@ -2754,10 +2754,15 @@ const LANGS_SHOP = {
       mo_raub_shop:"Upgrade in the shop",
       sh_raub_stuecke:"From capsules: {0} / {1} fragments ({2} % of capsules)",
       ka_raub:"Capsule: Leech Moon fragment {0} / {1}", ka_raub_fertig:"The last fragment — the Leech Moon is yours!",
+      an_auge:"Design of the month · {0}", an_nur_shop:"Only in the shop — cannot be earned.", an_preis:"{0} Iridium",
+      an_zum_shop:"To the shop", an_spaeter:"Later", an_aus:"Don't show again this month",
+      dd_bonus:"Bonus in Ascent: +{0} % mass from stardust.", dd_zum_shop:"To the shop",
+      sk_monat:"Shop only", sk_monat_note:"Design of the month — only in the shop for Iridium, cannot be earned.",
+      mat_filigran:"Filigree", sh_bonus_kurz:"+{0} % stardust in Ascent",
       ir_nichtkauf:"Earned in play — and soon in the shop too."},
   de:{sh_kopf:"Shop", sh_iri_kopf:"Iridium", sh_stand:"Du hast {0}",
       sh_iri_erkl:"Für den Kern, den Raubmond und das Design des Monats.",
-      sh_zahlung_bald:"Bezahlen geht in Kürze — bis dahin gibt es Iridium im Spiel.",
+      sh_zahlung_bald:"Bezahlen geht in Kürze.",
       sh_design_kopf:"Design des Monats", sh_design_erkl:"Nur im Shop — nicht erspielbar.",
       sh_design_bald:"Das erste Design des Monats kommt in Kürze.",
       sh_konto:"Mit Konto kaufen", sh_besitz:"Im Besitz", sh_kaufen:"Kaufen · {0} Iridium",
@@ -2769,6 +2774,11 @@ const LANGS_SHOP = {
       mo_raub_shop:"Höher im Shop",
       sh_raub_stuecke:"Aus Kapseln: {0} / {1} Bruchstücke ({2} % der Kapseln)",
       ka_raub:"Kapsel: Raubmond-Bruchstück {0} / {1}", ka_raub_fertig:"Das letzte Bruchstück — der Raubmond ist deiner!",
+      an_auge:"Design des Monats · {0}", an_nur_shop:"Nur im Shop — nicht erspielbar.", an_preis:"{0} Iridium",
+      an_zum_shop:"Zum Shop", an_spaeter:"Später", an_aus:"Diesen Monat nicht mehr anzeigen",
+      dd_bonus:"Bonus im Aufstieg: +{0} % Masse aus Sternenstaub.", dd_zum_shop:"Zum Shop",
+      sk_monat:"Nur im Shop", sk_monat_note:"Design des Monats — nur im Shop für Iridium, nicht erspielbar.",
+      mat_filigran:"Filigran", sh_bonus_kurz:"+{0} % Sternenstaub im Aufstieg",
       ir_nichtkauf:"Erspielbar — und bald auch im Shop."}
 };
 for (const c in LANGS_SHOP) Object.assign(LANGS[c], LANGS_SHOP[c]);

@@ -47,6 +47,13 @@ if (isTouch) document.body.classList.add("touch");
    flache Scheiben (Thomas: „die neuen Designs verschwinden dauernd"). */
 let ECO = 0;
 let MENUE_VOLL = false;   // der Körper im Menü wird immer in voller Qualität gezeichnet
+/* Ist eine Runde vorbei? Dann darf beim nächsten Hangar das Angebot des
+   Monats kommen (v129, `angebotVielleicht`). Hier oben, weil `show()` schon
+   beim Laden läuft. */
+let angebotNachRunde = false;
+/* Der Stand des Shops vom Server (v127) — hier oben, weil der Design-Reiter
+   ihn schon beim Laden liest (`designGruppen`). */
+let shopStand = null, shopLaedt = false;
 
 const Settings = {
   volume:0.7, shake:true, sens:62, lefty:false,
@@ -863,12 +870,12 @@ const SKINS = [
   {id:"crimson",    mat:"staub",    label:"Crimson Dust", rock:"#a83a55", dark:"#5f1a2b", hot:"#ff5c7a", air:"#e08a9c", lv:66},
   {id:"zircon",     mat:"kristall",     label:"Zircon",       rock:"#7f9bd6", dark:"#43578a", hot:"#c4dcff", air:"#c2d4f0", ore:210000},
   {id:"plasma",     mat:"energie",     label:"Plasma",       rock:"#b53a8f", dark:"#69184f", hot:"#ff6bff", air:"#ff9be8", lv:74},
-  {id:"horizon",    mat:"schlund", label:"Event Horizon",rock:"#1a1e30", dark:"#0a0c16", hot:"#6b8fff", air:"#bcd0ff", ore:290000, wucht:.80},
+  {id:"horizon",    mat:"schlund", label:"Event Horizon",rock:"#1a1e30", dark:"#0a0c16", hot:"#6b8fff", air:"#bcd0ff", ore:290000, wucht:.80, bonus:{staub:.10}},
   {id:"quasar",     mat:"glut",     label:"Quasar",       rock:"#d6b03a", dark:"#7d6414", hot:"#fffcb0", air:"#ffe89b", lv:82},
-  {id:"primordial", mat:"fels", label:"Primordial",   rock:"#8a7142", dark:"#332816", hot:"#ffce5c", air:"#f0dba6", ore:400000},
-  {id:"singularity",mat:"schlund",label:"Umbra",     rock:"#1a1c2a", dark:"#0a0b12", hot:"#8f5cff", air:"#b49bff", lv:90, wucht:.58},
-  {id:"void",       mat:"schlund",    label:"Void",         rock:"#1b1d28", dark:"#0a0b10", hot:"#7fa8ff", air:"#dceaff", lv:95, wucht:1},
-  {id:"antimatter", mat:"energie", label:"Antimatter",   rock:"#5b2f5e", dark:"#2c1430", hot:"#ff2fb0", air:"#ff8ce0", lv:100},
+  {id:"primordial", mat:"fels", label:"Primordial",   rock:"#8a7142", dark:"#332816", hot:"#ffce5c", air:"#f0dba6", ore:400000, bonus:{staub:.10}},
+  {id:"singularity",mat:"schlund",label:"Umbra",     rock:"#1a1c2a", dark:"#0a0b12", hot:"#8f5cff", air:"#b49bff", lv:90, wucht:.58, bonus:{staub:.10}},
+  {id:"void",       mat:"schlund",    label:"Void",         rock:"#1b1d28", dark:"#0a0b10", hot:"#7fa8ff", air:"#dceaff", lv:95, wucht:1, bonus:{staub:.10}},
+  {id:"antimatter", mat:"energie", label:"Antimatter",   rock:"#5b2f5e", dark:"#2c1430", hot:"#ff2fb0", air:"#ff8ce0", lv:100, bonus:{staub:.10}},
 
   /* Stufe VI. Vier Stück, sehr teuer, mit Effekten, die keine andere
      Design hat. Bewusst nur über Ore — keine Levelbindung, damit sie
@@ -916,8 +923,20 @@ const SKINS = [
      „Glacier" gibt es schon als Level-Design — Kennungen müssen eindeutig
      sein, sonst findet `SKINS.find` das falsche. */
   {id:"rime",      mat:"eis",      label:"Rime",       rock:"#bfe3f4", dark:"#6fa3bf", hot:"#ffffff", air:"#dff6ff",
-   special:"frost", sonder:"wochen", tier:4}
+   special:"frost", sonder:"wochen", tier:4},
+  /* Design des Monats (v129, Thomas 24.09.: „jeden Monat ein anderes …
+     nicht erspielbar … darf Zusätze haben, die die stärksten erspielbaren
+     Designs auch haben"). Aurum ist das erste: schwarzer Glanzstein mit
+     goldenen Ranken, die langsam pulsierend leuchten — die Materialart
+     „filigran" gibt es nur hier, damit es sich von allen anderen abhebt.
+     Bonus wie die stärksten erspielbaren (Level 90/95/100, 290.000 und
+     400.000 Ore): +10 % Masse aus Sternenstaub, nur im Aufstieg. Welcher
+     Monat welches Design verkauft, steht im Server (`MONATS_DESIGNS`). */
+  {id:"m_aurum",   mat:"filigran", label:"Aurum",      rock:"#17120c", dark:"#060403", hot:"#ffcf5a", air:"#f7dc9a",
+   sonder:"monat", tier:5, bonus:{staub:.10}}
 ];
+/* Design-Boni (v129): nur im Aufstieg, nur mit Konto — der Server rechnet
+   sie (`DESIGN_BONUS` in sim.js, test.js vergleicht mit `bonus` hier). */
 /* Zählbare Designs: alles, was sich erspielen oder kaufen lässt. */
 const SKINS_ZAHL = SKINS.filter(s => !s.sonder).length;
 
@@ -3008,6 +3027,9 @@ function deathLesson(k, total){
    Ore vergibt — das darf erst der Server, wenn er Konten führt. */
 function endeOnline(d){
   if (!Game.running) return;
+  /* Eine Runde ist vorbei — die nächste Rückkehr in den Hangar ist eine
+     Pause, in der das Angebot des Monats kommen darf (v129). */
+  angebotNachRunde = true;
   peak = Math.max(peak, d.peak || 0);
   Game.kills = d.kills || 0;
   if (d.sek) Game.t = d.sek;
@@ -3568,6 +3590,36 @@ function merkmale(pal){
       M.flecken.push({q: (w()-.5)*1.7, laenge: .5 + w()*.5, hell: .06 + w()*.12});
   }
 
+  if (art === "filigran"){
+    /* Goldranken (v129, Design des Monats): drei gewellte Ringe, dazwischen
+       Ranken, die in einer Locke enden, und Punkte an den Knoten — ein
+       Ornament, keine Naturfläche. Symmetrisch, also ohne Würfel. */
+    M.ranken = [];
+    for (const [d, wellen, amp] of [[.34, 8, .035], [.60, 10, .03], [.84, 12, .025]]){
+      const p = [];
+      for (let i = 0; i <= 96; i++){
+        const a = i / 96 * 6.2832, dd = d + amp * Math.sin(a * wellen);
+        p.push([Math.cos(a) * dd, Math.sin(a) * dd]);
+      }
+      M.ranken.push(p);
+    }
+    for (let i = 0; i < 8; i++){
+      const a0 = i / 8 * 6.2832 + .2, p = [];
+      for (let k = 0; k <= 10; k++){
+        const d = .34 + k / 10 * .44, a = a0 + Math.sin(k / 10 * 3.1416) * .22;
+        p.push([Math.cos(a) * d, Math.sin(a) * d]);
+      }
+      /* Die Locke: drei Viertel einer enger werdenden Spirale. */
+      const [ex, ey] = p[p.length - 1], ra = a0 + .22 * 0;
+      for (let k = 1; k <= 12; k++){
+        const t = k / 12, rr = .07 * (1 - t * .7), aa = ra + 1.5708 + t * 4.7;
+        p.push([ex + Math.cos(aa) * rr - Math.cos(ra + 1.5708) * .07, ey + Math.sin(aa) * rr - Math.sin(ra + 1.5708) * .07]);
+      }
+      M.ranken.push(p);
+      M.flecken.push({a: a0, d: .34}, {a: a0 + .3927, d: .60});
+    }
+  }
+
   MERKMALE.set(schl, M);
   return M;
 }
@@ -3658,6 +3710,31 @@ function flaeche(g, x, y, r, pal, M, zeit){
     }
     g.globalAlpha = 1;
     g.restore();
+    return;
+  }
+
+  if (A === "filigran"){
+    /* Schwarzer Glanzstein, darauf die Goldranken: erst breit und schwach
+       (der Schein), dann schmal und hell (das Gold), langsam atmend. */
+    g.beginPath(); g.arc(x, y, r, 0, 7);
+    g.fillStyle = hexA(pal.dark, .55); g.fill();
+    const puls = .80 + .20*Math.sin(zeit*1.4);
+    g.lineCap = "round"; g.lineJoin = "round";
+    for (let durch=0; durch<2; durch++){
+      g.strokeStyle = durch ? hexA(pal.hot, .95*puls) : hexA(pal.hot, .18*puls);
+      g.lineWidth = Math.max(durch ? .8 : 2, r*(durch ? .016 : .07));
+      for (const weg of M.ranken){
+        g.beginPath();
+        g.moveTo(x + weg[0][0]*r, y + weg[0][1]*r);
+        for (let i=1;i<weg.length;i++) g.lineTo(x + weg[i][0]*r, y + weg[i][1]*r);
+        g.stroke();
+      }
+    }
+    g.fillStyle = hexA(pal.air, .95*puls);
+    for (const f of M.flecken){
+      g.beginPath(); g.arc(x + Math.cos(f.a)*f.d*r, y + Math.sin(f.a)*f.d*r, Math.max(1, r*.028), 0, 7); g.fill();
+    }
+    g.lineCap = "butt"; g.lineJoin = "miter";
     return;
   }
 
@@ -5680,7 +5757,9 @@ const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legal
                /* v114: die Belohnung nach dem Tutorial. */
                "tutLohnVeil",
                /* v123: die Rangfeier am Ende des ersten Tutorials. */
-               "tutRangVeil"];
+               "tutRangVeil",
+               /* v129: das Angebot des Monats. */
+               "angebotVeil"];
 
 
 const SET_UI = [
@@ -6269,7 +6348,6 @@ const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneSt
    erst mit Zahlungsanbieter), Design des Monats und Raubmond (für Iridium,
    nur mit Konto). Alle Zahlen kommen vom Server (`/shop`, mit Konto
    `/konto/shop`) — hier steht kein Preis. */
-let shopStand = null, shopLaedt = false;
 function zahlDe(x){ return Number(x).toLocaleString(lang, { maximumFractionDigits: 1 }); }
 function euro(cent){ return (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" }); }
 async function shopLaden(){
@@ -6314,7 +6392,7 @@ function buildShop(){
     try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
     des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}<em>${esc(monat)}</em></h2>` +
       `<div class="shopBild" id="shopDesignBild"></div>` +
-      `<p class="shopName">${esc(pal.label)}<small>${esc(t("sh_design_erkl"))}</small></p>` +
+      `<p class="shopName">${esc(pal.label)}<small>${esc(t("sh_design_erkl"))}${pal.bonus && pal.bonus.staub ? "<br>" + esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100))) : ""}</small></p>` +
       `<button type="button" class="shopKauf" id="shopDesignKn"></button>`;
     const bild = $("shopDesignBild");
     const url = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
@@ -6924,6 +7002,8 @@ const Held3D = {
     glas:    { amb:.30, spec:1.0, shine:96, fres:.75, fpow:2.2, puls:0 },
     gas:     { amb:.24, spec:.12, shine:12, fres:.85, fpow:2.0, puls:0 },
     perle:   { amb:.32, spec:.60, shine:30, fres:.80, fpow:2.0, puls:0 },
+    /* v129: schwarzer Glanzstein mit Goldranken (Design des Monats). */
+    filigran:{ amb:.14, spec:.95, shine:70, fres:.55, fpow:2.4, puls:.5 },
     schlund: { amb:.04, spec:0,   shine:1,  fres:0,   fpow:1,   puls:0, schlund:1 }
   },
   /* Lichtrichtung im Raum: links oben wie `LICHT`, dazu ein Anteil zum
@@ -7284,6 +7364,37 @@ const Held3D = {
     if (art === "schlund"){
       ga.fillStyle = "#050612"; ga.fillRect(0, 0, W, H);
     }
+    if (art === "filigran"){
+      /* Goldranken auf schwarzem Glanzstein (v129): gewellte Breitenbänder,
+         dazwischen Locken wie Einlegearbeit, Längsstege — mattes Gold auf
+         der Farbfläche, das Leuchten auf der Glühfläche. Streng
+         wiederholend (Ornament), nur die Grundflecken sind gewürfelt. */
+      ga.fillStyle = hexA(dark, .55); ga.fillRect(0, 0, W, H);
+      const linien = [];
+      const baender = [.2, .35, .5, .65, .8];
+      baender.forEach((v, bi) => {
+        const k = 8 + bi % 2 * 4, amp = H * .014, p = [];
+        for (let x = 0; x <= W; x += 4) p.push([x, v * H + amp * Math.sin(x / W * 6.2832 * k)]);
+        linien.push(p);
+        if (bi < baender.length - 1){
+          const v2 = baender[bi + 1], n = 12;
+          for (let i = 0; i < n; i++){
+            /* Locke zwischen zwei Bändern: eine enger werdende Spirale,
+               abwechselnd links- und rechtsdrehend. */
+            const cx = (i + .5) / n * W, cy = (v + v2) / 2 * H, s = i % 2 ? 1 : -1, q = [];
+            for (let t = 0; t <= 1.0001; t += .05){
+              const rr = H * .045 * (1 - t * .75), a = s * t * 7.5;
+              q.push([cx + Math.cos(a) * rr * 1.6, cy + Math.sin(a) * rr]);
+            }
+            linien.push(q);
+            linien.push([[i / n * W, v * H], [i / n * W, v2 * H]]);
+          }
+        }
+      });
+      for (const p of linien) zug(ge, p, "rgba(255,255,255,.30)", 1, W * .009);
+      for (const p of linien) zug(ge, p, "rgba(255,255,255,1)", 1, W * .0028);
+      for (const p of linien) zug(ga, p, air, .55, W * .0035);
+    }
 
     /* Farbe aus der einen Fläche, Glühen aus der anderen — von Hand
        zusammengesetzt, damit der Alphakanal nicht als Durchsichtigkeit
@@ -7625,6 +7736,95 @@ const Detail3D = Object.assign(Object.create(Held3D), {
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) Detail3D.weiter(); });
 
+/* ---- Angebot des Monats (v129) -------------------------------------------
+   Thomas 24.09.: „Angebote über tolle Designs … prunkvoll in einem extra
+   Fenster … 3D und hochauflösend … ein Häkchen ‚nicht mehr anzeigen', dann
+   bekommt man erst wieder im nächsten Monat die Werbung dafür." Es kommt
+   nur in einer Pause — wenn der Hangar nach einer Runde wieder aufgeht, nie
+   in der Runde (CrazyGames, Thomas' eigene Regel) —, nur für Konten ab 18
+   (Server: `angebotDarf`; nie Kinder direkt zum Kauf auffordern), höchstens
+   einmal am Tag und nicht, wenn man das Design schon hat. Kein Countdown —
+   kein künstlicher Zeitdruck. Beides Merkzettel im Browser, jeder Zugriff
+   in `try`. */
+const Angebot3D = Object.assign(Object.create(Held3D), {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  kosten: 0, bilder: 0, stehen: false, fotos: {},
+  obenId: "angebotOben", ohneBaender: true, dreh: 0,
+  sichtbar(){
+    const v = document.getElementById("angebotVeil");
+    return !!v && !v.hidden && !document.hidden;
+  }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Angebot3D.weiter(); });
+const ANGEBOT_AUS = "talumi.angebot.aus", ANGEBOT_TAG = "talumi.angebot.tag";
+function merkLesen(k){ try { return localStorage.getItem(k); } catch(_){ return null; } }
+function merkSetzen(k, v){ try { localStorage.setItem(k, v); } catch(_){} }
+async function angebotVielleicht(){
+  if (!angebotNachRunde) return;
+  angebotNachRunde = false;
+  if (!istAngemeldet()) return;
+  try { if (Tutorial.laufend || !Tutorial.stand.fertig) return; } catch(_){}
+  const S = shopStand || await shopLaden();
+  const D = S && S.design, pal = D && SKINS.find(s => s.id === D.id);
+  if (!S || !S.angebotDarf || !D || !pal || S.designBesitz || Profile.owned.has(pal.id)) return;
+  if (merkLesen(ANGEBOT_AUS) === D.monat) return;
+  const heute = String(Gast.heute());
+  if (merkLesen(ANGEBOT_TAG) === heute) return;
+  /* Nur über dem Hangar, nie über einem anderen Fenster oder einer Blase. */
+  const sv = $("startVeil");
+  if (!sv || sv.hidden) return;
+  if (VEILS.some(id => id !== "startVeil" && $(id) && !$(id).hidden)) return;
+  const blase = $("tutTipp"); if (blase && !blase.hidden) return;
+  angebotZeigen(S, pal);
+  merkSetzen(ANGEBOT_TAG, heute);
+}
+function angebotZeigen(S, pal){
+  const v = $("angebotVeil"); if (!v) return;
+  const D = S.design;
+  let monat = "";
+  try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
+  setze("angebotAuge", t("an_auge", monat));
+  setze("angebotName", pal.label);
+  setze("angebotZeile", t("an_nur_shop"));
+  setze("angebotBonus", pal.bonus && pal.bonus.staub ? t("dd_bonus", Math.round(pal.bonus.staub * 100)) : "");
+  const p0 = (S.pakete || [])[0];
+  const pr = $("angebotPreis");
+  if (pr) pr.innerHTML = `${esc(t("an_preis", D.preis.toLocaleString(lang)))}` +
+    (p0 ? ` <small>${esc(t("sh_euro", euro(Math.round(D.preis * p0.cent / p0.iridium))))}</small>` : "");
+  setze("angebotShop", t("an_zum_shop")); setze("angebotSpaeter", t("an_spaeter")); setze("angebotAusText", t("an_aus"));
+  const aus = $("angebotAus"); if (aus) aus.checked = false;
+  VEILS.forEach(id => { if (id !== "angebotVeil" && id !== "startVeil"){ const x = $(id); if (x) x.hidden = true; } });
+  v.hidden = false; v.classList.remove("an"); void v.offsetWidth; v.classList.add("an");
+  try { Sound.levelUp(); } catch(_){}
+  /* Die Welt in 3D, groß — dieselbe Bühne wie im Hangar; ohne WebGL gemalt. */
+  try {
+    const glc = $("angebotGL"), c = $("angebotOben");
+    const S2 = c.width, stufe = STAGES.length - 1, masse = STAGES[stufe].at;
+    const R = S2 * heldAnteil(stufe, pal, null);
+    if (glc && Angebot3D.moeglich(glc)){ glc.hidden = false; Angebot3D.zeigen({ pal, masse, stufe, monde: null, R, S: S2 }); }
+    else {
+      if (glc) glc.hidden = true;
+      const g = c.getContext("2d"); g.clearRect(0, 0, S2, S2);
+      const saveT = Game.t; Game.t = 1.2; MENUE_VOLL = true;
+      try { body(g, S2/2, S2/2, R, masse, pal, 0, "", true, pal.tier, pal.trait); } catch(_){}
+      MENUE_VOLL = false; Game.t = saveT;
+    }
+  } catch(_){}
+  const k = $("angebotShop"); if (k) k.focus();
+}
+function angebotZu(){
+  const v = $("angebotVeil"); if (!v) return;
+  const aus = $("angebotAus");
+  if (aus && aus.checked && shopStand && shopStand.design) merkSetzen(ANGEBOT_AUS, shopStand.design.monat);
+  v.hidden = true; v.classList.remove("an");
+}
+try {
+  const a = document.getElementById("angebotShop"); if (a) a.addEventListener("click", () => { angebotZu(); shopOeffnen(); });
+  const b = document.getElementById("angebotSpaeter"); if (b) b.addEventListener("click", angebotZu);
+} catch(_){}
+
 /* Fotos für die Kacheln. Warteschlange, eines je Bild — 46 Oberflächen auf
    einmal zu rechnen hielte ein günstiges Telefon mehrere Sekunden an. Die
    Oberfläche wird dafür in halber Auflösung gerechnet (512 statt 1024): Auf
@@ -7694,7 +7894,12 @@ function designReihe(){
 function designGruppen(){
   const lv = SKINS.filter(s => s.lv && !s.sonder).sort((a, b) => a.lv - b.lv);
   const ore = SKINS.filter(s => s.ore && !s.sonder && !s.lv).sort((a, b) => a.ore - b.ore);
-  const rest = SKINS.filter(s => !lv.includes(s) && !ore.includes(s));
+  /* Designs des Monats (v129) nur, wenn man sie hat oder sie gerade im
+     Shop sind — ein vergangenes, das es nicht mehr gibt, stünde sonst für
+     immer verschlossen da. */
+  const jetzt = shopStand && shopStand.design ? shopStand.design.id : null;
+  const rest = SKINS.filter(s => !lv.includes(s) && !ore.includes(s) &&
+    (s.sonder !== "monat" || Profile.owned.has(s.id) || s.id === jetzt));
   return [{ kopf: "dg_level", liste: lv }, { kopf: "dg_ore", liste: ore }, { kopf: "dg_sonder", liste: rest }]
     .filter(g => g.liste.length);
 }
@@ -7746,13 +7951,17 @@ function designDetailMalen(){
   setze("ddRang", t("dd_rang", ROMAN[s.tier || 1]));
   setze("ddMat", t("mat_" + (s.mat || "fels")));
   const w = document.getElementById("ddWie");
-  if (w) w.textContent = hat ? t("dd_hast") : s.sonder ? t("sk_" + s.sonder + "_note")
-                       : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang));
+  if (w) w.textContent = (hat ? t("dd_hast") : s.sonder ? t("sk_" + s.sonder + "_note")
+                       : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang))) +
+                       /* Design-Bonus (v129), nur im Aufstieg. */
+                       (s.bonus && s.bonus.staub ? " " + t("dd_bonus", Math.round(s.bonus.staub * 100)) : "");
   const k = document.getElementById("ddKnopf");
   if (!k) return;
   k.disabled = false; k.className = "ddKnopf";
   if (gewaehlt){ k.textContent = "✓ " + t("dd_gewaehlt"); k.disabled = true; k.classList.add("gewaehlt"); }
   else if (hat){ k.textContent = t("dd_waehlen"); }
+  /* Design des Monats (v129): der Weg führt in den Shop. */
+  else if (s.sonder === "monat"){ k.textContent = t("dd_zum_shop"); k.classList.add("kauf"); }
   else if (s.sonder){ k.textContent = t("dd_besonders"); k.disabled = true; }
   else if (s.lv){ k.textContent = t("dd_level_kurz", s.lv); k.disabled = true; }
   else if (Profile.ore >= s.ore){ k.innerHTML = ICON_ORE + esc(t("dd_kaufen", s.ore.toLocaleString(lang))); k.classList.add("kauf"); }
@@ -7768,6 +7977,7 @@ function designDetailMalen(){
 async function designDetailKnopf(){
   const s = ddDesign;
   if (!s) return;
+  if (s.sonder === "monat" && !Profile.owned.has(s.id)){ designDetailZu(); shopOeffnen(); return; }
   if (Profile.owned.has(s.id)){
     await pick(s);
     designDetailMalen();
@@ -8362,6 +8572,8 @@ function freundBoxMalen(){
 
 function show(id){
   hideAll(); $(id).hidden = false; anmeldungLage();
+  /* Zurück im Hangar nach einer Runde: vielleicht das Angebot des Monats (v129). */
+  if (id === "startVeil" && angebotNachRunde) setTimeout(() => { try { angebotVielleicht(); } catch(_){} }, 900);
   /* Das Push-Angebot (v110) gehört zum Hangar; ein anderes Fenster darüber
      wäre eines zu viel. */
   if (id !== "startVeil"){ const pa = $("pushAngebot"); if (pa) pa.hidden = true; }
@@ -9603,7 +9815,8 @@ function buildGrid(){
       else if (st === "locked") b.insertAdjacentHTML("beforeend", `<span class="dSchloss">${SCHLOSS}</span>`);
       const nm = document.createElement("span");
       nm.className = "nm";
-      nm.innerHTML = esc(s.label) + ` <i>${ROMAN[s.tier]}</i>`;
+      nm.innerHTML = esc(s.label) + ` <i>${ROMAN[s.tier]}</i>` +
+        (s.bonus && s.bonus.staub ? `<b class="dBonus" title="${esc(t("dd_bonus", Math.round(s.bonus.staub * 100)))}">+${Math.round(s.bonus.staub * 100)} %</b>` : "");
       const rq = document.createElement("span");
       rq.className = "rq";
       if (gewaehlt) rq.textContent = t("dd_gewaehlt");

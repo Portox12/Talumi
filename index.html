@@ -1929,6 +1929,40 @@
   .konsSp > label{margin:0}
   .konsSp.l #controls{margin:0}
 
+  /* ---- Angebotsfenster: Design des Monats (v129) ------------------------
+     Quer: links die Welt in 3D, rechts Name, Bonus, Preis, Knöpfe. */
+  #angebotVeil{display:grid;place-items:center;backdrop-filter:none;-webkit-backdrop-filter:none;
+       padding:calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+               calc(10px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+       background:radial-gradient(ellipse at 50% 50%, rgba(14,10,7,.55), rgba(14,10,7,.9) 80%)}
+  #angebotVeil[hidden]{display:none}
+  .angebotKarte{position:relative;width:min(760px,100%);max-height:100%;overflow:auto;
+       display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:4px 22px;padding:14px 24px 16px;
+       border-radius:22px;background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
+       border:1px solid rgba(233,176,99,.6);box-shadow:0 30px 90px rgba(0,0,0,.65), 0 0 80px rgba(233,176,99,.2)}
+  .angebotKarte > .tutLohnAuge{grid-column:1 / -1;text-align:center}
+  .angebotBuehne{position:relative;width:min(300px, 64vh);aspect-ratio:1}
+  .angebotBuehne canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .angebotBuehne canvas[hidden]{display:none}
+  .angebotText{display:flex;flex-direction:column;gap:8px;min-width:0}
+  .angebotText h1{margin:0;font-family:var(--serif);font-size:clamp(30px,8vh,44px);line-height:1.05;color:var(--brass-hell);
+       letter-spacing:.03em;text-shadow:0 0 24px rgba(233,176,99,.4)}
+  .angebotZeile{margin:0;font-size:14px;line-height:1.4;color:var(--paper)}
+  .angebotBonus{margin:0;font-size:13.5px;line-height:1.4;color:var(--brass)}
+  .angebotPreis{margin:0;font-family:var(--disp);font-size:18px;color:var(--paper);font-variant-numeric:tabular-nums}
+  .angebotPreis small{font-size:13px;color:var(--paper-2)}
+  .angebotText .tutLohnKn{justify-content:flex-start;margin-top:2px}
+  .angebotText .tutLohnKn button{min-width:140px}
+  #angebotShop{background:linear-gradient(180deg, var(--brass-hell), var(--brass));color:#1c1207;border:0;font-weight:700}
+  .angebotAus{display:flex;align-items:center;gap:10px;min-height:44px;margin:0;font-size:12.5px;color:var(--paper-2);cursor:pointer}
+  .angebotAus input{width:22px;height:22px;margin:0;flex:0 0 auto;accent-color:var(--brass)}
+  #angebotVeil.an .angebotKarte{animation:tutRangAuf .5s cubic-bezier(.2,1.3,.4,1) both}
+  @media (orientation:portrait){ .angebotKarte{grid-template-columns:1fr;justify-items:center;text-align:center}
+    .angebotText .tutLohnKn{justify-content:center} }
+  @media (prefers-reduced-motion:reduce){ #angebotVeil.an .angebotKarte{animation:none} }
+  /* Design-Bonus auf der Kachel (v129). */
+  .tile .nm .dBonus{margin-left:4px;font-style:normal;font-size:10.5px;font-weight:700;color:var(--brass)}
+
   /* ---- Shop (v127): drei Spalten — Iridium, Design des Monats, Raubmond.
      Eigenes Raster statt `.drei`: Dessen Regeln sind auf den Hangar
      abgestimmt. Kaufknöpfe in Messing (Grün hat nur der Startknopf). */
@@ -1937,14 +1971,14 @@
   .shopSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line)}
   .shopSp > h2{margin-bottom:2px}
   .shopPaket{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;
-       padding:5px 12px;border-radius:12px;background:var(--block);border:1px solid var(--line)}
+       padding:0 12px;border-radius:12px;background:var(--block);border:1px solid var(--line)}
   .iriStein{width:20px;height:20px;border-radius:50%;flex:0 0 auto;
        background:radial-gradient(circle at 38% 36%,#fff 0%,var(--iri) 32%,rgba(0,0,0,.55) 100%);box-shadow:0 0 10px var(--iri)}
   .shopPaket b{font-family:var(--disp);font-size:16px;color:var(--paper);font-variant-numeric:tabular-nums}
   .shopPaket b small{margin-left:6px;font-size:11px;font-weight:600;color:var(--brass)}
   .shopPaket .preis{font-family:var(--disp);font-size:15px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .shopHinweis{margin:0;font-size:12px;line-height:1.4;color:var(--paper-2)}
-  .shopBild{align-self:center;width:min(150px, 30vh);aspect-ratio:1;position:relative;flex:0 0 auto}
+  .shopBild{align-self:center;width:min(130px, 27vh);aspect-ratio:1;position:relative;flex:0 0 auto}
   .shopBild img,.shopBild canvas{width:100%;height:100%;display:block}
   .shopName{margin:0;text-align:center;font-family:var(--serif);font-size:21px;line-height:1.15;color:var(--brass-hell)}
   .shopName small{display:block;margin-top:3px;font-family:var(--sans);font-size:12px;color:var(--paper-2)}
@@ -4601,6 +4635,30 @@
     <div class="tutLohnKn">
       <button type="button" id="tutLohnWeiter" data-i18n="tu_l_weiter">On to the menu</button>
       <button type="button" class="quiet" id="tutLohnKontoKn" data-i18n="tu_l_konto_kn" hidden>Create account</button>
+    </div>
+  </div>
+</div>
+
+<!-- Angebot: Design des Monats (v129) — nur in einer Pause (Hangar nach
+     einer Runde), nur Konten ab 18, höchstens einmal am Tag, mit „Nicht mehr
+     anzeigen" bis zum nächsten Monat. Kein Countdown. -->
+<div class="veil" id="angebotVeil" hidden>
+  <div class="angebotKarte" role="dialog" aria-modal="true" aria-labelledby="angebotName">
+    <p class="tutLohnAuge" id="angebotAuge">Design of the month</p>
+    <div class="angebotBuehne"><i class="tutLohnStrahlen"></i>
+      <canvas id="angebotGL" width="900" height="900" hidden></canvas>
+      <canvas id="angebotOben" width="900" height="900"></canvas>
+    </div>
+    <div class="angebotText">
+      <h1 id="angebotName">Aurum</h1>
+      <p class="angebotZeile" id="angebotZeile"></p>
+      <p class="angebotBonus" id="angebotBonus"></p>
+      <p class="angebotPreis" id="angebotPreis"></p>
+      <div class="tutLohnKn">
+        <button type="button" id="angebotShop">Shop</button>
+        <button type="button" class="quiet" id="angebotSpaeter">Later</button>
+      </div>
+      <label class="angebotAus"><input type="checkbox" id="angebotAus"><span id="angebotAusText">Don't show again this month</span></label>
     </div>
   </div>
 </div>
