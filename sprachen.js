@@ -2810,7 +2810,10 @@ const LANGS_KAPSEL = {
       dt_sammeln:"Collect fragments for this · {0} / {1}", dt_ziel:"◆ Your fragments count towards this · {0} / {1}",
       dt_frei:"Unlock with {0} fragments", dt_frei_ok:"Unlocked from fragments!",
       mo_teile:"Moon fragments", mo_teile_erkl:"From capsules: {0} make a moon of the kind you have fewest of.",
-      mo_w_kapsel:"Capsules: {0} moon fragments make a moon."},
+      mo_w_kapsel:"Capsules: {0} moon fragments make a moon.",
+      sh_ab:"From {0}", sh_3d:"View large in 3D", sh_raub_kapsel:"Also from {0} fragments in capsules.",
+      sk_monat_teile:"◆ {0}/{1} fragments", dd_monat_ab:"Available from {0}.",
+      mo_raubteile:"Leech Moon fragments", mo_raubteile_erkl:"From capsules: {0} make the Leech Moon."},
   de:{ka_ore:"Kapsel: +{0} Ore", ka_ore_zeile:"Ore aus Kapseln",
       ka_teil:"Kapsel: Bruchstück für {0} — {1} / {2}", ka_teil_fertig:"Genug Bruchstücke — das Design gehört dir!",
       ka_mondteil:"Kapsel: Mond-Bruchstück {0} / {1}", ka_mondteil_fertig:"{0} Bruchstücke — ein neuer Mond!",
@@ -2818,7 +2821,10 @@ const LANGS_KAPSEL = {
       dt_sammeln:"Bruchstücke hierfür sammeln · {0} / {1}", dt_ziel:"◆ Deine Bruchstücke zählen hierfür · {0} / {1}",
       dt_frei:"Mit {0} Bruchstücken freischalten", dt_frei_ok:"Aus Bruchstücken freigeschaltet!",
       mo_teile:"Mond-Bruchstücke", mo_teile_erkl:"Aus Kapseln: {0} ergeben einen Mond der Art, von der du am wenigsten hast.",
-      mo_w_kapsel:"Kapseln: {0} Mond-Bruchstücke ergeben einen Mond."}
+      mo_w_kapsel:"Kapseln: {0} Mond-Bruchstücke ergeben einen Mond.",
+      sh_ab:"Ab {0}", sh_3d:"Groß in 3D ansehen", sh_raub_kapsel:"Auch aus {0} Bruchstücken in Kapseln.",
+      sk_monat_teile:"◆ {0}/{1} Bruchstücke", dd_monat_ab:"Erhältlich ab {0}.",
+      mo_raubteile:"Raubmond-Bruchstücke", mo_raubteile_erkl:"Aus Kapseln: {0} ergeben den Raubmond."}
 };
 for (const c in LANGS_KAPSEL) Object.assign(LANGS[c], LANGS_KAPSEL[c]);
 for (const c of ["es", "pt", "fr", "tr", "ru"])
@@ -2828,15 +2834,146 @@ for (const c of ["es", "pt", "fr", "tr", "ru"]) if (LANGS[c]) LANGS[c].ir_nichtk
    übrigen Sprachen auf Englisch — wie beim Tutorial (`TUT_NOCH_ZU_UEBERSETZEN`). */
 for (const c of ["es", "pt", "fr", "tr", "ru"])
   for (const k in LANGS_SHOP.en) if (LANGS[c] && LANGS[c][k] === undefined) LANGS[c][k] = LANGS_SHOP.en[k];
-/* Tutorial v120/v122: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
-   Thomas' Regel (24.09.2026): „zuerst nur Deutsch, alle Sprachen nach meiner
-   Freigabe". Bis dahin steht in den übrigen Sprachen bewusst der englische
-   Text. Nach der Freigabe übersetzen und diese Liste leeren; dann auch die
-   geänderten Sätze tu_staub, tu_vesta_* und tu_abwerfen_* (v122: Fahr in
-   den leuchtenden Kreis …) in es/pt/fr/tr/ru nachziehen (sie tragen dort
-   noch den Inhalt von v114). Seit v123 ebenso tu_welt, tu_pulsare, tu_mond
-   und tut_m_bonus (neue Fassung nur de/en) sowie alles aus LANGS_TUT3. */
-const TUT_NOCH_ZU_UEBERSETZEN = ["tu_verstanden", "tu_zur_lohn", ...Object.keys(LANGS_TUT3.en)];
+/* Tutorial in allen Sprachen (v135): Thomas hat das Tutorial am 24.09.2026
+   freigegeben (Stand v133) — damit gilt seine Regel „zuerst nur Deutsch, alle
+   Sprachen nach meiner Freigabe" als erfüllt. Hier stehen alle Sätze, die
+   seit v122 neu sind oder sich geändert haben, in es/pt/fr/tr/ru. Begriffe
+   wie im übrigen Spiel: Knöpfe `p_split`/`p_shed`, Start `start`, Modus
+   `m_liga`, Währung `r_ore`, Rang `rang`, Tagesbonus `pa_bonus_k`. Anrede
+   wie in der jeweiligen Sprache üblich im Spiel (es/pt/tr du, fr/ru Sie).
+   `*Wort*` = kursiv. */
+const LANGS_TUT_ALLE = {
+  es:{tu_verstanden:"Entendido", tu_zur_lohn:"A la recompensa",
+      tu_pfeil:"¿Ves la flecha roja de aviso? Te avisa de un rival grande fuera de la pantalla que podría dividirse sobre ti y tragarte. ¡Mantén la distancia!",
+      tu_r_auge:"Tu primer rango", tu_r_satz:"Ahora eres {0}, el primero de {1} rangos. Sigue jugando, sube de rango y destaca sobre los demás jugadores.",
+      tu_r_gast:"Con una cuenta, tus victorias cuentan para el siguiente rango.",
+      tu_schon:"La recompensa solo se da la primera vez.",
+      s_warn:"Flechas de aviso", s_warn_h:"Las flechas rojas señalan rivales grandes fuera de la pantalla que podrían tragarte dividiéndose.",
+      tu_beenden:"¿Terminar el tutorial?",
+      tu_m_profil:"Tu foto de perfil abre tu perfil de jugador: así te ven también los demás jugadores.",
+      tu_m_profil_gast:"Tu foto de perfil abre tu perfil de jugador. Con una cuenta, los demás jugadores también pueden verlo.",
+      tu_gewachsen:"¡Conseguido! Te has tragado a Vesta y has crecido toda su masa: +{0}. Arriba a la izquierda ves tu nueva masa.",
+      tu_zeile:"Este es Kepler. Bajo cada jugador pone quién es: la insignia de rango con su grado (de 1 a 3 puntos), luego nivel, clan y nombre.",
+      tu_z_rang:"Rango · grado", tu_z_level:"Nivel", tu_z_clan:"Clan", tu_z_name:"Nombre",
+      tu_mond_konto:"¡Para ello necesitas una cuenta de Talumi!",
+      tu_kapsel:"¿Ves la cápsula? Estas cápsulas flotan por el espacio. Atraviésala: dentro encuentras Ore, polvo lunar, fragmentos de diseños y lunas y, rara vez, Iridio.",
+      tu_kapsel_konto:"El contenido lo recibes con una cuenta de Talumi.",
+      tu_staub:"Recoge diez granos de polvo estelar brillante.",
+      tu_vesta_maus:"Vesta es más pequeña que tú. Entra en el círculo luminoso; allí te quedas quieto. Luego pulsa Espacio: sales disparado hacia Vesta y te la tragas.",
+      tu_vesta_tipp:"Vesta es más pequeña que tú. Entra en el círculo luminoso; allí te quedas quieto. Luego toca Dividir: sales disparado hacia Vesta y te la tragas.",
+      tu_abwerfen_maus:"Soltar (W) lanza masa hacia delante. Entra en el círculo luminoso y pulsa W cinco veces: el púlsar dispara contra Kepler.",
+      tu_abwerfen_tipp:"Soltar lanza masa hacia delante. Entra en el círculo luminoso y toca Soltar cinco veces: el púlsar dispara contra Kepler.",
+      tu_welt:"Salto adelante: ahora eres un mundo de 100.000 de masa y, por eso, mucho más lento. Divídete todas las veces que puedas para poder absorber púlsares.",
+      tu_mond:"En el modo «Ascenso» puedes encontrar las llamadas *lunas* al tragar púlsares. Giran a tu alrededor y te hacen más fuerte.",
+      tut_m_bonus:"Vuelve cada día: con el bono diario recibes la moneda del juego, *Ore*, y el día 7 un diseño.",
+      tut_m_designs:"Aquí ves tus diseños desbloqueados y cuáles recibirás a continuación.",
+      tut_m_modi:"Elige un modo de juego y pulsa «Empezar»."},
+  pt:{tu_verstanden:"Entendi", tu_zur_lohn:"Ver recompensa",
+      tu_pfeil:"Está vendo a seta vermelha de aviso? Ela avisa sobre um adversário grande fora da tela que poderia se dividir em cima de você e te engolir. Mantenha distância!",
+      tu_r_auge:"Sua primeira patente", tu_r_satz:"Agora você é {0} — a primeira de {1} patentes. Continue jogando, suba de patente e se destaque entre os outros jogadores.",
+      tu_r_gast:"Com uma conta, suas vitórias contam para a próxima patente.",
+      tu_schon:"A recompensa só é dada na primeira vez.",
+      s_warn:"Setas de aviso", s_warn_h:"Setas vermelhas mostram adversários grandes fora da tela que poderiam te engolir ao se dividir.",
+      tu_beenden:"Encerrar o tutorial?",
+      tu_m_profil:"Sua foto de perfil abre o seu perfil de jogador — é assim que os outros jogadores também te veem.",
+      tu_m_profil_gast:"Sua foto de perfil abre o seu perfil de jogador. Com uma conta, os outros jogadores também podem vê-lo.",
+      tu_gewachsen:"Conseguiu! Você engoliu Vesta e cresceu toda a massa dela: +{0}. Sua nova massa aparece no canto superior esquerdo.",
+      tu_zeile:"Este é Kepler. Embaixo de cada jogador está quem ele é: a insígnia de patente com o grau (1 a 3 pontos), depois nível, clã e nome.",
+      tu_z_rang:"Patente · grau", tu_z_level:"Nível", tu_z_clan:"Clã", tu_z_name:"Nome",
+      tu_mond_konto:"Para isso, você precisa de uma conta Talumi!",
+      tu_kapsel:"Está vendo a cápsula? Cápsulas assim flutuam pelo espaço. Passe por ela: dentro você encontra Ore, poeira lunar, fragmentos de designs e luas — e, raramente, Irídio.",
+      tu_kapsel_konto:"O conteúdo você recebe com uma conta Talumi.",
+      tu_staub:"Recolha dez grãos de poeira estelar brilhante.",
+      tu_vesta_maus:"Vesta é menor que você. Entre no círculo brilhante; lá você fica parado. Depois aperte Espaço: você dispara contra Vesta e a engole.",
+      tu_vesta_tipp:"Vesta é menor que você. Entre no círculo brilhante; lá você fica parado. Depois toque em Dividir: você dispara contra Vesta e a engole.",
+      tu_abwerfen_maus:"Soltar (W) lança massa para a frente. Entre no círculo brilhante e aperte W cinco vezes: o pulsar atira em Kepler.",
+      tu_abwerfen_tipp:"Soltar lança massa para a frente. Entre no círculo brilhante e toque em Soltar cinco vezes: o pulsar atira em Kepler.",
+      tu_welt:"Salto à frente: agora você é um mundo com 100.000 de massa — e, por isso, bem mais lento. Divida-se o máximo que puder para conseguir absorver pulsares.",
+      tu_mond:"No modo “Ascensão”, ao engolir pulsares você pode encontrar as chamadas *luas*. Elas orbitam você e te deixam mais forte.",
+      tut_m_bonus:"Volte todo dia: com o bônus diário você ganha a moeda do jogo, *Ore*, e no dia 7 um design.",
+      tut_m_designs:"Aqui você vê os seus designs desbloqueados — e quais vai receber a seguir.",
+      tut_m_modi:"Escolha um modo de jogo e depois aperte “Começar”."},
+  fr:{tu_verstanden:"Compris", tu_zur_lohn:"Vers la récompense",
+      tu_pfeil:"Vous voyez la flèche rouge d’alerte ? Elle vous avertit d’un grand adversaire hors de l’écran qui pourrait se diviser sur vous et vous avaler. Gardez vos distances !",
+      tu_r_auge:"Votre premier grade", tu_r_satz:"Vous êtes maintenant {0} — le premier de {1} grades. Continuez à jouer, montez en grade et élevez-vous au-dessus des autres joueurs.",
+      tu_r_gast:"Avec un compte, vos victoires comptent pour le grade suivant.",
+      tu_schon:"La récompense n’est donnée que la première fois.",
+      s_warn:"Flèches d’alerte", s_warn_h:"Les flèches rouges indiquent de grands adversaires hors de l’écran qui pourraient vous avaler en se divisant.",
+      tu_beenden:"Quitter le tutoriel ?",
+      tu_m_profil:"Votre photo de profil ouvre votre profil de joueur — c’est ainsi que les autres joueurs vous voient aussi.",
+      tu_m_profil_gast:"Votre photo de profil ouvre votre profil de joueur. Avec un compte, les autres joueurs peuvent aussi le voir.",
+      tu_gewachsen:"Réussi ! Vous avez avalé Vesta et grandi de toute sa masse : +{0}. Votre nouvelle masse s’affiche en haut à gauche.",
+      tu_zeile:"Voici Kepler. Sous chaque joueur, on lit qui il est : l’insigne de grade avec son échelon (1 à 3 points), puis le niveau, le clan et le nom.",
+      tu_z_rang:"Grade · échelon", tu_z_level:"Niveau", tu_z_clan:"Clan", tu_z_name:"Nom",
+      tu_mond_konto:"Il faut pour cela un compte Talumi !",
+      tu_kapsel:"Vous voyez la capsule ? Ces capsules dérivent dans l’espace. Traversez-la : vous y trouvez du Minerai, de la poussière lunaire, des fragments de designs et de lunes — et, rarement, de l’Iridium.",
+      tu_kapsel_konto:"Le contenu, vous l’obtenez avec un compte Talumi.",
+      tu_staub:"Ramassez dix grains de poussière d’étoiles lumineuse.",
+      tu_vesta_maus:"Vesta est plus petite que vous. Entrez dans le cercle lumineux ; vous vous y arrêtez. Puis appuyez sur Espace : vous foncez sur Vesta et l’avalez.",
+      tu_vesta_tipp:"Vesta est plus petite que vous. Entrez dans le cercle lumineux ; vous vous y arrêtez. Puis touchez Diviser : vous foncez sur Vesta et l’avalez.",
+      tu_abwerfen_maus:"Éjecter (W) projette de la masse vers l’avant. Entrez dans le cercle lumineux et appuyez cinq fois sur W : le pulsar tire sur Kepler.",
+      tu_abwerfen_tipp:"Éjecter projette de la masse vers l’avant. Entrez dans le cercle lumineux et touchez cinq fois Éjecter : le pulsar tire sur Kepler.",
+      tu_welt:"Bond en avant : vous êtes maintenant un monde de 100 000 de masse — et donc bien plus lent. Divisez-vous le plus souvent possible pour pouvoir absorber des pulsars.",
+      tu_mond:"Dans le mode « Ascension », en avalant des pulsars, vous pouvez trouver des *lunes*. Elles tournent autour de vous et vous rendent plus fort.",
+      tut_m_bonus:"Revenez chaque jour : avec le bonus du jour, vous recevez la monnaie du jeu, le *Minerai*, et un design le jour 7.",
+      tut_m_designs:"Ici, vous voyez vos designs débloqués — et ceux que vous recevrez ensuite.",
+      tut_m_modi:"Choisissez un mode de jeu, puis appuyez sur « Démarrer »."},
+  tr:{tu_verstanden:"Anladım", tu_zur_lohn:"Ödüle geç",
+      tu_pfeil:"Kırmızı uyarı okunu görüyor musun? Ekran dışındaki, üstüne bölünüp seni yutabilecek büyük bir rakibe karşı uyarır. Mesafeni koru!",
+      tu_r_auge:"İlk rütben", tu_r_satz:"Artık {0} oldun — {1} rütbenin ilki. Oynamaya devam et, rütbe atla ve diğer oyuncuların üstüne çık.",
+      tu_r_gast:"Hesapla galibiyetlerin bir sonraki rütbe için sayılır.",
+      tu_schon:"Ödül yalnızca ilk seferde verilir.",
+      s_warn:"Uyarı okları", s_warn_h:"Kırmızı oklar, ekran dışındaki ve bölünerek seni yutabilecek büyük rakipleri gösterir.",
+      tu_beenden:"Eğitim bitirilsin mi?",
+      tu_m_profil:"Profil resmin oyuncu profilini açar — diğer oyuncular da seni böyle görür.",
+      tu_m_profil_gast:"Profil resmin oyuncu profilini açar. Hesapla diğer oyuncular da onu görebilir.",
+      tu_gewachsen:"Başardın! Vesta’yı yuttun ve onun bütün kütlesi kadar büyüdün: +{0}. Yeni kütlen sol üstte yazıyor.",
+      tu_zeile:"Bu Kepler. Her oyuncunun altında kim olduğu yazar: rütbe nişanı ve rütbedeki kademesi (1–3 nokta), ardından seviye, klan ve ad.",
+      tu_z_rang:"Rütbe · kademe", tu_z_level:"Seviye", tu_z_clan:"Klan", tu_z_name:"Ad",
+      tu_mond_konto:"Bunun için bir Talumi hesabı gerekir!",
+      tu_kapsel:"Kapsülü görüyor musun? Böyle kapsüller uzayda sürüklenir. İçinden geç: içinde Cevher, ay tozu, tasarım ve uydu parçaları — ve nadiren İridyum bulursun.",
+      tu_kapsel_konto:"İçindekileri bir Talumi hesabıyla alırsın.",
+      tu_staub:"Parlayan yıldız tozundan on tane topla.",
+      tu_vesta_maus:"Vesta senden küçük. Parlayan çembere gir; orada durursun. Sonra Boşluk’a bas: Vesta’ya doğru fırlar ve onu yutarsın.",
+      tu_vesta_tipp:"Vesta senden küçük. Parlayan çembere gir; orada durursun. Sonra Böl’e dokun: Vesta’ya doğru fırlar ve onu yutarsın.",
+      tu_abwerfen_maus:"At (W) kütleyi öne fırlatır. Parlayan çembere gir ve W’ye beş kez bas: pulsar Kepler’e ateş eder.",
+      tu_abwerfen_tipp:"At kütleyi öne fırlatır. Parlayan çembere gir ve At’a beş kez dokun: pulsar Kepler’e ateş eder.",
+      tu_welt:"İleri sıçrama: artık 100.000 kütleli bir dünyasın — ve bu yüzden çok daha yavaşsın. Pulsarları alabilmek için olabildiğince çok bölün.",
+      tu_mond:"“Yükseliş” modunda pulsarları yutarken *uydular* bulabilirsin. Etrafında dönerler ve seni güçlendirirler.",
+      tut_m_bonus:"Her gün geri gel: günlük bonusla oyun parası *Cevher* ve 7. gün bir tasarım kazanırsın.",
+      tut_m_designs:"Burada açtığın tasarımları — ve sırada hangilerini alacağını görürsün.",
+      tut_m_modi:"Bir oyun modu seç, sonra “Başla”ya bas."},
+  ru:{tu_verstanden:"Понятно", tu_zur_lohn:"К награде",
+      tu_pfeil:"Видите красную стрелку-предупреждение? Она предупреждает о крупном противнике за краем экрана, который может разделиться на вас и поглотить. Держитесь подальше!",
+      tu_r_auge:"Ваше первое звание", tu_r_satz:"Теперь вы — {0}, первое из {1} званий. Играйте дальше, повышайте звание и поднимитесь над другими игроками.",
+      tu_r_gast:"С аккаунтом ваши победы засчитываются для следующего звания.",
+      tu_schon:"Награда выдаётся только в первый раз.",
+      s_warn:"Стрелки-предупреждения", s_warn_h:"Красные стрелки показывают крупных противников за краем экрана, которые могут поглотить вас, разделившись.",
+      tu_beenden:"Завершить обучение?",
+      tu_m_profil:"Аватар открывает ваш профиль игрока — так вас видят и другие игроки.",
+      tu_m_profil_gast:"Аватар открывает ваш профиль игрока. С аккаунтом его увидят и другие игроки.",
+      tu_gewachsen:"Готово! Вы поглотили Весту и выросли на всю её массу: +{0}. Новая масса — слева вверху.",
+      tu_zeile:"Это Кеплер. Под каждым игроком написано, кто он: знак звания со ступенью (от 1 до 3 точек), затем уровень, клан и имя.",
+      tu_z_rang:"Звание · ступень", tu_z_level:"Уровень", tu_z_clan:"Клан", tu_z_name:"Имя",
+      tu_mond_konto:"Для этого нужен аккаунт Talumi!",
+      tu_kapsel:"Видите капсулу? Такие капсулы дрейфуют в космосе. Пролетите сквозь неё: внутри руда, лунная пыль, осколки дизайнов и лун — и изредка иридий.",
+      tu_kapsel_konto:"Содержимое вы получаете с аккаунтом Talumi.",
+      tu_staub:"Соберите десять крупинок светящейся звёздной пыли.",
+      tu_vesta_maus:"Веста меньше вас. Войдите в светящийся круг — там вы остановитесь. Затем нажмите пробел: вы метнётесь к Весте и поглотите её.",
+      tu_vesta_tipp:"Веста меньше вас. Войдите в светящийся круг — там вы остановитесь. Затем нажмите «Делить»: вы метнётесь к Весте и поглотите её.",
+      tu_abwerfen_maus:"«Сбросить» (W) бросает массу вперёд. Войдите в светящийся круг и нажмите W пять раз: пульсар выстрелит в Кеплера.",
+      tu_abwerfen_tipp:"«Сбросить» бросает массу вперёд. Войдите в светящийся круг и нажмите «Сбросить» пять раз: пульсар выстрелит в Кеплера.",
+      tu_welt:"Прыжок вперёд: теперь вы мир с массой 100 000 — и поэтому гораздо медленнее. Делитесь как можно чаще, чтобы поглощать пульсары.",
+      tu_mond:"В режиме «Восхождение», поглощая пульсары, можно найти так называемые *луны*. Они вращаются вокруг вас и делают вас сильнее.",
+      tut_m_bonus:"Возвращайтесь каждый день: с ежедневным бонусом вы получаете игровую валюту — *руду*, а на 7-й день — дизайн.",
+      tut_m_designs:"Здесь видны ваши открытые дизайны — и какие вы получите следующими.",
+      tut_m_modi:"Выберите режим игры и нажмите «Начать»."}
+};
+for (const c in LANGS_TUT_ALLE) Object.assign(LANGS[c], LANGS_TUT_ALLE[c]);
+/* Sicherheitsnetz für künftige Tutorial-Sätze: Was hier steht, bekommt in
+   den übrigen Sprachen den englischen Text, bis es übersetzt ist. Seit v135
+   leer — alles ist übersetzt. */
+const TUT_NOCH_ZU_UEBERSETZEN = [];
 for (const c of ["es", "pt", "fr", "tr", "ru"])
   for (const k of TUT_NOCH_ZU_UEBERSETZEN) if (LANGS[c][k] === undefined) LANGS[c][k] = LANGS.en[k];
 

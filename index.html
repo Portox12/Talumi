@@ -1613,6 +1613,20 @@
     .willkStart{height:54px;font-size:21px;padding:0 44px}
     .willkRecht{font-size:11px}
   }
+  /* Ganz flache Handys (v135: 568 × 320 — die Karte war 349 hoch; 667 × 375
+     auf Türkisch 364): noch enger, der Knopf bleibt über 44 Punkte. Das
+     iPhone 14 (390 hoch) bleibt wie freigegeben. */
+  @media (max-height:380px){
+    #willkVeil{padding:8px 16px}
+    .willkKarte{gap:5px}
+    .willkMarke b{font-size:20px}
+    .willkSatz{font-size:12.5px;line-height:1.4}
+    .willkFrage{margin-top:0}
+    .bildRaster.klein{padding:2px}
+    .bildRaster.klein .bildKachel{width:54px}
+    .bildRaster.klein .bildKachel img{width:34px;height:34px}
+    .willkStart{height:48px;font-size:19px;padding:0 40px}
+  }
 
   /* ---- Tutorial: der Hinweiskasten im Spiel (v109) -------------------
      Unten in der Mitte: links und rechts liegen die Daumen, oben der
@@ -1658,6 +1672,14 @@
      steuernden Daumen ist. Bis v116 stand er links unten. */
   body.touch .tutBox{left:50%;transform:translateX(-50%);
        max-width:calc(100vw - 372px - env(safe-area-inset-left) - env(safe-area-inset-right))}
+  /* Kleine Handys (v135, alle Bildschirme): Dort blieben neben den Daumen nur
+     196 Punkte (568 breit) — lange Sätze ragten oben aus dem Bild. Seit
+     v122 steht der Kasten nur, solange der Körper wartet und die Tasten
+     gesperrt sind; er darf die Daumentasten dann überdecken. Ab 761 Punkten
+     (iPhone 14: 844) bleibt es wie freigegeben. */
+  @media (max-width:760px){
+    body.touch .tutBox{max-width:min(560px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
+  }
 
   /* ---- Tutorial v114: Kasten mit Stand, Punkten und Taste ----------------
      Größer und wärmer als der Hinweiskasten von v109 — er ist der erste
@@ -1979,13 +2001,19 @@
   .shopSp > h2{margin-bottom:2px}
   .shopPaket{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;
        padding:0 12px;border-radius:12px;background:var(--block);border:1px solid var(--line)}
-  .iriStein{width:20px;height:20px;border-radius:50%;flex:0 0 auto;
-       background:radial-gradient(circle at 38% 36%,#fff 0%,var(--iri) 32%,rgba(0,0,0,.55) 100%);box-shadow:0 0 10px var(--iri)}
-  .shopPaket b{font-family:var(--disp);font-size:16px;color:var(--paper);font-variant-numeric:tabular-nums}
+  /* Iridium-Kristall (v136, Entwurf A) statt der leuchtenden Kugel. */
+  .iriKristall{width:22px;height:22px;flex:0 0 auto;display:block;filter:drop-shadow(0 0 5px rgba(159,216,255,.65))}
+  .shopPaket b{font-family:var(--disp);font-size:16px;color:var(--paper);font-variant-numeric:tabular-nums;white-space:nowrap}
   .shopPaket b small{margin-left:6px;font-size:11px;font-weight:600;color:var(--brass)}
   .shopPaket .preis{font-family:var(--disp);font-size:15px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .shopHinweis{margin:0;font-size:12px;line-height:1.4;color:var(--paper-2)}
   .shopBild{align-self:center;width:min(130px, 27vh);aspect-ratio:1;position:relative;flex:0 0 auto}
+  /* Ein Tipp aufs Bild zeigt das Design groß in 3D (v136). */
+  .shopBild.tippbar{cursor:pointer;border-radius:50%}
+  .shopBild.tippbar:focus-visible{outline:2px solid var(--brass-hell);outline-offset:4px}
+  .shopBild3D{position:absolute;right:2px;bottom:6px;z-index:1;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700;
+       letter-spacing:.08em;color:var(--on-brass);background:linear-gradient(180deg,var(--brass-hell),var(--brass));
+       box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}
   .shopBild img,.shopBild canvas{width:100%;height:100%;display:block}
   .shopName{margin:0;text-align:center;font-family:var(--serif);font-size:21px;line-height:1.15;color:var(--brass-hell)}
   .shopName small{display:block;margin-top:3px;font-family:var(--sans);font-size:12px;color:var(--paper-2)}
@@ -4153,7 +4181,8 @@
     </div>
     <div class="setKnoepfe">
       <button class="quiet" id="setMelden" data-i18n="md_knopf" hidden>Report a problem</button>
-      <button class="quiet" id="legalBtn2" data-i18n="legal">Legal</button>
+      <!-- „Rechtliches" steht seit v136 als letzte Zeilen der Liste darüber
+           (`rechtZeileBauen`), vor „Konto löschen". -->
       <button id="setClose" data-i18n="back">Back</button>
     </div>
   </div>

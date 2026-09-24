@@ -50,7 +50,7 @@ let MENUE_VOLL = false;   // der Körper im Menü wird immer in voller Qualität
 /* Ist eine Runde vorbei? Dann darf beim nächsten Hangar das Angebot des
    Monats kommen (v129, `angebotVielleicht`). Hier oben, weil `show()` schon
    beim Laden läuft. */
-let angebotNachRunde = false;
+let angebotNachRunde = false; let designShopVersucht = false;
 /* Der Stand des Shops vom Server (v127) — hier oben, weil der Design-Reiter
    ihn schon beim Laden liest (`designGruppen`). */
 let shopStand = null, shopLaedt = false;
@@ -1057,6 +1057,13 @@ const Profile = {
   },
   requirement(s){
     if (this.owned.has(s.id)) return t("owned");
+    /* Design des Monats (v136): mit Konto der Stand der Bruchstücke, sonst
+       „Ab 1. November" oder „Shop · Kapseln". */
+    if (s.sonder === "monat"){
+      const I = monatsDesignInfo(s.id);
+      if (istAngemeldet()) return t("sk_monat_teile", designStueckeJetzt(), (I && I.stuecke) || 12);
+      return I && I.vorschau ? t("sh_ab", monatsBeginn(I.monat)) : t("sk_monat");
+    }
     if (s.sonder) return t("sk_" + s.sonder);
     if (s.lv) return t("levelreq", s.lv);
     /* Das Design, für das die Bruchstücke zählen (v134), trägt den Stand. */
@@ -2581,6 +2588,17 @@ function toast(text){ Game.toast = {text, life:3.4}; }
    Der Ergebnisbildschirm liegt bewusst über dem eingefrorenen Feld, und
    darauf soll man sehen, was gerade passiert ist. */
 let levelBeimStart = 1;
+/* Iridium als Kristall (v136, Thomas 24.09.: „etwas schöner … wie ein
+   Kristall, Farbe passt" — Entwurf A „Kristallspitze" gewählt; Bild in
+   `08 …/Iridium-Kristall - drei Entwürfe.png`). Eisblau wie `--iri`,
+   klar anders als der geschliffene Ore-Stein. */
+const ICON_IRI = `<svg class="iriKristall" viewBox="0 0 24 24" aria-hidden="true">` +
+  `<polygon points="12,1.2 7.2,6.6 12,9.2" fill="#eaf8ff"/><polygon points="12,1.2 16.8,6.6 12,9.2" fill="#b9e4ff"/>` +
+  `<polygon points="7.2,6.6 12,9.2 12,19.6 7.2,17" fill="#7cc4f2"/><polygon points="16.8,6.6 12,9.2 12,19.6 16.8,17" fill="#3f8fd0"/>` +
+  `<polygon points="7.2,17 12,19.6 12,22.8" fill="#5aa9e2"/><polygon points="16.8,17 12,19.6 12,22.8" fill="#2a6aa8"/>` +
+  `<polyline points="12,1.2 12,9.2 12,19.6" fill="none" stroke="#f4fbff" stroke-width=".55" opacity=".8"/>` +
+  `<path d="M9 7.6 L10.2 7.1 L10.2 15.8 L9 15.4 Z" fill="#fff" opacity=".55"/>` +
+  `<polygon points="12,1.2 16.8,6.6 16.8,17 12,22.8 7.2,17 7.2,6.6" fill="none" stroke="#dff3ff" stroke-width=".6" stroke-linejoin="round" opacity=".9"/></svg>`;
 /* Bildchen für Ore und XP in der Abrechnung (Schritt 103, Thomas' Wunsch).
    Kleine Pfade in Messing, wie die Rangabzeichen — keine Bilddateien. */
 const ICON_ORE = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 11L3 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 10h18M9 4l3 6 3-6M12 10v11" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"/></svg>`;
@@ -6268,7 +6286,7 @@ function buildSettings(){
        nach ein paar Runden Lust auf ein Konto bekommt, ist genau der Spieler,
        den man halten will — also hier ein Weg dorthin. Nur, wenn der Server
        überhaupt erreichbar ist. */
-    if (Konto.erreichbar !== true) return;
+    if (Konto.erreichbar !== true){ rechtZeileBauen(box); return; }
     const gw = document.createElement("div");
     gw.className = "opt";
     const gt = document.createElement("div");
@@ -6280,6 +6298,7 @@ function buildSettings(){
     gb.addEventListener("click", () => { kontoMeldung(""); show("accountVeil"); });
     gw.appendChild(gt); gw.appendChild(gb);
     box.appendChild(gw);
+    rechtZeileBauen(box);
     return;
   }
   const wrap = document.createElement("div");
@@ -6310,8 +6329,10 @@ function buildSettings(){
   });
   wrap.appendChild(text); wrap.appendChild(knopf);
   box.appendChild(wrap);
+  rechtZeileBauen(box);
   /* Konto löschen (v109): ruhig, ganz unten, aber da — die Stores verlangen
-     den Weg in der App. */
+     den Weg in der App. Seit v136 die allerletzte Zeile, nach „Rechtliches"
+     (Thomas 24.09.: „soll ganz unten in den Einstellungen erscheinen"). */
   const lw = document.createElement("div");
   lw.className = "opt";
   const lt = document.createElement("div");
@@ -6323,6 +6344,25 @@ function buildSettings(){
   lb.addEventListener("click", kontoLoeschenOeffnen);
   lw.appendChild(lt); lw.appendChild(lb);
   box.appendChild(lw);
+}
+/* „Rechtliches" als Zeile am Ende der Liste (v136, Thomas 24.09.: „soll
+   ganz unten erscheinen, wenn man in den Einstellungen ganz nach unten
+   scrollt") — vorher ein fester Knopf neben „Zurück". Der Weg
+   „Einstellungen → Rechtliches → Vertrag widerrufen" aus der
+   Widerrufsbelehrung bleibt damit gültig. */
+function rechtZeileBauen(box){
+  const rw = document.createElement("div");
+  rw.className = "opt";
+  rw.dataset.key = "recht";
+  const rt = document.createElement("div");
+  rt.innerHTML = `<b>${esc(t("legal"))}</b><small>Impressum · Datenschutz · ${esc(t("agb"))}</small>`;
+  const rb = document.createElement("button");
+  rb.type = "button"; rb.className = "quiet"; rb.id = "legalBtn2";
+  rb.style.cssText = "margin:0;width:auto;padding:6px 12px";
+  rb.textContent = t("legal");
+  rb.addEventListener("click", () => { legalZurueck = "setVeil"; show("legalVeil"); });
+  rw.appendChild(rt); rw.appendChild(rb);
+  box.appendChild(rw);
 }
 /* Das Fenster zum Löschen (v109): ein Satz zu den Folgen, ein Feld zur
    Bestätigung (Passwort, bei Google/Facebook der Spielername), ein roter
@@ -6407,6 +6447,19 @@ async function shopLaden(){
 }
 /* Gesammelte Design-Bruchstücke (v130) — der Server zählt, hier nur die Anzeige. */
 function designStueckeJetzt(){ return Konto.profil ? (+Konto.profil.designStuecke || 0) : 0; }
+/* „2026-11" → „1. November" in der Sprache des Spielers (v136). */
+function monatsBeginn(monat){
+  try { return new Date(monat + "-01T12:00:00Z").toLocaleDateString(lang, { day: "numeric", month: "long" }); }
+  catch(_){ return monat; }
+}
+/* Was der Shop über ein Design des Monats weiß: aktuell oder als Vorschau. */
+function monatsDesignInfo(id){
+  const S = shopStand;
+  if (!S) return null;
+  if (S.design && S.design.id === id) return { ...S.design, vorschau: false };
+  if (S.vorschau && S.vorschau.id === id) return { ...S.vorschau, vorschau: true };
+  return null;
+}
 function buildShop(){
   const iri = $("shopIri"), des = $("shopDesign"), rb = $("shopRaub");
   if (!iri || !des || !rb) return;
@@ -6431,34 +6484,40 @@ function buildShop(){
   iri.innerHTML = `<h2>${esc(t("sh_iri_kopf"))}${konto ? `<em>${esc(t("sh_stand", meins.toLocaleString(lang)))}</em>` : ""}</h2>` +
     (S.pakete || []).map(p => {
       const mehr = basis ? Math.round((p.iridium / (p.cent / basis) - 1) * 100) : 0;
-      return `<div class="shopPaket"><span class="iriStein"></span>` +
-        `<b>${p.iridium.toLocaleString(lang)}${mehr > 0 ? `<small>+${mehr} %</small>` : ""}</b>` +
+      return `<div class="shopPaket">${ICON_IRI}` +
+        `<b>${p.iridium.toLocaleString(lang)}${mehr > 0 ? `<small>+${mehr}\u00a0%</small>` : ""}</b>` +
         `<span class="preis">${esc(euro(p.cent))}</span></div>`;
     }).join("") +
     `<p class="shopHinweis">${esc(t(S.zahlung ? "sh_iri_erkl" : "sh_zahlung_bald"))}</p>`;
 
-  /* 2. Design des Monats */
-  const D = S.design, pal = D && SKINS.find(s => s.id === D.id);
+  /* 2. Design des Monats — das aktuelle, sonst die Vorschau auf das nächste
+     (Thomas 24.09.: Aurum „erst ab 01. November verfügbar"). Ein Tipp aufs
+     Bild zeigt es groß in 3D (Thomas: „soll es groß erscheinen in 3D und
+     sich bewegen"). Die Zahl der Bruchstücke steht bei den Designs, nicht
+     hier (Thomas: „braucht im Shop nicht sichtbar sein"). */
+  const vorschau = !S.design && !!S.vorschau;
+  const D = S.design || S.vorschau, pal = D && SKINS.find(s => s.id === D.id);
   if (D && pal){
     let monat = "";
     try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
     des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}<em>${esc(monat)}</em></h2>` +
-      `<div class="shopBild" id="shopDesignBild"></div>` +
+      `<div class="shopBild tippbar" id="shopDesignBild" role="button" tabindex="0" aria-label="${esc(t("sh_3d"))}" title="${esc(t("sh_3d"))}"><span class="shopBild3D">3D</span></div>` +
       `<p class="shopName">${esc(pal.label)}<small><span id="shopDesignErkl"></span>${pal.bonus && pal.bonus.staub ? "<br>" + esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100))) : ""}</small></p>` +
       `<button type="button" class="shopKauf" id="shopDesignKn"></button>`;
     const bild = $("shopDesignBild");
     const url = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
-    if (url) bild.innerHTML = `<img alt="" src="${url}">`;
-    else { const c = document.createElement("canvas"); c.width = c.height = 300; bild.appendChild(c);
+    if (url) bild.insertAdjacentHTML("afterbegin", `<img alt="" src="${url}">`);
+    else { const c = document.createElement("canvas"); c.width = c.height = 300; bild.prepend(c);
            try { const g = c.getContext("2d"); body(g, 150, 150, 110, 3000, pal, 0, "", true); } catch(_){} }
+    const gross = () => designDetailOeffnen(pal);
+    bild.onclick = gross;
+    bild.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); gross(); } };
     const kn = $("shopDesignKn");
     const hat = konto && (S.designBesitz || (Konto.profil.skins || []).includes(pal.id));
-    /* Oder aus Kapseln (v130): Stand der Bruchstücke, solange man es nicht hat. */
     const erkl = $("shopDesignErkl");
-    if (erkl) erkl.textContent = hat ? "" : D.stuecke
-      ? t("sh_design_stuecke", designStueckeJetzt(), D.stuecke, zahlDe((D.pKapsel || 0) * 100))
-      : t("sh_design_erkl");
-    if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
+    if (erkl) erkl.textContent = hat ? "" : t("sh_design_erkl");
+    if (vorschau){ kn.textContent = t("sh_ab", monatsBeginn(D.monat)); kn.disabled = true; }
+    else if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
     else if (hat){ kn.textContent = t("sh_besitz"); kn.disabled = true; }
     else {
       kn.innerHTML = `${esc(t("sh_kaufen", D.preis.toLocaleString(lang)))} <small>${esc(t("sh_euro", inEuro(D.preis)))}</small>`;
@@ -6486,7 +6545,8 @@ function buildShop(){
     `<div class="shopStufen">${[1, 2, 3].map(i => `<span class="${i <= st ? "hat" : ""}">${["I", "II", "III"][i - 1]} · ${esc(zahlDe(R.pct[i]))} %</span>`).join("")}</div>` +
     `<p class="shopHinweis">${esc(t("sh_raub_erkl"))}</p>` +
     /* Bruchstücke aus Kapseln (v128): nur, solange man ihn nicht hat. */
-    (!st && R.stuecke ? `<p class="shopHinweis shopStueck">${esc(t("sh_raub_stuecke", konto ? (S.raubStuecke || 0) : 0, R.stuecke, zahlDe((R.pKapsel || 0) * 100)))}</p>` : "") +
+    /* Den eigenen Stand zeigt seit v136 der Reiter „Monde" (Thomas: im Shop nicht nötig). */
+    (!st && R.stuecke ? `<p class="shopHinweis shopStueck">${esc(t("sh_raub_kapsel", R.stuecke))}</p>` : "") +
     `<button type="button" class="shopKauf" id="shopRaubKn"></button>`;
   const rbBild = $("shopRaubBild");
   if (rbBild){ const c = mondBild("raub", st); c.style.width = "100%"; c.style.height = "auto"; rbBild.appendChild(c); }
@@ -6803,7 +6863,10 @@ function buildMonde(){
         `<small class="hintline">${esc(t("mo_staub_erkl"))}</small>` +
         /* Mond-Bruchstücke aus Kapseln (v134) — Zahl vom Server. */
         (m.mondTeile ? `<h3 style="margin-top:12px">${esc(t("mo_teile"))}</h3><div class="mondStaub">${+m.monde.mondStuecke || 0} / ${+m.mondTeile}</div>` +
-          `<small class="hintline">${esc(t("mo_teile_erkl", +m.mondTeile))}</small>` : "") + `</div>` +
+          `<small class="hintline">${esc(t("mo_teile_erkl", +m.mondTeile))}</small>` : "") +
+        /* Raubmond-Bruchstücke (v136, vorher im Shop) — solange man ihn nicht hat. */
+        (m.raubTeile && !m.monde.raub ? `<h3 style="margin-top:12px">${esc(t("mo_raubteile"))}</h3><div class="mondStaub">${+m.monde.raubStuecke || 0} / ${+m.raubTeile}</div>` +
+          `<small class="hintline">${esc(t("mo_raubteile_erkl", +m.raubTeile))}</small>` : "") + `</div>` +
         `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
         [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
           .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
@@ -7954,12 +8017,23 @@ function designReihe(){
 function designGruppen(){
   const lv = SKINS.filter(s => s.lv && !s.sonder).sort((a, b) => a.lv - b.lv);
   const ore = SKINS.filter(s => s.ore && !s.sonder && !s.lv).sort((a, b) => a.ore - b.ore);
-  /* Designs des Monats (v129) nur, wenn man sie hat oder sie gerade im
-     Shop sind — ein vergangenes, das es nicht mehr gibt, stünde sonst für
-     immer verschlossen da. */
-  const jetzt = shopStand && shopStand.design ? shopStand.design.id : null;
+  /* Designs des Monats (v129) nur, wenn man sie hat, sie gerade im Shop
+     sind oder als nächstes kommen (v136: Aurum ab 1. November) — ein
+     vergangenes, das es nicht mehr gibt, stünde sonst für immer
+     verschlossen da. Solange der Shop noch nicht geladen ist, stehen sie
+     da (und der Shop wird einmal nachgeladen). */
+  /* Erst nach dem Start: `designGruppen` läuft schon beim Aufbau der Seite,
+     bevor `Konto` steht (sonst „Cannot access 'Konto' before
+     initialization" — Prüfstand, 24.09.). */
+  if (!shopStand && !designShopVersucht){
+    designShopVersucht = true;
+    setTimeout(() => {
+      try { shopLaden().then(a => { if (a) try { if (ladenOffen()) buildGrid(); } catch(_){} }).catch(() => {}); }
+      catch(_){ designShopVersucht = false; }
+    }, 0);
+  }
   const rest = SKINS.filter(s => !lv.includes(s) && !ore.includes(s) &&
-    (s.sonder !== "monat" || Profile.owned.has(s.id) || s.id === jetzt));
+    (s.sonder !== "monat" || Profile.owned.has(s.id) || !shopStand || !!monatsDesignInfo(s.id)));
   return [{ kopf: "dg_level", liste: lv }, { kopf: "dg_ore", liste: ore }, { kopf: "dg_sonder", liste: rest }]
     .filter(g => g.liste.length);
 }
@@ -8015,10 +8089,13 @@ function designDetailMalen(){
                        : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang)) + " " + t("dd_teile_wie", designTeileFuer(s.ore || 0))) +
                        /* Design-Bonus (v129), nur im Aufstieg. */
                        (s.bonus && s.bonus.staub ? " " + t("dd_bonus", Math.round(s.bonus.staub * 100)) : "") +
-                       /* Bruchstücke aus Kapseln (v130) — die Zahl kommt vom Server. */
-                       (!hat && s.sonder === "monat" && istAngemeldet() && shopStand && shopStand.design && shopStand.design.id === s.id && shopStand.design.stuecke
-                         ? " " + t("dd_stuecke", designStueckeJetzt(), shopStand.design.stuecke) : "");
-  if (!hat && s.sonder === "monat" && istAngemeldet() && !shopStand)
+                       /* Design des Monats (v136): ab wann, und der Stand der
+                          Bruchstücke (Thomas: „mit der Anzeige, wie viele
+                          Bruchstücke man davon schon gefunden hat"). */
+                       (!hat && s.sonder === "monat" ? (() => { const I = monatsDesignInfo(s.id);
+                         return (I && I.vorschau ? " " + t("dd_monat_ab", monatsBeginn(I.monat)) : "") +
+                                (istAngemeldet() ? " " + t("dd_stuecke", designStueckeJetzt(), (I && I.stuecke) || 12) : ""); })() : "");
+  if (!hat && s.sonder === "monat" && !shopStand)
     shopLaden().then(a => { if (a && ddDesign === s) designDetailMalen(); });
   const k = document.getElementById("ddKnopf");
   if (!k) return;
@@ -10712,7 +10789,7 @@ for (const b of document.querySelectorAll("#konsReiter button[data-reiter]"))
    und ein Gast landete nach „Rechtliches" auf dem Anmeldebildschirm. */
 let legalZurueck = "accountVeil";
 $("legalBtn").addEventListener("click", () => { legalZurueck = "accountVeil"; show("legalVeil"); });
-$("legalBtn2").addEventListener("click", () => { legalZurueck = "setVeil"; show("legalVeil"); });
+/* „Rechtliches" in den Einstellungen baut seit v136 `rechtZeileBauen`. */
 $("legalClose").addEventListener("click", () => show(legalZurueck));
 /* Sofort weiter: Kein Umweg über den Startbildschirm, gleicher Modus,
    gleicher Name. Reibung nach dem Tod ist der häufigste Abbruchgrund. */
