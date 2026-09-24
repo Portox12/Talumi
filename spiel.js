@@ -1900,12 +1900,27 @@ const decayOf  = m => m > DECAY_FROM ? DECAY_RATE : 0;
 /* Trümmerfarbe aus dem Thema. Im dunklen Thema bleibt sie unverändert helles
    Tintenblau; im hellen Thema wären so helle Punkte auf Sand kaum zu sehen,
    deshalb dort dunklere, warme Körner. */
-const newDebris = () => {
-  const d = TH().dust;
-  return {x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:1,
-    c:`hsl(${rnd(d.h[0],d.h[1])} ${rnd(d.s[0],d.s[1])}% ${rnd(d.l[0],d.l[1])}%)`,
-    r:rnd(2.6,4.4)};
-};
+/* Staubfarben (v139): zwölf feste Töne je Thema — vier Farbtöne × drei
+   Helligkeiten — statt eines eigenen für jeden Trümmer. Auf drei Punkten
+   sieht niemand den Unterschied; das Zeichnen kann dann nach Ton bündeln:
+   ein Pinselwechsel je Ton statt je Trümmer (vorher bis zu 4.000 im Bild,
+   jeder mit eigenem hsl()-Text, den der Browser jedes Mal neu lesen musste). */
+const STAUB_TOENE = 12;
+const staubToene = {};
+function staubTon(i){
+  const thema = Settings.theme in THEMES ? Settings.theme : "earth";
+  let liste = staubToene[thema];
+  if (!liste){
+    const d = TH().dust, s = Math.round((d.s[0] + d.s[1]) / 2);
+    liste = staubToene[thema] = Array.from({length: STAUB_TOENE}, (_, k) => {
+      const h = d.h[0] + (k % 4) / 3 * (d.h[1] - d.h[0]), l = d.l[0] + Math.floor(k / 4) / 2 * (d.l[1] - d.l[0]);
+      return `hsl(${Math.round(h)} ${s}% ${Math.round(l)}%)`;
+    });
+  }
+  return liste[((i % STAUB_TOENE) + STAUB_TOENE) % STAUB_TOENE];
+}
+const newDebris = () => ({x:rnd(0,WELT_B), y:rnd(0,WELT_H), m:1,
+  c:staubTon(Math.floor(Math.random() * STAUB_TOENE)), r:rnd(2.6,4.4)});
 const newCell = (x,y,m) => ({x,y,m,vx:0,vy:0,name:Game.name,merge:0,mine:true});
 /* gid = Gruppenkennung. Teilt sich ein Rivale, tragen alle Stücke dieselbe —
    sie fressen sich nicht gegenseitig, verschmelzen wieder und zählen auf der
@@ -1926,8 +1941,12 @@ const bodyCount = () => new Set(Game.rivals.map(r => r.gid)).size;
 
 let stars = [];
 const seedStars = () => {
+  /* v139: Die Helligkeit in sechs Stufen und die Sterne danach sortiert —
+     so wechselt `draw()` die Deckkraft sechsmal je Bild statt bei jedem der
+     rund 1.800 Sterne. */
   stars = Array.from({length: Math.round(WELT_B*WELT_H/(Settings.lowPower ? 260000 : ECO ? 180000 : 110000))}, () => ({
-    x:rnd(0,WELT_B), y:rnd(0,WELT_H), r:rnd(.5,1.5), a:rnd(.15,.7), d:rnd(.25,.7)}));
+    x:rnd(0,WELT_B), y:rnd(0,WELT_H), r:rnd(.5,1.5), a:Math.round(rnd(.15,.7)*10)/10, d:rnd(.25,.7)}))
+    .sort((p, q) => p.a - q.a);
 };
 seedStars();
 
@@ -4015,53 +4034,15 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
     g.restore();
   }
 
-  /* ---- 2. Die Grundkugel ---------------------------------------------
-     Der Verlauf sitzt auf der Lichtseite, nicht in der Mitte. */
-  g.beginPath(); g.arc(x,y,r,0,7);
-  if (!fancy){
-    g.fillStyle = rock;
-  } else {
-    const grad = g.createRadialGradient(x+LX*r*.50, y+LY*r*.50, r*.04, x, y, r*1.06);
-    grad.addColorStop(0,   mischen(rock, .26));
-    grad.addColorStop(.48, rock);
-    grad.addColorStop(1,   dark);
-    g.fillStyle = grad;
-  }
-  g.fill();
-
-  /* ---- 3. Die Materialoberfläche ------------------------------------- */
-  if (fein){
-    g.save();
-    g.beginPath(); g.arc(x,y,r,0,7); g.clip();
-    flaeche(g, x, y, r, pal, M, Game.t);
-    g.restore();
-  }
-
-  /* ---- 4. Terminator: die abgewandte Seite ---------------------------
-     Der eine Handgriff, der am meisten bringt. Ohne ihn bleibt jeder
-     Körper eine flache Scheibe, egal wie fein die Oberfläche ist. */
-  if (fancy && r > 9){
-    /* Wie dunkel die Schattenseite wird, hängt vom Material ab. Glas und
-       Kristall spiegeln ihre Umgebung und fallen nie ins Schwarze; Staub
-       schluckt Licht und wird am dunkelsten. Mit einem festen Wert für
-       alle fielen Obsidian, Onyx und Void zu Löchern im Bild zusammen. */
-    const kraft = M.art === "schlund"                        ? .14
-                : M.art === "glas" || M.art === "kristall" ? .34
-                : M.art === "energie" || M.art === "glut"  ? .46
-                : M.art === "metall"                        ? .58
-                : .66;
-    g.save();
-    g.beginPath(); g.arc(x,y,r,0,7); g.clip();
-    const tx = x + LX*r*.60, ty = y + LY*r*.60;
-    const tg = g.createRadialGradient(tx, ty, r*.20, tx, ty, r*1.95);
-    tg.addColorStop(0,   "rgba(0,0,0,0)");
-    tg.addColorStop(.42, `rgba(0,0,0,${(kraft*.09).toFixed(3)})`);
-    tg.addColorStop(.74, `rgba(0,0,0,${(kraft*.45).toFixed(3)})`);
-    tg.addColorStop(1,   `rgba(0,0,0,${kraft.toFixed(3)})`);
-    g.fillStyle = tg;
-    g.fillRect(x-r, y-r, r*2, r*2);
-    g.restore();
-  }
+  /* ---- 2.–4. Kugel, Oberfläche, Schattenseite -------------------------
+     v139: als fertiges Bild (`innenBild`), sobald die Oberfläche gezeichnet
+     wird — sie braucht eine Kreis-Schablone, und die ist auf Handy-
+     Grafikchips teuer. Alle Stücke eines Spielers teilen sich ein Bild. */
+  const bild = fein ? innenBild(g, r, pal, M, rock, dark, r > 9) : null;
+  if (bild){
+    const s = r * bild.rand;
+    g.drawImage(bild.c, x - s, y - s, s * 2, s * 2);
+  } else innenMalen(g, x, y, r, pal, M, rock, dark, fancy, fein, fancy && r > 9, Game.t);
 
   /* ---- 5. Randlicht auf der Lichtseite -------------------------------- */
   if (fancy && r > 9){
@@ -4109,15 +4090,148 @@ function body(g, x, y, r, m, pal, tint, label, mine, tier, trait){
   if (label && r > 9){
     const zs = (typeof cam === "object" && cam && cam.z > 0 && Game.running) ? cam.z : 1;
     const gr = Math.max(9 / zs, Math.min(r*.3, 22 / zs));
-    g.font = `600 ${gr}px "Talumi Serif", Georgia, serif`;
-    g.textAlign = "center"; g.textBaseline = "middle";
-    g.lineJoin = "round";
-    g.lineWidth = gr * .16;
-    g.strokeStyle = "rgba(10,7,4,.62)";
-    g.strokeText(label, x, y);
-    g.fillStyle = "rgba(255,247,232,.92)";
-    g.fillText(label, x, y);
+    /* v139: als fertiges Bild (`namenBild`) — Schrift mit Kontur ist
+       teuer: 13 Stücke nach einem Pulsar kosteten allein dafür ~6 ms je Bild. */
+    const nb = namenBild(g, label, gr);
+    if (nb){
+      const k = gr / nb.px, w = nb.c.width * k, h = nb.c.height * k;   // Gerätepunkt → Zeichenmaß, bei jedem Bild neu (die Kamera zoomt)
+      g.drawImage(nb.c, x - w/2, y - h/2, w, h);
+    } else {
+      g.font = `600 ${gr}px "Talumi Serif", Georgia, serif`;
+      g.textAlign = "center"; g.textBaseline = "middle";
+      g.lineJoin = "round";
+      g.lineWidth = gr * .16;
+      g.strokeStyle = "rgba(10,7,4,.62)";
+      g.strokeText(label, x, y);
+      g.fillStyle = "rgba(255,247,232,.92)";
+      g.fillText(label, x, y);
+    }
   }
+}
+
+/* Name im Körper als Bild (v139), in der Größe der Gerätepunkte gemalt,
+   Schlüssel Text + Schriftgröße. Erst, wenn die eigene Schrift geladen ist —
+   sonst bliebe die Ersatzschrift für immer im Bild. */
+const NAMEN_BILD = new Map();
+function namenBild(g, text, gr){
+  let skala;
+  try { const m = g.getTransform(); skala = Math.hypot(m.a, m.b); } catch(_){ return null; }
+  const px = Math.round(gr * skala);
+  if (!(px >= 6) || px > 96) return null;
+  const key = text + "|" + px;
+  const e = NAMEN_BILD.get(key);
+  if (e) return e;
+  try { if (document.fonts && !document.fonts.check(`600 ${px}px "Talumi Serif"`, text)) return null; } catch(_){}
+  if (NAMEN_BILD.size > 240) NAMEN_BILD.clear();
+  let neu = null;
+  try {
+    const c = document.createElement("canvas"), h = c.getContext("2d");
+    const font = `600 ${px}px "Talumi Serif", Georgia, serif`;
+    h.font = font;
+    const rand = Math.ceil(px * .2) + 2;
+    c.width = Math.ceil(h.measureText(text).width) + rand * 2;
+    c.height = Math.ceil(px * 1.5) + rand * 2;
+    h.font = font; h.textAlign = "center"; h.textBaseline = "middle"; h.lineJoin = "round";
+    h.lineWidth = px * .16; h.strokeStyle = "rgba(10,7,4,.62)";
+    h.strokeText(text, c.width / 2, c.height / 2);
+    h.fillStyle = "rgba(255,247,232,.92)";
+    h.fillText(text, c.width / 2, c.height / 2);
+    neu = { c, px };
+  } catch(_){ return null; }
+  NAMEN_BILD.set(key, neu);
+  return neu;
+}
+
+/* Das Innere eines Körpers: Grundkugel, Materialoberfläche, Schattenseite
+   (Schritte 2–4 von `body()`). Live gezeichnet oder einmal in ein Bild
+   (`innenBild`). */
+function innenMalen(g, x, y, r, pal, M, rock, dark, fancy, fein, terminator, zeit){
+  /* ---- 2. Die Grundkugel ---------------------------------------------
+     Der Verlauf sitzt auf der Lichtseite, nicht in der Mitte. */
+  g.beginPath(); g.arc(x,y,r,0,7);
+  if (!fancy){
+    g.fillStyle = rock;
+  } else {
+    const grad = g.createRadialGradient(x+LX*r*.50, y+LY*r*.50, r*.04, x, y, r*1.06);
+    grad.addColorStop(0,   mischen(rock, .26));
+    grad.addColorStop(.48, rock);
+    grad.addColorStop(1,   dark);
+    g.fillStyle = grad;
+  }
+  g.fill();
+
+  /* ---- 3. Die Materialoberfläche ------------------------------------- */
+  if (fein){
+    g.save();
+    g.beginPath(); g.arc(x,y,r,0,7); g.clip();
+    flaeche(g, x, y, r, pal, M, zeit);
+    g.restore();
+  }
+
+  /* ---- 4. Terminator: die abgewandte Seite ---------------------------
+     Der eine Handgriff, der am meisten bringt. Ohne ihn bleibt jeder
+     Körper eine flache Scheibe, egal wie fein die Oberfläche ist. */
+  if (terminator){
+    /* Wie dunkel die Schattenseite wird, hängt vom Material ab. Glas und
+       Kristall spiegeln ihre Umgebung und fallen nie ins Schwarze; Staub
+       schluckt Licht und wird am dunkelsten. Mit einem festen Wert für
+       alle fielen Obsidian, Onyx und Void zu Löchern im Bild zusammen. */
+    const kraft = M.art === "schlund"                        ? .14
+                : M.art === "glas" || M.art === "kristall" ? .34
+                : M.art === "energie" || M.art === "glut"  ? .46
+                : M.art === "metall"                        ? .58
+                : .66;
+    /* v139: den Kreis selbst mit dem Verlauf füllen statt ein Quadrat durch
+       eine Kreis-Schablone (`clip`) — dasselbe Bild, aber ohne Schablone.
+       Schablonen sind auf Handy-Grafikchips teuer: Mit 13 Stücken nach einem
+       Pulsar fiel das Spiel auf dem Prüfrechner von 60 auf 30 Bilder/s. */
+    const tx = x + LX*r*.60, ty = y + LY*r*.60;
+    const tg = g.createRadialGradient(tx, ty, r*.20, tx, ty, r*1.95);
+    tg.addColorStop(0,   "rgba(0,0,0,0)");
+    tg.addColorStop(.42, `rgba(0,0,0,${(kraft*.09).toFixed(3)})`);
+    tg.addColorStop(.74, `rgba(0,0,0,${(kraft*.45).toFixed(3)})`);
+    tg.addColorStop(1,   `rgba(0,0,0,${kraft.toFixed(3)})`);
+    g.fillStyle = tg;
+    g.beginPath(); g.arc(x,y,r,0,7); g.fill();
+  }
+}
+
+/* Das Innere als fertiges Bild (v139). Größe in Gerätepunkten, aufgerundet
+   auf feste Stufen — ein Körper, der wächst, bekommt nur an den Stufen ein
+   neues Bild und wird dazwischen leicht verkleinert kopiert (scharf, weil
+   immer aufgerundet). Über 256 Punkte Radius wird live gezeichnet (ein
+   einzelner Riese kostet eine Schablone, das ist tragbar). Oberflächen, die
+   sich bewegen, bekommen 15-mal je Sekunde ein neues Bild; alle Stücke
+   desselben Designs teilen es sich. */
+const INNEN_BILD = new Map();
+const INNEN_STUFEN = [12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160, 192, 256];
+const INNEN_BEWEGT = new Set(["filigran", "glut", "energie", "schlund", "gas", "perle"]);
+function innenBild(g, r, pal, M, rock, dark, terminator){
+  let skala;
+  try { const m = g.getTransform(); skala = Math.hypot(m.a, m.b); } catch(_){ return null; }
+  const rp = r * skala;
+  if (!(rp > 0) || rp > INNEN_STUFEN[INNEN_STUFEN.length - 1]) return null;
+  let R = INNEN_STUFEN[0];
+  for (const s of INNEN_STUFEN) if (s >= rp){ R = s; break; }
+  const key = (pal.id || pal.label || "") + "|" + rock + "|" + dark + "|" + R + "|" + (terminator ? 1 : 0);
+  const takt = INNEN_BEWEGT.has(M.art) ? Math.floor(Game.t * 15) : 0;
+  let e = INNEN_BILD.get(key);
+  if (e && e.takt === takt) return e;
+  if (!e){
+    if (INNEN_BILD.size > 160) INNEN_BILD.clear();
+    try {
+      const c = document.createElement("canvas"); c.width = c.height = 2 * R + 4;
+      e = { c, g: c.getContext("2d"), rand: (R + 2) / R, takt: -1 };
+    } catch(_){ return null; }
+    if (!e.g) return null;
+    INNEN_BILD.set(key, e);
+  }
+  e.takt = takt;
+  const h = e.g, mitte = R + 2;
+  h.setTransform(1, 0, 0, 1, 0, 0);
+  h.clearRect(0, 0, e.c.width, e.c.height);
+  innenMalen(h, mitte, mitte, R, pal, M, rock, dark, true, true, terminator, Game.t);
+  return e;
 }
 
 /* Was ein Design außerhalb des Kreises trägt (Halo, Feuer, Strahlen, Frost,
@@ -5125,6 +5239,7 @@ const teamPal = t => TEAM_PALS[Settings.teams][t === 1 ? 1 : 2];
 
 let zieleStand = "";
 let duennStufe = 1;
+const staubEimer = new Map();   // Staubton → sichtbare Trümmer dieses Bildes (v139, wiederverwendet)
 /* Kleine fremde Körper als fertiges Bildchen (v109). Unter 14 Punkten
    Bildgröße stand dort eine flache Scheibe in Grundfarbe — Thomas am
    22.09.2026: „werden kleinere Spieler teilweise nur noch als Farbkleckse
@@ -5185,11 +5300,14 @@ function draw(){
   ctx.fillStyle = TH().ink; ctx.fillRect(0,0,VW,VH);
 
   ctx.save();
+  /* Ein Pinsel für alle Sterne; die Deckkraft wechselt nur zwischen den
+     sechs Stufen (`seedStars` sortiert danach). */
+  ctx.fillStyle = TH().star;
+  let sternA = -1;
   for (const s of stars){
     const px = (s.x - cam.x*s.d)*cam.z + VW/2, py = (s.y - cam.y*s.d)*cam.z + VH/2;
     if (px < -20 || px > VW+20 || py < -20 || py > VH+20) continue;
-    ctx.globalAlpha = s.a;
-    ctx.fillStyle = TH().star;
+    if (s.a !== sternA) ctx.globalAlpha = sternA = s.a;
     ctx.fillRect(px - s.r, py - s.r, s.r * 2, s.r * 2);
   }
   ctx.restore();
@@ -5254,8 +5372,11 @@ function draw(){
     const alt = duennStufe;
     duennStufe = punkt >= (alt === 1 ? 0.9 : 1.1) ? 1 : punkt >= (alt <= 2 ? 0.45 : 0.55) ? 2 : 4;
     const schritt = duennStufe;
-    const nachFarbe = new Map();
-    const deb = Game.debris;
+    /* v139: Die Eimer je Ton bleiben über die Bilder hinweg bestehen (vorher
+       jedes Bild eine neue Karte samt Listen — Arbeit für die Müllabfuhr des
+       Browsers), und es gibt nur noch zwölf Töne (`staubTon`). */
+    for (const l of staubEimer.values()) l.length = 0;
+    const deb = Game.debris, x0 = view.x0, x1 = view.x1, y0 = view.y0, y1 = view.y1;
     for (let i = 0; i < deb.length; i++){
       const d = deb[i];
       if (!d) continue;
@@ -5263,20 +5384,33 @@ function draw(){
         if (d.h === undefined) d.h = (((Math.round(d.x) * 73856093) ^ (Math.round(d.y) * 19349663)) >>> 0);
         if (d.h % schritt) continue;
       }
-      if (!seen(d)) continue;
-      let l = nachFarbe.get(d.c); if (!l){ l = []; nachFarbe.set(d.c, l); }
+      if (d.x <= x0 || d.x >= x1 || d.y <= y0 || d.y >= y1) continue;
+      let l = staubEimer.get(d.c); if (!l){ l = []; staubEimer.set(d.c, l); }
       l.push(d);
     }
-    for (const [farbe, liste] of nachFarbe){
+    for (const [farbe, liste] of staubEimer){
+      if (!liste.length) continue;
       ctx.fillStyle = farbe;
       for (const d of liste){ const k = Math.max(kante, d.r * 2); ctx.fillRect(d.x - k/2, d.y - k/2, k, k); }
     }
   } else {
     /* Tutorial (v114): Der Staub, den man sammeln soll, leuchtet. */
     if (Tutorial.laufend && Tutorial.glut){ try { Tutorial.staubMalen(ctx, seen); } catch(_){} }
-    for (const d of Game.debris){
-      if (!seen(d)) continue;
-      ctx.beginPath(); ctx.arc(d.x,d.y,d.r,0,7); ctx.fillStyle = d.c; ctx.fill();
+    /* v139: je Ton ein Pfad mit allen Kreisen und ein einziges fill() —
+       statt Pinselwechsel und fill() für jeden Trümmer. */
+    for (const l of staubEimer.values()) l.length = 0;
+    const deb = Game.debris, x0 = view.x0, x1 = view.x1, y0 = view.y0, y1 = view.y1;
+    for (let i = 0; i < deb.length; i++){
+      const d = deb[i];
+      if (!d || d.x <= x0 || d.x >= x1 || d.y <= y0 || d.y >= y1) continue;
+      let l = staubEimer.get(d.c); if (!l){ l = []; staubEimer.set(d.c, l); }
+      l.push(d);
+    }
+    for (const [farbe, liste] of staubEimer){
+      if (!liste.length) continue;
+      ctx.beginPath();
+      for (const d of liste){ ctx.moveTo(d.x + d.r, d.y); ctx.arc(d.x, d.y, d.r, 0, 6.2832); }
+      ctx.fillStyle = farbe; ctx.fill();
     }
   }
   for (const s of Game.shed){
@@ -12112,12 +12246,11 @@ const Net = {
        Sättigung aus dem Thema: so bleibt die Streuung erhalten, ohne dass
        im hellen Thema bunte Punkte auf Sand liegen. */
     if (this.debNeu || this.debThema !== Settings.theme){
-      const d = TH().dust;
-      const sat = (d.s[0]+d.s[1])/2, lig = (d.l[0]+d.l[1])/2;
+      /* v139: einer der zwölf festen Staubtöne (`staubTon`), gewählt aus der
+         Zahl, die der Server mitschickt — gleich für alle Spieler. */
       const liste = [];
       for (const e of this.deb.values())
-        liste.push({ x:e[0], y:e[1], m:1, r:3.4,
-          c:`hsl(${d.h[0] + ((e[2]%360)/360)*(d.h[1]-d.h[0])} ${sat}% ${lig}%)` });
+        liste.push({ x:e[0], y:e[1], m:1, r:3.4, c:staubTon(e[2] | 0) });
       Game.debris = liste; Game.debrisVer = (Game.debrisVer | 0) + 1;
       this.debNeu = false;
       this.debThema = Settings.theme;
