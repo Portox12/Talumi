@@ -6347,9 +6347,11 @@ function buildShop(){
   const R = S.raub || { stufen: 3, pct: [0, .3, .9, 1.5], preis: [0, 500, 800, 1200] };
   const st = konto ? (S.raubStufe || 0) : 0;
   rb.innerHTML = `<h2>${esc(t("mo_raub"))}<em>${esc(t("sh_nur_aufstieg"))}</em></h2>` +
-    `<div class="shopBild" id="shopRaubBild" style="width:min(80px, 17vh)"></div>` +
+    `<div class="shopBild" id="shopRaubBild" style="width:min(64px, 14vh)"></div>` +
     `<div class="shopStufen">${[1, 2, 3].map(i => `<span class="${i <= st ? "hat" : ""}">${["I", "II", "III"][i - 1]} · ${esc(zahlDe(R.pct[i]))} %</span>`).join("")}</div>` +
     `<p class="shopHinweis">${esc(t("sh_raub_erkl"))}</p>` +
+    /* Bruchstücke aus Kapseln (v128): nur, solange man ihn nicht hat. */
+    (!st && R.stuecke ? `<p class="shopHinweis shopStueck">${esc(t("sh_raub_stuecke", konto ? (S.raubStuecke || 0) : 0, R.stuecke, zahlDe((R.pKapsel || 0) * 100)))}</p>` : "") +
     `<button type="button" class="shopKauf" id="shopRaubKn"></button>`;
   const rbBild = $("shopRaubBild");
   if (rbBild){ const c = mondBild("raub", st); c.style.width = "100%"; c.style.height = "auto"; rbBild.appendChild(c); }
@@ -11343,6 +11345,11 @@ const Net = {
        die Meldung. Gäste erfahren, dass es Iridium nur mit Konto gibt. */
     if (m.t === "kapsel"){
       if (m.gast) toast(t("ka_gast"));
+      /* Raubmond-Bruchstück (v128). Beim 24. ist der Mond da. */
+      else if (m.raub && typeof m.raub === "object"){
+        if (m.raub.fertig){ lohnZeigen(t("mo_raub"), t("ka_raub_fertig"), ""); mondeStand = null; shopStand = null; }
+        else toast(t("ka_raub", +m.raub.stuecke || 0, +m.raub.von || 24));
+      }
       else if (m.mond && typeof m.mond === "object") toast(t("ka_mond", t((MONDE[m.mond.art] || {}).name || "mo_eis")));
       else if (+m.staub > 0) toast(t("ka_staub", +m.staub));
       else toast(t("ka_iridium", +m.iridium || 0));

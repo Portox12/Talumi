@@ -2748,10 +2748,12 @@ const LANGS_SHOP = {
       sh_konto:"Buy with an account", sh_besitz:"Owned", sh_kaufen:"Buy · {0} Iridium",
       sh_stufe_kaufen:"Level {0} · {1} Iridium", sh_euro:"≈ {0}", sh_fehlt:"You need {0} more Iridium",
       sh_gekauft:"Bought!", sh_zu_wenig:"Not enough Iridium", sh_nur_aufstieg:"Ascent only",
-      sh_raub_erkl:"Orbits your world and steals mass from anyone it touches — at most once per second per opponent.",
+      sh_raub_erkl:"Steals mass from anyone it touches — at most once per second per opponent.",
       sh_offline:"The shop needs a connection.",
       mo_raub:"Leech Moon", mo_raub_w:"Steals {0} % mass on touch (Ascent only)", mo_q_raub:"Only in the shop",
       mo_raub_shop:"Upgrade in the shop",
+      sh_raub_stuecke:"From capsules: {0} / {1} fragments ({2} % of capsules)",
+      ka_raub:"Capsule: Leech Moon fragment {0} / {1}", ka_raub_fertig:"The last fragment — the Leech Moon is yours!",
       ir_nichtkauf:"Earned in play — and soon in the shop too."},
   de:{sh_kopf:"Shop", sh_iri_kopf:"Iridium", sh_stand:"Du hast {0}",
       sh_iri_erkl:"Für den Kern, den Raubmond und das Design des Monats.",
@@ -2761,10 +2763,12 @@ const LANGS_SHOP = {
       sh_konto:"Mit Konto kaufen", sh_besitz:"Im Besitz", sh_kaufen:"Kaufen · {0} Iridium",
       sh_stufe_kaufen:"Stufe {0} · {1} Iridium", sh_euro:"≈ {0}", sh_fehlt:"Dir fehlen {0} Iridium",
       sh_gekauft:"Gekauft!", sh_zu_wenig:"Nicht genug Iridium", sh_nur_aufstieg:"nur im Aufstieg",
-      sh_raub_erkl:"Kreist um deine Welt und raubt jedem, den er berührt, Masse — höchstens einmal je Sekunde und Gegner.",
+      sh_raub_erkl:"Raubt jedem, den er berührt, Masse — je Gegner höchstens einmal pro Sekunde.",
       sh_offline:"Der Shop braucht eine Verbindung.",
       mo_raub:"Raubmond", mo_raub_w:"Raubt bei Berührung {0} % Masse (nur im Aufstieg)", mo_q_raub:"Nur im Shop",
       mo_raub_shop:"Höher im Shop",
+      sh_raub_stuecke:"Aus Kapseln: {0} / {1} Bruchstücke ({2} % der Kapseln)",
+      ka_raub:"Kapsel: Raubmond-Bruchstück {0} / {1}", ka_raub_fertig:"Das letzte Bruchstück — der Raubmond ist deiner!",
       ir_nichtkauf:"Erspielbar — und bald auch im Shop."}
 };
 for (const c in LANGS_SHOP) Object.assign(LANGS[c], LANGS_SHOP[c]);
