@@ -4946,6 +4946,64 @@ function groesstes(liste){
   return best;
 }
 
+/* Die Zeile unter einem Körper: Rangzeichen, Level, [Clan], Name. Messen
+   und Malen getrennt, damit das Tutorial (v131) dieselbe Zeile groß und
+   beschriftet zeigen kann. `H` ist die Zeilenhöhe in Bildpunkten. */
+function zeileMessen(g, z, H, M = {}){
+  const hatAbz = Number.isInteger(z.rang);
+  const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
+  /* Clan-Kürzel in eckigen Klammern vor dem Namen (Schritt 100). */
+  const tag    = z.tag ? "[" + z.tag + "]" : "";
+  g.font = `600 ${H - 3}px Georgia, serif`;
+  const nameB  = g.measureText(z.name).width;
+  g.font = `600 ${H - 5}px Georgia, serif`;
+  const stufeB = stufe ? g.measureText(stufe).width + H * .45 : 0;
+  const tagB   = tag ? g.measureText(tag).width + H * .35 : 0;
+  const abzB   = hatAbz ? abzeichenBreite(H) + H * .32 : 0;
+  M.hatAbz = hatAbz; M.stufe = stufe; M.tag = tag; M.nameB = nameB;
+  M.abzB = abzB; M.stufeB = stufeB; M.tagB = tagB;
+  M.breite = abzB + stufeB + tagB + nameB; M.luft = H * .38;
+  return M;
+}
+/* Im Spiel für jede Zeile in jedem Bild — ein Gefäß statt vierzig neuer. */
+const ZEILE_M = {};
+/* Malt die Zeile ab `cx` (linke Kante des Inhalts), mittig auf `cy`, und
+   gibt die Höhe der Plakette zurück; `mitte` (wenn gegeben) bekommt die
+   x-Mitten der Teile ({abz, level, clan, name}). */
+function zeilePille(g, cx, cy, z, H, M, dpr, mitte){
+  const luft = M.luft;
+  g.beginPath();
+  const pb = M.breite + luft*2, ph = H + luft*.9;
+  if (g.roundRect) g.roundRect(cx - luft, cy - ph/2, pb, ph, ph*.28);
+  else g.rect(cx - luft, cy - ph/2, pb, ph);
+  g.fillStyle = TH().label; g.fill();
+  let ox = cx;
+  if (M.hatAbz){ abzeichenAusVorrat(g, ox, cy - H/2, z.rang, H, dpr);
+                 if (mitte) mitte.abz = ox + abzeichenBreite(H) / 2;
+                 ox += abzeichenBreite(H) + H * .32; }
+  if (M.stufe){
+    g.font = `600 ${H - 5}px Georgia, serif`;
+    g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
+    g.fillText(M.stufe, ox, cy + .5);
+    const b = g.measureText(M.stufe).width;
+    if (mitte) mitte.level = ox + b / 2;
+    ox += b + H * .45;
+  }
+  if (M.tag){
+    g.font = `600 ${H - 5}px Georgia, serif`;
+    g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
+    g.fillText(M.tag, ox, cy + .5);
+    const b = g.measureText(M.tag).width;
+    if (mitte) mitte.clan = ox + b / 2;
+    ox += b + H * .35;
+  }
+  g.font = `600 ${H - 3}px Georgia, serif`;
+  g.textAlign = "left"; g.fillStyle = TH().paper || "#e8ddc8";
+  g.fillText(z.name, ox, cy + .5);
+  if (mitte) mitte.name = ox + M.nameB / 2;
+  return ph;
+}
+
 function zeilenZeichnen(g, schuettelX, schuettelY){
   if (!zeilen.length) return;
   g.save();
@@ -4960,19 +5018,7 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
        teuerste Arbeit des Bildes, das Textmessen. Die eigene Zeile bleibt. */
     if (rr < 10 && !z.eigen && !z.immer) continue;
 
-    const hatAbz = Number.isInteger(z.rang);
-    const stufe  = Number.isInteger(z.level) ? String(z.level) : "";
-    /* Clan-Kürzel in eckigen Klammern vor dem Namen (Schritt 100). */
-    const tag    = z.tag ? "[" + z.tag + "]" : "";
-
-    g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
-    const nameB  = g.measureText(z.name).width;
-    g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
-    const stufeB = stufe ? g.measureText(stufe).width + ZEILE_H * .45 : 0;
-    const tagB   = tag ? g.measureText(tag).width + ZEILE_H * .35 : 0;
-    const abzB   = hatAbz ? abzeichenBreite(ZEILE_H) + ZEILE_H * .32 : 0;
-    const breite = abzB + stufeB + tagB + nameB;
-    const luft   = ZEILE_H * .38;
+    const M = zeileMessen(g, z, ZEILE_H, ZEILE_M), breite = M.breite;
 
     /* Unterhalb des Körpers, mit Abstand zu Ringen und Glühen. Am unteren
        Bildrand wandert die Zeile nach oben über den Kreis — sonst steht sie
@@ -4983,30 +5029,7 @@ function zeilenZeichnen(g, schuettelX, schuettelY){
     const cx = px - breite/2;
     if (cx + breite < -40 || cx > VW + 40 || cy < -40 || cy > VH + 40) continue;
 
-    g.beginPath();
-    const pb = breite + luft*2, ph = ZEILE_H + luft*.9;
-    if (g.roundRect) g.roundRect(cx - luft, cy - ph/2, pb, ph, ph*.28);
-    else g.rect(cx - luft, cy - ph/2, pb, ph);
-    g.fillStyle = TH().label; g.fill();
-
-    let ox = cx;
-    if (hatAbz){ abzeichenAusVorrat(g, ox, cy - ZEILE_H/2, z.rang, ZEILE_H, DPR);
-                 ox += abzeichenBreite(ZEILE_H) + ZEILE_H * .32; }
-    if (stufe){
-      g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
-      g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
-      g.fillText(stufe, ox, cy + .5);
-      ox += g.measureText(stufe).width + ZEILE_H * .45;
-    }
-    if (tag){
-      g.font = `600 ${ZEILE_H - 5}px Georgia, serif`;
-      g.textAlign = "left"; g.fillStyle = hexA(TH().brass, .95);
-      g.fillText(tag, ox, cy + .5);
-      ox += g.measureText(tag).width + ZEILE_H * .35;
-    }
-    g.font = `600 ${ZEILE_H - 3}px Georgia, serif`;
-    g.textAlign = "left"; g.fillStyle = TH().paper || "#e8ddc8";
-    g.fillText(z.name, ox, cy + .5);
+    const ph = zeilePille(g, cx, cy, z, ZEILE_H, M, DPR);
 
     /* Titel in Gold über dem Namen (Schritt 97). Leicht leuchtend, damit er
        auch auf hellen Designs und im Gewimmel lesbar bleibt. */
@@ -13386,6 +13409,14 @@ const Tutorial = {
         this.ziel = () => (this.gesperrt || this.platzErledigt) ? this.vesta : this.platz;
       },
       fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
+    /* Gewachsen (v131, Thomas 24.09.: „sobald man Vesta verschlungen hat,
+       sollte ein Hinweis kommen, dass man jetzt um die Masse gewachsen ist,
+       die man durch Vesta aufgenommen hat"). Beim Fressen geht die ganze
+       Masse über (`c.m += r.m`); die Masseanzeige blinkt wie im Schritt
+       „masse". */
+    { id:"gewachsen", text: () => t("tu_gewachsen", Math.round((Tutorial.vesta && Tutorial.vesta.m) || 18)),
+      bei(){ Tutorial.hudKlasse("mass", "tutBlink", true); },
+      weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); } },
     /* Warnpfeil (v123, Thomas 24.09.: „ein Hinweis im Tutorial zu den roten
        Pfeilen fehlt mir noch"). Im Spiel zeigen sie große Gegner außerhalb
        des Bildes, die einen durch Teilen verschlingen könnten — im Tutorial
@@ -13393,6 +13424,15 @@ const Tutorial = {
        nach links, wo gleich Kepler auftaucht (`demoPfeil`); er erscheint
        auch, wenn die Warnpfeile in den Einstellungen aus sind. */
     { id:"pfeil", text: () => t("tu_pfeil") },
+    /* Die Zeile unter jedem Spieler (v131, Thomas 24.09.: „dass das linke
+       Symbol den Rang darstellt und die Stufe des Rangs (1–3), dann das
+       Level, dann der Clan und dann der Spielername"). Kepler erscheint jetzt
+       schon hier — der Warnpfeil davor zeigt auf seine Seite, und sein
+       Rang ist der Grund, vorsichtig zu sein. Der Kasten zeigt seine Zeile
+       groß und beschriftet (`bild`, `bildMalen`). Das Kürzel ist ein
+       erfundener NPC-Clan (`NPC_CLANS` in bots.js). */
+    { id:"zeile", text: () => t("tu_zeile"), bild: "zeile",
+      bei(){ this.keplerSetzen(); this.ziel = () => this.kepler; } },
     /* Kepler braucht mindestens 240 Masse, sonst zerreißt ihn kein Pulsar;
        fressen kann er den Spieler nicht (`still`). Die eigene Masse wird
        nur nach unten aufgefüllt — Abwerfen kostet nichts, Fressen zählt.
@@ -13416,10 +13456,7 @@ const Tutorial = {
            erscheinen") — man kommt von Vesta rechts und fliegt nur ein Stück
            zurück zum Platz. */
         this.pulsar = this.pulsarSetzen(.5, .46);
-        /* Nur Kepler — kein anderer Körper darf hier umherfliegen (v119). */
-        Game.rivals = [];
-        this.kepler = this.rivalSetzen("Kepler", 260, .27, .46, true, { design: "verdigris", level: 17, rang: 5 });
-        this.titelGid = this.kepler.gid;
+        this.keplerSetzen();
         /* Der Schussplatz (v120): auf der Linie Kepler → Pulsar, hinter dem
            Pulsar. Wer ihn erreicht, bleibt dort stehen (`gesperrt`). */
         {
@@ -13504,6 +13541,7 @@ const Tutorial = {
     r.tint = 0;
     if (Number.isInteger(aussehen.level)) r.lvl = aussehen.level;
     if (Number.isInteger(aussehen.rang)) r.rang = aussehen.rang;
+    if (aussehen.tag) r.tag = aussehen.tag;
     Game.rivals.push(r);
     return r;
   },
@@ -13569,6 +13607,66 @@ const Tutorial = {
     return { dx: -1000, dy: 0, m: 0, nah: 1, demo: true };
   },
   keplerLebt(){ return !!(this.kepler && Game.rivals.some(r => r.gid === this.kepler.gid)); },
+  /* Kepler aufstellen (seit v131 im Schritt „zeile", sonst in „abwerfen"):
+     nur er — kein anderer Körper darf hier umherfliegen (v119). */
+  keplerSetzen(){
+    if (this.keplerLebt()) return this.kepler;
+    Game.rivals = [];
+    this.kepler = this.rivalSetzen("Kepler", 260, .27, .46, true, { design: "verdigris", level: 17, rang: 5, tag: "NOVA" });
+    this.titelGid = this.kepler.gid;
+    return this.kepler;
+  },
+  /* Das Bild im Kasten (v131): Keplers Zeile groß, darunter je Teil eine
+     Beschriftung mit Strich. Beschriftungen, die sich berühren würden,
+     rücken in die nächste Reihe. Dieselbe Zeichnung wie im Spiel
+     (`zeileMessen`/`zeilePille`). */
+  bildMalen(art){
+    const c = document.getElementById("tutBild");
+    if (!c) return;
+    const k = this.kepler;
+    if (art !== "zeile" || !k){ c.hidden = true; return; }
+    c.hidden = false;
+    const z = { name: k.name, rang: Number.isInteger(k.rang) ? k.rang : null,
+                level: Number.isInteger(k.lvl) ? k.lvl : null, tag: k.tag || null };
+    const H = 24, dpr = Math.min(3, window.devicePixelRatio || 1);
+    const g = c.getContext("2d");
+    const M = zeileMessen(g, z, H);
+    const schrift = `600 11.5px ${getComputedStyle(document.body).fontFamily || "sans-serif"}`;
+    g.font = schrift;
+    const teile = [];
+    let x = 0;
+    if (M.hatAbz){ teile.push({ x: abzeichenBreite(H) / 2, text: t("tu_z_rang") }); x += M.abzB; }
+    if (M.stufe){ teile.push({ x: x + (M.stufeB - H * .45) / 2, text: t("tu_z_level") }); x += M.stufeB; }
+    if (M.tag){ teile.push({ x: x + (M.tagB - H * .35) / 2, text: t("tu_z_clan") }); x += M.tagB; }
+    teile.push({ x: x + M.nameB / 2, text: t("tu_z_name") });
+    const ende = [];
+    let links = -M.luft, rechts = M.breite + M.luft;
+    for (const s of teile){
+      s.b = g.measureText(s.text).width;
+      const l = s.x - s.b / 2, r = s.x + s.b / 2;
+      let i = 0;
+      while (i < ende.length && ende[i] > l - 8) i++;
+      ende[i] = r; s.reihe = i;
+      links = Math.min(links, l); rechts = Math.max(rechts, r);
+    }
+    const RH = 15, ph = H + M.luft * .9, oben = 2;
+    const W = Math.ceil(rechts - links + 8), HG = Math.ceil(oben + ph + 7 + ende.length * RH + 2);
+    c.width = Math.round(W * dpr); c.height = Math.round(HG * dpr);
+    c.style.width = W + "px";
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, HG);
+    g.textBaseline = "middle";
+    const cx = 4 - links, cy = oben + ph / 2;
+    zeilePille(g, cx, cy, z, H, M, dpr);
+    g.font = schrift; g.textAlign = "center"; g.lineWidth = 1;
+    for (const s of teile){
+      const px = Math.round(cx + s.x) + .5, ty = oben + ph + 7 + s.reihe * RH + RH / 2;
+      g.strokeStyle = hexA(TH().brass, .75);
+      g.beginPath(); g.moveTo(px, cy + ph / 2 + 1); g.lineTo(px, ty - 6); g.stroke();
+      g.fillStyle = TH().brassHell || TH().paper || "#f8dcab";
+      g.fillText(s.text, cx + s.x, ty);
+    }
+  },
   wurfHilfe(){
     if (!this.laufend || !this.schritt || this.schritt.id !== "abwerfen" || !this.pulsar || !Game.cells.length) return null;
     const me = groesstes(Game.cells);
@@ -13777,6 +13875,7 @@ const Tutorial = {
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
     const txt = document.getElementById("tutText");
     if (txt) this.textSetzen(txt, s.text());
+    this.bildMalen(s.bild);
     const ok = document.getElementById("tutOk");
     if (ok) ok.textContent = t((typeof s.knopf === "function" ? s.knopf() : s.knopf) || "tu_verstanden");
     this.punkteMalen();
@@ -14420,7 +14519,9 @@ const Tutorial = {
     if (!ziel || !ziel.offsetParent || ziel.hidden){ this.stand.menue++; this.sichern(); return this.menueVersuchen(); }
 
     const txt = document.getElementById("tutTippText");
-    if (txt) txt.textContent = t(typeof s.text === "function" ? s.text() : s.text);
+    /* `*Wort*` kursiv wie im Kasten (Thomas 24.09.: „die Spielwährung Ore —
+       Ore kursiv"). */
+    if (txt) this.textSetzen(txt, t(typeof s.text === "function" ? s.text() : s.text));
     const fig = document.getElementById("tutTippFigur");
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
     const zahl = document.getElementById("tutTippZahl");

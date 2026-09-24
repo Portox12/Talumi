@@ -2164,7 +2164,7 @@ const LANGS_GL = {
       tut_pulsar:"A pulsar. Above 240 mass it tears you apart — small bodies hide beneath it.",
       tut_schuss_maus:"Throw mass into the pulsar five times (W) — it fires a new one that way. That is how you split a giant.",
       tut_schuss_tipp:"Throw mass into the pulsar five times — it fires a new one that way. That is how you split a giant.",
-      tut_m_bonus:"Come back every day: the daily bonus brings Ore, the game currency, and on day 7 a design.",
+      tut_m_bonus:"Come back every day: with the daily bonus you get the game currency *Ore*, and on day 7 a design.",
       kl_zeile:"Delete account", kl_zeile_h:"Right away and for good — no e-mail needed.", kl_knopf:"Delete…",
       kl_kopf:"Delete account", kl_go:"Delete my account", kl_leer:"Please fill in the field.",
       kl_erkl:"This deletes your account right away and for good: progress, Ore, designs, honour, rank, achievements, moons and your place in the leaderboards.",
@@ -2211,7 +2211,7 @@ const LANGS_GL = {
       tut_pulsar:"Ein Pulsar. Über 240 Masse zerreißt er dich — Kleine verstecken sich darunter.",
       tut_schuss_maus:"Wirf fünfmal Masse in den Pulsar (W) — er schießt einen neuen in diese Richtung. So zerlegst du Riesen.",
       tut_schuss_tipp:"Wirf fünfmal Masse in den Pulsar — er schießt einen neuen in diese Richtung. So zerlegst du Riesen.",
-      tut_m_bonus:"Komm jeden Tag wieder: Der Tagesbonus bringt Ore, die Spielwährung, und an Tag 7 ein Design.",
+      tut_m_bonus:"Komm jeden Tag wieder: Mit dem Tagesbonus bekommst du die Spielwährung *Ore* und an Tag 7 ein Design.",
       kl_zeile:"Konto löschen", kl_zeile_h:"Sofort und endgültig — ohne E-Mail.", kl_knopf:"Löschen…",
       kl_kopf:"Konto löschen", kl_go:"Mein Konto löschen", kl_leer:"Bitte das Feld ausfüllen.",
       kl_erkl:"Das löscht dein Konto sofort und endgültig: Fortschritt, Ore, Designs, Ehre, Rang, Errungenschaften, Monde und deinen Platz in den Ranglisten.",
@@ -2724,7 +2724,10 @@ const LANGS_TUT3 = {
       s_warn:"Warning arrows", s_warn_h:"Red arrows point to big opponents off-screen who could swallow you by splitting.",
       tu_beenden:"End tutorial?",
       tu_m_profil:"Your profile picture opens your player profile — that is how other players see you too.",
-      tu_m_profil_gast:"Your profile picture opens your player profile. With an account, other players can see it too."},
+      tu_m_profil_gast:"Your profile picture opens your player profile. With an account, other players can see it too.",
+      tu_gewachsen:"Done! You swallowed Vesta and grew by her whole mass: +{0}. Your new mass is shown top left.",
+      tu_zeile:"This is Kepler. Under every player you can read who they are: the rank badge, with its level in the rank (1 to 3 dots), then the player's level, clan and name.",
+      tu_z_rang:"Rank · level", tu_z_level:"Player level", tu_z_clan:"Clan", tu_z_name:"Name"},
   de:{tu_pfeil:"Siehst du den roten Warnpfeil? Er warnt dich vor einem großen Gegner außerhalb des Bildes, der sich auf dich teilen und dich verschlingen könnte. Halte Abstand!",
       tu_r_auge:"Dein erster Rang", tu_r_satz:"Du bist jetzt {0} — der erste von {1} Rängen. Spiel weiter, steig im Rang auf und erheb dich über deine Mitspieler.",
       tu_r_gast:"Mit einem Konto zählen deine Siege für den nächsten Rang.",
@@ -2732,7 +2735,10 @@ const LANGS_TUT3 = {
       s_warn:"Warnpfeile", s_warn_h:"Rote Pfeile zeigen große Gegner außerhalb des Bildes, die dich durch Teilen verschlingen könnten.",
       tu_beenden:"Tutorial beenden?",
       tu_m_profil:"Über dein Profilbild kommst du zu deinem Spielerprofil — so sehen dich auch die anderen Spieler.",
-      tu_m_profil_gast:"Über dein Profilbild kommst du zu deinem Spielerprofil. Mit einem Konto können es auch die anderen Spieler sehen."}
+      tu_m_profil_gast:"Über dein Profilbild kommst du zu deinem Spielerprofil. Mit einem Konto können es auch die anderen Spieler sehen.",
+      tu_gewachsen:"Geschafft! Du hast Vesta verschlungen und bist um ihre ganze Masse gewachsen: +{0}. Oben links steht deine neue Masse.",
+      tu_zeile:"Das ist Kepler. Unter jedem Spieler steht, wer er ist: das Rangzeichen mit der Stufe im Rang (1 bis 3 Punkte), dann Level, Clan und Name.",
+      tu_z_rang:"Rang · Stufe", tu_z_level:"Level", tu_z_clan:"Clan", tu_z_name:"Name"}
 };
 for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 /* Shop und Raubmond (v127, Thomas 24.09.) — vorerst nur de/en, die übrigen

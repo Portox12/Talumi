@@ -1663,6 +1663,8 @@
        box-shadow:0 14px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)}
   .tutFigur{width:52px;height:52px;box-shadow:0 0 0 2px rgba(233,176,99,.55), 0 6px 18px rgba(0,0,0,.5)}
   .tutMitte{flex:1 1 auto;min-width:0;display:grid;gap:6px}
+  .tutBild{display:block;justify-self:center;max-width:100%;height:auto}
+  .tutBild[hidden]{display:none}
   .tutBox p{font-size:15px;line-height:1.35}
   .tutStand{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .tutStand[hidden]{display:none}
@@ -3430,6 +3432,8 @@
   <div class="tutBox" id="tutBox" hidden>
     <span class="tutFigur" id="tutFigur"></span>
     <div class="tutMitte">
+      <!-- Bild zum Satz (v131): Keplers Zeile groß und beschriftet. -->
+      <canvas class="tutBild" id="tutBild" hidden></canvas>
       <p id="tutText">…</p>
       <div class="tutFuss">
         <div class="tutPunkte" id="tutPunkte"></div>
