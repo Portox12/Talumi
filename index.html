@@ -1452,6 +1452,11 @@
   .ddKnopf:disabled{background:var(--block);color:var(--paper-2);border:1px solid var(--line-hell);cursor:default}
   .ddKnopf.gewaehlt:disabled{color:var(--brass-hell);border-color:rgba(233,176,99,.45);background:rgba(233,176,99,.08)}
   .ddNote{margin:4px 0 0;font-size:12.5px;min-height:18px;color:var(--paper-2)}
+  .ddTeile{margin:8px 0 0;width:100%;min-height:44px;border-radius:12px;font-size:14px;font-weight:600;
+       background:transparent;color:var(--brass-hell);border:1px solid rgba(233,176,99,.5);cursor:pointer}
+  .ddTeile[hidden]{display:none}
+  .ddTeile:disabled{cursor:default;opacity:1}
+  .ddTeile.ziel{background:rgba(233,176,99,.08)}
   .ddNote.good{color:var(--good)}
   .ddNote.warn{color:var(--ember)}
   .ddZu{position:absolute;top:10px;right:12px;z-index:3;width:44px;height:44px;margin:0;padding:0;border-radius:50%;
@@ -2321,6 +2326,10 @@
   .mondPlatzKn button:hover{border-color:var(--brass)}
   .mondSeite{display:flex;flex-direction:column;gap:12px;min-width:0}
   .mondSeite .plate.recbox{margin:0}
+  /* \`.plate\` bricht nie um (Anzeigen im Spiel) — hier stehen Sätze. Ohne
+     diese Zeile lief der Kern-Satz rechts aus dem Kasten (gefunden 24.09.). */
+  .mondSeite .plate{white-space:normal}
+  .mondSeite .hintline{display:block;line-height:1.4}
   /* Der Kernplatz (v113): in der Mitte der Welt, ein Glühen in der Farbe
      des Kerns (`--kern`), ohne Kern ein gestrichelter Ring. */
   .kernKnopf{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;
@@ -4075,6 +4084,8 @@
       <p class="ddChips"><span id="ddRang"></span><span id="ddMat"></span></p>
       <p class="ddWie" id="ddWie"></p>
       <button type="button" class="ddKnopf" id="ddKnopf"></button>
+      <!-- Bruchstücke aus Kapseln (v134): dafür sammeln oder freischalten. -->
+      <button type="button" class="ddTeile" id="ddTeile" hidden></button>
       <p class="ddNote" id="ddNote" role="status"></p>
     </div>
   </div>

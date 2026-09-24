@@ -935,6 +935,24 @@ const SKINS = [
   {id:"m_aurum",   mat:"filigran", label:"Aurum",      rock:"#17120c", dark:"#060403", hot:"#ffcf5a", air:"#f7dc9a",
    sonder:"monat", tier:5, bonus:{staub:.10}}
 ];
+/* Design-Bruchstücke aus Kapseln (v134): Wie viele ein Ore-Design kostet,
+   richtet sich nach seinem Ore-Preis. Steht doppelt in konten.js
+   (`KAPSEL.DESIGN_TEILE`); testkonten.js vergleicht. */
+const DESIGN_TEILE = [[3200, 12], [22000, 24], [150000, 48], [400000, 96], [Infinity, 192]];
+function designTeileFuer(preis){
+  for (const [bis, n] of DESIGN_TEILE) if (preis <= bis) return n;
+  return DESIGN_TEILE[DESIGN_TEILE.length - 1][1];
+}
+/* Wofür die Bruchstücke gerade zählen: das Ziel vom Server, sonst — wie im
+   Server — das günstigste Ore-Design, das noch fehlt. Nur mit Konto. */
+function designZielJetzt(){
+  if (!istAngemeldet() || !Konto.profil) return null;
+  const z = Konto.profil.designZiel;
+  if (z && z.id && !Profile.owned.has(z.id)) return z;
+  let best = null;
+  for (const s of SKINS) if (s.ore && !Profile.owned.has(s.id) && (!best || s.ore < best.ore)) best = s;
+  return best ? { id: best.id, von: designTeileFuer(best.ore), wunsch: false } : null;
+}
 /* Design-Boni (v129): nur im Aufstieg, nur mit Konto — der Server rechnet
    sie (`DESIGN_BONUS` in sim.js, test.js vergleicht mit `bonus` hier). */
 /* Zählbare Designs: alles, was sich erspielen oder kaufen lässt. */
@@ -1040,7 +1058,11 @@ const Profile = {
   requirement(s){
     if (this.owned.has(s.id)) return t("owned");
     if (s.sonder) return t("sk_" + s.sonder);
-    return s.lv ? t("levelreq", s.lv) : t("orereq", s.ore.toLocaleString(lang));
+    if (s.lv) return t("levelreq", s.lv);
+    /* Das Design, für das die Bruchstücke zählen (v134), trägt den Stand. */
+    const z = designZielJetzt();
+    if (z && z.id === s.id) return t("orereq", s.ore.toLocaleString(lang)) + " · ◆ " + ((Konto.profil && +Konto.profil.designTeile) || 0) + "/" + z.von;
+    return t("orereq", s.ore.toLocaleString(lang));
   },
   state(s){
     if (this.owned.has(s.id)) return "owned";
@@ -3277,6 +3299,7 @@ function finish(timeUp){
         zeilenIri += `<div class="tally iri"><span>${esc(t("ka_zeile", +Kp.n))}</span><span>${+Kp.iridium > 0 ? "+" + (+Kp.iridium) : ""}</span></div>`;
         iri += +Kp.iridium || 0;
       }
+      if (Kp && +Kp.ore > 0) html += `<div class="tally"><span>${esc(t("ka_ore_zeile"))}</span><span>+${(+Kp.ore).toLocaleString(lang)}</span></div>`;
       if (zeilenIri) html += zeilenIri + `<div class="tally iri sum"><span>${esc(t("iridium"))}</span><span>+${iri}</span></div>`;
       if (Net.kernNeu) html += `<div class="tally kern"><span>${esc(Net.kernNeu.ersatz ? t("ke_ersatz", +Net.kernNeu.ersatz) : t("ke_neu", t("ke_" + (Net.kernNeu.art || "eisen"))))}</span><span></span></div>`;
     }
@@ -6777,9 +6800,12 @@ function buildMonde(){
       seite.innerHTML = kernSeiteHtml() +
         `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><small class="hintline">${esc(t("mo_platz_erkl", aktiv.length, m.plaetze || 4))}</small>` +
         `<h3 style="margin-top:12px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
-        `<small class="hintline">${esc(t("mo_staub_erkl"))}</small></div>` +
+        `<small class="hintline">${esc(t("mo_staub_erkl"))}</small>` +
+        /* Mond-Bruchstücke aus Kapseln (v134) — Zahl vom Server. */
+        (m.mondTeile ? `<h3 style="margin-top:12px">${esc(t("mo_teile"))}</h3><div class="mondStaub">${+m.monde.mondStuecke || 0} / ${+m.mondTeile}</div>` +
+          `<small class="hintline">${esc(t("mo_teile_erkl", +m.mondTeile))}</small>` : "") + `</div>` +
         `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
-        [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
+        [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
           .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
       kernKnoepfe(seite, zeichnen);
     }
@@ -7986,7 +8012,7 @@ function designDetailMalen(){
   setze("ddMat", t("mat_" + (s.mat || "fels")));
   const w = document.getElementById("ddWie");
   if (w) w.textContent = (hat ? t("dd_hast") : s.sonder ? t("sk_" + s.sonder + "_note")
-                       : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang))) +
+                       : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang)) + " " + t("dd_teile_wie", designTeileFuer(s.ore || 0))) +
                        /* Design-Bonus (v129), nur im Aufstieg. */
                        (s.bonus && s.bonus.staub ? " " + t("dd_bonus", Math.round(s.bonus.staub * 100)) : "") +
                        /* Bruchstücke aus Kapseln (v130) — die Zahl kommt vom Server. */
@@ -8005,12 +8031,43 @@ function designDetailMalen(){
   else if (s.lv){ k.textContent = t("dd_level_kurz", s.lv); k.disabled = true; }
   else if (Profile.ore >= s.ore){ k.innerHTML = ICON_ORE + esc(t("dd_kaufen", s.ore.toLocaleString(lang))); k.classList.add("kauf"); }
   else { k.innerHTML = ICON_ORE + esc(t("dd_fehlt", (s.ore - Profile.ore).toLocaleString(lang))); k.disabled = true; }
+  /* Bruchstücke aus Kapseln (v134): nur Ore-Designs, nur mit Konto. */
+  const tk = document.getElementById("ddTeile");
+  if (tk){
+    const zeigen = !hat && !s.sonder && !s.lv && !!s.ore && istAngemeldet() && !!Konto.profil;
+    tk.hidden = !zeigen;
+    if (zeigen){
+      const von = designTeileFuer(s.ore), n = +Konto.profil.designTeile || 0, z = designZielJetzt();
+      tk.disabled = false; tk.className = "ddTeile";
+      if (z && z.id === s.id && n < von){ tk.textContent = t("dt_ziel", n, von); tk.disabled = true; tk.classList.add("ziel"); }
+      else if (n >= von) tk.textContent = t("dt_frei", von);
+      else tk.textContent = t("dt_sammeln", n, von);
+    }
+  }
   const n = document.getElementById("ddNote");
   if (n){ n.textContent = ""; n.className = "ddNote"; }
   /* Welche Gruppe und welche Nummer darin — hilft beim Blättern. */
   const gr = designGruppen().find(g => g.liste.some(x => x.id === s.id));
   if (gr) setze("ddZahl", t(gr.kopf) + " · " + (gr.liste.findIndex(x => x.id === s.id) + 1) + " / " + gr.liste.length);
   void st;
+}
+
+/* Wunsch-Design für die Bruchstücke (v134). Reichen die Stücke schon, sagt
+   der Knopf es vorher („Mit 12 Bruchstücken freischalten"). */
+async function designTeileKnopf(){
+  const s = ddDesign, tk = document.getElementById("ddTeile");
+  if (!s || !tk || tk.disabled) return;
+  tk.disabled = true;
+  const a = await Konto.ruf("/konto/design/wunsch", { id: s.id });
+  if (a && a.ok){
+    Konto.uebernehmen(a);
+    if (a.fertig){
+      Profile.owned.add(s.id);
+      lohnZeigen(s.label, t("dt_frei_ok"), "");
+    }
+    try { buildGrid(); } catch(_){}
+    designDetailMalen();
+  } else { tk.disabled = false; toast(t("net_fail")); }
 }
 
 async function designDetailKnopf(){
@@ -8042,6 +8099,7 @@ async function designDetailKnopf(){
     document.getElementById("ddVor").addEventListener("click", () => designDetailBlaettern(1));
     document.getElementById("ddZurueck").addEventListener("click", () => designDetailBlaettern(-1));
     document.getElementById("ddKnopf").addEventListener("click", designDetailKnopf);
+    document.getElementById("ddTeile").addEventListener("click", designTeileKnopf);
     /* Ein Tipp neben das Fenster schließt, wie bei jeder Großansicht. */
     v.addEventListener("click", e => { if (e.target === v) designDetailZu(); });
     addEventListener("keydown", e => {
@@ -11615,11 +11673,33 @@ const Net = {
         else toast(t("ka_design", name, +m.design.stuecke || 0, +m.design.von || 12));
         shopStand = null;
       }
+      /* Bruchstück für ein Ore-Design (v134). */
+      else if (m.teil && typeof m.teil === "object"){
+        const pal = SKINS.find(x => x.id === m.teil.id), name = pal ? pal.label : "";
+        if (Konto.profil){
+          Konto.profil.designTeile = m.teil.fertig ? 0 : (+m.teil.stuecke || 0);
+          if (m.teil.fertig) Konto.profil.designZiel = null;
+        }
+        if (m.teil.fertig && pal){
+          if (Konto.profil) Konto.profil.skins = (Konto.profil.skins || []).filter(id => id !== pal.id).concat([pal.id]);
+          Profile.owned.add(pal.id);
+          lohnZeigen(name, t("ka_teil_fertig"), "");
+        }
+        else toast(t("ka_teil", name, +m.teil.stuecke || 0, +m.teil.von || 12));
+      }
+      /* Mond-Bruchstück (v134). Beim sechsten ist ein Mond da. */
+      else if (m.mondTeil && typeof m.mondTeil === "object"){
+        if (m.mondTeil.fertig) lohnZeigen(t((MONDE[m.mondTeil.art] || {}).name || "mo_eis"), t("ka_mondteil_fertig", +m.mondTeil.von || 6), "");
+        else toast(t("ka_mondteil", +m.mondTeil.stuecke || 0, +m.mondTeil.von || 6));
+        mondeStand = null;
+      }
+      else if (+m.ore > 0) toast(t("ka_ore", +m.ore));
       else if (m.mond && typeof m.mond === "object") toast(t("ka_mond", t((MONDE[m.mond.art] || {}).name || "mo_eis")));
       else if (+m.staub > 0) toast(t("ka_staub", +m.staub));
       else toast(t("ka_iridium", +m.iridium || 0));
       if (!m.gast && Konto.profil){
         if (+m.iridium > 0){ Konto.profil.iridium = (+Konto.profil.iridium || 0) + (+m.iridium); Profile.iridium = Konto.profil.iridium; }
+        if (+m.ore > 0){ Konto.profil.ore = (+Konto.profil.ore || 0) + (+m.ore); Profile.ore = Konto.profil.ore; }
         if (+m.staub > 0 && Profile.monde) Profile.monde.staub = (+Profile.monde.staub || 0) + (+m.staub);
       }
       try { Sound.levelUp(); } catch(_){}
