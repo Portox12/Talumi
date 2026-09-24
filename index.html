@@ -1929,6 +1929,38 @@
   .konsSp > label{margin:0}
   .konsSp.l #controls{margin:0}
 
+  /* ---- Shop (v127): drei Spalten — Iridium, Design des Monats, Raubmond.
+     Eigenes Raster statt `.drei`: Dessen Regeln sind auf den Hangar
+     abgestimmt. Kaufknöpfe in Messing (Grün hat nur der Startknopf). */
+  .konsPane.shopPane{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));overflow:hidden}
+  .shopSp{padding:14px 18px;display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}
+  .shopSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  .shopSp > h2{margin-bottom:2px}
+  .shopPaket{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;
+       padding:5px 12px;border-radius:12px;background:var(--block);border:1px solid var(--line)}
+  .iriStein{width:20px;height:20px;border-radius:50%;flex:0 0 auto;
+       background:radial-gradient(circle at 38% 36%,#fff 0%,var(--iri) 32%,rgba(0,0,0,.55) 100%);box-shadow:0 0 10px var(--iri)}
+  .shopPaket b{font-family:var(--disp);font-size:16px;color:var(--paper);font-variant-numeric:tabular-nums}
+  .shopPaket b small{margin-left:6px;font-size:11px;font-weight:600;color:var(--brass)}
+  .shopPaket .preis{font-family:var(--disp);font-size:15px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .shopHinweis{margin:0;font-size:12px;line-height:1.4;color:var(--paper-2)}
+  .shopBild{align-self:center;width:min(150px, 30vh);aspect-ratio:1;position:relative;flex:0 0 auto}
+  .shopBild img,.shopBild canvas{width:100%;height:100%;display:block}
+  .shopName{margin:0;text-align:center;font-family:var(--serif);font-size:21px;line-height:1.15;color:var(--brass-hell)}
+  .shopName small{display:block;margin-top:3px;font-family:var(--sans);font-size:12px;color:var(--paper-2)}
+  .shopKauf{margin:0;width:100%;min-height:44px;font-weight:700;border:0;
+       background:linear-gradient(180deg, var(--brass-hell), var(--brass));color:#1c1207}
+  .shopKauf:disabled{background:var(--block);color:var(--paper-2);border:1px solid var(--line)}
+  .shopKauf small{font-weight:500;opacity:.8}
+  .shopStufen{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+  .shopStufen span{padding:3px 9px;border-radius:999px;border:1px solid var(--line);font-size:11.5px;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .shopStufen span.hat{border-color:var(--brass);color:var(--brass-hell)}
+  @media (orientation:portrait), (max-width:640px){
+    .konsPane.shopPane{grid-template-columns:1fr;overflow:auto}
+    .shopSp{overflow:visible}
+    .shopSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  }
+
   /* Ein Abschnitt: Überschrift **über** dem Kasten, wie im Entwurf — nicht
      darin. Rechts in der Überschrift steht in Messing, was zählt („Tag 4 von
      7", „0/21", „verwalten"). */
@@ -3738,6 +3770,15 @@
            jeder, und die übrigen Knöpfe bekommen den Platz des Wortes. Der
            Name steht für Vorleseprogramme und als Hinweis beim Überfahren
            im Knopf (`data-i18n-name`). -->
+<!-- Shop als kleiner Einkaufswagen (v127, Thomas 24.09.: „Ich würde den
+           Shop durch einen kleinen Einkaufswagen kennzeichnen"). Öffnet den
+           Reiter „Shop". -->
+      <button class="konsNav zahnrad" id="shopBtn" data-i18n-name="sh_kopf" aria-label="Shop" title="Shop">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2.8 4h2.6l2.3 10.6a1.6 1.6 0 0 0 1.6 1.3h8.2a1.6 1.6 0 0 0 1.6-1.2L21 8H6.3"/>
+          <circle cx="10" cy="19.6" r="1.5" fill="currentColor"/><circle cx="17.4" cy="19.6" r="1.5" fill="currentColor"/>
+        </svg>
+      </button>
 <!-- Spielanleitung als Büchlein (Thomas, 17.09.2026), gleich gebaut wie
            das Zahnrad. „Rechtliches" steht dafür am Ende der Einstellungen. -->
       <button class="konsNav zahnrad" id="hilfeBtn" data-i18n-name="hilfe" aria-label="How to play" title="How to play">
@@ -3773,6 +3814,9 @@
            sollen extra in einem Feld erscheinen"). Wie „Monde" nur im Aufstieg. -->
       <button type="button" data-reiter="skill" role="tab" aria-selected="false"
               data-i18n="k_skill" hidden>Skills</button>
+      <!-- Shop (v127): für alle sichtbar, auch für Gäste. -->
+      <button type="button" data-reiter="shop" role="tab" aria-selected="false"
+              data-i18n="sh_kopf">Shop</button>
       <!-- Seit v105 nur noch Ore und Ehre: Level und XP stehen in der Mitte
            zwischen Name und Körper, das Rangabzeichen mit Rangnamen unter
            dem Körper (Thomas, 18.09.2026). -->
@@ -3940,6 +3984,13 @@
       </div>
       <div id="mondeInhalt"></div>
     </div>
+    <!-- ---------- Reiter: Shop (v127) ---------- -->
+    <div class="konsPane shopPane" id="paneShop" hidden>
+      <section class="shopSp konsSek" id="shopIri"></section>
+      <section class="shopSp konsSek m" id="shopDesign"></section>
+      <section class="shopSp konsSek" id="shopRaub"></section>
+    </div>
+
     <div class="konsPane eine" id="paneSkill" hidden>
       <div class="konsKopfzeile"><h2 data-i18n="sp_kopf">Skill points</h2><p data-i18n="sp_erkl"></p></div>
       <div class="konsStat" id="skillInhalt"></div>

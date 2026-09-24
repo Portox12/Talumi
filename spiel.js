@@ -5248,6 +5248,9 @@ function draw(){
   }
 
   const meineMonde = eigeneMonde();
+  /* Raubmonde (v127): Wirt ist das größte Stück des Besitzers, den Winkel
+     schickt der Server — gezeichnet dort, wo er trifft. */
+  const raubWirt = raubWirteBauen();
   for (const {o,mine} of all){
     /* Eigene Stuecke ausserhalb des Bildes ebenfalls ueberspringen (Schritt
        117): Nach einem Pulsar liegen bis zu sechzehn davon verstreut, und
@@ -5281,11 +5284,17 @@ function draw(){
       }
       continue;
     }
-    const monde = mine ? meineMonde : o.mo;
+    const monde0 = mine ? meineMonde : o.mo;
+    /* Den Raubmond nicht an jedem Stück mitkreisen lassen — er ist ein
+       Körper des Servers und hängt nur am größten (`raubMondMalen`). */
+    const monde = monde0 && monde0.includes("raub") ? monde0.filter(a => a !== "raub") : monde0;
+    const rb = raubWirt && raubWirt.get(o);
     if (monde) mondeMalen(ctx, o.x, o.y, rWelt, monde, Game.t, true);
+    if (rb) raubMondMalen(ctx, o, rb, true);
     body(ctx, o.x, o.y, rWelt, o.m, pal, mine ? 0 : o.tint, label, mine,
          mine ? skin.tier : o.tier, mine ? skin.trait : o.trait);
     if (monde) mondeMalen(ctx, o.x, o.y, rWelt, monde, Game.t);
+    if (rb) raubMondMalen(ctx, o, rb, false);
   }
   if (Game.safe > 0 && Game.running){
     const puls = .35 + .25*Math.sin(Game.t*7);
@@ -6252,7 +6261,130 @@ function anmeldungLage(){
    Gestaltung: Wer im Laden steht, sieht weiter seinen Stand und kommt mit
    einem Klick zurück, statt über einen „Fertig"-Knopf. */
 let reiterJetzt = "start";
-const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat", monde:"paneMonde", skill:"paneSkill" };
+const REITER = { start:"paneStart", haut:"paneHaut", erf:"paneErf", stat:"paneStat", monde:"paneMonde", skill:"paneSkill", shop:"paneShop" };
+
+/* ---- Shop (v127, Thomas 24.09.2026) ---------------------------------------
+   „Verkauft wird Iridium, Ore bleibt Spielwährung … der Shop darf schon für
+   alle sichtbar sein." Drei Spalten: Iridium-Pakete (Preis in Euro; kaufen
+   erst mit Zahlungsanbieter), Design des Monats und Raubmond (für Iridium,
+   nur mit Konto). Alle Zahlen kommen vom Server (`/shop`, mit Konto
+   `/konto/shop`) — hier steht kein Preis. */
+let shopStand = null, shopLaedt = false;
+function zahlDe(x){ return Number(x).toLocaleString(lang, { maximumFractionDigits: 1 }); }
+function euro(cent){ return (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" }); }
+async function shopLaden(){
+  const a = await Konto.ruf(istAngemeldet() ? "/konto/shop" : "/shop");
+  if (a && a.ok){ shopStand = a; return a; }
+  return null;
+}
+function buildShop(){
+  const iri = $("shopIri"), des = $("shopDesign"), rb = $("shopRaub");
+  if (!iri || !des || !rb) return;
+  const S = shopStand;
+  if (!S){
+    const zeige = schl => { iri.innerHTML = `<h2>${esc(t("sh_iri_kopf"))}</h2><p class="shopHinweis">${esc(t(schl))}</p>`; des.innerHTML = ""; rb.innerHTML = ""; };
+    zeige("r_loading");
+    if (!shopLaedt){
+      shopLaedt = true;
+      shopLaden().then(a => { shopLaedt = false; if (reiterJetzt !== "shop") return; if (a) buildShop(); else zeige("sh_offline"); });
+    }
+    return;
+  }
+  const konto = istAngemeldet(), meins = konto ? (S.iridium ?? Profile.iridium ?? 0) : null;
+  /* Euro-Gegenwert eines Iridium-Preises nach dem kleinsten Paket — dem
+     teuersten je Stück, also nie geschönt. */
+  const p0 = (S.pakete || [])[0];
+  const inEuro = n => p0 ? euro(Math.round(n * p0.cent / p0.iridium)) : "";
+
+  /* 1. Iridium */
+  const basis = p0 ? p0.cent / p0.iridium : 0;
+  iri.innerHTML = `<h2>${esc(t("sh_iri_kopf"))}${konto ? `<em>${esc(t("sh_stand", meins.toLocaleString(lang)))}</em>` : ""}</h2>` +
+    (S.pakete || []).map(p => {
+      const mehr = basis ? Math.round((p.iridium / (p.cent / basis) - 1) * 100) : 0;
+      return `<div class="shopPaket"><span class="iriStein"></span>` +
+        `<b>${p.iridium.toLocaleString(lang)}${mehr > 0 ? `<small>+${mehr} %</small>` : ""}</b>` +
+        `<span class="preis">${esc(euro(p.cent))}</span></div>`;
+    }).join("") +
+    `<p class="shopHinweis">${esc(t(S.zahlung ? "sh_iri_erkl" : "sh_zahlung_bald"))}</p>`;
+
+  /* 2. Design des Monats */
+  const D = S.design, pal = D && SKINS.find(s => s.id === D.id);
+  if (D && pal){
+    let monat = "";
+    try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
+    des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}<em>${esc(monat)}</em></h2>` +
+      `<div class="shopBild" id="shopDesignBild"></div>` +
+      `<p class="shopName">${esc(pal.label)}<small>${esc(t("sh_design_erkl"))}</small></p>` +
+      `<button type="button" class="shopKauf" id="shopDesignKn"></button>`;
+    const bild = $("shopDesignBild");
+    const url = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
+    if (url) bild.innerHTML = `<img alt="" src="${url}">`;
+    else { const c = document.createElement("canvas"); c.width = c.height = 300; bild.appendChild(c);
+           try { const g = c.getContext("2d"); body(g, 150, 150, 110, 3000, pal, 0, "", true); } catch(_){} }
+    const kn = $("shopDesignKn");
+    const hat = konto && (S.designBesitz || (Konto.profil.skins || []).includes(pal.id));
+    if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
+    else if (hat){ kn.textContent = t("sh_besitz"); kn.disabled = true; }
+    else {
+      kn.innerHTML = `${esc(t("sh_kaufen", D.preis.toLocaleString(lang)))} <small>${esc(t("sh_euro", inEuro(D.preis)))}</small>`;
+      if (meins < D.preis){ kn.disabled = true; kn.title = t("sh_fehlt", (D.preis - meins).toLocaleString(lang)); }
+      kn.onclick = async () => {
+        kn.disabled = true;
+        const a = await Konto.ruf("/konto/shop/design", { id: pal.id });
+        if (a && a.ok){
+          Konto.uebernehmen(a); shopStand = null;
+          try { skin = pal; paintPurse(); buildGrid(); heldMalen(); } catch(_){}
+          lohnZeigen(pal.label, t("sh_gekauft"), "");
+          await shopLaden(); buildShop();
+        } else { kn.disabled = false; toast(t(a && a.fehler === "zu_wenig_iridium" ? "sh_zu_wenig" : "net_fail")); }
+      };
+    }
+  } else {
+    des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}</h2><p class="shopHinweis">${esc(t("sh_design_bald"))}</p>`;
+  }
+
+  /* 3. Raubmond */
+  const R = S.raub || { stufen: 3, pct: [0, .3, .9, 1.5], preis: [0, 500, 800, 1200] };
+  const st = konto ? (S.raubStufe || 0) : 0;
+  rb.innerHTML = `<h2>${esc(t("mo_raub"))}<em>${esc(t("sh_nur_aufstieg"))}</em></h2>` +
+    `<div class="shopBild" id="shopRaubBild" style="width:min(80px, 17vh)"></div>` +
+    `<div class="shopStufen">${[1, 2, 3].map(i => `<span class="${i <= st ? "hat" : ""}">${["I", "II", "III"][i - 1]} · ${esc(zahlDe(R.pct[i]))} %</span>`).join("")}</div>` +
+    `<p class="shopHinweis">${esc(t("sh_raub_erkl"))}</p>` +
+    `<button type="button" class="shopKauf" id="shopRaubKn"></button>`;
+  const rbBild = $("shopRaubBild");
+  if (rbBild){ const c = mondBild("raub", st); c.style.width = "100%"; c.style.height = "auto"; rbBild.appendChild(c); }
+  const rk = $("shopRaubKn");
+  if (!konto){ rk.textContent = t("sh_konto"); rk.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
+  else if (st >= R.stufen){ rk.textContent = t("mo_max"); rk.disabled = true; }
+  else {
+    const preis = R.preis[st + 1];
+    rk.innerHTML = `${esc(t(st ? "sh_stufe_kaufen" : "sh_kaufen", st ? ["I", "II", "III"][st] : preis.toLocaleString(lang), preis.toLocaleString(lang)))} <small>${esc(t("sh_euro", inEuro(preis)))}</small>`;
+    if (meins < preis){ rk.disabled = true; rk.title = t("sh_fehlt", (preis - meins).toLocaleString(lang)); }
+    rk.onclick = async () => {
+      rk.disabled = true;
+      const a = await Konto.ruf("/konto/shop/raub", {});
+      if (a && a.ok){
+        if (a.profil) Konto.uebernehmen(a);
+        if (a.monde){ Profile.monde = a.monde; mondeStand = null; }
+        paintPurse();
+        lohnZeigen(t("mo_raub"), t("mo_stufe", ["I", "II", "III"][a.stufe - 1]), "");
+        await shopLaden(); buildShop();
+      } else { rk.disabled = false; toast(t(a && a.fehler === "zu_wenig_iridium" ? "sh_zu_wenig" : "net_fail")); }
+    };
+  }
+}
+/* Einkaufswagen oben und ein Tipp auf den Iridium-Stand öffnen den Shop. */
+function shopOeffnen(){
+  const sv = $("startVeil");
+  if (sv && sv.hidden) show("startVeil");
+  shopStand = null;
+  reiter("shop");
+}
+try {
+  const sb = document.getElementById("shopBtn"); if (sb) sb.addEventListener("click", shopOeffnen);
+  const iz = document.getElementById("iriZeile");
+  if (iz){ iz.style.cursor = "pointer"; iz.setAttribute("role", "button"); iz.addEventListener("click", shopOeffnen); }
+} catch(_){}
 
 function reiter(name){
   if (!REITER[name]) name = "start";
@@ -6269,6 +6401,7 @@ function reiter(name){
   if (name === "stat"){ buildRecords(); paintRank(); }
   if (name === "monde") buildMonde();
   if (name === "skill") buildSkill();
+  if (name === "shop") buildShop();
   if (name === "start") heldMalen();
 }
 
@@ -6283,8 +6416,15 @@ const MONDE = {
   eisen: { name:"mo_eisen", wirkung:"mo_eisen_w",  quelle:"mo_q_eisen", farbe:"#aab2bb", kern:"#5c656f", schein:"#d7dde3" },
   glut:  { name:"mo_glut",  wirkung:"mo_glut_w",   quelle:"mo_q_glut",  farbe:"#ff9a3c", kern:"#8a2a08", schein:"#ffd08a" },
   staub: { name:"mo_staubm",wirkung:"mo_staubm_w", quelle:"mo_q_staub", farbe:"#d9c9a6", kern:"#8a7a58", schein:"#f1e6c8" },
-  sturm: { name:"mo_sturm", wirkung:"mo_sturm_w",  quelle:"mo_q_sturm", farbe:"#eef2ff", kern:"#6c7bd6", schein:"#ffffff" }
+  sturm: { name:"mo_sturm", wirkung:"mo_sturm_w",  quelle:"mo_q_sturm", farbe:"#eef2ff", kern:"#6c7bd6", schein:"#ffffff" },
+  /* Der Raubmond (v127): nur aus dem Shop, nicht in `MOND_ARTEN` (kein
+     Fund, keine Fusion). Tiefes Karmin mit rotem Hof. */
+  raub:  { name:"mo_raub",  wirkung:"mo_raub_w",   quelle:"mo_q_raub",  farbe:"#c8283e", kern:"#3d0510", schein:"#ff9aa6" }
 };
+/* Raubmond (v127): Anteil je Stufe zur Anzeige — die Wirkung rechnet der
+   Server (`RAUB_PCT` in sim.js); Umlauf und Neigung wie dort. */
+const RAUB_ANZEIGE = [0, 0.3, 0.9, 1.5];
+const RAUB_NEIG = 0.5, RAUB_OMEGA = 6.283 / 4.5;
 const MOND_ARTEN = ["eis", "eisen", "glut", "staub", "sturm"];
 const MOND_PCT_ANZEIGE = [0, 3, 5, 8];
 /* Feste Umlaufbahn je Art (Phase, Neigung, Umlaufzeit) — nie Math.random,
@@ -6294,7 +6434,8 @@ const MOND_BAHN = {
   eisen: { phase: 2.1, neig: 0.30, umlauf: 7.0 },
   glut:  { phase: 4.2, neig: 0.55, umlauf: 11.0 },
   staub: { phase: 1.3, neig: 0.36, umlauf: 8.0 },
-  sturm: { phase: 3.4, neig: 0.48, umlauf: 6.0 }
+  sturm: { phase: 3.4, neig: 0.48, umlauf: 6.0 },
+  raub:  { phase: 5.1, neig: 0.5,  umlauf: 4.5 }
 };
 /* Ein Mond: kleine Kugel, Lichtseite links oben wie LICHT. `r` ist der
    Radius des Mondes selbst. */
@@ -6308,6 +6449,12 @@ function mondKugel(g, x, y, r, art, alpha = 1){
   g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = Math.max(0.6, r*0.08); g.stroke();
   if (art === "glut"){ g.beginPath(); g.arc(x, y, r*1.35, 0, 7); g.fillStyle = "rgba(255,140,40,.18)"; g.fill(); }
   if (art === "sturm"){ g.beginPath(); g.arc(x, y, r*1.3, 0, 7); g.strokeStyle = "rgba(200,215,255,.45)"; g.lineWidth = r*0.18; g.stroke(); }
+  /* Raubmond: roter Hof und ein dunkler Kern — man soll ihn als Gefahr
+     erkennen, bevor er trifft. */
+  if (art === "raub"){
+    g.beginPath(); g.arc(x, y, r*1.45, 0, 7); g.fillStyle = "rgba(220,40,62,.22)"; g.fill();
+    g.beginPath(); g.arc(x + r*0.12, y + r*0.12, r*0.38, 0, 7); g.fillStyle = "rgba(40,2,8,.55)"; g.fill();
+  }
   g.restore();
 }
 /* Monde um einen Körper: Bahn außerhalb von r (Regel 1 der Designs — nichts
@@ -6326,6 +6473,31 @@ function mondeMalen(g, x, y, r, arten, zeit, hinten = false){
     if (hinten ? sw >= 0 : sw < 0) return;
     mondKugel(g, x + Math.cos(w) * bahn, y + sw * bahn * B.neig, mr * (0.85 + 0.15 * sw), art, hinten ? 0.85 : 1);
   });
+}
+/* Raubmonde im Bild (v127): Wirt je Eintrag suchen. */
+function raubWirteBauen(){
+  const liste = Game.online && Net.raubMonde;
+  if (!liste || !liste.length) return null;
+  const karte = new Map();
+  for (const e of liste){
+    const stuecke = e.id === Net.you ? Game.cells : Game.rivals.filter(r => r.gid === e.id);
+    let wirt = null;
+    for (const c of stuecke) if (!wirt || c.m > wirt.m) wirt = c;
+    if (wirt) karte.set(wirt, e);
+  }
+  return karte;
+}
+/* Dieselbe Bahn wie im Server (`raubLage` in sim.js): Radius 1,32·r plus
+   Mondradius, Neigung 0,5 — ohne die Tiefenskalierung der Schmuckmonde,
+   damit die gezeichnete Größe die treffende ist. */
+function raubMondMalen(g, o, e, hinten){
+  /* Immer vorn (v127): Die Schmuckmonde tauchen hinter dem Körper ab — der
+     Raubmond nicht, denn er trifft auch dort. Eine Gefahr, die man nicht
+     sieht, wäre unfair. */
+  if (hinten) return;
+  const sw = Math.sin(e.w);
+  const r = radiusOf(o.m), mr = Math.max(3, r * 0.16), bahn = r * 1.32 + mr;
+  mondKugel(g, o.x + Math.cos(e.w) * bahn, o.y + sw * bahn * RAUB_NEIG, mr, "raub", 1);
 }
 /* Die eigenen Monde im Spiel: nur online in der Liga, nur mit Konto. */
 function eigeneMonde(){
@@ -6500,7 +6672,7 @@ function buildMonde(){
     box.innerHTML = `<h3 class="dGruppe" style="margin:4px 0 10px">${esc(t("mo_besitz"))}<em>${MOND_ARTEN.filter(a => besitz[a]).length} / ${MOND_ARTEN.length}</em></h3><div class="mondVorrat" id="mondListe"></div>`;
     const liste = $("mondListe");
     const eigene = MOND_ARTEN.filter(a => besitz[a]);
-    if (!eigene.length){ liste.innerHTML = `<p class="hintline">${esc(t("mo_leer"))}</p>`; return; }
+    if (!eigene.length && !besitz.raub){ liste.innerHTML = `<p class="hintline">${esc(t("mo_leer"))}</p>`; return; }
     for (const art of eigene){
       const st = besitz[art], an = aktiv.includes(art), z = vorrat[art] || [0, 0, 0];
       const k = document.createElement("div"); k.className = "mondKarte" + (an ? " an" : "");
@@ -6541,6 +6713,28 @@ function buildMonde(){
           else { b2.disabled = false; toast(t("net_fail")); }
         };
       }
+      kn.appendChild(b2);
+      k.appendChild(kn);
+      liste.appendChild(k);
+    }
+    /* Der Raubmond (v127): eigene Karte — anlegen wie jeden Mond, höher
+       nur im Shop (kein Mondstaub, keine Fusion). */
+    if (besitz.raub){
+      const st = besitz.raub, an = aktiv.includes("raub");
+      const k = document.createElement("div"); k.className = "mondKarte" + (an ? " an" : "");
+      k.appendChild(mondBild("raub", st));
+      const tx = document.createElement("div");
+      tx.innerHTML = `<b>${esc(t("mo_raub"))} · ${esc(t("mo_stufe", roem(st)))}</b><small>${esc(t("mo_raub_w", zahlDe(RAUB_ANZEIGE[st])))}</small>`;
+      k.appendChild(tx);
+      const kn = document.createElement("div"); kn.className = "kn";
+      const b1 = document.createElement("button"); b1.type = "button";
+      b1.textContent = t(an ? "mo_ablegen" : "mo_anlegen");
+      b1.onclick = () => { b1.disabled = true; mondAnlegenWechseln("raub"); };
+      kn.appendChild(b1);
+      const b2 = document.createElement("button"); b2.type = "button";
+      b2.textContent = t(st >= 3 ? "mo_max" : "mo_raub_shop");
+      b2.disabled = st >= 3;
+      b2.onclick = () => reiter("shop");
       kn.appendChild(b2);
       k.appendChild(kn);
       liste.appendChild(k);
@@ -11218,6 +11412,17 @@ const Net = {
       /* Kapsel geöffnet (v113): ein blauer Ring an ihrer Stelle, für alle,
          die es sehen. Die Kapsel selbst fehlt im nächsten Zustand. */
       if (e.t === "kap" && Number.isFinite(+e.x)) ring(+e.x, +e.y, 150, "#9fd8ff");
+      /* Raubmond-Treffer (v127): roter Funke am Mond; wen es trifft, der
+         spürt es (Ruck, Ring am eigenen Körper), wer raubt, hört es. */
+      if (e.t === "raub" && Number.isFinite(+e.x)){
+        burst(+e.x, +e.y, 10, "#ff5a6e", 260);
+        if (+e.wen === this.you){
+          Game.shake = Math.min(1, (Game.shake || 0) + .25);
+          const c = Game.cells.length ? groesstes(Game.cells) : null;
+          if (c) ring(c.x, c.y, radiusOf(c.m) * 1.6, "#ff5a6e");
+        }
+        if (+e.von === this.you){ try { Sound.absorb(+e.m || 1); } catch(_){} }
+      }
       if (e.t === "left"){
         const id = +e.id, w = this.wer.get(id);
         if (w){
@@ -11310,6 +11515,7 @@ const Net = {
       at: jetzt(), gruppen,
       pul: Array.isArray(m.pul) ? m.pul : [],
       kap: Array.isArray(m.kap) ? m.kap : [],
+      rm: Array.isArray(m.rm) ? m.rm : [],
       wurf: Array.isArray(m.shed) ? m.shed : [],
       safe: +m.safe || 0
     });
@@ -11348,6 +11554,8 @@ const Net = {
     if (!a) a = this.schnapp[0];
     if (!a) return;
     const f = (b && b.at > a.at) ? clamp((ziel - a.at)/(b.at - a.at), 0, 1) : 0;
+    /* Raubmonde (v127): Winkel des Servers, bis zur Zeichenzeit weitergedreht. */
+    this.raubMonde = (a.rm || []).map(e => ({ id: +e[0], w: (+e[1] || 0) / 1000 + (ziel - a.at) * RAUB_OMEGA, stufe: +e[2] || 1 }));
 
     const rivalen = [];
     for (const [id, von] of a.gruppen){

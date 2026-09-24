@@ -2735,6 +2735,44 @@ const LANGS_TUT3 = {
       tu_m_profil_gast:"Über dein Profilbild kommst du zu deinem Spielerprofil. Mit einem Konto können es auch die anderen Spieler sehen."}
 };
 for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
+/* Shop und Raubmond (v127, Thomas 24.09.) — vorerst nur de/en, die übrigen
+   Sprachen fallen über `t()` auf Englisch zurück. `ir_nichtkauf` stimmt
+   nicht mehr („nicht käuflich"): Dort steht in allen Sprachen der neue
+   englische Satz, bis übersetzt ist — lieber Englisch als falsch. */
+const LANGS_SHOP = {
+  en:{sh_kopf:"Shop", sh_iri_kopf:"Iridium", sh_stand:"You have {0}",
+      sh_iri_erkl:"For the core, the Leech Moon and the design of the month.",
+      sh_zahlung_bald:"Payment is coming soon — until then Iridium is earned in play.",
+      sh_design_kopf:"Design of the month", sh_design_erkl:"Only in the shop — cannot be earned.",
+      sh_design_bald:"The first design of the month is coming soon.",
+      sh_konto:"Buy with an account", sh_besitz:"Owned", sh_kaufen:"Buy · {0} Iridium",
+      sh_stufe_kaufen:"Level {0} · {1} Iridium", sh_euro:"≈ {0}", sh_fehlt:"You need {0} more Iridium",
+      sh_gekauft:"Bought!", sh_zu_wenig:"Not enough Iridium", sh_nur_aufstieg:"Ascent only",
+      sh_raub_erkl:"Orbits your world and steals mass from anyone it touches — at most once per second per opponent.",
+      sh_offline:"The shop needs a connection.",
+      mo_raub:"Leech Moon", mo_raub_w:"Steals {0} % mass on touch (Ascent only)", mo_q_raub:"Only in the shop",
+      mo_raub_shop:"Upgrade in the shop",
+      ir_nichtkauf:"Earned in play — and soon in the shop too."},
+  de:{sh_kopf:"Shop", sh_iri_kopf:"Iridium", sh_stand:"Du hast {0}",
+      sh_iri_erkl:"Für den Kern, den Raubmond und das Design des Monats.",
+      sh_zahlung_bald:"Bezahlen geht in Kürze — bis dahin gibt es Iridium im Spiel.",
+      sh_design_kopf:"Design des Monats", sh_design_erkl:"Nur im Shop — nicht erspielbar.",
+      sh_design_bald:"Das erste Design des Monats kommt in Kürze.",
+      sh_konto:"Mit Konto kaufen", sh_besitz:"Im Besitz", sh_kaufen:"Kaufen · {0} Iridium",
+      sh_stufe_kaufen:"Stufe {0} · {1} Iridium", sh_euro:"≈ {0}", sh_fehlt:"Dir fehlen {0} Iridium",
+      sh_gekauft:"Gekauft!", sh_zu_wenig:"Nicht genug Iridium", sh_nur_aufstieg:"nur im Aufstieg",
+      sh_raub_erkl:"Kreist um deine Welt und raubt jedem, den er berührt, Masse — höchstens einmal je Sekunde und Gegner.",
+      sh_offline:"Der Shop braucht eine Verbindung.",
+      mo_raub:"Raubmond", mo_raub_w:"Raubt bei Berührung {0} % Masse (nur im Aufstieg)", mo_q_raub:"Nur im Shop",
+      mo_raub_shop:"Höher im Shop",
+      ir_nichtkauf:"Erspielbar — und bald auch im Shop."}
+};
+for (const c in LANGS_SHOP) Object.assign(LANGS[c], LANGS_SHOP[c]);
+for (const c of ["es", "pt", "fr", "tr", "ru"]) if (LANGS[c]) LANGS[c].ir_nichtkauf = LANGS_SHOP.en.ir_nichtkauf;
+/* Bis zur Übersetzung (nach Thomas' Freigabe) stehen die Shop-Texte in den
+   übrigen Sprachen auf Englisch — wie beim Tutorial (`TUT_NOCH_ZU_UEBERSETZEN`). */
+for (const c of ["es", "pt", "fr", "tr", "ru"])
+  for (const k in LANGS_SHOP.en) if (LANGS[c] && LANGS[c][k] === undefined) LANGS[c][k] = LANGS_SHOP.en[k];
 /* Tutorial v120/v122: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
    Thomas' Regel (24.09.2026): „zuerst nur Deutsch, alle Sprachen nach meiner
    Freigabe". Bis dahin steht in den übrigen Sprachen bewusst der englische
