@@ -2599,6 +2599,15 @@ const ICON_IRI = `<svg class="iriKristall" viewBox="0 0 24 24" aria-hidden="true
   `<polyline points="12,1.2 12,9.2 12,19.6" fill="none" stroke="#f4fbff" stroke-width=".55" opacity=".8"/>` +
   `<path d="M9 7.6 L10.2 7.1 L10.2 15.8 L9 15.4 Z" fill="#fff" opacity=".55"/>` +
   `<polygon points="12,1.2 16.8,6.6 16.8,17 12,22.8 7.2,17 7.2,6.6" fill="none" stroke="#dff3ff" stroke-width=".6" stroke-linejoin="round" opacity=".9"/></svg>`;
+/* Die Zeichen vor Ore und Iridium in der Reiterleiste (v138, nur auf flachen
+   Schirmen sichtbar — `.wIco` im Stilblatt). */
+(function waehrungsZeichen(){
+  try {
+    const o = document.getElementById("oreIco"), i = document.getElementById("iriIco");
+    if (o) o.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 11L3 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 10h18M9 4l3 6 3-6M12 10v11" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".7"/></svg>`;
+    if (i) i.innerHTML = ICON_IRI;
+  } catch(_){}
+})();
 /* Bildchen für Ore und XP in der Abrechnung (Schritt 103, Thomas' Wunsch).
    Kleine Pfade in Messing, wie die Rangabzeichen — keine Bilddateien. */
 const ICON_ORE = `<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10l4 6-9 11L3 10z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 10h18M9 4l3 6 3-6M12 10v11" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".7"/></svg>`;
@@ -6521,21 +6530,19 @@ function buildShop(){
     let monat = "";
     try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
     des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}<em>${esc(monat)}</em></h2>` +
-      `<div class="shopBild tippbar" id="shopDesignBild" role="button" tabindex="0" aria-label="${esc(t("sh_3d"))}" title="${esc(t("sh_3d"))}"><span class="shopBild3D">3D</span></div>` +
-      `<p class="shopName">${esc(pal.label)}<small><span id="shopDesignErkl"></span>${pal.bonus && pal.bonus.staub ? "<br>" + esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100))) : ""}</small></p>` +
+      /* v138 (Thomas): größer, schon im Shop in 3D und bewegt, ohne „3D"-Zeichen
+         und ohne den Satz „Im Shop oder aus Bruchstücken in Kapseln". */
+      `<div class="shopBild tippbar" id="shopDesignBild" role="button" tabindex="0" aria-label="${esc(t("sh_3d"))}" title="${esc(t("sh_3d"))}"></div>` +
+      `<p class="shopName">${esc(pal.label)}${pal.bonus && pal.bonus.staub ? `<small>${esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100)))}</small>` : ""}</p>` +
       `<button type="button" class="shopKauf" id="shopDesignKn"></button>`;
     const bild = $("shopDesignBild");
-    const url = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
-    if (url) bild.insertAdjacentHTML("afterbegin", `<img alt="" src="${url}">`);
-    else { const c = document.createElement("canvas"); c.width = c.height = 300; bild.prepend(c);
-           try { const g = c.getContext("2d"); body(g, 150, 150, 110, 3000, pal, 0, "", true); } catch(_){} }
+    bild.appendChild(shopBuehne());
+    shopDesignZeigen(pal);
     const gross = () => designDetailOeffnen(pal);
     bild.onclick = gross;
     bild.onkeydown = e => { if (e.key === "Enter" || e.key === " "){ e.preventDefault(); gross(); } };
     const kn = $("shopDesignKn");
     const hat = konto && (S.designBesitz || (Konto.profil.skins || []).includes(pal.id));
-    const erkl = $("shopDesignErkl");
-    if (erkl) erkl.textContent = hat ? "" : t("sh_design_erkl");
     if (vorschau){ kn.textContent = t("sh_ab", monatsBeginn(D.monat)); kn.disabled = true; }
     else if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
     else if (hat){ kn.textContent = t("sh_besitz"); kn.disabled = true; }
@@ -7901,6 +7908,48 @@ const Angebot3D = Object.assign(Object.create(Held3D), {
   }
 });
 document.addEventListener("visibilitychange", () => { if (!document.hidden) Angebot3D.weiter(); });
+/* Das Design des Monats im Shop (v138, Thomas 24.09.: „auch schon ohne es
+   anzuklicken dreidimensional und bewegt … hochauflösend") — dieselbe Bühne
+   wie im Hangar, eigene WebGL-Fläche. Die Fläche wird einmal angelegt und bei
+   jedem Aufbau des Shops wieder eingehängt (`shopBuehne`), damit der
+   Grafikzusammenhang bleibt. Sie läuft nur, solange der Reiter „Shop" offen ist. */
+const Shop3D = Object.assign(Object.create(Held3D), {
+  gl: null, canvas: null, ok: null, prog: {}, form: {},
+  texturen: new Map(), mondTex: {}, ringTex: null,
+  stand: null, laeuft: false, raf: 0, zuletzt: 0, zeit: 0,
+  kosten: 0, bilder: 0, stehen: false, fotos: {},
+  obenId: "shopOben", ohneBaender: true, dreh: 0,
+  sichtbar(){
+    const p = document.getElementById("paneShop"), s = document.getElementById("startVeil");
+    return !!p && !p.hidden && !!s && !s.hidden && !document.hidden && !!(shopBuehneEl && shopBuehneEl.isConnected);
+  }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden) Shop3D.weiter(); });
+let shopBuehneEl = null;
+function shopBuehne(){
+  if (!shopBuehneEl){
+    shopBuehneEl = document.createElement("div");
+    shopBuehneEl.className = "shopBuehne";
+    shopBuehneEl.innerHTML = `<canvas id="shopGL" width="720" height="720" hidden></canvas><canvas id="shopOben" width="720" height="720"></canvas>`;
+  }
+  return shopBuehneEl;
+}
+/* Aurum auf der Shop-Bühne: 3D, ohne WebGL gemalt (wie das Angebotsfenster). */
+function shopDesignZeigen(pal){
+  try {
+    const b = shopBuehne(), glc = b.querySelector("#shopGL"), c = b.querySelector("#shopOben");
+    const S2 = c.width, stufe = STAGES.length - 1, masse = STAGES[stufe].at;
+    const R = S2 * heldAnteil(stufe, pal, null);
+    if (glc && Shop3D.moeglich(glc)){ glc.hidden = false; Shop3D.zeigen({ pal, masse, stufe, monde: null, R, S: S2 }); }
+    else {
+      if (glc) glc.hidden = true;
+      const g = c.getContext("2d"); g.clearRect(0, 0, S2, S2);
+      const saveT = Game.t; Game.t = 1.2; MENUE_VOLL = true;
+      try { body(g, S2/2, S2/2, R, masse, pal, 0, "", true, pal.tier, pal.trait); } catch(_){}
+      MENUE_VOLL = false; Game.t = saveT;
+    }
+  } catch(_){}
+}
 const ANGEBOT_AUS = "talumi.angebot.aus", ANGEBOT_TAG = "talumi.angebot.tag";
 function merkLesen(k){ try { return localStorage.getItem(k); } catch(_){ return null; } }
 function merkSetzen(k, v){ try { localStorage.setItem(k, v); } catch(_){} }

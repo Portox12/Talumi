@@ -1217,11 +1217,20 @@
   .konsG{display:flex;gap:8px;align-items:center;min-width:0}
   .konsG.r{justify-content:flex-end}
   .konsMarke{display:flex;align-items:center;gap:10px;margin-right:12px;flex:0 0 auto}
-  .konsMarke i{width:26px;height:26px;border-radius:50%;display:block;
-       background:radial-gradient(circle at 32% 30%, var(--brass-hell), var(--brass) 46%, #8a5f22 100%);
-       box-shadow:0 0 16px rgba(233,176,99,.45)}
+  /* Die goldene Kugel (v138, Thomas: „soll viel hochauflösender wirken"):
+     ein Vektorbild statt eines einzelnen Verlaufs — Licht von oben links wie
+     im Spiel (`LICHT`), heller Glanzpunkt, warmer Gegenlichtsaum unten
+     rechts, feine helle Innenkante und eine dunkle Außenkante. Die Kante ist
+     damit scharf, der Schimmer liegt außen herum. */
+  .konsMarke i{width:26px;height:26px;border-radius:50%;display:block;flex:0 0 auto;
+       background:#d8a75f url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 52 52'><defs><radialGradient id='a' cx='.37' cy='.33' r='.72'><stop offset='0' stop-color='%23fff8e6'/><stop offset='.15' stop-color='%23fce3b5'/><stop offset='.45' stop-color='%23e4b46c'/><stop offset='.78' stop-color='%23a9742d'/><stop offset='1' stop-color='%23694314'/></radialGradient><radialGradient id='g' cx='.5' cy='.5' r='.5'><stop offset='0' stop-color='%23fff' stop-opacity='.95'/><stop offset='.45' stop-color='%23fff' stop-opacity='.4'/><stop offset='1' stop-color='%23fff' stop-opacity='0'/></radialGradient><filter id='w' x='-20%25' y='-20%25' width='140%25' height='140%25'><feGaussianBlur stdDeviation='1.7'/></filter><mask id='m'><circle cx='26' cy='26' r='26' fill='%23fff'/><circle cx='22.6' cy='22.2' r='25.4' fill='%23000' filter='url(%23w)'/></mask></defs><circle cx='26' cy='26' r='26' fill='url(%23a)'/><circle cx='26' cy='26' r='26' fill='%23ffd48f' fill-opacity='.62' mask='url(%23m)'/><ellipse cx='17.4' cy='15.6' rx='8.6' ry='5.4' transform='rotate(-38 17.4 15.6)' fill='url(%23g)'/><circle cx='26' cy='26' r='25.1' fill='none' stroke='%23fff2d2' stroke-opacity='.3' stroke-width='.8'/><circle cx='26' cy='26' r='25.7' fill='none' stroke='%234e3210' stroke-opacity='.6' stroke-width='.6'/></svg>") center / 100% 100% no-repeat;
+       box-shadow:0 0 7px rgba(255,214,140,.5), 0 0 18px rgba(233,176,99,.42)}
+  /* Der Schriftzug bekommt einen feinen Metallglanz (oben heller, unten
+     wärmer) — dieselbe Farbe wie vorher, aber mit Tiefe. */
   .konsMarke b{font-family:var(--disp);font-size:16px;font-weight:700;
-       letter-spacing:.3em;text-transform:uppercase;color:var(--paper)}
+       letter-spacing:.3em;text-transform:uppercase;color:var(--paper);
+       background:linear-gradient(180deg,#fffbf2 0%,#f7e8cc 48%,#e2c28c 100%);
+       -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
   .konsNav{margin:0;width:auto;height:40px;padding:0 15px;border-radius:10px;
        background:var(--glas);border:1px solid var(--line-hell);color:#cfd4de;
        font-size:13.5px;font-weight:600;backdrop-filter:blur(12px)}
@@ -1922,7 +1931,7 @@
   /* Fünf Reiter (Schritt 108): unter 760 px enger, sonst schieben sie die
      Werte rechts aus dem Bild. */
   @media (max-width:760px){
-    #konsReiter button{padding:0 9px;font-size:13px}
+    #konsReiter button{padding:0 6px;font-size:13px}
     #konsReiter .konsW{gap:9px}
   }
   @media (max-width:420px){
@@ -1930,6 +1939,11 @@
     #konsReiter button{padding:0 7px;flex:0 1 auto;min-width:0}
     #konsReiter button[aria-selected=true]::after{left:5px;right:5px}
   }
+  /* Die kleinen Zeichen vor Ore und Iridium — nur auf flachen Schirmen (v138). */
+  .konsW .wIco{display:none}
+  .konsW .wIco svg{width:15px;height:15px;display:block}
+  .konsW .ore .wIco{color:var(--brass-hell)}
+  .konsW .iriKristall{filter:drop-shadow(0 0 3px rgba(159,216,255,.6))}
   .konsW{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px;
        color:var(--paper-2);padding-right:4px;white-space:nowrap}
   .konsW b{color:var(--paper);font-weight:700;font-variant-numeric:tabular-nums}
@@ -2023,10 +2037,29 @@
   /* Ein Tipp aufs Bild zeigt das Design groß in 3D (v136). */
   .shopBild.tippbar{cursor:pointer;border-radius:50%}
   .shopBild.tippbar:focus-visible{outline:2px solid var(--brass-hell);outline-offset:4px}
-  .shopBild3D{position:absolute;right:2px;bottom:6px;z-index:1;padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700;
-       letter-spacing:.08em;color:var(--on-brass);background:linear-gradient(180deg,var(--brass-hell),var(--brass));
-       box-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none}
   .shopBild img,.shopBild canvas{width:100%;height:100%;display:block}
+  /* Das Design des Monats (v138): größer und in 3D. Die Bühne nimmt den
+     freien Platz der mittleren Spalte (bis 200 Punkte) — so wird sie so
+     groß wie möglich, und die Spalte scrollt nie (Thomas: „dann muss der
+     Teil des Shops auch nicht mehr scrollbar sein"). */
+  #shopDesignBild{flex:1 1 0;min-height:88px;max-height:200px;width:auto;height:auto;aspect-ratio:1}
+  .shopBuehne{position:relative;width:100%;height:100%}
+  .shopBuehne canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .shopBuehne canvas[hidden]{display:none}
+  .shopSp.m{overflow:hidden}
+  /* Handy quer (v138): untereinander blieb für Aurum nur ~105 Punkte (bei
+     340 Höhe, Safari mit Leisten, noch weniger). Nebeneinander — Bild links,
+     Name und Bonus rechts, Kaufknopf darunter über die ganze Breite — wird
+     es 140–150 groß, und die Spalte scrollt trotzdem nicht. */
+  @media (max-height:640px) and (min-width:641px) and (orientation:landscape){
+    #shopDesign{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;
+         column-gap:12px;row-gap:6px;align-items:center}
+    #shopDesign > h2{grid-column:1 / -1}
+    #shopDesignBild{grid-column:1;grid-row:2;height:100%;max-height:150px;min-height:0;width:auto;aspect-ratio:1;align-self:center}
+    #shopDesign .shopName{grid-column:2;grid-row:2;text-align:left}
+    #shopDesign .shopKauf{grid-column:1 / -1;grid-row:3}
+    #shopDesign > .shopHinweis{grid-column:1 / -1}
+  }
   .shopName{margin:0;text-align:center;font-family:var(--serif);font-size:21px;line-height:1.15;color:var(--brass-hell)}
   .shopName small{display:block;margin-top:3px;font-family:var(--sans);font-size:12px;color:var(--paper-2)}
   .shopKauf{margin:0;width:100%;min-height:44px;font-weight:700;border:0;
@@ -2038,7 +2071,9 @@
   .shopStufen span.hat{border-color:var(--brass);color:var(--brass-hell)}
   @media (orientation:portrait), (max-width:640px){
     .konsPane.shopPane{grid-template-columns:1fr;overflow:auto}
-    .shopSp{overflow:visible}
+    .shopSp,.shopSp.m{overflow:visible}
+    /* Untereinander hat die Spalte keine feste Höhe — die Bühne bekommt ihre eigene. */
+    #shopDesignBild{flex:0 0 auto;height:min(180px, 42vw)}
     .shopSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
   }
 
@@ -2496,6 +2531,12 @@
     .konsKopf{top:12px;left:max(14px, calc(env(safe-area-inset-left) - 8px));right:max(14px, calc(env(safe-area-inset-right) - 8px));height:46px;
          display:flex;align-items:center;gap:8px;
          overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+    /* Ein schiebbarer Streifen schneidet alles ab, was über seinen Rand
+       ragt — auch den Schimmer der goldenen Kugel, der links und oben mit
+       einer harten Kante endete (Thomas, v138). Der Streifen bekommt deshalb
+       einen Innenrand und rückt um genau diesen Rand nach außen: Die Knöpfe
+       stehen am selben Fleck, der Schimmer hat Platz. */
+    .konsKopf{box-sizing:content-box;padding:8px 0 8px 14px;margin:-8px 0 0 -14px}
     .konsKopf::-webkit-scrollbar{display:none}
     .konsG{flex:0 0 auto}
     .konsG.r{justify-content:flex-start}
@@ -2551,7 +2592,13 @@
        mittig abschneiden. */
     .konsSp.m .strip{justify-content:flex-start;overflow-x:auto;padding-bottom:5px;width:100%}
     .konsReiter{height:48px}
-    .konsReiter button{height:48px;padding:0 13px;font-size:13px}
+    /* v138: 8 statt 13 Punkte je Seite — mit großen Zahlen und den Rändern
+       eines iPhones mit Insel lief „Ehre" sonst über den Rand (testhangar.js).
+       Reicht es auf einem sehr schmalen Gerät trotzdem nicht, schiebt sich
+       die Leiste seitlich, statt etwas abzuschneiden. */
+    .konsReiter button{height:48px;padding:0 8px;font-size:13px}
+    #konsReiter{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+    #konsReiter::-webkit-scrollbar{display:none}
     .konsW{gap:10px;font-size:12px}
     /* Auf flachen Schirmen ohne Rahmen: Die Plakette kostete 18 Punkte
        Breite, und genau die fehlten bei 667 px auf Deutsch, Französisch und
@@ -2560,6 +2607,12 @@
     .konsW .chip b{font-size:13px}
     .konsW .ore b{font-size:13px}
     .konsW .iri b{font-size:13px}
+    /* Zeichen statt Wörter (v138): Ore-Stein und Iridium-Kristall vor der
+       Zahl — so passt die Leiste auch mit fünfstelligen Zahlen und den
+       Seitenrändern eines iPhones mit Insel (Thomas: „Ehre ist beim E
+       abgeschnitten"). */
+    .konsW .wWort{display:none}
+    .konsW .wIco{display:inline-flex;align-items:center;margin-right:3px}
     /* „Designs" steht hier als Reiter direkt darunter — der Knopf in der
        Kopfzeile wäre derselbe Weg zweimal und macht den Streifen zu breit. */
     #hautBtn{display:none}
@@ -2581,7 +2634,8 @@
        die linke Gruppe ihre volle Inhaltsbreite und quetschte die rechte —
        „Einstellungen" endete mitten im Wort, während links Platz war. */
     .konsKopf{display:flex;align-items:center;gap:8px;overflow-x:auto;
-         overflow-y:hidden;scrollbar-width:none}
+         overflow-y:hidden;scrollbar-width:none;
+         box-sizing:content-box;padding:8px 0 8px 14px;margin:-8px 0 0 -14px}
     .konsKopf::-webkit-scrollbar{display:none}
     .konsG{flex:0 0 auto;overflow:visible}
     .konsG.r{justify-content:flex-start}
@@ -3051,6 +3105,13 @@
     .konsKopf.schiebbar::after{content:"";position:sticky;right:0;flex:0 0 34px;
          margin-left:-34px;height:100%;pointer-events:none;
          background:linear-gradient(90deg,transparent,var(--ink) 85%)}
+    /* v138: Auf dem iPhone 14 (Rand 47 Punkte je Seite) lag der Sprachknopf
+       halb unter diesem Verlauf — Thomas sah ihn als „Schatten eines
+       Knopfes" links vom Tagesbonus. Etwas engere Abstände, dann passt auf
+       Deutsch alles hinein, auch auf dem iPhone 16 mit Insel. */
+    .konsKopf, .konsKopf .konsG{gap:5px}
+    .konsKopf .konsNav:not(.zahnrad):not(.pwaKnopf){padding:0 9px}
+    .konsMarke{margin-right:2px}
   }
   /* Schmal: Die Spielerzahl passt neben Reitern und Knopf nicht mehr. Sie
      steht auf dem Anmeldebildschirm ohnehin schon. */
@@ -3942,10 +4003,13 @@
            zwischen Name und Körper, das Rangabzeichen mit Rangnamen unter
            dem Körper (Thomas, 18.09.2026). -->
       <div class="konsW">
-        <span class="ore"><b id="oreNum">0</b> Ore</span>
+        <!-- Seit v138 auf dem Handy Zeichen statt Wörter (`.wIco`/`.wWort`) —
+             mit langen Zahlen schob „Ore … Iridium … Ehre" das Wort „Ehre" über
+             den Rand (Thomas 24.09.). -->
+        <span class="ore" title="Ore"><i class="wIco" id="oreIco" aria-hidden="true"></i><b id="oreNum">0</b> <span class="wWort">Ore</span></span>
         <!-- Iridium (v113): die zweite Währung, nur erspielbar. Nur mit
              Konto — Gäste haben keins, und was es nicht gibt, steht nicht da. -->
-        <span class="iri" id="iriZeile" hidden><b id="iriNum">0</b> <span data-i18n="iridium">Iridium</span></span>
+        <span class="iri" id="iriZeile" title="Iridium" hidden><i class="wIco" id="iriIco" aria-hidden="true"></i><b id="iriNum">0</b> <span class="wWort" data-i18n="iridium">Iridium</span></span>
         <span class="chip" id="ehreZeile" hidden><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
       </div>
     </div>
