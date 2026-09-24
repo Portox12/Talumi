@@ -2341,7 +2341,7 @@ function sogOnline(e){
   let best = null, bd = Infinity;
   for (const c of Game.cells){
     const dd = Math.hypot(c.x - e[0], c.y - e[1]);
-    if (dd < radiusOf(c.m) * 1.25 + 24 && dd < bd){ bd = dd; best = c; }
+    if (dd < radiusOf(c.m) + 90 && dd < bd){ bd = dd; best = c; }   // +90: der eigene Körper eilt dem Server auf dem Schirm etwas voraus
   }
   if (best) sogStarten({ x:e[0], y:e[1], r:3.4, c:staubTon(e[2] | 0) }, best);
 }
@@ -12313,6 +12313,11 @@ const Net = {
     if (Array.isArray(m.dn) && m.dn.length){
       for (const e of m.dn){
         if (!e || e.length < 4) continue;
+        /* Ein gefressenes Korn setzt der Server oft unter derselben Nummer
+           woanders neu — dann ist der alte Platz der, an dem gefressen wurde
+           (v140, Einsaugen). */
+        const alt = this.deb.get(+e[0]);
+        if (alt && (alt[0] !== +e[1] || alt[1] !== +e[2])) sogOnline(alt);
         this.deb.set(+e[0], [+e[1], +e[2], +e[3]]);
       }
       this.debNeu = true;
