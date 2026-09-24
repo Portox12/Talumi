@@ -1775,6 +1775,36 @@
   #tutLohnWeiter{background:linear-gradient(180deg, var(--brass-hell), var(--brass));color:#1c1207;border:0;font-weight:700}
   #tutLohnVeil.an .tutLohnKarte{animation:tutKarteAuf .45s ease-out}
   @keyframes tutKarteAuf{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+  /* Die Rangfeier (v123): Die Welt bleibt hinter der Karte sichtbar, das
+     Feuerwerk liegt auf eigener Fläche dazwischen. */
+  #tutRangVeil{display:grid;place-items:center;
+       padding:calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+               calc(10px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+       background:radial-gradient(ellipse at 50% 50%, rgba(14,10,7,.25), rgba(14,10,7,.74) 78%)}
+  #tutRangVeil{backdrop-filter:none;-webkit-backdrop-filter:none}   /* kein Weichzeichner: dahinter bewegt sich die Welt in jedem Bild */
+  #tutRangVeil[hidden]{display:none}
+  #tutFeuer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  #tutFeuer[hidden]{display:none}
+  .tutRangKarte{position:relative;width:min(480px,100%);max-height:100%;overflow:auto;text-align:center;
+       display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 22px 16px;border-radius:22px;
+       background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));border:1px solid rgba(233,176,99,.6);
+       box-shadow:0 30px 90px rgba(0,0,0,.65), 0 0 70px rgba(233,176,99,.2);opacity:0}
+  #tutRangVeil.an .tutRangKarte{animation:tutRangAuf .55s cubic-bezier(.2,1.3,.4,1) forwards}
+  @keyframes tutRangAuf{from{opacity:0;transform:scale(.86)}to{opacity:1;transform:none}}
+  .tutRangAbz{--abz:clamp(76px,24vh,160px);position:relative;display:grid;place-items:center;width:var(--abz);height:var(--abz);flex:0 0 auto}
+  .tutRangAbz .tutLohnStrahlen{inset:-22%}
+  #tutRangBild{position:relative;display:block;height:calc(var(--abz) * .62);width:auto;max-width:100%;filter:drop-shadow(0 0 14px rgba(248,220,171,.55))}
+  #tutRangVeil.an #tutRangBild{animation:tutStempel .6s .2s cubic-bezier(.3,1.5,.5,1) both}
+  @keyframes tutStempel{0%{opacity:0;transform:scale(2.4)}60%{opacity:1}100%{opacity:1;transform:none}}
+  .tutRangKarte h1{margin:0;font-family:var(--serif);font-size:clamp(28px,7.5vh,40px);line-height:1.1;color:var(--brass-hell);
+       letter-spacing:.04em;text-shadow:0 0 24px rgba(233,176,99,.45)}
+  .tutRangSatz{margin:0;max-width:32rem;font-size:14.5px;line-height:1.42;color:var(--paper)}
+  #tutRangVeil .hintline{margin:0;max-width:30rem}
+  #tutRangVeil .tutLohnKn{margin-top:4px}
+  #tutRangVeil.an .tutRangKarte h1,#tutRangVeil.an .tutRangSatz,#tutRangVeil.an .hintline,#tutRangVeil.an .tutLohnKn{
+       animation:tutZeile .45s ease-out both;animation-delay:.55s}
+  #tutRangWeiter{background:linear-gradient(180deg, var(--brass-hell), var(--brass));color:#1c1207;border:0;font-weight:700}
+  #tutRangVeil.ruhig .tutRangKarte,#tutRangVeil.ruhig .tutRangKarte *{animation:none!important;opacity:1;transform:none}
   @media (prefers-reduced-motion:reduce){
     .tutHand,.tutMaus,kbd.tutTaste,#pads button.tutPuls,#mass.tutBlink,#boardPlate.tutGlow,.tutLohnStrahlen,#tutSprung.an,.tutLohnZeile,#tutLohnVeil.an .tutLohnKarte{animation:none}
     .tutLohnZeile{opacity:1;transform:none}
@@ -4505,6 +4535,20 @@
       <button type="button" id="tutLohnWeiter" data-i18n="tu_l_weiter">On to the menu</button>
       <button type="button" class="quiet" id="tutLohnKontoKn" data-i18n="tu_l_konto_kn" hidden>Create account</button>
     </div>
+  </div>
+</div>
+
+<!-- Rangfeier am Ende des ersten Tutorials (v123): Feuerwerk aus der Welt,
+     dann das erste Rangabzeichen in der Mitte. -->
+<div class="veil" id="tutRangVeil" hidden>
+  <canvas id="tutFeuer" hidden aria-hidden="true"></canvas>
+  <div class="tutRangKarte" role="dialog" aria-modal="true" aria-labelledby="tutRangName" aria-describedby="tutRangSatz">
+    <p class="tutLohnAuge" id="tutRangAuge">Your first rank</p>
+    <div class="tutRangAbz"><i class="tutLohnStrahlen"></i><canvas id="tutRangBild" width="1" height="1"></canvas></div>
+    <h1 id="tutRangName">Cadet</h1>
+    <p class="tutRangSatz" id="tutRangSatz"></p>
+    <p class="hintline" id="tutRangGast" hidden></p>
+    <div class="tutLohnKn"><button type="button" id="tutRangWeiter">Next</button></div>
   </div>
 </div>
 

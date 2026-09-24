@@ -2164,7 +2164,7 @@ const LANGS_GL = {
       tut_pulsar:"A pulsar. Above 240 mass it tears you apart — small bodies hide beneath it.",
       tut_schuss_maus:"Throw mass into the pulsar five times (W) — it fires a new one that way. That is how you split a giant.",
       tut_schuss_tipp:"Throw mass into the pulsar five times — it fires a new one that way. That is how you split a giant.",
-      tut_m_bonus:"Come back tomorrow: the daily bonus grows for seven days, and day 7 brings a design.",
+      tut_m_bonus:"Come back every day: the daily bonus brings Ore, the game currency, and on day 7 a design.",
       kl_zeile:"Delete account", kl_zeile_h:"Right away and for good — no e-mail needed.", kl_knopf:"Delete…",
       kl_kopf:"Delete account", kl_go:"Delete my account", kl_leer:"Please fill in the field.",
       kl_erkl:"This deletes your account right away and for good: progress, Ore, designs, honour, rank, achievements, moons and your place in the leaderboards.",
@@ -2211,7 +2211,7 @@ const LANGS_GL = {
       tut_pulsar:"Ein Pulsar. Über 240 Masse zerreißt er dich — Kleine verstecken sich darunter.",
       tut_schuss_maus:"Wirf fünfmal Masse in den Pulsar (W) — er schießt einen neuen in diese Richtung. So zerlegst du Riesen.",
       tut_schuss_tipp:"Wirf fünfmal Masse in den Pulsar — er schießt einen neuen in diese Richtung. So zerlegst du Riesen.",
-      tut_m_bonus:"Komm morgen wieder: Der Tagesbonus wächst sieben Tage lang, und Tag 7 bringt ein Design.",
+      tut_m_bonus:"Komm jeden Tag wieder: Der Tagesbonus bringt Ore, die Spielwährung, und an Tag 7 ein Design.",
       kl_zeile:"Konto löschen", kl_zeile_h:"Sofort und endgültig — ohne E-Mail.", kl_knopf:"Löschen…",
       kl_kopf:"Konto löschen", kl_go:"Mein Konto löschen", kl_leer:"Bitte das Feld ausfüllen.",
       kl_erkl:"Das löscht dein Konto sofort und endgültig: Fortschritt, Ore, Designs, Ehre, Rang, Errungenschaften, Monde und deinen Platz in den Ranglisten.",
@@ -2593,10 +2593,10 @@ const LANGS_TUT2 = {
       tu_abwerfen_tipp:"Shed throws mass forward. Move into the glowing circle and tap Shed five times: the pulsar fires at Kepler.",
       tu_stuecke:"Hit! Kepler shattered. Swallow the pieces.",
       tu_titel:"You now hold the title ♛. Keep it as long as you can, and keep growing: both move you up the leaderboard.",
-      tu_welt:"Leap ahead: you are now a world of 100,000 mass.",
+      tu_welt:"Leap ahead: you are now a world of 100,000 mass — and much slower for it. Split as often as you can so you can take in pulsars.",
       tu_teilen_maus:"Split as often as you can (Space) — up to 16 pieces.", tu_teilen_tipp:"Split as often as you can (Split) — up to 16 pieces.",
-      tu_pulsare:"Split this wide, you can swallow pulsars — they give lots of mass. Eat three.",
-      tu_mond:"In the Ascent, accounts find moons this way: they orbit you and make you a little stronger.",
+      tu_pulsare:"Split this wide, you can swallow pulsars — they give lots of mass. Swallow three.",
+      tu_mond:"In the “Ascent” mode, with an account, swallowing pulsars can turn up so-called *moons*. They orbit your world and make you stronger.",
       tu_fertig:"Done!", tu_verstanden:"Got it", tu_zur_lohn:"To your reward", tu_sprung:"Leap", tu_taste_leer:"Space", tu_taste_w:"W",
       tu_l_auge:"Tutorial complete", tu_l_kopf:"Your reward", tu_l_design:"Your first design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Moondust",
       tu_l_konto:"With an account you also get {0} Iridium and {1} moondust — free, and your progress stays on every device.",
@@ -2611,10 +2611,10 @@ const LANGS_TUT2 = {
       tu_abwerfen_tipp:"Abwerfen wirft Masse nach vorn. Fahr in den leuchtenden Kreis und tipp fünfmal auf Abwerfen: Der Pulsar feuert auf Kepler.",
       tu_stuecke:"Treffer! Kepler ist zersplittert. Verschling die Stücke.",
       tu_titel:"Du trägst jetzt den Titel ♛. Halte ihn so lange wie möglich, und wachse weiter: Beides bringt dich in der Rangliste nach oben.",
-      tu_welt:"Sprung nach vorn: Du bist jetzt eine Welt mit 100.000 Masse.",
+      tu_welt:"Sprung nach vorn: Du bist jetzt eine Welt mit 100.000 Masse — und dadurch deutlich langsamer. Teile dich so oft wie möglich, um Pulsare aufnehmen zu können.",
       tu_teilen_maus:"Teile dich, so oft es geht (Leertaste) — bis zu 16 Stücke.", tu_teilen_tipp:"Teile dich, so oft es geht (Teilen) — bis zu 16 Stücke.",
-      tu_pulsare:"So weit geteilt kannst du Pulsare verschlingen — sie geben viel Masse. Friss drei.",
-      tu_mond:"Im Aufstieg finden Konten dabei Monde: Sie kreisen um dich und machen dich ein wenig stärker.",
+      tu_pulsare:"So weit geteilt kannst du Pulsare verschlingen — sie geben viel Masse. Verschlinge drei.",
+      tu_mond:"Im Spielmodus „Aufstieg“ kannst du mit einem Konto beim Verschlingen von Pulsaren sogenannte *Monde* finden. Sie kreisen um deine Welt und machen dich stärker.",
       tu_fertig:"Geschafft!", tu_verstanden:"Verstanden", tu_zur_lohn:"Zur Belohnung", tu_sprung:"Sprung", tu_taste_leer:"Leertaste", tu_taste_w:"W",
       tu_l_auge:"Tutorial geschafft", tu_l_kopf:"Deine Belohnung", tu_l_design:"Dein erstes Design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Mondstaub",
       tu_l_konto:"Mit einem Konto bekommst du dazu {0} Iridium und {1} Mondstaub — kostenlos, und dein Fortschritt bleibt auf jedem Gerät.",
@@ -2713,14 +2713,31 @@ const LANGS_TUT2 = {
       tu_hilfe_tutorial:"Пройти обучение ещё раз", tu_viel_spass:"Удачи!"}
 };
 for (const c in LANGS_TUT2) Object.assign(LANGS[c], LANGS_TUT2[c]);
+/* Tutorial v123 (Thomas, 24.09.): Warnpfeil-Schritt, Rangfeier am Ende,
+   zweiter Durchgang ohne Belohnung, Schalter „Warnpfeile". `*Wort*` wird im
+   Kasten kursiv gesetzt (`Tutorial.textSetzen`). */
+const LANGS_TUT3 = {
+  en:{tu_pfeil:"See the red warning arrow? It warns you of a big opponent off-screen who could split onto you and swallow you. Keep your distance!",
+      tu_r_auge:"Your first rank", tu_r_satz:"You are now {0} — the first of {1} ranks. Keep playing, climb the ranks and rise above your fellow players.",
+      tu_r_gast:"With an account, your wins count towards the next rank.",
+      tu_schon:"The reward is only given the first time.",
+      s_warn:"Warning arrows", s_warn_h:"Red arrows point to big opponents off-screen who could swallow you by splitting."},
+  de:{tu_pfeil:"Siehst du den roten Warnpfeil? Er warnt dich vor einem großen Gegner außerhalb des Bildes, der sich auf dich teilen und dich verschlingen könnte. Halte Abstand!",
+      tu_r_auge:"Dein erster Rang", tu_r_satz:"Du bist jetzt {0} — der erste von {1} Rängen. Spiel weiter, steig im Rang auf und erheb dich über deine Mitspieler.",
+      tu_r_gast:"Mit einem Konto zählen deine Siege für den nächsten Rang.",
+      tu_schon:"Die Belohnung gibt es nur beim ersten Mal.",
+      s_warn:"Warnpfeile", s_warn_h:"Rote Pfeile zeigen große Gegner außerhalb des Bildes, die dich durch Teilen verschlingen könnten."}
+};
+for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 /* Tutorial v120/v122: Diese Sätze gibt es vorerst nur auf Deutsch und Englisch —
    Thomas' Regel (24.09.2026): „zuerst nur Deutsch, alle Sprachen nach meiner
    Freigabe". Bis dahin steht in den übrigen Sprachen bewusst der englische
    Text. Nach der Freigabe übersetzen und diese Liste leeren; dann auch die
    geänderten Sätze tu_staub, tu_vesta_* und tu_abwerfen_* (v122: Fahr in
    den leuchtenden Kreis …) in es/pt/fr/tr/ru nachziehen (sie tragen dort
-   noch den Inhalt von v114). */
-const TUT_NOCH_ZU_UEBERSETZEN = ["tu_verstanden", "tu_zur_lohn"];
+   noch den Inhalt von v114). Seit v123 ebenso tu_welt, tu_pulsare, tu_mond
+   und tut_m_bonus (neue Fassung nur de/en) sowie alles aus LANGS_TUT3. */
+const TUT_NOCH_ZU_UEBERSETZEN = ["tu_verstanden", "tu_zur_lohn", ...Object.keys(LANGS_TUT3.en)];
 for (const c of ["es", "pt", "fr", "tr", "ru"])
   for (const k of TUT_NOCH_ZU_UEBERSETZEN) if (LANGS[c][k] === undefined) LANGS[c][k] = LANGS.en[k];
 

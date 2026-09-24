@@ -52,6 +52,10 @@ const Settings = {
   volume:0.7, shake:true, sens:62, lefty:false,
   teams:"classic", labels:"all", lowPower:false, hudEdge:8, hints:true,
   theme:"earth",
+  /* Rote Warnpfeile im Spiel (v123, Thomas 24.09.: „bei den Einstellungen
+     sollte man die roten Pfeile komplett ausstellen können"). Der Übungspfeil
+     im Tutorial bleibt davon unberührt. */
+  warnpfeile:true,
   /* Bildrate links unten einblenden (Schritt 115) — zum Nachsehen am Handy. */
   fps:false,
   /* Fassung der gespeicherten Einstellungen. 2 = seit Schritt 100: ein vom
@@ -2074,10 +2078,19 @@ function padPress(fn){
 $("padSplit").addEventListener("pointerdown", padPress(() => split()));
 $("padShed").addEventListener("pointerdown", padPress(() => shed()));
 
+/* Letzte echte Richtung (v123). Im Spiel gibt es immer eine: Der Stick
+   behält sie beim Loslassen, der Server ebenso (`eingabe` verwirft den
+   Nullvektor). Nur das Tutorial stellt den Körper mit der Richtung null
+   still (`Tutorial.stillstehen`) — Teilen legte das neue Stück dann genau
+   auf das alte, und das Auseinanderdrücken schob alle Stücke waagerecht
+   auseinander (Thomas, 24.09.: „teilt man sich nur in horizontale
+   Richtung"). Teilen und Abwerfen nehmen dann die letzte Richtung, wie online. */
+let letzteRichtung = [0, -1];
 function aim(){
-  if (isTouch) return [stick.dx, stick.dy];
-  const dx = ptr.x-VW/2, dy = ptr.y-VH/2, l = Math.hypot(dx,dy)||1;
-  return [dx/l, dy/l];
+  const dx = isTouch ? stick.dx : ptr.x-VW/2, dy = isTouch ? stick.dy : ptr.y-VH/2;
+  const l = Math.hypot(dx,dy);
+  if (l < .5) return letzteRichtung;
+  return letzteRichtung = [dx/l, dy/l];
 }
 
 /* Zielpunkt in Weltkoordinaten. Entscheidend nach dem Teilen: alle Stücke
@@ -2318,8 +2331,23 @@ const Grid = {
   }
 };
 
-const eats = (a,b) => a.m >= b.m*1.22 &&
-  Math.hypot(a.x-b.x, a.y-b.y) < radiusOf(a.m)-radiusOf(b.m)*.55;
+/* Frisst `a` das Stück `b`? Entlang des ganzen Wegs seit Bildbeginn
+   (`ox`/`oy`, gesetzt in `step`), nicht nur an der Lage jetzt — dieselbe
+   Rechnung wie `frisst` in sim.js (v123). Sonst springt ein schnelles
+   Teilstück bei wenigen Bildern je Sekunde über den Gegner hinweg. */
+function eats(a, b){
+  if (a.m < b.m*1.22) return false;
+  const g = radiusOf(a.m) - radiusOf(b.m)*.55;
+  const x1 = a.x - b.x, y1 = a.y - b.y;
+  if (x1*x1 + y1*y1 < g*g) return true;
+  const ex = x1 - ((a.ox ?? a.x) - (b.ox ?? b.x)), ey = y1 - ((a.oy ?? a.y) - (b.oy ?? b.y));
+  if (Math.abs(x1) - Math.abs(ex) >= g || Math.abs(y1) - Math.abs(ey) >= g) return false;
+  const ee = ex*ex + ey*ey;
+  if (ee < 1e-9) return false;
+  const t = clamp((x1*ex + y1*ey)/ee, 0, 1);
+  const qx = x1 - ex*t, qy = y1 - ey*t;
+  return qx*qx + qy*qy < g*g;
+}
 /* Flexibler Rand. Vorher klemmte der Mittelpunkt bei genau r, der Körper
    berührte die Wand also nur. Folge: Ein Kleiner in der Ecke war für einen
    Großen rechnerisch NIE erreichbar — bei 2000 gegen 60 lag der kleinste
@@ -2608,6 +2636,9 @@ function step(dt){
      weiterspielt, soll dort weitermachen, wo er aufgehört hat. */
   try { Tutorial.takt(dt); } catch(_){}
   if (Game.online){ Net.schritt(dt); return; }
+  /* Lage zu Bildbeginn — `eats` prüft den Weg dazwischen (v123). */
+  for (const c of Game.cells){ c.ox = c.x; c.oy = c.y; }
+  for (const r of Game.rivals){ r.ox = r.x; r.oy = r.y; }
   Game.t += dt;
   if (Game.safe > 0) Game.safe = Math.max(0, Game.safe - dt);
   if (Game.toast) Game.toast.life -= dt;
@@ -2652,7 +2683,9 @@ function step(dt){
     if (dx*(near.x-mx)/l + dy*(near.y-my)/l > .9995) Integrity.aimHits++;
   }
 
-  const [tx,ty] = aimTarget();
+  let [tx,ty] = aimTarget();
+  /* Tutorial (v123): Nach dem Teilen auf Vesta lenken die Stücke auf sie zu. */
+  try { const z = Tutorial.lenkHilfe(); if (z) [tx,ty] = z; } catch(_){}
   moveOwnCells(dt, tx, ty);
   /* Tutorial (v120): Steht der Spieler auf dem Schussplatz, bleibt er dort. */
   try { Tutorial.nachBewegung(); } catch(_){}
@@ -3340,6 +3373,7 @@ function gefahrenMalen(g){
   const cx = VW/2, cy = VH/2, ring = Math.min(VW, VH)*0.36;
   const puls = .75 + .25*Math.sin(Game.t*6);
   for (const r of randGefahren){
+    if (!Settings.warnpfeile && !r.demo) continue;      // abgeschaltet (v123), der Übungspfeil bleibt
     const sx = r.dx*cam.z, sy = r.dy*cam.z;
     const l = Math.hypot(sx, sy) || 1;
     const px = cx + sx/l*ring, py = cy + sy/l*ring;
@@ -5140,6 +5174,8 @@ function draw(){
       randGefahren.push({dx:o.x - cam.x, dy:o.y - cam.y, m:o.m, nah: clamp(1 - d/reich, 0, 1)});
     }
     for (const k of gefahrAbstand.keys()) if (!jetztDa.has(k)) gefahrAbstand.delete(k);
+    /* Tutorial (v123): der Übungspfeil im Schritt „Warnpfeil". */
+    try { const p = Tutorial.demoPfeil(); if (p) randGefahren.push(p); } catch(_){}
   }
 
   /* Namenszeilen einsammeln: je Spieler eine, am größten Stück. Online
@@ -5609,7 +5645,9 @@ const VEILS = ["willkVeil","accountVeil","startVeil","testVeil","endVeil","legal
                /* v110: Benachrichtigungen. */
                "pushVeil",
                /* v114: die Belohnung nach dem Tutorial. */
-               "tutLohnVeil"];
+               "tutLohnVeil",
+               /* v123: die Rangfeier am Ende des ersten Tutorials. */
+               "tutRangVeil"];
 
 
 const SET_UI = [
@@ -5630,6 +5668,8 @@ const SET_UI = [
    opts:[["o_gr","classic"],["o_bo","safe"]]},
   {key:"labels", label:"s_names", hint:"s_names_h",
    opts:[["o_all","all"],["o_largest","lead"],["o_off","off"]]},
+  {key:"warnpfeile", label:"s_warn", hint:"s_warn_h",
+   opts:[["o_on",true],["o_off",false]]},
   {key:"theme", label:"s_theme", hint:"s_theme_h",
    opts:[["o_earth","earth"],["o_sand","sand"]]},
   {key:"lang", label:"language", opts:"langs"},
@@ -12712,7 +12752,7 @@ const TUT_LOHN = { ore: 200, iridium: 20, staub: 3 };
 
 const Tutorial = {
   SCHLUESSEL: "talumi.tutorial",
-  stand: { spiel: 0, menue: 0, fertig: false, belohnt: false, kontoLohn: false },
+  stand: { spiel: 0, menue: 0, fertig: false, belohnt: false, kontoLohn: false, rang: false },
   laufend: false,          // Tutorialrunde läuft gerade
   phase: "a",              // a = Staubkorn, b = Welt
   nr: 0,                   // Schritt in der Phase
@@ -12735,6 +12775,9 @@ const Tutorial = {
      fest; `platzErledigt`: die Taste ist gedrückt, der Schuss ist raus. */
   wartet: false, wartetAb: 0, halt: null,
   platz: null, gesperrt: false, platzErledigt: false,
+  /* v123: Am Ende wachsen die Stücke wieder zu einer Welt zusammen
+     (`wachsen`; `gewachsen`, sobald es eine ist). */
+  wachsen: false, gewachsen: false,
 
   /* --- Stand merken ------------------------------------------------- */
   laden(){
@@ -12748,6 +12791,7 @@ const Tutorial = {
           this.stand.fertig = !!o.fertig;
           this.stand.belohnt = !!o.belohnt;
           this.stand.kontoLohn = !!o.kontoLohn;
+          this.stand.rang = !!o.rang;
         }
       }
     } catch(_){}
@@ -12802,8 +12846,8 @@ const Tutorial = {
        „Ich fliege in einen vorgesehenen Bereich. Dann drücke ich auf Teilen
        und werde auf den Gegner geschossen"): Vesta steht ein Stück weg, der
        Teilen-Platz liegt auf dem Weg zu ihr, genau eine Teilweite vor ihr.
-       Dort steht man fest; Teilen geht erst dort, zielt auf Vesta, und das
-       fliegende Stück zieht sie heran. */
+       Dort steht man fest; Teilen geht erst dort und zielt auf Vesta, die
+       Stücke lenken auf sie zu (`lenkHilfe`, v123). */
     { id:"vesta", hilfe:"teilen", platz: true,
       text: () => t(tippGeraet() ? "tu_vesta_tipp" : "tu_vesta_maus"),
       bei(){
@@ -12818,6 +12862,13 @@ const Tutorial = {
         this.ziel = () => (this.gesperrt || this.platzErledigt) ? this.vesta : this.platz;
       },
       fertig: () => !Tutorial.vesta || !Game.rivals.some(r => r.gid === Tutorial.vesta.gid) },
+    /* Warnpfeil (v123, Thomas 24.09.: „ein Hinweis im Tutorial zu den roten
+       Pfeilen fehlt mir noch"). Im Spiel zeigen sie große Gegner außerhalb
+       des Bildes, die einen durch Teilen verschlingen könnten — im Tutorial
+       ist die ganze Karte im Bild, es gäbe nie einen. Deshalb ein Übungspfeil
+       nach rechts, wo gleich Kepler auftaucht (`demoPfeil`); er erscheint
+       auch, wenn die Warnpfeile in den Einstellungen aus sind. */
+    { id:"pfeil", text: () => t("tu_pfeil") },
     /* Kepler braucht mindestens 240 Masse, sonst zerreißt ihn kein Pulsar;
        fressen kann er den Spieler nicht (`still`). Die eigene Masse wird
        nur nach unten aufgefüllt — Abwerfen kostet nichts, Fressen zählt.
@@ -12889,7 +12940,19 @@ const Tutorial = {
         this.mondDemo = ["eis"];
         try { const [cx, cy] = centre(); ring(cx, cy, radiusOf(Math.max(30, Tutorial.eigeneMasse())) * 2.2, "#bfe8ff"); Sound.levelUp(); } catch(_){}
       } },
-    { id:"fertig", text: () => t("tu_fertig"), knopf: "tu_zur_lohn", bei(){ try { Sound.levelUp(); } catch(_){} } }
+    /* Zum Schluss wachsen alle Stücke wieder zu einer Welt zusammen (v123,
+       Thomas 24.09.) — deshalb hält der Kasten den Körper hier nicht fest
+       (`frei`). Wer die Belohnung schon hatte, geht ohne sie ins Menü. */
+    { id:"fertig", text: () => t("tu_fertig"), frei: true,
+      knopf: () => Tutorial.schonBelohnt() ? "tu_l_weiter" : "tu_zur_lohn",
+      bei(){
+        /* Die Pulsare haben ihren Dienst getan: Eine ungeteilte Welt, die über
+           einen wächst, würde zerrissen — und das Zusammenwachsen zöge die
+           Stücke gleich wieder hinein. Sie verblassen mit einem Ring. */
+        for (const p of Game.pulsars) try { ring(p.x, p.y, PULSAR_R * 2, TH().paper2); } catch(_){}
+        Game.pulsars = []; Game.pulsarBack = [];
+        this.wachsen = true; this.gewachsen = false; try { Sound.levelUp(); } catch(_){}
+      } }
   ],
   liste(){ return this.phase === "b" ? this.B : this.A; },
   eigeneMasse(){ return (Game.cells || []).reduce((a, c) => a + c.m, 0); },
@@ -12934,6 +12997,18 @@ const Tutorial = {
     if (this.gesperrt){ this.gesperrt = false; this.platzErledigt = true; this.hilfeAktualisieren(); }
     return [dx / l, dy / l];
   },
+  /* Nach dem Teilen lenken die eigenen Stücke auf Vesta zu, bis sie
+     verschlungen ist (v123) — als zeigte der Daumen auf sie. Vorher zog das
+     Stück Vesta zu sich heran (v118): Sie sprang ihm entgegen und wurde auf
+     halbem Weg gefressen, das Stück flog danach über ihren Platz hinaus —
+     „man schießt einfach durch ihn hindurch" (Thomas, 24.09.). Jetzt steht
+     sie still wie ein echter Spieler und wird dort verschlungen, wo sie
+     steht; das Stück gleitet danach aus wie im Spiel. */
+  lenkHilfe(){
+    if (!this.laufend || !this.schritt || this.schritt.id !== "vesta" || !this.teiltAb) return null;
+    if (Game.t - this.teiltAb > 2.5 || !this.vestaLebt()) return null;
+    return [this.vesta.x, this.vesta.y];
+  },
   /* Darf die Taste jetzt wirken? Nein, solange der Kasten steht oder
      zwischen zwei Schritten; in Stufe A nur die Taste, um die es gerade
      geht, und bei einem Platz erst, wenn man darin steht — sonst wirft ein
@@ -12957,6 +13032,12 @@ const Tutorial = {
   /* Pulsar-Schuss sicher treffen (v120): Brocken fliegen in den Pulsar,
      der Pulsar fliegt auf Kepler, und wer auf dem Schussplatz steht, bleibt
      dort. */
+  /* Der Übungspfeil im Schritt „pfeil" (v123) — nach rechts, wo gleich
+     Kepler auftaucht. `demo`: erscheint auch bei abgeschalteten Warnpfeilen. */
+  demoPfeil(){
+    if (!this.laufend || !this.schritt || this.schritt.id !== "pfeil") return null;
+    return { dx: 1000, dy: 0, m: 0, nah: 1, demo: true };
+  },
   keplerLebt(){ return !!(this.kepler && Game.rivals.some(r => r.gid === this.kepler.gid)); },
   wurfHilfe(){
     if (!this.laufend || !this.schritt || this.schritt.id !== "abwerfen" || !this.pulsar || !Game.cells.length) return null;
@@ -13008,7 +13089,7 @@ const Tutorial = {
   },
   /* Der Teilen-Platz: auf der Linie Vesta → Spieler, genau eine Teilweite
      vor Vesta (knapp 200 Einheiten Luft zwischen beiden — so weit fliegt ein
-     Teilstück sicher, und das Stück zieht sie auf den letzten Metern heran). */
+     Teilstück sicher). */
   teilPlatzSetzen(){
     const me = groesstes(Game.cells), v = this.vesta;
     let ux = me.x - v.x, uy = me.y - v.y; const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
@@ -13088,6 +13169,7 @@ const Tutorial = {
     this.glut = false; this.unendlich = 0; this.titelGid = null; this.mondDemo = null;
     this.ziel = null; this.schussLinie = false; this.vesta = this.kepler = this.pulsar = null;
     this.wartet = false; this.halt = null; this.platz = null; this.gesperrt = false; this.platzErledigt = false;
+    this.wachsen = false; this.gewachsen = false;
     /* Derselbe Zoom wie im Spiel für ein Staubkorn (Thomas, 24.09.: bei
        Zoom 1 „bewegt man sich komplett unnatürlich" — auf dem Telefon
        ist der Spielzoom etwa 0,58, alles war fast doppelt so groß und
@@ -13164,9 +13246,9 @@ const Tutorial = {
     const fig = document.getElementById("tutFigur");
     if (fig) fig.innerHTML = `<img alt="" src="${avatarBild(fuehrerBild(), 96, true)}">`;
     const txt = document.getElementById("tutText");
-    if (txt) txt.textContent = s.text();
+    if (txt) this.textSetzen(txt, s.text());
     const ok = document.getElementById("tutOk");
-    if (ok) ok.textContent = t(s.knopf || "tu_verstanden");
+    if (ok) ok.textContent = t((typeof s.knopf === "function" ? s.knopf() : s.knopf) || "tu_verstanden");
     this.punkteMalen();
     this.hilfeAktualisieren();
     /* Der Stand im Speicher zählt Schritte über beide Phasen — für die
@@ -13177,6 +13259,7 @@ const Tutorial = {
   /* Den Körper anhalten, solange der Kasten steht: Daumen und Zeiger auf
      „stehen" und die Stellen aller eigenen Stücke merken (`nachBewegung`). */
   halten(){
+    if (this.schritt && this.schritt.frei){ this.halt = null; return; }
     this.halt = (Game.cells || []).map(c => ({ c, x: c.x, y: c.y }));
     const me = (Game.cells || []).length ? groesstes(Game.cells) : null;
     if (me) this.stillstehen(me.x, me.y);
@@ -13197,6 +13280,16 @@ const Tutorial = {
     if (!s.fertig) return this.geschafft();
     this.seit = 0;
     this.hilfeAktualisieren();
+  },
+  /* `*Wort*` wird kursiv (v123, Thomas: „Monde kursiv geschrieben"), der
+     Rest bleibt reiner Text — kein innerHTML mit Sprachtexten. */
+  textSetzen(el, text){
+    el.textContent = "";
+    String(text).split("*").forEach((teil, i) => {
+      if (!teil) return;
+      if (i % 2){ const em = document.createElement("em"); em.textContent = teil; el.appendChild(em); }
+      else el.appendChild(document.createTextNode(teil));
+    });
   },
   punkteMalen(){
     const el = document.getElementById("tutPunkte");
@@ -13300,26 +13393,24 @@ const Tutorial = {
        (Thomas, 24.09.: „die Masse hat nicht gereicht"). */
     if (this.phase === "b" && this.nr >= 1 && this.nr <= 3)
       for (const c of Game.cells) if (c.merge < 1) c.merge = 1;
+    /* Zusammenwachsen am Ende (v123): Alle Stücke ziehen zur gemeinsamen
+       Mitte und verschmelzen dort (die Verschmelzregel in `step`). */
+    if (this.wachsen && Game.cells.length > 1){
+      const [cx, cy] = centre(), k = Math.min(1, dt * 2.2);
+      for (const c of Game.cells){
+        c.merge = 0; c.vx *= .8; c.vy *= .8;
+        c.x += (cx - c.x) * k; c.y += (cy - c.y) * k;
+      }
+    }
+    if (this.wachsen && !this.gewachsen && Game.cells.length === 1){
+      this.gewachsen = true;
+      try { const c = Game.cells[0]; ring(c.x, c.y, radiusOf(c.m) * 1.8, "#f8dcab"); Sound.absorb(c.m); } catch(_){}
+    }
     /* Vesta bleibt bei 18 Masse (v122): Sie stand still im Sternenstaub und
        fraß ihn — auf 21 gewachsen, war keine der beiden Hälften mehr groß
        genug, sie zu fressen, und das Teilen ging ins Leere (Prüfstand am
        Rechner, 24.09.). */
     if (this.vestaLebt() && this.vesta.m > 18) this.vesta.m = 18;
-    /* Vesta sicher erwischen (v118): Nach dem Teilen zieht das nächste
-       eigene Stück, das groß genug ist, sie auf den letzten Metern heran. */
-    if (this.schritt && this.schritt.id === "vesta" && this.teiltAb && Game.t - this.teiltAb < 3 && this.vestaLebt()){
-      const v = this.vesta;
-      let best = null, bd = Infinity;
-      for (const c of Game.cells){
-        if (c.m < v.m * 1.25) continue;
-        const d = Math.hypot(c.x - v.x, c.y - v.y);
-        if (d < bd){ bd = d; best = c; }
-      }
-      if (best && bd < radiusOf(best.m) + radiusOf(v.m) + 260){
-        const k = Math.min(1, dt * 7);
-        v.x += (best.x - v.x) * k; v.y += (best.y - v.y) * k;
-      }
-    }
     /* Der leuchtende Kreis (Vesta: Teilen-Platz, Abwerfen: Schussplatz):
        Wer ihn erreicht, steht dort fest, ein Ring und ein Ton sagen „jetzt",
        und die Taste beginnt zu pulsieren (v120, seit v122 für beide). */
@@ -13465,6 +13556,7 @@ const Tutorial = {
     this.glut = false; this.unendlich = 0; this.mondDemo = null; this.ziel = null;
     this.schussLinie = false; this.kamera = null; this.titelGid = null;
     this.wartet = false; this.halt = null; this.platz = null; this.gesperrt = false; this.platzErledigt = false;
+    this.wachsen = false; this.gewachsen = false;
     const box = document.getElementById("tutBox");
     if (box) box.hidden = true;
     const auf = document.getElementById("tutAufgabe");
@@ -13526,10 +13618,119 @@ const Tutorial = {
     try { offeneRundeWeg(); } catch(_){}
   },
   abschliessenRunde(){
+    this.vereinen();
+    /* Wer zum ersten Mal durch ist: die Rangfeier (v123), danach wie immer. */
+    if (this.rangFeierFaellig()) return this.rangFeier();
+    this.rundeAbschluss();
+  },
+  rundeAbschluss(){
     this.rundeVerlassen();
     this.stand.spiel = 99;
     this.sichern();
-    this.lohnZeigen();
+    /* Die Belohnung gibt es genau einmal (Thomas, 24.09.: „sobald sie dieses
+       ein zweites Mal absolvieren, gibt es natürlich keine mehr"). Bezahlt
+       wurde schon vorher nur einmal (Gast: `stand.belohnt`, Konto: Server) —
+       aber der Bildschirm zeigte beim zweiten Mal wieder „+200 Ore". */
+    if (this.schonBelohnt()){
+      this.lohnWeiter();
+      /* Das Band im Menü (`toast` zeichnet nur im Spielfeld). */
+      try { lohnZeigen(t("tu_l_auge"), t("tu_schon"), ""); } catch(_){}
+    }
+    else this.lohnZeigen();
+  },
+  /* Hat dieser Spieler die Belohnung schon? Ein Konto weiß es vom Server
+     (`tutorialLohn` im Profil, v123), ein Gast aus dem Browser. Kennt ein
+     älterer Server das Feld nicht, zeigt der Bildschirm sie — zahlen tut der
+     Server ohnehin nur einmal. */
+  schonBelohnt(){
+    let konto = false;
+    try { konto = istAngemeldet(); } catch(_){}
+    if (konto){
+      const p = (typeof Konto !== "undefined" && Konto.profil) || {};
+      return p.tutorialLohn === true;
+    }
+    return !!this.stand.belohnt;
+  },
+  /* Alle Stücke zu einer Welt — falls der Knopf schneller war als das
+     Zusammenwachsen. */
+  vereinen(){
+    if (!Game.cells || Game.cells.length < 2) return;
+    const [cx, cy] = centre(), m = this.eigeneMasse(), c = groesstes(Game.cells);
+    c.x = cx; c.y = cy; c.m = m; c.merge = 0; c.vx = 0; c.vy = 0;
+    Game.cells = [c];
+  },
+
+  /* --- Die Rangfeier (v123) --------------------------------------------
+     Thomas, 24.09.: „für neue Spieler, die das Spiel zum ersten Mal starten,
+     ein großes Feuerwerk, wie das Entstehen einer Welt, und mittig des
+     Bildschirms der erste Rang … mit Bild davon." Nur beim ersten Mal (auf
+     diesem Gerät, `stand.rang`), nie für jemanden, der die Belohnung schon
+     hatte, und nie für ein Konto über Kadett — „Du bist jetzt Kadett" wäre
+     für einen Leutnant falsch. Die Tutorialrunde läuft dahinter weiter: Die
+     Welt mit ihrem Mond steht im Bild, das Feuerwerk geht von ihr aus. */
+  rangFeierFaellig(){
+    if (this.stand.rang || this.schonBelohnt()) return false;
+    try {
+      if (istAngemeldet() && Konto.profil && Number.isInteger(Konto.profil.rang) && Konto.profil.rang > 0) return false;
+    } catch(_){}
+    return !!document.getElementById("tutRangVeil");
+  },
+  rangFeier(){
+    const veil = document.getElementById("tutRangVeil");
+    if (!veil) return this.rundeAbschluss();
+    /* Kasten, Plakette und Hilfen weg; Karte, Kamera und Mond bleiben —
+       die Runde läuft dahinter weiter. */
+    this.hilfeSetzen(null);
+    for (const id of ["tutBox", "tutAufgabe"]){ const el = document.getElementById(id); if (el) el.hidden = true; }
+    const gast = !istAngemeldet();
+    const auge = document.getElementById("tutRangAuge"), name = document.getElementById("tutRangName");
+    const satz = document.getElementById("tutRangSatz"), gz = document.getElementById("tutRangGast");
+    const weiter = document.getElementById("tutRangWeiter");
+    if (auge) auge.textContent = t("tu_r_auge");
+    if (name) name.textContent = t("rk0");
+    if (satz) satz.textContent = t("tu_r_satz", t("rk0"), RANG_MAX + 1);
+    if (gz){ gz.hidden = !gast; gz.textContent = t("tu_r_gast"); }
+    if (weiter) weiter.textContent = t("tut_weiter");
+    /* Das Abzeichen groß und scharf: in voller Gerätedichte gezeichnet, die
+       Größe setzt das CSS. */
+    const bild = document.getElementById("tutRangBild");
+    if (bild){
+      try {
+        const H = 96, dpr = Math.min(3, Math.max(1, devicePixelRatio || 1));
+        const quelle = abzeichenBild(0, H, dpr);
+        bild.width = quelle.width; bild.height = quelle.height;
+        bild.style.aspectRatio = quelle.width + " / " + quelle.height;
+        const g = bild.getContext("2d");
+        g.clearRect(0, 0, bild.width, bild.height);
+        g.drawImage(quelle, 0, 0);
+      } catch(_){}
+    }
+    VEILS.forEach(id => { if (id !== "tutRangVeil"){ const v = document.getElementById(id); if (v) v.hidden = true; } });
+    veil.hidden = false;
+    veil.classList.remove("an");
+    /* Woher das Feuerwerk kommt: die Welt, umgerechnet ins Bild. */
+    let ox = innerWidth / 2, oy = innerHeight / 2;
+    try {
+      const c = Game.cells[0];
+      if (c){ ox = (c.x - cam.x) * cam.z + VW / 2; oy = (c.y - cam.y) * cam.z + VH / 2; }
+    } catch(_){}
+    let ruhig = false;
+    try { ruhig = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(_){}
+    if (ruhig){ try { Sound.levelUp(); } catch(_){} veil.classList.add("an", "ruhig"); if (weiter) weiter.focus(); return; }
+    veil.classList.remove("ruhig");
+    Feuerwerk.start(document.getElementById("tutFeuer"), ox, oy);
+    /* Die Karte kommt mit dem Lichtblitz, wenn die Welt „entstanden" ist. */
+    clearTimeout(this.rangZeit);
+    this.rangZeit = setTimeout(() => { veil.classList.add("an"); if (weiter) weiter.focus(); }, Math.round(Feuerwerk.BLITZ * 1000));
+  },
+  rangFeierEnde(){
+    clearTimeout(this.rangZeit);
+    Feuerwerk.stop();
+    const veil = document.getElementById("tutRangVeil");
+    if (veil){ veil.hidden = true; veil.classList.remove("an", "ruhig"); }
+    this.stand.rang = true;
+    this.sichern();
+    this.rundeAbschluss();
   },
   ueberspringen(){
     const lief = this.laufend;
@@ -13541,7 +13742,7 @@ const Tutorial = {
   },
   /* Von vorn — aus der Spielanleitung (auch zum Ansehen für Thomas). */
   neuStarten(){
-    this.stand = { spiel: 0, menue: 0, fertig: false, belohnt: this.stand.belohnt, kontoLohn: this.stand.kontoLohn };
+    this.stand = { spiel: 0, menue: 0, fertig: false, belohnt: this.stand.belohnt, kontoLohn: this.stand.kontoLohn, rang: this.stand.rang };
     this.sichern();
     this.tippZu();
     this.rundeStarten();
@@ -13742,6 +13943,8 @@ const Tutorial = {
     if (weiter) weiter.addEventListener("click", () => this.tippWeiter());
     const lw = document.getElementById("tutLohnWeiter");
     if (lw) lw.addEventListener("click", () => this.lohnWeiter());
+    const rw = document.getElementById("tutRangWeiter");
+    if (rw) rw.addEventListener("click", () => this.rangFeierEnde());
     const lk = document.getElementById("tutLohnKontoKn");
     if (lk) lk.addEventListener("click", () => {
       this.stand.kontoLohn = true;
@@ -13762,6 +13965,162 @@ const Tutorial = {
         if (blase && !blase.hidden) this.tippZeigen();
       });
     } catch(_){}
+  }
+};
+
+/* Das Feuerwerk der Rangfeier (v123) — „wie das Entstehen einer Welt"
+   (Thomas, 24.09.). Drei Takte auf eigener Fläche über dem Spielfeld:
+   1. Sternenstaub strömt in Spiralen in die Welt (bis BLITZ),
+   2. Lichtblitz und Druckwelle — die Welt ist „entstanden", die Karte kommt,
+   3. Feuerwerk: Brocken fliegen aus der Welt und zerplatzen in Funken,
+      links und rechts der Karte.
+   Nur Farben der Palette (Messing, Glut, Papier, Eisblau des Mondes).
+   Eigene Bildschleife, nur solange etwas fliegt — danach steht die Fläche
+   leer und kostet nichts. Höchstens gut 600 Funken zugleich, jeder ein
+   kurzer Strich. Bei „Bewegung reduzieren" startet es gar nicht
+   (`Tutorial.rangFeier`). */
+const Feuerwerk = {
+  BLITZ: 1.15,
+  FARBEN: ["#f8dcab", "#d8a75f", "#e07a3c", "#bfe8ff", "#f0e4d0"],
+  c: null, g: null, raf: 0, t0: 0, zuletzt: 0, dpr: 1, w: 0, h: 0,
+  ox: 0, oy: 0, staub: [], funken: [], raketen: [], salven: [], blitzDa: false,
+  start(c, ox, oy){
+    if (!c || !c.getContext) return;
+    this.stop();
+    this.c = c; this.g = c.getContext("2d");
+    /* Funken sind dünne, leuchtende Striche — halbe Schärfe sieht man ihnen
+       nicht an, die Füllrate schon (Tippgeräte 1, Rechner 1,5). */
+    this.dpr = Math.min(devicePixelRatio || 1, isTouch ? 1 : 1.5);
+    this.w = innerWidth; this.h = innerHeight;
+    c.width = Math.round(this.w * this.dpr); c.height = Math.round(this.h * this.dpr);
+    c.hidden = false;
+    this.ox = ox; this.oy = oy;
+    this.staub = []; this.funken = []; this.raketen = []; this.blitzDa = false;
+    /* Takt 1: 150 Körnchen weit draußen, jedes mit eigener Verspätung. */
+    const R = Math.hypot(this.w, this.h) * .62;
+    for (let i = 0; i < 150; i++){
+      this.staub.push({ a: Math.random() * 6.283, r0: R * (.55 + Math.random() * .45),
+        ab: Math.random() * .45, dauer: .55 + Math.random() * .4, dreh: 2.2 + Math.random() * 1.6,
+        farbe: this.FARBEN[i % 2 ? 0 : 4] });
+    }
+    /* Takt 3: neun Salven, abwechselnd links und rechts der Karte, die
+       erste zugleich mit dem Blitz. Anteile des Bildes. */
+    const L = [[.15, .3], [.85, .28], [.1, .64], [.9, .62], [.24, .14], [.76, .12], [.12, .44], [.88, .46], [.5, .08],
+               [.2, .8], [.8, .82], [.08, .2], [.92, .22], [.5, .92]];
+    this.salven = L.map(([fx, fy], i) => ({ bei: this.BLITZ + .05 + i * .3, x: fx * this.w, y: fy * this.h,
+                                           farbe: this.FARBEN[i % this.FARBEN.length], los: false }));
+    this.t0 = performance.now(); this.zuletzt = this.t0;
+    const schleife = jetzt => { if (!this.raf) return; this.bild(jetzt); if (this.raf) this.raf = requestAnimationFrame(schleife); };
+    this.raf = requestAnimationFrame(schleife);
+  },
+  stop(){
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = 0;
+    this.staub = []; this.funken = []; this.raketen = [];
+    if (this.g) this.g.clearRect(0, 0, this.c.width, this.c.height);
+    if (this.c) this.c.hidden = true;
+  },
+  zerplatzen(x, y, farbe){
+    const n = 64;
+    for (let i = 0; i < n; i++){
+      const a = (i / n) * 6.283 + Math.random() * .12, v = 90 + Math.random() * 230;
+      this.funken.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, leben: 1, dauer: 1.2 + Math.random() * .8,
+                         farbe: i % 5 === 0 ? "#fffaf0" : farbe });
+    }
+    try { if (Math.random() < .6) Sound.pop(); } catch(_){}
+  },
+  bild(jetzt){
+    const dt = Math.min(.05, (jetzt - this.zuletzt) / 1000); this.zuletzt = jetzt;
+    const t = (jetzt - this.t0) / 1000, g = this.g, B = this.BLITZ;
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    g.clearRect(0, 0, this.w, this.h);
+    g.globalCompositeOperation = "lighter";
+    g.lineCap = "round";
+    /* Takt 1: Staub strömt ein. Gebündelt nach Farbe und Helligkeitsstufe:
+       ein Strich-Befehl je Gruppe statt je Körnchen. */
+    const gruppen = new Map();
+    const gruppe = (farbe, alpha) => {
+      const stufe = Math.max(1, Math.min(4, Math.ceil(alpha * 4))), k = farbe + stufe;
+      let gr = gruppen.get(k);
+      if (!gr){ gr = { farbe, alpha: stufe / 4, wege: [] }; gruppen.set(k, gr); }
+      return gr.wege;
+    };
+    const zeichnen = breite => {
+      g.lineWidth = breite;
+      for (const gr of gruppen.values()){
+        g.globalAlpha = gr.alpha; g.strokeStyle = gr.farbe;
+        g.beginPath();
+        const w = gr.wege;
+        for (let i = 0; i < w.length; i += 4){ g.moveTo(w[i], w[i + 1]); g.lineTo(w[i + 2], w[i + 3]); }
+        g.stroke();
+      }
+      gruppen.clear();
+    };
+    for (const s of this.staub){
+      const p = (t - s.ab) / s.dauer;
+      if (p <= 0 || p >= 1) continue;
+      const r = s.r0 * Math.pow(1 - p, 1.7), a = s.a + p * s.dreh;
+      const r2 = s.r0 * Math.pow(1 - Math.max(0, p - .035), 1.7), a2 = s.a + Math.max(0, p - .035) * s.dreh;
+      gruppe(s.farbe, Math.min(1, p * 2.5) * .9).push(
+        this.ox + Math.cos(a2) * r2, this.oy + Math.sin(a2) * r2, this.ox + Math.cos(a) * r, this.oy + Math.sin(a) * r);
+    }
+    zeichnen(1.6);
+    /* Die Welt glüht auf, während der Staub einströmt. */
+    if (t < B + .6){
+      const k = t < B ? t / B : 1 - (t - B) / .6;
+      const R = 40 + 120 * k;
+      const verlauf = g.createRadialGradient(this.ox, this.oy, 0, this.ox, this.oy, R);
+      verlauf.addColorStop(0, "rgba(248,220,171," + (.55 * k).toFixed(3) + ")");
+      verlauf.addColorStop(1, "rgba(248,220,171,0)");
+      g.globalAlpha = 1; g.fillStyle = verlauf;
+      g.fillRect(this.ox - R, this.oy - R, R * 2, R * 2);
+    }
+    /* Takt 2: Blitz und Druckwelle. */
+    if (t >= B){
+      if (!this.blitzDa){ this.blitzDa = true; try { Sound.levelUp(); } catch(_){} }
+      const q = (t - B) / .9;
+      if (q < 1){
+        g.globalAlpha = (1 - q) * .55;
+        g.fillStyle = "#f8dcab";
+        g.fillRect(0, 0, this.w, this.h);
+        g.globalAlpha = 1 - q;
+        g.strokeStyle = "#f8dcab"; g.lineWidth = 2 + 10 * (1 - q);
+        g.beginPath(); g.arc(this.ox, this.oy, 20 + q * Math.hypot(this.w, this.h) * .7, 0, 6.283); g.stroke();
+      }
+    }
+    /* Takt 3: Brocken aus der Welt, die an ihrem Ziel zerplatzen. */
+    for (const s of this.salven){
+      if (s.los || t < s.bei) continue;
+      s.los = true;
+      this.raketen.push({ x0: this.ox, y0: this.oy, x1: s.x, y1: s.y, ab: t, dauer: .38, farbe: s.farbe });
+    }
+    for (let i = this.raketen.length - 1; i >= 0; i--){
+      const r = this.raketen[i], p = (t - r.ab) / r.dauer;
+      if (p >= 1){ this.raketen.splice(i, 1); this.zerplatzen(r.x1, r.y1, r.farbe); continue; }
+      const e = 1 - Math.pow(1 - p, 2), e2 = 1 - Math.pow(1 - Math.max(0, p - .18), 2);
+      g.globalAlpha = 1; g.strokeStyle = r.farbe; g.lineWidth = 3;
+      g.beginPath();
+      g.moveTo(r.x0 + (r.x1 - r.x0) * e2, r.y0 + (r.y1 - r.y0) * e2);
+      g.lineTo(r.x0 + (r.x1 - r.x0) * e, r.y0 + (r.y1 - r.y0) * e);
+      g.stroke();
+    }
+    const bremse = Math.exp(-1.7 * dt), F = this.funken;
+    for (let i = F.length - 1; i >= 0; i--){
+      const f = F[i];
+      f.leben -= dt / f.dauer;
+      /* Tauschen statt Herausschneiden: Die Reihenfolge ist egal. */
+      if (f.leben <= 0){ F[i] = F[F.length - 1]; F.pop(); continue; }
+      f.vx *= bremse; f.vy = f.vy * bremse + 38 * dt;     // ein Hauch Schwere: Funken sinken
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      gruppe(f.farbe, Math.min(1, f.leben * 1.6)).push(f.x - f.vx * .045, f.y - f.vy * .045, f.x, f.y);
+    }
+    zeichnen(2.6);
+    g.globalAlpha = 1; g.globalCompositeOperation = "source-over";
+    /* Alles verglüht: Schleife aus, Fläche leer. */
+    if (t > B + .2 && this.salven.every(s => s.los) && !this.raketen.length && !this.funken.length){
+      g.clearRect(0, 0, this.w, this.h);
+      cancelAnimationFrame(this.raf); this.raf = 0;
+    }
   }
 };
 
