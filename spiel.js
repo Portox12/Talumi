@@ -5474,8 +5474,25 @@ function draw(){
   const ruettelX = rnd(-sh, sh), ruettelY = rnd(-sh, sh);
   ctx.translate(VW/2 + ruettelX, VH/2 + ruettelY);
   ctx.scale(cam.z, cam.z); ctx.translate(-cam.x, -cam.y);
-  ctx.strokeStyle = TH().border; ctx.lineWidth = 4;
-  ctx.strokeRect(0,0,WELT_B,WELT_H);
+  /* Kartenrand (v142). Vorher eine 4 Einheiten breite, fast schwarze Linie
+     — ab mittlerer Größe (Zoom < 0,3) schmaler als ein Bildpunkt, also
+     unsichtbar: Man blieb plötzlich an einer Wand hängen, die man nicht sah.
+     Jetzt eine feine Messinglinie, auf dem Schirm immer 1,5 Punkte breit,
+     und der Raum jenseits davon leicht abgedunkelt. Im Tutorial ist die
+     Karte das Bild — dort bleibt es beim alten Strich. */
+  if (Tutorial.laufend){
+    ctx.strokeStyle = TH().border; ctx.lineWidth = 4;
+    ctx.strokeRect(0,0,WELT_B,WELT_H);
+  } else {
+    if (view.x0 < 0 || view.y0 < 0 || view.x1 > WELT_B || view.y1 > WELT_H){
+      ctx.beginPath();
+      ctx.rect(view.x0 - 50, view.y0 - 50, (view.x1 - view.x0) + 100, (view.y1 - view.y0) + 100);
+      ctx.rect(0, 0, WELT_B, WELT_H);
+      ctx.fillStyle = "rgba(0,0,0,.42)"; ctx.fill("evenodd");
+    }
+    ctx.strokeStyle = hexA(TH().brass, .4); ctx.lineWidth = 1.5 / cam.z;
+    ctx.strokeRect(0,0,WELT_B,WELT_H);
+  }
 
   /* Alles außerhalb des Kreises einfärben: Rechteck über den sichtbaren
      Bereich, dann den Kreis gegen den Uhrzeigersinn als Loch hineinlegen.
