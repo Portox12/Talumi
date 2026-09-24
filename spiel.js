@@ -925,8 +925,8 @@ const SKINS = [
   {id:"rime",      mat:"eis",      label:"Rime",       rock:"#bfe3f4", dark:"#6fa3bf", hot:"#ffffff", air:"#dff6ff",
    special:"frost", sonder:"wochen", tier:4},
   /* Design des Monats (v129, Thomas 24.09.: „jeden Monat ein anderes …
-     nicht erspielbar … darf Zusätze haben, die die stärksten erspielbaren
-     Designs auch haben"). Aurum ist das erste: schwarzer Glanzstein mit
+     darf Zusätze haben, die die stärksten erspielbaren Designs auch
+     haben"; seit v130 auch aus 12 Bruchstücken in Kapseln, 1,2 %). Aurum ist das erste: schwarzer Glanzstein mit
      goldenen Ranken, die langsam pulsierend leuchten — die Materialart
      „filigran" gibt es nur hier, damit es sich von allen anderen abhebt.
      Bonus wie die stärksten erspielbaren (Level 90/95/100, 290.000 und
@@ -6352,9 +6352,15 @@ function zahlDe(x){ return Number(x).toLocaleString(lang, { maximumFractionDigit
 function euro(cent){ return (cent / 100).toLocaleString(lang, { style: "currency", currency: "EUR" }); }
 async function shopLaden(){
   const a = await Konto.ruf(istAngemeldet() ? "/konto/shop" : "/shop");
-  if (a && a.ok){ shopStand = a; return a; }
+  if (a && a.ok){
+    shopStand = a;
+    if (Konto.profil && Number.isFinite(+a.designStuecke)) Konto.profil.designStuecke = +a.designStuecke;
+    return a;
+  }
   return null;
 }
+/* Gesammelte Design-Bruchstücke (v130) — der Server zählt, hier nur die Anzeige. */
+function designStueckeJetzt(){ return Konto.profil ? (+Konto.profil.designStuecke || 0) : 0; }
 function buildShop(){
   const iri = $("shopIri"), des = $("shopDesign"), rb = $("shopRaub");
   if (!iri || !des || !rb) return;
@@ -6392,7 +6398,7 @@ function buildShop(){
     try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
     des.innerHTML = `<h2>${esc(t("sh_design_kopf"))}<em>${esc(monat)}</em></h2>` +
       `<div class="shopBild" id="shopDesignBild"></div>` +
-      `<p class="shopName">${esc(pal.label)}<small>${esc(t("sh_design_erkl"))}${pal.bonus && pal.bonus.staub ? "<br>" + esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100))) : ""}</small></p>` +
+      `<p class="shopName">${esc(pal.label)}<small><span id="shopDesignErkl"></span>${pal.bonus && pal.bonus.staub ? "<br>" + esc(t("sh_bonus_kurz", Math.round(pal.bonus.staub * 100))) : ""}</small></p>` +
       `<button type="button" class="shopKauf" id="shopDesignKn"></button>`;
     const bild = $("shopDesignBild");
     const url = (() => { try { return Held3D.foto(pal); } catch(_){ return null; } })();
@@ -6401,6 +6407,11 @@ function buildShop(){
            try { const g = c.getContext("2d"); body(g, 150, 150, 110, 3000, pal, 0, "", true); } catch(_){} }
     const kn = $("shopDesignKn");
     const hat = konto && (S.designBesitz || (Konto.profil.skins || []).includes(pal.id));
+    /* Oder aus Kapseln (v130): Stand der Bruchstücke, solange man es nicht hat. */
+    const erkl = $("shopDesignErkl");
+    if (erkl) erkl.textContent = hat ? "" : D.stuecke
+      ? t("sh_design_stuecke", designStueckeJetzt(), D.stuecke, zahlDe((D.pKapsel || 0) * 100))
+      : t("sh_design_erkl");
     if (!konto){ kn.textContent = t("sh_konto"); kn.onclick = () => { kontoMeldung(""); show("accountVeil"); }; }
     else if (hat){ kn.textContent = t("sh_besitz"); kn.disabled = true; }
     else {
@@ -7787,7 +7798,7 @@ function angebotZeigen(S, pal){
   try { monat = new Date(D.monat + "-15T12:00:00Z").toLocaleString(lang, { month: "long" }); } catch(_){}
   setze("angebotAuge", t("an_auge", monat));
   setze("angebotName", pal.label);
-  setze("angebotZeile", t("an_nur_shop"));
+  setze("angebotZeile", D.stuecke ? t("an_wege", D.stuecke) : t("sh_design_erkl"));
   setze("angebotBonus", pal.bonus && pal.bonus.staub ? t("dd_bonus", Math.round(pal.bonus.staub * 100)) : "");
   const p0 = (S.pakete || [])[0];
   const pr = $("angebotPreis");
@@ -7954,7 +7965,12 @@ function designDetailMalen(){
   if (w) w.textContent = (hat ? t("dd_hast") : s.sonder ? t("sk_" + s.sonder + "_note")
                        : s.lv ? t("dd_level", s.lv) : t("dd_preis", (s.ore || 0).toLocaleString(lang))) +
                        /* Design-Bonus (v129), nur im Aufstieg. */
-                       (s.bonus && s.bonus.staub ? " " + t("dd_bonus", Math.round(s.bonus.staub * 100)) : "");
+                       (s.bonus && s.bonus.staub ? " " + t("dd_bonus", Math.round(s.bonus.staub * 100)) : "") +
+                       /* Bruchstücke aus Kapseln (v130) — die Zahl kommt vom Server. */
+                       (!hat && s.sonder === "monat" && istAngemeldet() && shopStand && shopStand.design && shopStand.design.id === s.id && shopStand.design.stuecke
+                         ? " " + t("dd_stuecke", designStueckeJetzt(), shopStand.design.stuecke) : "");
+  if (!hat && s.sonder === "monat" && istAngemeldet() && !shopStand)
+    shopLaden().then(a => { if (a && ddDesign === s) designDetailMalen(); });
   const k = document.getElementById("ddKnopf");
   if (!k) return;
   k.disabled = false; k.className = "ddKnopf";
@@ -11562,6 +11578,19 @@ const Net = {
       else if (m.raub && typeof m.raub === "object"){
         if (m.raub.fertig){ lohnZeigen(t("mo_raub"), t("ka_raub_fertig"), ""); mondeStand = null; shopStand = null; }
         else toast(t("ka_raub", +m.raub.stuecke || 0, +m.raub.von || 24));
+      }
+      /* Design-Bruchstück (v130). Beim zwölften gehört das Design dir. */
+      else if (m.design && typeof m.design === "object"){
+        const pal = SKINS.find(x => x.id === m.design.id);
+        const name = pal ? pal.label : "";
+        if (Konto.profil) Konto.profil.designStuecke = m.design.fertig ? 0 : (+m.design.stuecke || 0);
+        if (m.design.fertig && pal){
+          if (Konto.profil){ Konto.profil.skins = (Konto.profil.skins || []).filter(id => id !== pal.id).concat([pal.id]); }
+          Profile.owned.add(pal.id);
+          lohnZeigen(name, t("ka_design_fertig"), "");
+        }
+        else toast(t("ka_design", name, +m.design.stuecke || 0, +m.design.von || 12));
+        shopStand = null;
       }
       else if (m.mond && typeof m.mond === "object") toast(t("ka_mond", t((MONDE[m.mond.art] || {}).name || "mo_eis")));
       else if (+m.staub > 0) toast(t("ka_staub", +m.staub));
