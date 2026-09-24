@@ -1614,8 +1614,12 @@
      Beenden-Knopf. Er hält sich aus dem Weg (halbdurchsichtig, keine
      Schatten über das Spielfeld) und verschwindet von selbst, sobald der
      Schritt getan ist — dann blitzt kurz ein Haken auf. */
+  /* `--vv-unten` (v126): so viel der Seite liegt auf dem iPhone unter der
+     sichtbaren Fläche (Safari-Leisten) — gesetzt von `sichtbarUnten()` in
+     spiel.js. Ohne das rutschte der Kasten mit „Verstanden" unter den Rand
+     (Thomas, 24.09.). */
   .tutBox{position:fixed;left:50%;transform:translateX(-50%);
-       bottom:calc(14px + env(safe-area-inset-bottom));z-index:4;pointer-events:auto;
+       bottom:calc(14px + env(safe-area-inset-bottom) + var(--vv-unten, 0px));z-index:4;pointer-events:auto;
        max-width:min(520px, calc(100vw - 40px));
        display:flex;align-items:center;gap:12px;
        padding:10px 14px;border-radius:13px;
@@ -1640,7 +1644,7 @@
   @keyframes tutAuf{from{opacity:0;transform:translate(-50%,10px)}
                     to{opacity:1;transform:translate(-50%,0)}}
   @media (max-height:420px){
-    .tutBox{bottom:calc(8px + env(safe-area-inset-bottom));padding:8px 12px}
+    .tutBox{bottom:calc(8px + env(safe-area-inset-bottom) + var(--vv-unten, 0px));padding:8px 12px}
     .tutBox p{font-size:13px}
   }
   /* Auf Tippgeräten unten in der Mitte (Thomas, 24.09.), so breit, dass
@@ -1828,8 +1832,19 @@
        background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
        border:1px solid rgba(233,176,99,.5);
        box-shadow:0 18px 50px rgba(0,0,0,.6);
-       animation:tutAuf .3s ease-out}
+       animation:tutTippAuf .3s ease-out}
+  /* Eigene Einblendung (v126): `tutAuf` verschiebt um die halbe Breite —
+     richtig für den mittig gesetzten Kasten, falsch für die Blase. */
+  @keyframes tutTippAuf{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .tutTipp[hidden]{display:none}
+  body.touch .tutTippFuss button{min-height:44px}
+  /* Hochkant steht der Drehhinweis (`#rotate`) — nichts vom Tutorial darf
+     darüber liegen (v126, Thomas 24.09.: „die Sprechblase wird weiterhin
+     angezeigt, über dem Hinweis"). Quer kommt alles wieder: `hidden` bleibt
+     unberührt, und die Blase setzt sich beim Drehen neu (`resize`). */
+  body.portrait .tutTipp, body.portrait .tutBox, body.portrait .tutAufgabe,
+  body.portrait .tutHand, body.portrait .tutMaus, body.portrait #tutSprung{display:none !important}
+  body.portrait .tutZiel{box-shadow:none;z-index:auto}
   .tutTipp p{margin:0 0 10px;font-size:13.5px;line-height:1.45;color:var(--paper)}
   .tutTippFuss{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .tutTippZahl{font-size:11.5px;color:var(--paper-2);font-variant-numeric:tabular-nums}

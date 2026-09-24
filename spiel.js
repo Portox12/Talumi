@@ -2850,7 +2850,11 @@ function step(dt){
     }
     /* Fressen oder Zerreißen — die Reihenfolge ist die ganze Mechanik.
        Wer weit genug geteilt ist, frisst. Alle anderen zerreißen. */
-    let eaten = false;
+    /* Ein Pulsar, der jemanden zerreißt, ist verbraucht (v126, Thomas: „wie
+       bei Agar") — dieselbe Regel wie in sim.js: Er zerreißt genau einen
+       Körper und verschwindet; ersetzt wird nur, was zum Grundbestand
+       fehlt, im Tutorial nie. */
+    let eaten = false, verbraucht = false;
     for (const c of Game.cells){
       const d = Math.hypot(p.x-c.x, p.y-c.y);
       const covers = d < radiusOf(c.m) - PULSAR_R*.35;
@@ -2863,7 +2867,7 @@ function step(dt){
         eaten = true;
         break;
       }
-      if (c.m >= PULSAR_BITE) shatter(c);
+      if (c.m >= PULSAR_BITE){ shatter(c); verbraucht = true; break; }
     }
     if (eaten){
       Game.pulsars.splice(pi,1);
@@ -2874,11 +2878,18 @@ function step(dt){
        Liste, und die sollen nicht im selben Schritt noch einmal zerlegt
        werden — sonst kettet ein Treffer sich durch die eigenen Splitter. */
     const anzahlRivalen = Game.rivals.length;
-    for (let ri=0; ri<anzahlRivalen; ri++){
+    for (let ri=0; ri<anzahlRivalen && !verbraucht; ri++){
       const r = Game.rivals[ri];
       if (r.m < PULSAR_BITE) continue;
-      if (Math.hypot(p.x-r.x, p.y-r.y) < radiusOf(r.m) - PULSAR_R*.35)
+      if (Math.hypot(p.x-r.x, p.y-r.y) < radiusOf(r.m) - PULSAR_R*.35){
         rivalShatter(r, p.x, p.y);
+        verbraucht = true;
+      }
+    }
+    if (verbraucht){
+      Game.pulsars.splice(pi,1);
+      if (!MODE().tutorial && Game.pulsars.length + Game.pulsarBack.length < MODE().pulsars)
+        Game.pulsarBack.push(Game.t + FEAST_BACK);
     }
   }
 
@@ -12765,6 +12776,47 @@ function tippGeraet(){
    bringt die Serverzahlen mit, sobald er erreichbar ist. */
 const TUT_LOHN = { ore: 200, iridium: 20, staub: 3 };
 
+/* Der wirklich sichtbare Ausschnitt (v126). Auf dem iPhone kann Safari
+   weniger zeigen, als die Seite für ihr Fenster hält (Leisten, Home-Balken):
+   Was unten klebt, rutscht dann unter den Rand — so beim Kasten mit
+   „Verstanden" und bei der Sprechblase im Hangar (Thomas, 24.09.). In
+   Seitenkoordinaten, wie `getBoundingClientRect` und `position:fixed`. */
+let saProbe = null;
+function sichtbarerAusschnitt(){
+  const vv = window.visualViewport;
+  const oben = vv ? vv.offsetTop : 0, links = vv ? vv.offsetLeft : 0;
+  const hoehe = vv ? vv.height : innerHeight, breite = vv ? vv.width : innerWidth;
+  /* Der Home-Balken: `env(safe-area-inset-bottom)` lässt sich nur über ein
+     Element messen. */
+  let sa = 0;
+  try {
+    if (!saProbe){
+      saProbe = document.createElement("div");
+      saProbe.style.cssText = "position:fixed;left:0;bottom:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none";
+      document.body.appendChild(saProbe);
+    }
+    sa = saProbe.offsetHeight || 0;
+  } catch(_){}
+  return { oben, links, unten: oben + hoehe - sa, rechts: links + breite };
+}
+/* `--vv-unten`: so viel der Seite liegt unter der sichtbaren Fläche — der
+   Kasten im Tutorial rückt um genau so viel nach oben (CSS `.tutBox`). */
+(function sichtbarUnten(){
+  try {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const setzen = () => {
+      const seite = Math.max(document.documentElement.clientHeight || 0, innerHeight || 0);
+      const weg = Math.max(0, Math.round(seite - (vv.offsetTop + vv.height)));
+      document.documentElement.style.setProperty("--vv-unten", weg + "px");
+    };
+    vv.addEventListener("resize", setzen);
+    vv.addEventListener("scroll", setzen);
+    addEventListener("resize", setzen);
+    setzen();
+  } catch(_){}
+})();
+
 const Tutorial = {
   SCHLUESSEL: "talumi.tutorial",
   stand: { spiel: 0, menue: 0, fertig: false, belohnt: false, kontoLohn: false, rang: false },
@@ -13921,16 +13973,31 @@ const Tutorial = {
     blase.hidden = false;
     ziel.classList.add("tutZiel");
     this.zielJetzt = ziel;
-
-    /* Die Blase setzt sich unter das Element, und wenn dort kein Platz mehr
-       ist, darüber. Gemessen wird nach dem Einblenden, sonst ist ihre Höhe
-       noch null. */
+    this.tippSetzen();
+    /* Nach der Einblendung noch einmal: Bis dahin kann sich der Hangar noch
+       zurechtgerückt haben (3D-Bühne, Schriften). */
+    clearTimeout(this.tippWecker);
+    this.tippWecker = setTimeout(() => this.tippSetzen(), 400);
+  },
+  /* Die Blase an ihr Element setzen: darunter, sonst darüber — und in jedem
+     Fall ganz im sichtbaren Ausschnitt, notfalls über dem Element (v126,
+     Thomas 24.09.: „die Sprechblase verschwindet teilweise am unteren
+     Bildschirmrand, und man kann nicht klicken"). Gemessen wird die Blase
+     oben links (volle Breite, `offsetHeight` ohne die Verschiebung der
+     Einblendung) und gegen den wirklich sichtbaren Ausschnitt
+     (`visualViewport`, Safari-Leisten, Home-Balken). */
+  tippSetzen(){
+    const blase = document.getElementById("tutTipp"), ziel = this.zielJetzt;
+    if (!blase || blase.hidden || !ziel) return;
+    blase.style.left = "0px"; blase.style.top = "0px";
+    const bw = blase.offsetWidth, bh = blase.offsetHeight;
+    const { oben: o0, unten: u0, links: l0, rechts: r0 } = sichtbarerAusschnitt();
     const r = ziel.getBoundingClientRect();
-    const b = blase.getBoundingClientRect();
     let oben = r.bottom + 10;
-    if (oben + b.height > innerHeight - 8) oben = Math.max(8, r.top - b.height - 10);
-    let links = r.left + r.width/2 - b.width/2;
-    links = Math.max(10, Math.min(innerWidth - b.width - 10, links));
+    if (oben + bh > u0 - 8) oben = r.top - bh - 10;
+    oben = Math.max(o0 + 8, Math.min(u0 - 8 - bh, oben));
+    let links = r.left + r.width / 2 - bw / 2;
+    links = Math.max(l0 + 10, Math.min(r0 - 10 - bw, links));
     blase.style.top = Math.round(oben) + "px";
     blase.style.left = Math.round(links) + "px";
   },
@@ -13989,6 +14056,8 @@ const Tutorial = {
         const blase = document.getElementById("tutTipp");
         if (blase && !blase.hidden) this.tippZeigen();
       });
+      /* Safari blendet Leisten ein und aus, ohne dass sich das Fenster ändert. */
+      if (window.visualViewport) visualViewport.addEventListener("resize", () => this.tippSetzen());
     } catch(_){}
   }
 };
