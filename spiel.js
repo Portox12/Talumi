@@ -1809,7 +1809,7 @@ const Game = {running:false, online:false, debris:[], rivals:[], shed:[], cells:
               goals:[], debrisEaten:0, pulsarSpawns:0, splitKills:0, toast:null,
               pulsarBack:[], pulsarsEaten:0, feastSeen:false,
               hint:null, hintUntil:0, hintCheck:0,
-              sparks:[], levelFx:null, xpRun:0, unlockedRun:[]};
+              sparks:[], sog:[], levelFx:null, xpRun:0, unlockedRun:[]};
 
 /* Spawn-Schutz. Zwei getrennte Maßnahmen:
    1. Startplatz: aus 48 Vorschlägen der mit dem größten Abstand zu allem,
@@ -2070,7 +2070,7 @@ function start(name){
   try { Tutorial.rundeStart(); } catch(_){}
   Game.pulsarBack = []; Game.pulsarsEaten = 0; Game.feastSeen = false;
   Game.hint = null; Game.hintUntil = 0; Game.hintCheck = 0;
-  Game.sparks = []; Game.levelFx = null; Game.xpRun = 0; Game.unlockedRun = [];
+  Game.sparks = []; Game.sog = []; Game.levelFx = null; Game.xpRun = 0; Game.unlockedRun = [];
   if (Settings.hints) Profile.hintRuns++;
   Game.toast = null;
   Game.goals = [];
@@ -2319,6 +2319,41 @@ function burst(x, y, n, colour, speed){
 
 function ring(x, y, max, colour){
   Game.rings.push({x, y, r: max*0.2, max, life:1, colour});
+}
+
+/* Staub wird eingesaugt (v140). Bisher verschwand ein gefressenes Korn
+   einfach — Slither.io zeigt, wie viel es ausmacht, wenn Futter sichtbar in
+   den Körper fliegt: Fressen fühlt sich dann nach Fressen an. Das Korn
+   fliegt in 0,2 s beschleunigend zur Mitte des eigenen Stücks und wird
+   dabei kleiner und blasser — über dem Körper gezeichnet, denn gefressen ist
+   es erst, wenn es schon am Rand liegt. Nur für
+   eigene Stücke, höchstens 48 zugleich; bei „Bewegung reduzieren" und im
+   Sparmodus aus. Online kommt das Fressen vom Server (`dw`): Verschwindet
+   ein Korn in Reichweite eines eigenen Stücks, fliegt es dorthin. */
+const SOG_DAUER = .2;
+let sogRuhig = null;
+function sogStarten(d, ziel){
+  if (sogRuhig === null){ try { sogRuhig = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(_){ sogRuhig = false; } }
+  if (sogRuhig || Settings.lowPower || Game.sog.length >= 48 || !ziel) return;
+  Game.sog.push({ x:d.x, y:d.y, r:d.r || 3.4, c:d.c, ziel, t:0 });
+}
+function sogOnline(e){
+  let best = null, bd = Infinity;
+  for (const c of Game.cells){
+    const dd = Math.hypot(c.x - e[0], c.y - e[1]);
+    if (dd < radiusOf(c.m) * 1.25 + 24 && dd < bd){ bd = dd; best = c; }
+  }
+  if (best) sogStarten({ x:e[0], y:e[1], r:3.4, c:staubTon(e[2] | 0) }, best);
+}
+function sogMalen(g){
+  for (const s of Game.sog){
+    const p = Math.min(1, s.t / SOG_DAUER), k = p * p;
+    const x = s.x + (s.ziel.x - s.x) * k, y = s.y + (s.ziel.y - s.y) * k;
+    g.globalAlpha = 1 - p * p;
+    g.beginPath(); g.arc(x, y, s.r * (1.25 - p * .85), 0, 6.2832);
+    g.fillStyle = s.c; g.fill();
+  }
+  g.globalAlpha = 1;
 }
 
 /* Ein Körper geht, ohne gefressen zu sein (online: ein NPC macht einem
@@ -2708,6 +2743,8 @@ function checkGoals(){
    Nach ein paar Minuten waren das Tausende — das Spiel ruckelte, bis man sich
    kaum noch bewegte. */
 function effekteAltern(dt){
+  /* Eingesaugter Staub (v140): nach SOG_DAUER ist er im Körper. */
+  for (let i = Game.sog.length - 1; i >= 0; i--){ Game.sog[i].t += dt; if (Game.sog[i].t >= SOG_DAUER) Game.sog.splice(i, 1); }
   // Funken bewegen
   for (let i=Game.sparks.length-1;i>=0;i--){
     const s = Game.sparks[i];
@@ -3014,7 +3051,7 @@ function step(dt){
         Game.debris[i] = Tutorial.laufend && Tutorial.phase === "a" ? Tutorial.neuerStaub() : newDebris();
         Game.debrisVer = (Game.debrisVer | 0) + 1;
         Grid.put(Game.debris[i], i);         // neues Feld eintragen
-        if (f.mine){ Game.debrisEaten++; Sound.eat(f.m); }
+        if (f.mine){ Game.debrisEaten++; Sound.eat(f.m); sogStarten(d, f); }
       }
     });
     for (let i=Game.shed.length-1;i>=0;i--){
@@ -5266,6 +5303,123 @@ function kleinBild(o, pal){
   return c;
 }
 
+/* Himmel im Spielfeld (Entwurf, 24.09.2026 abends). Bis hierher lag hinter
+   dem Spiel eine glatte, fast schwarze Fläche — genau das, was Spieler an
+   Slither.io als „weiten, öden Raum" bemängeln. Ein Nebel gibt Tiefe: einmal
+   in ein Bild gemalt (1024 × 576) und danach nur verschoben, kostet er so
+   viel wie die glatte Fläche vorher (ein Bild über den ganzen Schirm statt
+   eines Rechtecks). Er zieht sehr langsam mit der Kamera (über die ganze
+   Karte etwa ein halbes Bild) und weitet sich beim Herauszoomen etwas.
+   `NEBEL_ART`: "aus" = wie bisher, sonst einer der Entwürfe. Im Sparmodus
+   immer aus. */
+let NEBEL_ART = "aus";
+const Nebel = {
+  bild: null, art: "", thema: "",
+  /* Ein Entwurf = einige Wolkenzüge. Ein Zug läuft auf einer geschwungenen
+     Bahn (Anfang, Biegepunkt, Ende — Anteile der Bildgröße) und wechselt
+     entlang der Bahn von Farbe a nach Farbe b. Gemalt wird additiv
+     („lighter"): Wo Tupfer sich überlagern, leuchtet es — statt wie ein
+     trüber Schleier über allem zu liegen (so sahen die ersten Versuche aus).
+     Dazwischen bleibt fast überall das dunkle Grundschwarz. */
+  ENTWUERFE: {
+    /* A „Glut und Eis": die beiden Gegenfarben des Spiels — Glut-Orange und
+       Türkis — als zwei Wolkenzüge, die sich in der Mitte berühren. */
+    glut:  { zuege: [
+      { p: [-.05,.78, .38,.30, .78,.62], a: [224,122,60],  b: [216,167,95],  n: 90, r: 70, k: .030 },
+      { p: [ .30,1.05, .62,.55, 1.08,.18], a: [52,150,150], b: [96,120,176], n: 80, r: 64, k: .026 } ],
+      staub: 22, kerne: [[.40,.34,"255,196,130"], [.66,.52,"150,230,220"]] },
+    /* B „Tiefsee": kühl — Blaugrün und Violett, ein kleiner Messingkern. */
+    tief:  { zuege: [
+      { p: [-.05,.30, .40,.72, .95,.40], a: [40,110,150],  b: [104,70,160], n: 95, r: 72, k: .030 },
+      { p: [ .55,-.05, .70,.40, 1.05,.95], a: [70,60,150],  b: [40,130,140], n: 60, r: 58, k: .024 } ],
+      staub: 18, kerne: [[.52,.56,"230,180,120"]] },
+    /* C „Sternenband": eine Milchstraße quer übers Bild, warmweiß, mit
+       einer dunklen Staubbahn in der Mitte und türkisem Saum. */
+    band:  { zuege: [
+      { p: [-.10,.92, .45,.48, 1.10,.10], a: [236,206,160], b: [226,170,110], n: 150, r: 60, k: .026, breit: 80 },
+      { p: [-.10,.98, .45,.56, 1.10,.18], a: [50,120,140],  b: [70,110,160],  n: 60,  r: 46, k: .018, breit: 60 } ],
+      bahn: true, staub: 34, kerne: [[.45,.48,"255,230,190"]] }
+  },
+  bauen(){
+    /* Klein gemalt (400 × 225) und beim Zeichnen weich vergrößert: Groß
+       gemalt zeigten die Wolken nach dem Vergrößern ein feines Punktraster
+       (die Farbstreuung des Browsers in dunklen Verläufen). `q` rechnet die
+       Maße der Entwürfe (für 1280 Breite gedacht) um. */
+    const W = 400, H = 225, q = W / 1280, E = this.ENTWUERFE[NEBEL_ART];
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    g.fillStyle = TH().ink; g.fillRect(0, 0, W, H);
+    let s = 90217; const z = () => (s = (s * 16807) % 2147483647) / 2147483647;
+    const tupfer = (x, y, r, rgb, a) => {
+      const gr = g.createRadialGradient(x, y, 0, x, y, r);
+      gr.addColorStop(0, `rgba(${rgb},${a.toFixed(4)})`); gr.addColorStop(.45, `rgba(${rgb},${(a * .42).toFixed(4)})`); gr.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = gr; g.fillRect(x - r, y - r, r * 2, r * 2);
+    };
+    const punkt = (p, t) => { const u = 1 - t;   // quadratische Bézierkurve
+      return [(u*u*p[0] + 2*u*t*p[2] + t*t*p[4]) * W, (u*u*p[1] + 2*u*t*p[3] + t*t*p[5]) * H]; };
+    g.globalCompositeOperation = "lighter";
+    for (const zug of E.zuege){
+      for (let i = 0; i < zug.n; i++){
+        const t = z(), [x, y] = punkt(zug.p, t);
+        /* Quer zur Bahn gestreut, zur Mitte hin dichter (Summe zweier Würfel). */
+        const quer = ((z() + z()) - 1) * (zug.breit || 110) * q;
+        const f = clamp(t + (z() - .5) * .3, 0, 1);
+        const rgb = [0, 1, 2].map(k => Math.round(zug.a[k] + (zug.b[k] - zug.a[k]) * f)).join(",");
+        tupfer(x + quer * .6, y + quer, zug.r * q * (.35 + z() * 1.1), rgb, zug.k * 2.3 * (.5 + z()));
+      }
+    }
+    /* Helle Kerne: wenige kleine, kräftigere Stellen — das Auge braucht
+       einen Punkt, an dem es hängen bleibt. */
+    for (const [kx, ky, rgb] of E.kerne){
+      tupfer(kx * W, ky * H, 90 * q, rgb, .14);
+      tupfer(kx * W, ky * H, 34 * q, rgb, .18);
+    }
+    g.globalCompositeOperation = "source-over";
+    /* Dunkle Staubbahnen über dem Leuchten: erst sie machen aus Wolken
+       Nebel mit Form. Beim Band liegen sie auf dessen Mittellinie. */
+    const zug0 = E.zuege[0];
+    for (let i = 0; i < E.staub; i++){
+      const t = z(), [x, y] = punkt(zug0.p, t);
+      const quer = (E.bahn ? (z() - .5) * 20 : (z() - .5) * 160) * q;
+      tupfer(x + quer * .6 + (E.bahn ? 0 : (z() - .5) * 120 * q), y + quer, (16 + z() * (E.bahn ? 34 : 60)) * q, "6,4,3", .30 + z() * .25);
+    }
+    /* Einmal weichzeichnen (dreimal Kastenmittel, Radius 2 ≈ Gaußsche
+       Unschärfe): Der Browser streut in Verläufe feine Farbpunkte, damit
+       keine Stufen entstehen. Sechsfach vergrößert wurden daraus sichtbare
+       Kästchen. Kostet einmal wenige Millisekunden. */
+    try { this.glaetten(g, W, H); } catch(_){}
+    this.bild = c; this.art = NEBEL_ART; this.thema = Settings.theme;
+  },
+  glaetten(g, W, H){
+    const bild = g.getImageData(0, 0, W, H), d = bild.data, tmp = new Float32Array(W * H * 3), R = 2, n = R * 2 + 1;
+    for (let durchgang = 0; durchgang < 3; durchgang++){
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){          // waagrecht
+        let r = 0, gg = 0, b = 0;
+        for (let k = -R; k <= R; k++){ const i = (y * W + clamp(x + k, 0, W - 1)) * 4; r += d[i]; gg += d[i+1]; b += d[i+2]; }
+        const o = (y * W + x) * 3; tmp[o] = r / n; tmp[o+1] = gg / n; tmp[o+2] = b / n;
+      }
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++){          // senkrecht
+        let r = 0, gg = 0, b = 0;
+        for (let k = -R; k <= R; k++){ const o = (clamp(y + k, 0, H - 1) * W + x) * 3; r += tmp[o]; gg += tmp[o+1]; b += tmp[o+2]; }
+        const i = (y * W + x) * 4; d[i] = r / n; d[i+1] = gg / n; d[i+2] = b / n; d[i+3] = 255;
+      }
+    }
+    g.putImageData(bild, 0, 0);
+  },
+  malen(g){
+    if (Settings.lowPower || !this.ENTWUERFE[NEBEL_ART]){ g.fillStyle = TH().ink; g.fillRect(0, 0, VW, VH); return; }
+    if (!this.bild || this.art !== NEBEL_ART || this.thema !== Settings.theme) this.bauen();
+    const B = this.bild.width, H = this.bild.height;
+    const weit = Math.pow(.58 / clamp(cam.z, .02, 2), .12);
+    let fw = B * clamp(.52 * weit, .3, .9), fh = fw * VH / Math.max(1, VW);
+    if (fh > H * .96){ fh = H * .96; fw = fh * VW / Math.max(1, VH); }
+    const u = WELT_B > 0 ? clamp(cam.x / WELT_B, 0, 1) : .5, v = WELT_H > 0 ? clamp(cam.y / WELT_H, 0, 1) : .5;
+    g.imageSmoothingQuality = "high";
+    g.drawImage(this.bild, u * (B - fw), v * (H - fh), fw, fh, 0, 0, VW, VH);
+    g.imageSmoothingQuality = "low";   // Vorgabe des Browsers — für die Bildchen der Körper reicht sie
+  }
+};
+
 function draw(){
   const [mx,my,gm] = centre();
   peak = Math.max(peak, gm);
@@ -5297,7 +5451,7 @@ function draw(){
   const seen = o => o.x>view.x0 && o.x<view.x1 && o.y>view.y0 && o.y<view.y1;
 
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.fillStyle = TH().ink; ctx.fillRect(0,0,VW,VH);
+  Nebel.malen(ctx);
 
   ctx.save();
   /* Ein Pinsel für alle Sterne; die Deckkraft wechselt nur zwischen den
@@ -5590,6 +5744,9 @@ function draw(){
     }
   }
 
+  /* Eingesaugter Staub über den Körpern — er ist schon gefressen, wenn er
+     startet, liegt also schon am Rand des Körpers; darunter sähe man nichts. */
+  if (Game.sog.length) sogMalen(ctx);
   for (const s of Game.sparks){
     ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7);
     ctx.fillStyle = hexA(s.colour, Math.max(0, Math.min(1, s.life)));
@@ -12150,7 +12307,7 @@ const Net = {
 
     /* Trümmer nachführen: erst entfernen, dann setzen. */
     if (Array.isArray(m.dw) && m.dw.length){
-      for (const i of m.dw) this.deb.delete(+i);
+      for (const i of m.dw){ const e = this.deb.get(+i); if (e) sogOnline(e); this.deb.delete(+i); }
       this.debNeu = true;
     }
     if (Array.isArray(m.dn) && m.dn.length){
