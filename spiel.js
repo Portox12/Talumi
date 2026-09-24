@@ -669,7 +669,16 @@ const Integrity = {
     if (this.samples.length > 140) this.samples.shift();
     if (this.gaps.length > 140) this.gaps.shift();
   },
+  /* Im Tutorial ruht die Prüfung (v125, Thomas 24.09.: „während das
+     Infofenster bezüglich dem Verschlingen von Vesta sichtbar ist, wird der
+     Integritätstest misstrauisch … den können wir abschalten, während das
+     Tutorial im Gange ist"). Dort hält das Spiel den Körper fest und setzt
+     die Richtung selbst — für die Zielprüfung sieht das aus wie ein
+     Zielautomat. Nichts im Tutorial zählt als Runde, es gibt nichts zu
+     schützen. `start()` setzt die Prüfung vor jeder echten Runde zurück. */
+  ruht(){ try { return !!Tutorial.laufend; } catch(_){ return false; } },
   mayAct(){
+    if (this.ruht()) return true;
     const now = performance.now();
     this.tokens = Math.min(this.cap, this.tokens + (now-this.lastRefill)/1000*this.refill);
     this.lastRefill = now;
@@ -679,6 +688,10 @@ const Integrity = {
   hit(p,why){ this.score = Math.max(0, this.score-p); this.reason = why; },
 
   audit(){
+    if (this.ruht()){
+      if (this.score < 100 || this.aimTries || this.samples.length || this.untrusted) this.reset();
+      return;
+    }
     let clean = true;
     if (navigator.webdriver){ this.hit(40,"i_auto"); clean = false; }
     if (this.untrusted > 0){
