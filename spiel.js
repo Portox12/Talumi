@@ -13325,6 +13325,8 @@ const Tutorial = {
   /* v123: Am Ende wachsen die Stücke wieder zu einer Welt zusammen
      (`wachsen`; `gewachsen`, sobald es eine ist). */
   wachsen: false, gewachsen: false,
+  /* v133: die Übungskapsel und ob sie offen ist. */
+  kapsel: null, kapselAuf: false,
 
   /* --- Stand merken ------------------------------------------------- */
   laden(){
@@ -13385,10 +13387,11 @@ const Tutorial = {
     { id:"staub", text: () => t("tu_staub"),
       bei(){ this.glut = true; this.staubAb = Game.debrisEaten || 0; },
       zaehler: () => [Math.min(10, (Game.debrisEaten || 0) - Tutorial.staubAb), 10],
-      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 10 },
-    { id:"masse", text: () => t("tu_masse"),
-      bei(){ Tutorial.hudKlasse("mass", "tutBlink", true); },
-      weg(){ Tutorial.hudKlasse("mass", "tutBlink", false); this.glut = false; } },
+      fertig: () => (Game.debrisEaten || 0) - Tutorial.staubAb >= 10,
+      weg(){ this.glut = false; } },
+    /* Der Schritt „masse" („Oben links steht deine Masse") ist seit v133
+       weg — der Schritt „gewachsen" nach Vesta sagt dasselbe, und dafür
+       kam die Kapsel dazu (Thomas 24.09.: gleich lang bleiben). */
     /* Vesta mit dem Prinzip des Pulsar-Schusses (v122, Thomas 24.09.:
        „Ich fliege in einen vorgesehenen Bereich. Dann drücke ich auf Teilen
        und werde auf den Gegner geschossen"): Vesta steht ein Stück weg, der
@@ -13489,7 +13492,25 @@ const Tutorial = {
         this.hudKlasse("boardPlate", "tutGlow", true);
         try { const [cx, cy] = centre(); ring(cx, cy, 240, "#f2c14e"); burst(cx, cy, 26, "#f2c14e", 380); Sound.levelUp(); } catch(_){}
       },
-      weg(){ this.hudKlasse("boardPlate", "tutGlow", false); } }
+      weg(){ this.hudKlasse("boardPlate", "tutGlow", false); } },
+    /* Kapseln (v133, Thomas 24.09.: „nimm den Teil noch in das Tutorial
+       auf"): der Weg zu Iridium und den Bruchstücken (Raubmond, Design des
+       Monats) — bisher erklärte sie niemand. Hier auf der kleinen Karte,
+       denn neben der Welt in Phase B wäre sie nur ein Pünktchen. Sie liegt
+       auf der Seite, auf der man gerade nicht ist. Geöffnet wird wie im
+       Server (`sim.js`: Abstand < r + KAPSEL_R · 0,5); den Inhalt würfelt
+       im echten Spiel der Server, hier gibt es nur das Öffnen. */
+    { id:"kapsel", text: () => t("tu_kapsel") + (istAngemeldet() ? "" : " " + t("tu_kapsel_konto")),
+      bei(){
+        const me = Game.cells.length ? groesstes(Game.cells) : null;
+        const p = this.punkt(me && me.x < WELT_B / 2 ? .72 : .28, .3);
+        this.kapsel = { x: p.x, y: p.y, id: 7, kapsel: true };
+        Game.kapseln = [this.kapsel];
+        this.kapselAuf = false;
+        this.ziel = () => this.kapsel;
+      },
+      weg(){ this.ziel = null; this.kapsel = null; Game.kapseln = []; },
+      fertig: () => Tutorial.kapselAuf }
   ],
   B: [
     { id:"welt", text: () => t("tu_welt"), bei(){ this.sprung(); } },
@@ -14042,6 +14063,16 @@ const Tutorial = {
        genug, sie zu fressen, und das Teilen ging ins Leere (Prüfstand am
        Rechner, 24.09.). */
     if (this.vestaLebt() && this.vesta.m > 18) this.vesta.m = 18;
+    if (this.kapsel && !this.wartet && Game.cells.length){
+      const k = this.kapsel;
+      for (const c of Game.cells){
+        if (Math.hypot(c.x - k.x, c.y - k.y) >= radiusOf(c.m) + KAPSEL_R * .5) continue;
+        Game.kapseln = Game.kapseln.filter(x => x !== k);
+        this.kapsel = null; this.kapselAuf = true;
+        try { ring(k.x, k.y, KAPSEL_R * 4, "#9fd8ff"); burst(k.x, k.y, 18, "#9fd8ff", 260); Sound.levelUp(); } catch(_){}
+        break;
+      }
+    }
     /* Der leuchtende Kreis (Vesta: Teilen-Platz, Abwerfen: Schussplatz):
        Wer ihn erreicht, steht dort fest, ein Ring und ein Ton sagen „jetzt",
        und die Taste beginnt zu pulsieren (v120, seit v122 für beide). */
@@ -14104,7 +14135,7 @@ const Tutorial = {
     const ziel = this.ziel ? this.ziel() : null;
     if (ziel && Game.cells.length){
       const me = groesstes(Game.cells);
-      const zr = ziel.fed !== undefined ? PULSAR_R : radiusOf(ziel.m || 20);
+      const zr = ziel.fed !== undefined ? PULSAR_R : ziel.kapsel ? KAPSEL_R : radiusOf(ziel.m || 20);
       const dx = ziel.x - me.x, dy = ziel.y - me.y, l = Math.hypot(dx, dy) || 1;
       const a = radiusOf(me.m) + 16 / z, b = l - zr - 18 / z;
       g.save();
@@ -14188,6 +14219,7 @@ const Tutorial = {
     this.schussLinie = false; this.kamera = null; this.titelGid = null;
     this.wartet = false; this.halt = null; this.platz = null; this.gesperrt = false; this.platzErledigt = false;
     this.wachsen = false; this.gewachsen = false;
+    this.kapsel = null; this.kapselAuf = false; Game.kapseln = [];
     const box = document.getElementById("tutBox");
     if (box) box.hidden = true;
     const auf = document.getElementById("tutAufgabe");

@@ -2728,7 +2728,9 @@ const LANGS_TUT3 = {
       tu_gewachsen:"Done! You swallowed Vesta and grew by her whole mass: +{0}. Your new mass is shown top left.",
       tu_zeile:"This is Kepler. Under every player you can read who they are: the rank badge, with its level in the rank (1 to 3 dots), then the player's level, clan and name.",
       tu_z_rang:"Rank · level", tu_z_level:"Player level", tu_z_clan:"Clan", tu_z_name:"Name",
-      tu_mond_konto:"You need a Talumi account for this!"},
+      tu_mond_konto:"You need a Talumi account for this!",
+      tu_kapsel:"See the capsule? Capsules drift through space. Fly through it: inside you find Iridium, moon dust and rare fragments of designs and moons.",
+      tu_kapsel_konto:"You get what's inside with a Talumi account."},
   de:{tu_pfeil:"Siehst du den roten Warnpfeil? Er warnt dich vor einem großen Gegner außerhalb des Bildes, der sich auf dich teilen und dich verschlingen könnte. Halte Abstand!",
       tu_r_auge:"Dein erster Rang", tu_r_satz:"Du bist jetzt {0} — der erste von {1} Rängen. Spiel weiter, steig im Rang auf und erheb dich über deine Mitspieler.",
       tu_r_gast:"Mit einem Konto zählen deine Siege für den nächsten Rang.",
@@ -2740,7 +2742,9 @@ const LANGS_TUT3 = {
       tu_gewachsen:"Geschafft! Du hast Vesta verschlungen und bist um ihre ganze Masse gewachsen: +{0}. Oben links steht deine neue Masse.",
       tu_zeile:"Das ist Kepler. Unter jedem Spieler steht, wer er ist: das Rangzeichen mit der Stufe im Rang (1 bis 3 Punkte), dann Level, Clan und Name.",
       tu_z_rang:"Rang · Stufe", tu_z_level:"Level", tu_z_clan:"Clan", tu_z_name:"Name",
-      tu_mond_konto:"Dafür ist ein Talumi-Konto notwendig!"}
+      tu_mond_konto:"Dafür ist ein Talumi-Konto notwendig!",
+      tu_kapsel:"Siehst du die Kapsel? Solche Kapseln treiben durchs All. Flieg hindurch: Darin findest du Iridium, Mondstaub und seltene Bruchstücke von Designs und Monden.",
+      tu_kapsel_konto:"Den Inhalt bekommst du mit einem Talumi-Konto."}
 };
 for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 /* Shop und Raubmond (v127, Thomas 24.09.) — vorerst nur de/en, die übrigen
