@@ -4159,7 +4159,7 @@ function namenBild(g, text, gr){
   const e = NAMEN_BILD.get(key);
   if (e) return e;
   try { if (document.fonts && !document.fonts.check(`600 ${px}px "Talumi Serif"`, text)) return null; } catch(_){}
-  if (NAMEN_BILD.size > 240) NAMEN_BILD.clear();
+  if (NAMEN_BILD.size > 240) bilderLeeren(NAMEN_BILD);
   let neu = null;
   try {
     const c = document.createElement("canvas"), h = c.getContext("2d");
@@ -4241,6 +4241,17 @@ function innenMalen(g, x, y, r, pal, M, rock, dark, fancy, fein, terminator, zei
    sich bewegen, bekommen 15-mal je Sekunde ein neues Bild; alle Stücke
    desselben Designs teilen es sich. */
 const INNEN_BILD = new Map();
+/* Speicher (v143): Safari zählt alle Zeichenflächen einer Seite zusammen und
+   bricht über einer Gerätegrenze ab (ältere iPhones rund 224–384 MB). Die
+   Körperbilder dürfen zusammen höchstens 4 Mio. Bildpunkte (≈ 16 MB) haben;
+   beim Leeren wird jede Fläche auf Breite 0 gesetzt — so gibt Safari den
+   Speicher sofort zurück statt erst beim Aufräumen. */
+const INNEN_GRENZE = 4e6;
+let innenPunkte = 0;
+function bilderLeeren(karte){
+  for (const e of karte.values()){ const c = e && (e.c || e); try { if (c && c.width){ c.width = 0; c.height = 0; } } catch(_){} }
+  karte.clear();
+}
 const INNEN_STUFEN = [12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128, 160, 192, 256];
 const INNEN_BEWEGT = new Set(["filigran", "glut", "energie", "schlund", "gas", "perle"]);
 function innenBild(g, r, pal, M, rock, dark, terminator){
@@ -4255,7 +4266,9 @@ function innenBild(g, r, pal, M, rock, dark, terminator){
   let e = INNEN_BILD.get(key);
   if (e && e.takt === takt) return e;
   if (!e){
-    if (INNEN_BILD.size > 160) INNEN_BILD.clear();
+    const punkte = (2 * R + 4) * (2 * R + 4);
+    if (INNEN_BILD.size > 200 || innenPunkte + punkte > INNEN_GRENZE){ bilderLeeren(INNEN_BILD); innenPunkte = 0; }
+    innenPunkte += punkte;
     try {
       const c = document.createElement("canvas"); c.width = c.height = 2 * R + 4;
       e = { c, g: c.getContext("2d"), rand: (R + 2) / R, takt: -1 };
@@ -5291,7 +5304,7 @@ function kleinBild(o, pal){
   const key = (pal.id || pal.label || pal.rock) + "|" + st + "|" + (o.tier || 1) + "|" + (o.trait || "") + "|" + (o.tint || 0);
   let c = KLEIN_BILD.get(key);
   if (c) return c;
-  if (KLEIN_BILD.size > 320) KLEIN_BILD.clear();
+  if (KLEIN_BILD.size > 320) bilderLeeren(KLEIN_BILD);
   try {
     c = document.createElement("canvas"); c.width = c.height = 96;
     const g = c.getContext("2d");
