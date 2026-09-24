@@ -13501,7 +13501,9 @@ const Tutorial = {
       bei(){ this.pulsareSetzen(); this.pulsarAb = Game.pulsarsEaten || 0; },
       zaehler: () => [Math.min(3, (Game.pulsarsEaten || 0) - Tutorial.pulsarAb), 3],
       fertig: () => (Game.pulsarsEaten || 0) - Tutorial.pulsarAb >= 3 },
-    { id:"mond", text: () => t("tu_mond"),
+    /* Der Konto-Satz nur für Gäste (v132, Thomas 24.09.: „Nur falls der
+       Spieler noch kein Talumi-Konto hat …"). */
+    { id:"mond", text: () => t("tu_mond") + (istAngemeldet() ? "" : " " + t("tu_mond_konto")),
       bei(){
         this.mondDemo = ["eis"];
         try { const [cx, cy] = centre(); ring(cx, cy, radiusOf(Math.max(30, Tutorial.eigeneMasse())) * 2.2, "#bfe8ff"); Sound.levelUp(); } catch(_){}

@@ -2043,7 +2043,7 @@ const LANGS_TUT = {
       tut_fertig:"That is all of it. Now grow as far as you can.",
       tut_weiter:"Next",
       tut_m_koerper:"This is your body. It grows with your best round.",
-      tut_m_designs:"New designs are unlocked here — and you can see what comes next.",
+      tut_m_designs:"Here you see the designs you have unlocked — and which ones you get next.",
       tut_m_modi:"Choose a game mode, then press “Start”."},
   de:{w_satz:"Aus einem Staubkorn wird ein Planet mit Ringen und Monden. Verschling, was kleiner ist, und weich aus, was größer ist.",
       w_start:"Spielen", w_konto:"Ich habe schon ein Konto",
@@ -2058,7 +2058,7 @@ const LANGS_TUT = {
       tut_fertig:"Mehr ist es nicht. Jetzt wachs, so weit du kommst.",
       tut_weiter:"Weiter",
       tut_m_koerper:"Das ist dein Körper. Er wächst mit deiner besten Runde.",
-      tut_m_designs:"Hier schaltest du neue Designs frei — und siehst, was als Nächstes kommt.",
+      tut_m_designs:"Hier siehst du deine freigeschalteten Designs — und siehst, welche du als Nächstes erhältst.",
       tut_m_modi:"Wähle einen Spielmodus und drücke anschließend auf „Spielen“."},
   es:{w_satz:"De una mota de polvo a un planeta con anillos y lunas. Traga lo más pequeño, esquiva lo más grande.",
       w_start:"Jugar", w_konto:"Ya tengo una cuenta",
@@ -2596,7 +2596,7 @@ const LANGS_TUT2 = {
       tu_welt:"Leap ahead: you are now a world of 100,000 mass — and much slower for it. Split as often as you can so you can take in pulsars.",
       tu_teilen_maus:"Split as often as you can (Space) — up to 16 pieces.", tu_teilen_tipp:"Split as often as you can (Split) — up to 16 pieces.",
       tu_pulsare:"Split this wide, you can swallow pulsars — they give lots of mass. Swallow three.",
-      tu_mond:"In the “Ascent” mode, with an account, swallowing pulsars can turn up so-called *moons*. They orbit your world and make you stronger.",
+      tu_mond:"In the “Ascent” mode, swallowing pulsars can turn up so-called *moons*. They orbit you and make you stronger.",
       tu_fertig:"Done!", tu_verstanden:"Got it", tu_zur_lohn:"To your reward", tu_sprung:"Leap", tu_taste_leer:"Space", tu_taste_w:"W",
       tu_l_auge:"Tutorial complete", tu_l_kopf:"Your reward", tu_l_design:"Your first design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Moondust",
       tu_l_konto:"With an account you also get {0} Iridium and {1} moondust — free, and your progress stays on every device.",
@@ -2614,7 +2614,7 @@ const LANGS_TUT2 = {
       tu_welt:"Sprung nach vorn: Du bist jetzt eine Welt mit 100.000 Masse — und dadurch deutlich langsamer. Teile dich so oft wie möglich, um Pulsare aufnehmen zu können.",
       tu_teilen_maus:"Teile dich, so oft es geht (Leertaste) — bis zu 16 Stücke.", tu_teilen_tipp:"Teile dich, so oft es geht (Teilen) — bis zu 16 Stücke.",
       tu_pulsare:"So weit geteilt kannst du Pulsare verschlingen — sie geben viel Masse. Verschlinge drei.",
-      tu_mond:"Im Spielmodus „Aufstieg“ kannst du mit einem Konto beim Verschlingen von Pulsaren sogenannte *Monde* finden. Sie kreisen um deine Welt und machen dich stärker.",
+      tu_mond:"Im Spielmodus „Aufstieg“ kannst du beim Verschlingen von Pulsaren sogenannte *Monde* finden. Sie kreisen um dich und machen dich stärker.",
       tu_fertig:"Geschafft!", tu_verstanden:"Verstanden", tu_zur_lohn:"Zur Belohnung", tu_sprung:"Sprung", tu_taste_leer:"Leertaste", tu_taste_w:"W",
       tu_l_auge:"Tutorial geschafft", tu_l_kopf:"Deine Belohnung", tu_l_design:"Dein erstes Design: {0}", tu_l_ore:"Ore", tu_l_iri:"Iridium", tu_l_staub:"Mondstaub",
       tu_l_konto:"Mit einem Konto bekommst du dazu {0} Iridium und {1} Mondstaub — kostenlos, und dein Fortschritt bleibt auf jedem Gerät.",
@@ -2727,7 +2727,8 @@ const LANGS_TUT3 = {
       tu_m_profil_gast:"Your profile picture opens your player profile. With an account, other players can see it too.",
       tu_gewachsen:"Done! You swallowed Vesta and grew by her whole mass: +{0}. Your new mass is shown top left.",
       tu_zeile:"This is Kepler. Under every player you can read who they are: the rank badge, with its level in the rank (1 to 3 dots), then the player's level, clan and name.",
-      tu_z_rang:"Rank · level", tu_z_level:"Player level", tu_z_clan:"Clan", tu_z_name:"Name"},
+      tu_z_rang:"Rank · level", tu_z_level:"Player level", tu_z_clan:"Clan", tu_z_name:"Name",
+      tu_mond_konto:"You need a Talumi account for this!"},
   de:{tu_pfeil:"Siehst du den roten Warnpfeil? Er warnt dich vor einem großen Gegner außerhalb des Bildes, der sich auf dich teilen und dich verschlingen könnte. Halte Abstand!",
       tu_r_auge:"Dein erster Rang", tu_r_satz:"Du bist jetzt {0} — der erste von {1} Rängen. Spiel weiter, steig im Rang auf und erheb dich über deine Mitspieler.",
       tu_r_gast:"Mit einem Konto zählen deine Siege für den nächsten Rang.",
@@ -2738,7 +2739,8 @@ const LANGS_TUT3 = {
       tu_m_profil_gast:"Über dein Profilbild kommst du zu deinem Spielerprofil. Mit einem Konto können es auch die anderen Spieler sehen.",
       tu_gewachsen:"Geschafft! Du hast Vesta verschlungen und bist um ihre ganze Masse gewachsen: +{0}. Oben links steht deine neue Masse.",
       tu_zeile:"Das ist Kepler. Unter jedem Spieler steht, wer er ist: das Rangzeichen mit der Stufe im Rang (1 bis 3 Punkte), dann Level, Clan und Name.",
-      tu_z_rang:"Rang · Stufe", tu_z_level:"Level", tu_z_clan:"Clan", tu_z_name:"Name"}
+      tu_z_rang:"Rang · Stufe", tu_z_level:"Level", tu_z_clan:"Clan", tu_z_name:"Name",
+      tu_mond_konto:"Dafür ist ein Talumi-Konto notwendig!"}
 };
 for (const c in LANGS_TUT3) Object.assign(LANGS[c], LANGS_TUT3[c]);
 /* Shop und Raubmond (v127, Thomas 24.09.) — vorerst nur de/en, die übrigen
