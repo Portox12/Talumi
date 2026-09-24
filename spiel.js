@@ -5433,6 +5433,67 @@ const Nebel = {
   }
 };
 
+/* Pulsare (Entwurf, 24.09.2026 abends): bisher eine dunkle Zackenscheibe mit
+   Messingrand — auf den Spielfotos wirkten sie wie flache Zahnräder. Der
+   Umriss bleibt in jedem Entwurf exakt gleich (er ist die Trefferfläche),
+   verändert wird nur, was darin liegt. "alt" = wie bisher.
+     "glut":     glühender Kern, der langsam pulsiert, zwei kreisende
+                 Lichtstrahlen (ein Pulsar ist ein Leuchtturm), heller Rand.
+     "kristall": Zacken als Facetten, die zum Licht hin hell sind (eine
+                 Lichtquelle wie bei den Körpern), heller Kern. */
+let PULSAR_ART = "alt";
+function sternPfad(g, p){
+  g.beginPath();
+  for (let i = 0; i < 20; i++){
+    const a = i / 20 * 6.2832, rr = PULSAR_R * (i % 2 ? .74 : 1 + p.fed * .02);
+    i ? g.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : g.moveTo(Math.cos(a) * rr, Math.sin(a) * rr);
+  }
+  g.closePath();
+}
+function pulsarSchmuck(g, p){
+  const R = PULSAR_R, puls = .5 + .5 * Math.sin(Game.t * 2.4 + p.x * .01);
+  if (PULSAR_ART === "glut"){
+    const gr = g.createRadialGradient(0, 0, 0, 0, 0, R * .8);
+    gr.addColorStop(0, `rgba(255,228,176,${(.78 + .2 * puls).toFixed(3)})`);
+    gr.addColorStop(.26, `rgba(238,158,78,${(.42 + .18 * puls).toFixed(3)})`);
+    gr.addColorStop(.6, "rgba(150,72,28,.16)");
+    gr.addColorStop(1, "rgba(120,50,20,0)");
+    g.fillStyle = gr; g.fill();                       // der Sternpfad liegt noch
+    g.save(); g.rotate(Game.t * 1.3 - p.spin);
+    g.fillStyle = "rgba(255,238,205,.32)";
+    for (const s of [0, Math.PI]){
+      g.beginPath(); g.moveTo(0, 0);
+      g.lineTo(Math.cos(s - .06) * R * .72, Math.sin(s - .06) * R * .72);
+      g.lineTo(Math.cos(s + .06) * R * .72, Math.sin(s + .06) * R * .72);
+      g.closePath(); g.fill();
+    }
+    g.restore();
+    sternPfad(g, p);
+    g.strokeStyle = "rgba(250,212,142,.28)"; g.lineWidth = 6; g.stroke();
+    g.strokeStyle = "rgba(252,220,160,.92)"; g.lineWidth = 2.2; g.stroke();
+    g.beginPath(); g.arc(0, 0, R * .11, 0, 6.2832); g.fillStyle = "rgba(255,246,226,.95)"; g.fill();
+    return;
+  }
+  /* kristall */
+  for (let i = 0; i < 20; i++){
+    const a0 = i / 20 * 6.2832, a1 = (i + 1) / 20 * 6.2832;
+    const r0 = R * (i % 2 ? .74 : 1 + p.fed * .02), r1 = R * ((i + 1) % 2 ? .74 : 1 + p.fed * .02);
+    const licht = Math.cos((a0 + a1) / 2 + p.spin - LICHT);
+    g.beginPath(); g.moveTo(0, 0);
+    g.lineTo(Math.cos(a0) * r0, Math.sin(a0) * r0); g.lineTo(Math.cos(a1) * r1, Math.sin(a1) * r1);
+    g.closePath();
+    g.fillStyle = licht > 0 ? `rgba(238,194,126,${(.07 + .34 * licht).toFixed(3)})` : `rgba(0,0,0,${(-.38 * licht).toFixed(3)})`;
+    g.fill();
+  }
+  const k = g.createRadialGradient(0, 0, 0, 0, 0, R * .42);
+  k.addColorStop(0, "rgba(255,242,214,.95)");
+  k.addColorStop(.3, `rgba(240,188,118,${(.38 + .22 * puls).toFixed(3)})`);
+  k.addColorStop(1, "rgba(240,188,118,0)");
+  g.fillStyle = k; g.beginPath(); g.arc(0, 0, R * .42, 0, 6.2832); g.fill();
+  sternPfad(g, p);
+  g.strokeStyle = "rgba(250,216,152,.88)"; g.lineWidth = 2; g.stroke();
+}
+
 function draw(){
   const [mx,my,gm] = centre();
   peak = Math.max(peak, gm);
@@ -5816,9 +5877,12 @@ function draw(){
     }
     ctx.closePath();
     ctx.fillStyle = TH().pulsar; ctx.fill();
-    ctx.strokeStyle = TH().pulsarEdge; ctx.lineWidth = 2.5; ctx.stroke();
-    ctx.beginPath(); ctx.arc(0, 0, PULSAR_R*.3, 0, 7);
-    ctx.fillStyle = TH().pulsarCore; ctx.fill();
+    if (PULSAR_ART !== "alt" && !Settings.lowPower && PULSAR_R * cam.z >= 9) pulsarSchmuck(ctx, p);   // winzig im Bild: der alte, billige Stil
+    else {
+      ctx.strokeStyle = TH().pulsarEdge; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, 0, PULSAR_R*.3, 0, 7);
+      ctx.fillStyle = TH().pulsarCore; ctx.fill();
+    }
     ctx.restore();
   }
 
