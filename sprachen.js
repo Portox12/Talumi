@@ -3019,3 +3019,24 @@ const LANGS_MOND149 = {
       ke_glut_w:"+{0} % лунной пыли и +{1} % к шансу найти луну в Восхождении"}
 };
 for (const c in LANGS_MOND149) Object.assign(LANGS[c], LANGS_MOND149[c]);
+
+/* Nutzungsbedingungen Fassung 2 (v153, 25.09.2026): Satz im Zustimmungsfenster
+   für alle, die schon Fassung 1 zugestimmt haben, und die Kurzfassung mit
+   Iridium. */
+const LANGS_AGB2 = {
+  en:{agb_geaendert:"We have updated the terms of use: Iridium, cores and capsules are now in, a season lasts three months, and you can delete your account in the game. Please have a look and agree.",
+      agb_kurz:"In short: play fair, no cheats or second accounts, names without insults, and Ore and Iridium have no money value."},
+  de:{agb_geaendert:"Wir haben die Nutzungsbedingungen überarbeitet: Neu sind Iridium, Kerne und Kapseln, eine Saison dauert drei Monate, und dein Konto kannst du im Spiel löschen. Sieh sie dir bitte an und stimme zu.",
+      agb_kurz:"Kurz gesagt: fair spielen, keine Cheats und Zweitkonten, Namen ohne Beleidigungen, und Ore und Iridium haben keinen Geldwert."},
+  es:{agb_geaendert:"Hemos actualizado las condiciones de uso: ahora hay Iridio, núcleos y cápsulas, una temporada dura tres meses y puedes borrar tu cuenta en el juego. Échales un vistazo y acéptalas.",
+      agb_kurz:"En resumen: juega limpio, sin trampas ni segundas cuentas, nombres sin insultos, y el Ore y el Iridio no tienen valor monetario."},
+  pt:{agb_geaendert:"Atualizamos os termos de uso: agora há Irídio, núcleos e cápsulas, uma temporada dura três meses e você pode excluir sua conta no jogo. Dê uma olhada e aceite, por favor.",
+      agb_kurz:"Resumindo: jogue limpo, sem trapaças nem segundas contas, nomes sem insultos, e o Ore e o Irídio não têm valor em dinheiro."},
+  fr:{agb_geaendert:"Nous avons mis à jour les conditions d’utilisation : l’Iridium, les noyaux et les capsules y figurent, une saison dure trois mois et vous pouvez supprimer votre compte dans le jeu. Merci de les lire et de les accepter.",
+      agb_kurz:"En bref : jouez fair-play, pas de triche ni de second compte, des noms sans insultes, et l’Ore et l’Iridium n’ont aucune valeur monétaire."},
+  tr:{agb_geaendert:"Kullanım koşullarını güncelledik: artık İridyum, çekirdekler ve kapsüller var, bir sezon üç ay sürüyor ve hesabını oyunda silebilirsin. Lütfen göz at ve onayla.",
+      agb_kurz:"Kısacası: adil oyna, hile ve ikinci hesap yok, hakaretsiz isimler; Ore ve İridyumun parasal değeri yoktur."},
+  ru:{agb_geaendert:"Мы обновили условия использования: теперь в них есть Иридий, ядра и капсулы, сезон длится три месяца, а аккаунт можно удалить в игре. Пожалуйста, ознакомьтесь и примите их.",
+      agb_kurz:"Коротко: играйте честно, без читов и вторых аккаунтов, имена без оскорблений, у Ore и Иридия нет денежной ценности."}
+};
+for (const c in LANGS_AGB2) Object.assign(LANGS[c], LANGS_AGB2[c]);

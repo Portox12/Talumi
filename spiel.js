@@ -11082,6 +11082,9 @@ function agbPruefen(){
   const h = $("agbHaken"); if (h) h.checked = false;
   const n = $("agbNote"); if (n) n.textContent = "";
   { const r = $("agbGebRow"); if (r) r.hidden = !gebFehlt(); }
+  /* Wer schon einer früheren Fassung zugestimmt hat, liest, was neu ist
+     (Fassung 2, v153); wer noch keiner zugestimmt hat, den Satz von damals. */
+  { const p = $("agbText"); if (p) p.textContent = t((Number(Konto.profil.agb) || 0) > 0 ? "agb_geaendert" : "agb_neu"); }
   { const k = $("agbKarte"), j = $("agbJung"); if (k) k.hidden = false; if (j) j.hidden = true; }
   show("agbVeil");
 }
