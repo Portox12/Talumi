@@ -7,12 +7,20 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v153";
+const VERSION = "v154";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
-  "./sprachen.js",
-  "./spiel.js",
+  /* v154: ausgeliefert werden die gebauten Dateien (bauen.js); alle
+     Sprachen, damit ein Sprachwechsel auch ohne Netz klappt. */
+  "./spiel.min.js",
+  "./sprachen-en.js",
+  "./sprachen-de.js",
+  "./sprachen-es.js",
+  "./sprachen-pt.js",
+  "./sprachen-fr.js",
+  "./sprachen-tr.js",
+  "./sprachen-ru.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",

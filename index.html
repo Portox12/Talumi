@@ -1229,7 +1229,19 @@
      3 Punkte Luft neben der Insel, knapp 5 mm mehr Menü je Seite (Thomas,
      iPhone 16). Ohne Insel bleibt der alte Abstand (26 bzw. 14). */
   .konsKopf{position:absolute;top:20px;left:max(26px, calc(env(safe-area-inset-left) - 8px));right:max(26px, calc(env(safe-area-inset-right) - 8px));height:62px;z-index:4;
-       display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:18px}
+       display:grid;grid-template-columns:minmax(max-content,1fr) auto minmax(max-content,1fr);align-items:center;gap:18px}
+  /* Mittelbreite Fenster (rund 900–1150): Links lag „Ranglisten“ unter dem
+     Tagesbonus, weil die linke Gruppe breiter war als ihre halbe Spalte
+     (Thomas, 25.09.2026). Die Spalten nehmen jetzt mindestens ihren Inhalt,
+     und `kopfPlatz()` in spiel.js misst: Passt die Zeile nicht, wird der
+     Schriftzug kleiner, dann rücken die Knöpfe enger, zuletzt bleibt nur
+     die Kugel (Prüfstand testmarke.js, 740–1400 breit, fünf Sprachen). */
+  .konsKopf.markeKlein .konsMarke b{font-size:13px;letter-spacing:.2em}
+  .konsKopf.kopfEng{gap:8px}
+  .konsKopf.kopfEng .konsG{gap:6px}
+  .konsKopf.kopfEng .konsNav{padding:0 10px}
+  .konsKopf.markeAus .konsMarke b{display:none}
+  .konsKopf.markeAus .konsMarke{margin-right:4px}
   .konsG{display:flex;gap:8px;align-items:center;min-width:0}
   .konsG.r{justify-content:flex-end}
   .konsMarke{display:flex;align-items:center;gap:10px;margin-right:12px;flex:0 0 auto}
@@ -4861,7 +4873,26 @@
   <div class="glanz"><span id="lohnBild"></span><b id="lohnText"></b><small id="lohnSub"></small></div>
 </div>
 
-<script src="sprachen.js"></script>
-<script src="spiel.js"></script>
+<!-- Laden (v154): Im fertigen Spiel die schlanken Dateien aus bauen.js —
+     spiel.min.js (ohne Kommentare) und sprachen-xx.js (Englisch + eigene
+     Sprache). Auf localhost die lesbaren Originale (Prüfstände, Vorschau),
+     mit ?bau=1 auch dort die schlanken (testbau.js). Die Sprache wählt diese
+     Zeile genau wie pickLang() in spiel.js. document.write mit Dateien von
+     derselben Adresse lädt wie ein gewöhnliches <script>: in dieser
+     Reihenfolge und bevor die Seite als geladen gilt. -->
+<script>
+(function(){
+  var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var bau = !lokal || /[?&]bau=1(&|$)/.test(location.search);
+  var dateien = ["sprachen.js", "spiel.js"];
+  if (bau){
+    var da = ["en", "de", "es", "pt", "fr", "tr", "ru"], l = "en";
+    var w = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+    for (var i = 0; i < w.length; i++){ var b = String(w[i]).toLowerCase().split("-")[0]; if (da.indexOf(b) >= 0){ l = b; break; } }
+    dateien = ["sprachen-" + l + ".js", "spiel.min.js"];
+  }
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '"><\/script>');
+})();
+</script>
 </body>
 </html>

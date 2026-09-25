@@ -546,9 +546,24 @@ function pickLang(){
     ? navigator.languages : [navigator.language || "en"];
   for (const w of want){
     const base = String(w).toLowerCase().split("-")[0];
-    if (LANGS[base]) return base;
+    if (LANGNAMES[base]) return base;
   }
   return "en";
+}
+/* Sprache wechseln (v154). Im fertigen Spiel liegen nur Englisch und die
+   eigene Sprache im Speicher (`sprachen-xx.js`, von bauen.js erzeugt); eine
+   andere wird erst nachgeladen, dann angezeigt. Lokal mit sprachen.js sind
+   alle da, dann geht es sofort. Klappt das Laden nicht (kein Netz), bleibt
+   die bisherige Sprache. */
+function spracheSetzen(code, nachher){
+  const fertig = () => { lang = code; applyLang(); if (nachher) nachher(); };
+  if (LANGS[code]) { fertig(); return; }
+  const alt = lang;
+  const s = document.createElement("script");
+  s.src = "sprachen-" + code + ".js";
+  s.onload = () => { if (LANGS[code]) fertig(); else { lang = alt; if (nachher) nachher(); } };
+  s.onerror = () => { lang = alt; if (nachher) nachher(); };
+  document.head.appendChild(s);
 }
 function t(key){
   let s = (LANGS[lang] && LANGS[lang][key]) || LANGS.en[key] || key;
@@ -589,6 +604,8 @@ function applyLang(){
      Server nachmelden, damit Neuigkeiten in dieser Sprache kommen. Beim
      ersten Aufruf gibt es `Konto` noch nicht — daher die Klammer. */
   try { Konto.spracheMelden(); } catch(_){}
+  /* Knopftexte sind je Sprache verschieden lang — Kopfzeile neu einpassen. */
+  try { if (window.kopfEinpassen) window.kopfEinpassen(); } catch(_){}
 }
 
 /* Zwei Paletten in Erdtönen. Die Farben stehen an einer Stelle, weil sie
@@ -6716,7 +6733,7 @@ function buildSettings(){
       const cur = row.key === "lang" ? lang : Settings[row.key];
       b.setAttribute("aria-pressed", String(cur === value));
       b.addEventListener("click", () => {
-        if (row.key === "lang"){ lang = value; applyLang(); buildSettings(); return; }
+        if (row.key === "lang"){ spracheSetzen(value, buildSettings); return; }
         Settings[row.key] = value;
         applySetting(row.key);
         buildSettings();
@@ -9536,10 +9553,35 @@ function onlineZeigen(){
     if (fest && start.parentElement === kopf) veil.insertBefore(start, kopf.nextSibling);
     else if (!fest && start.parentElement !== kopf) kopf.insertBefore(start, danach);
   };
+  /* Am Rechner ist die Kopfzeile ein Dreierraster (links, Start, rechts).
+     Braucht der Inhalt mehr als die Breite, schrumpft zuerst der Schriftzug,
+     dann rücken die Knöpfe enger, zuletzt bleibt nur die Kugel — sonst lag
+     „Ranglisten“ unter dem Tagesbonus
+     (Thomas, 25.09.2026, bei 1024 Breite). */
+  const inhalt = e => {
+    if (!e.classList.contains("konsG")) return e.offsetWidth;
+    const k = [...e.children].filter(x => x.offsetWidth);
+    return k.reduce((s, x) => s + x.offsetWidth + (parseFloat(getComputedStyle(x).marginRight) || 0), 0)
+      + (parseFloat(getComputedStyle(e).columnGap) || 0) * Math.max(0, k.length - 1);
+  };
+  const einpassen = () => {
+    kopf.classList.remove("markeKlein", "kopfEng", "markeAus");
+    if (getComputedStyle(kopf).display !== "grid" || !kopf.clientWidth) return;
+    const teile = [...kopf.children].filter(x => x.offsetWidth);
+    const passt = () => teile.reduce((s, x) => s + inhalt(x), 0)
+      + (parseFloat(getComputedStyle(kopf).columnGap) || 0) * (teile.length - 1) <= kopf.clientWidth;
+    if (passt()) return;
+    for (const stufe of ["markeKlein", "kopfEng", "markeAus"]){
+      kopf.classList.add(stufe);
+      if (passt()) return;
+    }
+  };
+  window.kopfEinpassen = einpassen;
   const setzen = () => {
     ort();
     const b = Math.ceil(start.getBoundingClientRect().width);
     if (b > 0) kopf.style.setProperty("--start-breite", b + "px");
+    einpassen();
     rand();
   };
   /* Nur der Startblock wird beobachtet. Die Kopfzeile selbst zu beobachten
@@ -10671,7 +10713,7 @@ $("kaufOre").addEventListener("click", () => { if (kaufGewaehlt) kaufMitOre(kauf
       b.append(voll, kurz);
       b.setAttribute("aria-label", LANGNAMES[code]);
       b.setAttribute("aria-pressed", String(code === lang));
-      b.addEventListener("click", () => { lang = code; applyLang(); draw(); });
+      b.addEventListener("click", () => spracheSetzen(code, draw));
       box.appendChild(b);
     }
   };
@@ -12850,7 +12892,7 @@ if ($("hautBtn")) $("hautBtn").addEventListener("click", () => reiter("haut"));
       b.type = "button"; b.setAttribute("role", "menuitemradio");
       b.textContent = LANGNAMES[code];
       b.setAttribute("aria-pressed", String(code === lang));
-      b.addEventListener("click", () => { lang = code; applyLang(); zu(); });
+      b.addEventListener("click", () => spracheSetzen(code, zu));
       menue.appendChild(b);
     }
     menue.hidden = false; knopf.setAttribute("aria-expanded", "true");
