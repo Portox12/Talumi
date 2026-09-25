@@ -3230,7 +3230,7 @@ function finish(timeUp){
   const oreKills  = Game.kills * 2;
   const oreStages = STAGE_BONUS.slice(0, st+1).reduce((s,x) => s+x, 0);
   const beat      = peak > Profile.best;
-  const oreBest   = beat ? Math.round((oreMass + oreKills + oreStages) * 0.5) : 0;
+  const oreBest   = 0;   // v150: kein Aufschlag mehr für eine neue Bestmasse (wie im Server)
   /* Siegprämie: Ein Royale-Sieg ist selten und soll sich lohnen — sonst
      spielt jeder den offenen Modus, weil dort mehr Masse zu holen ist. */
   const oreWin = Game.won ? 200 : 0;
@@ -3453,7 +3453,7 @@ function finish(timeUp){
     [t("swallowed") + " " + Game.kills, oreKills],
     [t("reached") + " " + t("st"+st), oreStages]
   ];
-  if (beat) rows.push([t("newbest"), oreBest]);
+  if (oreBest) rows.push([t("newbest"), oreBest]);
   if (oreWin) rows.push([t("wonround"), oreWin]);
   for (const it of Game.goals)
     if (it.done) rows.push([t("objective") + ": " + t("g_"+it.def.id), it.def.ore]);
@@ -7313,13 +7313,13 @@ function buildMonde(){
        Zahlen vom Server. */
     if (seite){
       /* v149: Mondfund und Mondstaub aus der Spielzeit einer Runde. */
-      const F = Object.assign({ jeMin: .005, deckel: .3, minSek: 180, minMasse: 500, staubSek: 600, rekord: 2 }, m.fund || {});
+      const F = Object.assign({ jeMin: .005, deckel: .3, minSek: 180, minMasse: 500, staubSek: 600 }, m.fund || {});
       const pz = n => (Math.round(n * 1000) / 10).toLocaleString(lang) + " %";
       /* Zuerst der Kern (v113), dann Mondstaub und die Wege zu Monden. */
       seite.innerHTML = kernSeiteHtml() +
         `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><small class="hintline">${esc(t("mo_platz_erkl", aktiv.length, m.plaetze || 4))}</small>` +
         `<h3 style="margin-top:12px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
-        `<small class="hintline">${esc(t("mo_staub_erkl", Math.round(F.staubSek / 60), F.rekord, Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)))}</small>` +
+        `<small class="hintline">${esc(t("mo_staub_erkl", Math.round(F.staubSek / 60), 0, Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)))}</small>` +
         /* Mond-Bruchstücke aus Kapseln (v134) — Zahl vom Server. */
         (m.mondTeile ? `<h3 style="margin-top:12px">${esc(t("mo_teile"))}</h3><div class="mondStaub">${+m.monde.mondStuecke || 0} / ${+m.mondTeile}</div>` +
           `<small class="hintline">${esc(t("mo_teile_erkl", +m.mondTeile))}</small>` : "") +
@@ -11207,7 +11207,7 @@ function offeneRundeEinloesen(){
   /* Dieselben Teile wie in `finish()`, ohne Ziele, Sieg und Happy Hour. */
   const st = stageOf(p);
   let ore = Math.round(p / 30) + k * 2 + STAGE_BONUS.slice(0, st + 1).reduce((a, x) => a + x, 0);
-  if (p > Profile.best){ ore += Math.round(ore * 0.5); Profile.best = Math.round(p); }
+  if (p > Profile.best) Profile.best = Math.round(p);   // v150: ohne Aufschlag
   Profile.ore += ore;
   const R = Profile.rec;
   R.runs++; R.mass = Math.max(R.mass, Math.round(p)); R.kills = Math.max(R.kills, k); R.time = Math.max(R.time, +m.sek || 0);
