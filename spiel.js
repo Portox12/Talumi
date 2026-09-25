@@ -7332,7 +7332,7 @@ function buildMonde(){
        Zahlen vom Server. */
     if (seite){
       /* v149: Mondfund und Mondstaub aus der Spielzeit einer Runde. */
-      const F = Object.assign({ jeMin: .005, deckel: .3, minSek: 180, minMasse: 500, staubSek: 600 }, m.fund || {});
+      const F = Object.assign({ jeMin: .001, deckel: .06, minSek: 180, minMasse: 500, staubSek: 1200 }, m.fund || {});
       const pz = n => (Math.round(n * 1000) / 10).toLocaleString(lang) + " %";
       /* Zuerst der Kern (v113), dann Mondstaub und die Wege zu Monden. */
       seite.innerHTML = kernSeiteHtml() +
@@ -7346,7 +7346,7 @@ function buildMonde(){
         (m.raubTeile && !m.monde.raub ? `<h3 style="margin-top:12px">${esc(t("mo_raubteile"))}</h3><div class="mondStaub">${+m.monde.raubStuecke || 0} / ${+m.raubTeile}</div>` +
           `<small class="hintline">${esc(t("mo_raubteile_erkl", +m.raubTeile))}</small>` : "") + `</div>` +
         `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
-        [t("mo_w_fund", pz(F.jeMin), pz(F.deckel), Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
+        [t("mo_w_fund", pz(F.jeMin), pz(F.deckel), Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 5)]   // v152: Tagesbonus bringt keinen Mond mehr
           .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
       kernKnoepfe(seite, zeichnen);
     }
@@ -7369,10 +7369,10 @@ function buildMonde(){
       b1.onclick = () => { b1.disabled = true; mondAnlegenWechseln(art); };
       kn.appendChild(b1);
       /* Verschmelzen (v109): drei gleiche der niedrigsten Stufe mit ≥ 3. */
-      const fusionStufe = [0, 1].find(i => z[i] >= (m.fusion || 3));
+      const fusionStufe = [0, 1].find(i => z[i] >= (m.fusion || 5));
       if (fusionStufe !== undefined){
         const b3 = document.createElement("button"); b3.type = "button";
-        b3.textContent = t("mo_fusion", m.fusion || 3, roem(fusionStufe + 1), roem(fusionStufe + 2));
+        b3.textContent = t("mo_fusion", m.fusion || 5, roem(fusionStufe + 1), roem(fusionStufe + 2));
         b3.onclick = async () => {
           b3.disabled = true;
           const a = await Konto.ruf("/konto/monde/fusion", { art, stufe: fusionStufe + 1 });
@@ -10030,7 +10030,7 @@ async function clanOhne(body, einladungen, top){
    für den Startbonus (×2, ×3), Ehre, Erfahrung. Gäste haben keine Ehre —
    ihr vierter Tag zahlt Ore (`BONUS_GAST`). */
 const BONUS_ANZEIGE = [
-  { ore: 100 }, { ore: 150 }, { boost: 2 }, { ehre: 40 }, { xp: 400, mond: 1 }, { boost: 3 }, { ore: 1000, wahl: 1 }
+  { ore: 100 }, { ore: 150 }, { boost: 2 }, { ehre: 40 }, { xp: 400 }, { boost: 3 }, { ore: 1000, wahl: 1 }
 ];
 /* Gäste: Tag 4 Ore statt Ehre, Tag 5 nur XP — Monde gibt es nur mit Konto. */
 const BONUS_GAST = BONUS_ANZEIGE.map(b => b.ehre ? { ore: 200 } : b.mond ? { xp: b.xp } : b);
