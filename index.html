@@ -4906,8 +4906,35 @@
      Zeile genau wie pickLang() in spiel.js. document.write mit Dateien von
      derselben Adresse lädt wie ein gewöhnliches <script>: in dieser
      Reihenfolge und bevor die Seite als geladen gilt. -->
+<!-- Schutz vor Kopien (v156): Das Spiel läuft nur auf talumi.io, lokal
+     (Entwicklung, Prüfstände) und im Portal-Paket auf den Portalen; in einem
+     fremden Rahmen startet es nicht. Dieselbe Prüfung steht oben in spiel.js.
+     Nach einer Umbenennung die neue Adresse hier und dort eintragen. -->
 <script>
 (function(){
+  function talumiOrt(){
+    var h = String(location.hostname || "").toLowerCase();
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(h)) return "ok";
+    /* Portal-Paket: nur auf den Portalen (Poki, CrazyGames samt Ländern,
+       1001juegos); dort ist ein Rahmen normal. */
+    if (document.querySelector('meta[name="talumi-portal"]'))
+      return /poki|crazygames|1001juegos/.test(h) ? "ok" : "portal";
+    if (h !== "talumi.io" && h !== "www.talumi.io" && h !== "portox12.github.io") return "fremd";
+    try { if (window.top !== window.self) return "rahmen"; } catch (e) { return "rahmen"; }
+    return "ok";
+  }
+  function talumiSperre(art){
+    var de = /^de/i.test(navigator.language || "");
+    var t = art === "rahmen"
+      ? (de ? "Talumi läuft nur direkt auf talumi.io." : "Talumi only runs directly on talumi.io.")
+      : art === "portal"
+      ? (de ? "Talumi gibt es nur auf talumi.io, Poki und CrazyGames." : "Talumi is only available on talumi.io, Poki and CrazyGames.")
+      : (de ? "Talumi gibt es nur auf talumi.io." : "Talumi is only available on talumi.io.");
+    var k = art === "portal" ? "" : '<p style="margin:22px 0 0"><a href="https://talumi.io/" target="_blank" rel="noopener" style="display:inline-block;padding:12px 22px;border-radius:12px;background:#d8a75f;color:#0e0a07;font-weight:700;text-decoration:none">' + (de ? "Auf talumi.io spielen" : "Play on talumi.io") + "</a></p>";
+    document.body.innerHTML = '<div style="position:fixed;inset:0;display:grid;place-items:center;background:#0e0a07;color:#f0e4d0;font:600 18px/1.5 Georgia,serif;text-align:center;padding:24px"><div>' + t + k + "</div></div>";
+  }
+  var ort = talumiOrt();
+  if (ort !== "ok"){ talumiSperre(ort); return; }
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   var bau = !lokal || /[?&]bau=1(&|$)/.test(location.search);
   var dateien = ["sprachen.js", "spiel.js"];
