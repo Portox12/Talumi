@@ -623,7 +623,10 @@
   .rankrow b small{color:var(--paper-2);font-size:11px;margin-left:6px}
   .rankrow span{color:var(--brass);font-variant-numeric:tabular-nums}
   /* Die eigene Zeile ist die einzige, die ein Spieler sucht. */
-  .rankrow.me{background:var(--plate);margin:0 -8px;padding:6px 8px}
+  /* Hervorhebung über einen Schatten statt negativer Ränder: margin:0 -8px
+     ließ die Liste auf jeder Größe 8 Punkte seitlich scrollen
+     (testformate.js, 25.09.2026). Der Schatten zählt nicht zur Breite. */
+  .rankrow.me{background:var(--plate);box-shadow:-8px 0 0 var(--plate),8px 0 0 var(--plate)}
   .rankrow.me i,.rankrow.me b{color:var(--brass)}
 
   /* Clan-Anzeige im Spiel */
@@ -1962,6 +1965,14 @@
     #konsReiter button{padding:0 6px;font-size:13px}
     #konsReiter .konsW{gap:9px}
   }
+  /* Tablets und kleine Fenster (bis 1180): 14 statt 20 Punkte je Seite — bei
+     1024 lief die Leiste sonst 4 Punkte über (testformate.js, 25.09.2026). */
+  @media (min-width:761px) and (max-width:1180px){
+    .konsReiter button{padding:0 14px}
+  }
+  /* Tippfläche mindestens 44 Punkte breit (v155): „Shop" war auf dem
+     iPhone 14 quer 43, auf dem iPhone SE 39 Punkte breit. */
+  body.touch #konsReiter button{min-width:44px}
   @media (max-width:420px){
     #konsReiter{padding:0 4px;gap:0}
     #konsReiter button{padding:0 7px;flex:0 1 auto;min-width:0}
@@ -2287,6 +2298,13 @@
        border:1px dashed var(--line);background:none;display:grid;place-content:center;
        font-size:11px;line-height:1.3}
   .konsSp.m .strip .more b{display:block;font-family:var(--disp);font-size:14px;color:var(--paper)}
+  /* Bis 1180 Breite ist die mittlere Spalte schmal: 48 statt 54 Punkte je
+     Kachel, 6 statt 8 Abstand — sonst scrollte die Spalte seitlich
+     (Tablet quer, testformate.js, 25.09.2026). Tippfläche bleibt ≥ 44. */
+  @media (max-width:1180px){
+    .konsSp.m .strip{gap:6px}
+    .konsSp.m .strip button,.konsSp.m .strip .more{width:48px}
+  }
   /* Beschreibung nur beim gewählten Modus. Vier Beschreibungen untereinander
      brauchen in dieser Spalte über zweihundert Punkte Höhe, und man liest
      ohnehin nur die des Modus, für den man sich gerade entscheidet. */
@@ -2623,6 +2641,14 @@
        Reicht es auf einem sehr schmalen Gerät trotzdem nicht, schiebt sich
        die Leiste seitlich, statt etwas abzuschneiden. */
     .konsReiter button{height:48px;padding:0 8px;font-size:13px}
+    /* Sehr schmale Querformate (iPhone SE, 667): noch enger, große Zahlen
+       stehen dort ohnehin in Kurzform (`leisteZahl` in spiel.js). */
+    @media (max-width:700px){
+      /* Über die Kennung, sonst gewinnt die Regel für max-width:760px oben. */
+      #konsReiter button{padding:0 4px;font-size:12px}
+      #konsReiter{padding:0 4px}
+      #konsReiter .konsW{gap:6px}
+    }
     #konsReiter{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
     #konsReiter::-webkit-scrollbar{display:none}
     .konsW{gap:10px;font-size:12px}

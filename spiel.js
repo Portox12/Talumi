@@ -9372,12 +9372,12 @@ function paintPurse(){
     leiste.setAttribute("aria-valuenow", String(Math.round(anteil*100)));
     leiste.setAttribute("aria-valuetext", $("heldXpText") ? $("heldXpText").textContent : "");
   }
-  setze("oreNum", Profile.ore.toLocaleString(lang));
+  setze("oreNum", leisteZahl(Profile.ore, "oreNum"));
   /* Iridium (v113): nur mit Konto — Gäste haben keins. */
   const iri = $("iriZeile");
   if (iri){
     iri.hidden = !istAngemeldet();
-    if (!iri.hidden) setze("iriNum", (Profile.iridium || 0).toLocaleString(lang));
+    if (!iri.hidden) setze("iriNum", leisteZahl(Profile.iridium || 0, "iriNum"));
   }
   setze("bestNum", Profile.best.toLocaleString(lang));
   setze("runNum", (Profile.rec.runs || 0).toLocaleString(lang));
@@ -9389,7 +9389,7 @@ function paintPurse(){
   if (zeile){
     const hat = istAngemeldet() && Number.isFinite(+Konto.profil.ehre);
     zeile.hidden = !hat;
-    if (hat) setze("ehreNum", (+Konto.profil.ehre).toLocaleString(lang));
+    if (hat) setze("ehreNum", leisteZahl(+Konto.profil.ehre, "ehreNum"));
   }
 
   /* Rangabzeichen und Rangname unter dem Körper (v105) — dasselbe
@@ -9413,6 +9413,19 @@ function paintPurse(){
       try { abzeichenLeinwand($("heldAbz"), stufe); } catch(_){}
     }
   }
+}
+
+/* Zahlen in der Währungsleiste (v155): Unter 760 Punkten Breite stehen
+   Werte ab 100.000 in Kurzform der Spielsprache („1,23 Mio.", „1.23M",
+   „1,23 млн"), sonst passte die Leiste auf einem iPhone SE quer nicht
+   (testformate.js, 25.09.2026). Die volle Zahl steht im Hinweistext. */
+function leisteZahl(n, id){
+  const voll = Math.round(n).toLocaleString(lang);
+  const e = document.getElementById(id);
+  if (e) e.title = voll;
+  if (innerWidth >= 760 || n < 100000) return voll;
+  try { return new Intl.NumberFormat(lang, { notation: "compact", maximumSignificantDigits: 3 }).format(n); }
+  catch(_){ return voll; }
 }
 
 /* Rangtafel im Menü. Sie steht nur bei einem Konto da: Ehre gibt es
