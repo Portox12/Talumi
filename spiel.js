@@ -2331,13 +2331,17 @@ function ring(x, y, max, colour){
    Sparmodus aus. Online kommt das Fressen vom Server (`dw`): Verschwindet
    ein Korn in Reichweite eines eigenen Stücks, fliegt es dorthin. */
 const SOG_DAUER = .2;
+/* Aus seit v147 (Thomas 25.09.: „die Aufnahme von Sternenstaub davor
+   [ohne Einsaugen] optisch ansprechender"). Der Code bleibt für später. */
+const SOG_AKTIV = false;
 let sogRuhig = null;
 function sogStarten(d, ziel){
   if (sogRuhig === null){ try { sogRuhig = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(_){ sogRuhig = false; } }
-  if (sogRuhig || Settings.lowPower || Game.sog.length >= 48 || !ziel) return;
+  if (!SOG_AKTIV || sogRuhig || Settings.lowPower || Game.sog.length >= 48 || !ziel) return;
   Game.sog.push({ x:d.x, y:d.y, r:d.r || 3.4, c:d.c, ziel, t:0 });
 }
 function sogOnline(e){
+  if (!SOG_AKTIV) return;
   let best = null, bd = Infinity;
   for (const c of Game.cells){
     const dd = Math.hypot(c.x - e[0], c.y - e[1]);
@@ -4592,7 +4596,21 @@ function buildRaenge(){
      höhere Stufe bekommt, als er kennt, gar keine Zeile hervor. */
   const meiner = istAngemeldet() && Number.isInteger(Konto.profil.rang) ? clamp(Konto.profil.rang, 0, RANG_MAX) : -1;
   const stufen = Array.from({ length: RANG_MAX + 1 }, (_, i) => i);
-  box.innerHTML = `<h2>${esc(t("rg_head"))}</h2><p class="hinweis" style="margin:0 0 6px">${esc(t("rg_sub"))}</p>` +
+  /* Woher Ehre kommt, mit Zahlen (Thomas 25.09.: „genauer beschreiben, für
+     was man wie viel Ehre bekommt"). Errungenschaften und Tagesbonus aus
+     den Tabellen hier im Client (die der Server gleich führt); die Spanne je
+     Beute (1–36, im Aufstieg ×0,6 bis ×2,5) steht in server.js `ehrePunkte`
+     bzw. sim.js `ligaGewicht` — ändert sich dort etwas, rg_jagd_h mitändern. */
+  const erf = Object.values(ERFOLG_TEXT).map(e => e[2]);
+  const bonusTag = BONUS_ANZEIGE.findIndex(x => x.ehre);
+  const quelle = (kopf, wert, text) =>
+    `<div class="ehreQuelle"><div><b>${esc(kopf)}</b><small>${esc(text)}</small></div><span>${esc(wert)}</span></div>`;
+  box.innerHTML = `<h2>${esc(t("rg_head"))}</h2><p class="hinweis" style="margin:0 0 4px">${esc(t("rg_sub"))}</p>` +
+    quelle(t("rg_jagd"), t("rg_jagd_w"), t("rg_jagd_h")) +
+    quelle(t("rg_erf"), t("rg_erf_w", Math.min(...erf), Math.max(...erf)),
+           t("rg_erf_h", erf.reduce((x, y) => x + y, 0).toLocaleString(lang))) +
+    (bonusTag >= 0 ? quelle(t("rg_bonus"), t("rg_bonus_w", BONUS_ANZEIGE[bonusTag].ehre), t("rg_bonus_h", bonusTag + 1)) : "") +
+    `<p class="hinweis rgBleibt">${esc(t("rg_bleibt", t("rk" + (RANG_SCHWELLE.length - 1)), t("rk" + RANG_SCHWELLE.length)))}</p>` +
     stufen.map(i =>
       `<div class="rangZeile${i === meiner ? " du" : ""}"><canvas width="96" height="56"></canvas>` +
       `<div><b>${esc(t("rk" + i))}${i === meiner ? " · " + esc(t("rg_du")) : ""}</b>` +
@@ -6415,7 +6433,11 @@ function nlZustand(){
   if (!p || !p.mailOk) return "aus";
   const n = typeof p.nl === "string" ? p.nl : "";
   if (n === "bestaetigt") return n;
-  if (Konto.nlLetzt === "mail_gesendet" || Konto.nlLetzt === "adresse_unbestaetigt") return Konto.nlLetzt;
+  /* „Mail unterwegs" gilt nur, solange der Server es noch so sieht: Wer
+     den Link in einem anderen Fenster (Mail-App → Safari) geklickt hat,
+     hat hier noch die alte Merkung — maßgeblich ist das frische Profil. */
+  if (Konto.nlLetzt === "mail_gesendet" && n === "offen") return Konto.nlLetzt;
+  if (Konto.nlLetzt === "adresse_unbestaetigt" && !p.emailOk) return Konto.nlLetzt;
   /* Versand am Server aus (kein Brevo-Schlüssel): Es ist keine Mail
      unterwegs, also auch kein „klick auf den Link". */
   if (Konto.nlLetzt === "versand_aus") return "";
@@ -11410,7 +11432,20 @@ startBtn.addEventListener("click", () => {
   if (MODES[modeId] && MODES[modeId].online) verbindenDannStarten(name);
   else start(name);
 });
-$("settingsBtn").addEventListener("click", () => { buildSettings(); show("setVeil"); });
+/* Beim Öffnen den Kontostand frisch holen: Bestätigungslinks aus Mails
+   öffnen oft ein anderes Fenster, dieses hier wüsste sonst nichts davon. */
+/* Nur solange die Neuigkeiten noch auf einen Klick warten, und neu gebaut
+   wird nur, wenn sich dieser Stand geändert hat — sonst ginge ein halb
+   getippter Name im Feld verloren. */
+function einstellungenFrisch(){
+  if (!istAngemeldet() || !Konto.profil.mailOk || Konto.profil.nl === "bestaetigt") return;
+  const vorher = nlZustand();
+  Konto.profilNachladen().then(() => {
+    if (istAngemeldet() && !$("setVeil").hidden && nlZustand() !== vorher) buildSettings();
+  });
+}
+$("settingsBtn").addEventListener("click", () => { buildSettings(); show("setVeil"); einstellungenFrisch(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("setVeil").hidden) einstellungenFrisch(); });
 $("setClose").addEventListener("click", () => show("startVeil"));
 /* Browser lassen Ton erst nach einer Nutzergeste zu. Bisher geschah das erst
    beim Klick auf „Starten" — dann wäre die Musik im Menü nie zu hören

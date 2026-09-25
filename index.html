@@ -73,7 +73,12 @@
   html,body{height:100%;margin:0;overflow:hidden;background:var(--ink);color:var(--paper);
     font-family:var(--sans);-webkit-tap-highlight-color:transparent;
     overscroll-behavior:none;user-select:none;-webkit-user-select:none;
-    touch-action:none;position:fixed;inset:0;width:100%}
+    touch-action:none;position:fixed;inset:0;width:100%;
+    /* Safari auf dem iPhone vergrößert im Querformat längere Textblöcke von
+       selbst, kürzere nicht — so standen in den Einstellungen Zeilen gleicher
+       Art in verschiedenen Größen (Thomas 25.09.). Die Größen gelten wie
+       gesetzt; gemessen wird ohnehin mit ihnen. */
+    -webkit-text-size-adjust:100%;text-size-adjust:100%}
   canvas{display:block}
   #sky{width:100%;height:100%;touch-action:none;cursor:crosshair}
 
@@ -186,6 +191,17 @@
   .rangZeile.du{background:var(--plate);margin:0 -8px;padding:6px 8px;border-radius:8px}
   .rangZeile.du b{color:var(--brass-hell)}
   #rangListe .hinweis{font-size:12.5px;color:var(--paper-2)}
+  /* .plate setzt nowrap — Sätze in den Kästen der Statistik müssen umbrechen,
+     sonst ragen sie hinaus und der Reiter scrollt seitlich (Thomas 25.09.). */
+  .recbox .hinweis{white-space:normal;overflow-wrap:break-word}
+  .werbeZeile b.klein{white-space:normal;overflow-wrap:anywhere}
+  .ehreQuelle{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+       padding:6px 0;border-top:1px solid var(--line);white-space:normal}
+  .ehreQuelle > div{min-width:0}
+  .ehreQuelle b{display:block;font-weight:600;color:var(--paper);font-size:13.5px}
+  .ehreQuelle small{display:block;color:var(--paper-2);font-size:12px;line-height:1.4;margin-top:1px}
+  .ehreQuelle > span{flex:0 0 auto;font-family:var(--disp);font-size:13.5px;color:var(--brass-hell);white-space:nowrap}
+  #rangListe .rgBleibt{margin:6px 0 8px;padding-top:6px;border-top:1px solid var(--line);font-size:12px}
   /* Freunde werben (Schritt 104) */
   #werbeBox .hinweis{font-size:12.5px;color:var(--paper-2)}
   .werbeZeile{display:flex;justify-content:space-between;gap:12px;align-items:baseline;padding:5px 0;border-top:1px solid var(--line)}
@@ -2489,7 +2505,7 @@
   @media (max-height:640px) and (min-width:640px){ #nameKonto{display:none} }
   .nameWechsel{display:flex;gap:8px;align-items:center;min-width:0}
   .nameWechsel input{flex:1;min-width:0;width:auto;height:40px;margin:0}
-  .nameWechsel button{margin:0;width:auto;min-width:0;height:40px;padding:0 14px;font-size:13px}
+  .nameWechsel button{margin:0;width:auto;min-width:0;height:40px;padding:0 14px;font-size:12px}
   body.touch .nameWechsel input,body.touch .nameWechsel button{height:44px}
   /* Skillpunkte (Schritt 109) */
   #skillInhalt{margin-bottom:14px}
@@ -3340,8 +3356,8 @@
   .setRecht[hidden]{display:none}
   .setRecht > div{min-width:0}
   .setRecht b{display:block;font-weight:600;font-size:13.5px}
-  .setRecht small{display:block;color:var(--paper-2);font-size:11.5px;line-height:1.35;min-width:0}
-  .setRecht .widerrufKnopf{flex:0 0 auto}
+  .setRecht small{display:block;color:var(--paper-2);font-size:11px;line-height:1.35;min-width:0}
+  .setRecht .widerrufKnopf{flex:0 0 auto;font-size:12px}
   .widerrufKarte{max-width:min(560px,100%)}
   /* Der Löschknopf (v109): Rost wie der Widerruf — endgültig, nicht grün. */
   .klGo{background:rgba(224,122,60,.16);border:1.5px solid var(--ember);color:var(--brass-hell);font-weight:600}
