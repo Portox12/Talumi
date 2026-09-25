@@ -7312,13 +7312,14 @@ function buildMonde(){
     /* Rechts: Mondstaub und die Wege. Der Fund-Satz nennt die echten
        Zahlen vom Server. */
     if (seite){
-      const F = m.fund || { basis: .06, jePulsar: .15, deckel: .6 };
-      const pz = n => Math.round(n * 100) + " %";
+      /* v149: Mondfund und Mondstaub aus der Spielzeit einer Runde. */
+      const F = Object.assign({ jeMin: .005, deckel: .3, minSek: 180, minMasse: 500, staubSek: 600, rekord: 2 }, m.fund || {});
+      const pz = n => (Math.round(n * 1000) / 10).toLocaleString(lang) + " %";
       /* Zuerst der Kern (v113), dann Mondstaub und die Wege zu Monden. */
       seite.innerHTML = kernSeiteHtml() +
         `<div class="plate recbox"><h3>${esc(t("mo_angelegt"))}</h3><small class="hintline">${esc(t("mo_platz_erkl", aktiv.length, m.plaetze || 4))}</small>` +
         `<h3 style="margin-top:12px">${esc(t("mo_staub"))}</h3><div class="mondStaub">${(m.monde.staub || 0).toLocaleString(lang)}</div>` +
-        `<small class="hintline">${esc(t("mo_staub_erkl"))}</small>` +
+        `<small class="hintline">${esc(t("mo_staub_erkl", Math.round(F.staubSek / 60), F.rekord, Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)))}</small>` +
         /* Mond-Bruchstücke aus Kapseln (v134) — Zahl vom Server. */
         (m.mondTeile ? `<h3 style="margin-top:12px">${esc(t("mo_teile"))}</h3><div class="mondStaub">${+m.monde.mondStuecke || 0} / ${+m.mondTeile}</div>` +
           `<small class="hintline">${esc(t("mo_teile_erkl", +m.mondTeile))}</small>` : "") +
@@ -7326,7 +7327,7 @@ function buildMonde(){
         (m.raubTeile && !m.monde.raub ? `<h3 style="margin-top:12px">${esc(t("mo_raubteile"))}</h3><div class="mondStaub">${+m.monde.raubStuecke || 0} / ${+m.raubTeile}</div>` +
           `<small class="hintline">${esc(t("mo_raubteile_erkl", +m.raubTeile))}</small>` : "") + `</div>` +
         `<div class="plate recbox"><h3>${esc(t("mo_woher"))}</h3><ol class="mondWoher">` +
-        [t("mo_w_fund", pz(F.basis), pz(F.jePulsar), pz(F.deckel)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
+        [t("mo_w_fund", pz(F.jeMin), pz(F.deckel), Math.round(F.minSek / 60), (+F.minMasse).toLocaleString(lang)), ...(m.mondTeile ? [t("mo_w_kapsel", +m.mondTeile)] : []), t("mo_w_level"), t("mo_w_erfolg"), t("mo_w_bonus"), t("mo_w_saison"), t("mo_w_fusion", m.fusion || 3)]
           .map(z => `<li>${esc(z)}</li>`).join("") + `</ol></div>`;
       kernKnoepfe(seite, zeichnen);
     }
@@ -9134,7 +9135,7 @@ function kernWirkung(art, stufe, K){
   const st = Math.max(0, Math.min(5, stufe | 0));
   if (art === "eisen")    return t("ke_eisen_w", (K.orePct || [0, 5, 10, 15, 20, 25])[st]);
   if (art === "kristall") return t("ke_kristall_w", (K.xpPct || [0, 4, 8, 12, 16, 20])[st]);
-  return t("ke_glut_w", (K.staub || [0, 1, 1, 2, 2, 3])[st], (K.fundPp || [0, 2, 4, 6, 8, 10])[st]);
+  return t("ke_glut_w", (K.staubPct || [0, 20, 40, 60, 80, 100])[st], (K.fundPct || [0, 10, 20, 30, 40, 50])[st]);
 }
 /* Die Kernkarten in der rechten Spalte des Monde-Reiters: Iridium-Stand,
    je Art eine Karte mit Stufe, Wirkung und Knöpfen (Anlegen/Ablegen,
@@ -9144,8 +9145,9 @@ function kernSeiteHtml(){
   const iri = Number.isFinite(+K.iridium) ? +K.iridium : (Profile.iridium || 0);
   const preis = K.preis || 120, kosten = K.kosten || [0, 0, 150, 250, 400, 600], stufen = K.stufen || 5;
   let html = `<div class="plate recbox" id="kernSeite"><h3>${esc(t("ke_kopf"))}</h3><small class="hintline">${esc(t("ke_erkl"))}</small>` +
-    `<div class="iriZahl" style="margin-top:10px">${iri.toLocaleString(lang)} <small style="font-size:13px;color:var(--paper-2)">${esc(t("iridium"))}</small></div>` +
-    `<small class="hintline">${esc(t("ir_nichtkauf"))}</small><div style="display:grid;gap:8px;margin-top:10px">`;
+    /* Kein Iridium-Stand und kein „erspielbar/bald im Shop“ mehr (Thomas
+       25.09.): Der Stand steht immer oben in der Leiste. */
+    `<div style="display:grid;gap:8px;margin-top:10px">`;
   for (const art of KERN_ARTEN){
     const st = k.besitz[art] || 0, an = k.aktiv === art;
     html += `<div class="kernKarte${an ? " an" : ""}" style="--kern:${KERN_FARBE[art]}"><div class="kernBild${st ? "" : " aus"}"></div><div>` +
