@@ -1033,10 +1033,8 @@ const Profile = {
   boost:1,
   owned:new Set(SKINS.filter(s => s.lv === 1).map(s => s.id)),
 
-  /* Ausgelegt auf rund 2000 Stunden bis Level 100, gerechnet mit gemessenen
-     8400 XP pro Stunde. Früh geht es schnell: Level 6 nach etwa 1,5 Stunden,
-     Level 20 nach 39, Level 50 nach 367. */
-  xpNeeded(l){ return Math.round(425 * Math.pow(l, 1.5)); },
+  /* Die XP-Tabelle von Agar.io (v151) — gleich in server.js `xpNoetig`. */
+  xpNeeded(l){ return l < 4 ? [0, 35, 125, 250][Math.max(1, l | 0)] : 50 * l * (l + 1) - 500; },
 
   addXp(n){
     if (this.level >= MAX_LEVEL) return [];
@@ -1711,6 +1709,11 @@ const DECAY_FROM = 1200, DECAY_RATE = 0.0018;
    kaemen Level, Designs und Monde fast doppelt so langsam. Schwerer werden
    soll das Spiel, nicht der Fortschritt. */
 const MASSE_AUSGLEICH = 1.7;
+/* Erfahrung nach Agar-Art (v151) — dieselben Zahlen wie in sim.js: je Sekunde
+   XP_K · (gewachsene Masse)^XP_EXP, höchstens XP_DECKEL je Runde. Hier nur für
+   Gäste (Konten rechnet der Server). */
+const XP_K = 0.09, XP_EXP = 0.45, XP_DECKEL = 25000;
+function xpJeSek(gewachsen){ return gewachsen > 0 ? XP_K * Math.pow(gewachsen, XP_EXP) : 0; }
 const STAGES = [
   {at:0,    name:"Dust",         hint:"Sweep up debris. Nothing out here is smaller than you yet."},
   {at:60,   name:"Rubble",       hint:"Craters now. You can take anything loose and slow."},
@@ -2070,7 +2073,7 @@ function start(name){
   try { Tutorial.rundeStart(); } catch(_){}
   Game.pulsarBack = []; Game.pulsarsEaten = 0; Game.feastSeen = false;
   Game.hint = null; Game.hintUntil = 0; Game.hintCheck = 0;
-  Game.sparks = []; Game.sog = []; Game.levelFx = null; Game.xpRun = 0; Game.unlockedRun = [];
+  Game.sparks = []; Game.sog = []; Game.levelFx = null; Game.xpRun = 0; Game.xpRoh = 0; Game.xpStart = null; Game.unlockedRun = [];
   if (Settings.hints) Profile.hintRuns++;
   Game.toast = null;
   Game.goals = [];
@@ -2287,9 +2290,9 @@ function shed(){
   if (fired){ Game.safe = 0; Sound.shedS(); Net.send("shed"); Game.shedCount = (Game.shedCount || 0) + 1; }
 }
 
-/* XP fällt jetzt während der Runde an statt erst am Ende. Nur so kann ein
-   Levelaufstieg mitten im Spiel gefeiert werden. Die Summe bleibt identisch:
-   0,6 je gewonnener Spitzenmasse plus 40 je verschlungenem Körper. */
+/* XP fällt während der Runde an statt erst am Ende. Nur so kann ein
+   Levelaufstieg mitten im Spiel gefeiert werden. Seit v151 kommt sie aus
+   `xpSammeln` (je Sekunde nach der gewachsenen Masse, wie Agar.io). */
 function addXpLive(n){
   if (!Game.running || MODE().rewards <= 0) return;
   Game.xpRun += n;
@@ -2771,11 +2774,29 @@ function effekteAltern(dt){
   Game.shake = Math.max(0, Game.shake - dt*2.4);
 }
 
+/* Erfahrung der Runde für Gäste (v151): je Sekunde nach der gewachsenen
+   Masse, gedeckelt. Lokal kommt sie gleich als XP an (Levelaufstieg mitten
+   im Spiel), online erst am Rundenende (`finish`). */
+function xpSammeln(dt){
+  if (!Game.running || MODE().tutorial) return;
+  const lokal = MODE().rewards > 0 && !Game.online;
+  const gast = !!MODE().online && !istAngemeldet();
+  if (!lokal && !gast) return;
+  const m = Game.cells.reduce((a, c) => a + c.m, 0);
+  if (!(m > 0)) return;
+  if (Game.xpStart === null) Game.xpStart = m;
+  if (Game.xpRoh >= XP_DECKEL) return;
+  const vorher = Math.floor(Game.xpRoh);
+  Game.xpRoh = Math.min(XP_DECKEL, Game.xpRoh + xpJeSek(m - Game.xpStart) * dt);
+  const ganz = Math.floor(Game.xpRoh) - vorher;
+  if (lokal && ganz > 0) addXpLive(ganz);
+}
 function step(dt){
   /* Tutorial (v109) vor der Weiche: Es zählt in der lokalen Runde ebenso
      wie in einer Onlinerunde — wer das Tutorial abbricht und später online
      weiterspielt, soll dort weitermachen, wo er aufgehört hat. */
   try { Tutorial.takt(dt); } catch(_){}
+  xpSammeln(dt);
   if (Game.online){ Net.schritt(dt); return; }
   /* Lage zu Bildbeginn — `eats` prüft den Weg dazwischen (v123). */
   for (const c of Game.cells){ c.ox = c.x; c.oy = c.y; }
@@ -3021,10 +3042,10 @@ function step(dt){
     }
   }
 
-  // Spitzenmasse und daraus fließende XP
+  // Spitzenmasse
   {
     const jetzt = Game.cells.reduce((s,c) => s+c.m, 0);
-    if (jetzt > peak){ addXpLive((jetzt-peak)*0.6*MASSE_AUSGLEICH); peak = jetzt; }
+    if (jetzt > peak) peak = jetzt;   // XP kommt seit v151 aus xpSammeln
   }
 
   // Schweifpunkte sammeln, nur für das Design, das ihn trägt
@@ -3072,7 +3093,6 @@ function step(dt){
       if (eats(c,r)){
         c.m += r.m; gone = true; Game.kills++;
         if (Game.t - Game.lastSplit < 6) Game.splitKills++;
-        addXpLive(40);
         Sound.absorb(r.m); ring(r.x, r.y, radiusOf(r.m)*2.6, TH().brass);
         break;
       }
@@ -3275,11 +3295,10 @@ function finish(timeUp){
   if (paid){
     Profile.ore += oreGain;
     if (beat) Profile.best = Math.round(peak);
-    /* Online vergibt der Client unterwegs kein XP (er simuliert das Fressen
-       nicht selbst). Also am Ende nach derselben Formel wie der Server:
-       `xp: peak × 0,6 × MASSE_AUSGLEICH` in `belohnung()`. */
+    /* Online vergibt der Client unterwegs kein XP. Am Ende kommt, was
+       `xpSammeln` nach derselben Regel wie der Server gezählt hat (v151). */
     if (gastOnline && xpGain === 0){
-      const dazu = Math.round(peak * 0.6 * MASSE_AUSGLEICH);
+      const dazu = Math.round(Game.xpRoh || 0);
       const neu = Profile.addXp(dazu);
       Game.xpRun = dazu;
       if (neu.length){ skin = neu[neu.length-1]; Profile.skin = skin.id; }
@@ -11195,7 +11214,7 @@ function offeneRundeMerken(){
   if (!(MODE().rewards > 0 || MODE().online)) return;           // Übungsrunden zahlen nie
   if (Game.t < 20) return;                                       // dieselbe Mindestzeit wie im Server
   try { localStorage.setItem(OFFEN_KEY, JSON.stringify({ peak: Math.round(peak), kills: Game.kills | 0,
-        sek: Math.floor(Game.t), online: !!MODE().online, xp: Math.round(Game.xpRun || 0), zeit: Date.now() })); } catch(_){}
+        sek: Math.floor(Game.t), online: !!MODE().online, xp: Math.round(Game.xpRun || 0), xpRoh: Math.round(Game.xpRoh || 0), zeit: Date.now() })); } catch(_){}
 }
 function offeneRundeEinloesen(){
   let m = null;
@@ -11211,7 +11230,7 @@ function offeneRundeEinloesen(){
   Profile.ore += ore;
   const R = Profile.rec;
   R.runs++; R.mass = Math.max(R.mass, Math.round(p)); R.kills = Math.max(R.kills, k); R.time = Math.max(R.time, +m.sek || 0);
-  if (m.online && !(+m.xp > 0)) Profile.addXp(Math.round(p * 0.6));   // offline kam das XP schon unterwegs
+  if (m.online && !(+m.xp > 0)) Profile.addXp(Math.max(0, Math.min(XP_DECKEL, Math.round(+m.xpRoh || 0))));   // offline kam das XP schon unterwegs
   Gast.sichern();
   try { paintPurse(); heldMalen(); } catch(_){}
   toast(t("q_gut", ore));
