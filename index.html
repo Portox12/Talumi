@@ -4940,6 +4940,26 @@
   }
   var ort = talumiOrt();
   if (ort !== "ok"){ talumiSperre(ort); return; }
+  /* Umzug von talumi.io (v160): Die Brücke auf der alten Adresse
+     (umzug/worker.js, läuft bei Cloudflare) hängt den dort gespeicherten
+     Spielstand — Gastfortschritt, Anmeldung, Einstellungen — als
+     #umzug=… an die Adresse. Hier wird er einmal übernommen, bevor das
+     Spiel lädt; was auf pulsavi.io schon liegt, bleibt unangetastet. Die
+     Schlüssel heißen weiter talumi.*, damit spiel.js nichts umlernen muss. */
+  (function(){
+    var m = /^#umzug=([A-Za-z0-9_-]+)$/.exec(location.hash || "");
+    if (!m) return;
+    try {
+      var b = m[1].replace(/-/g, "+").replace(/_/g, "/");
+      var s = new TextDecoder().decode(Uint8Array.from(atob(b), function(c){ return c.charCodeAt(0); }));
+      var d = JSON.parse(s);
+      for (var k in d){
+        if (!/^talumi[._][A-Za-z0-9._-]*$/.test(k) || typeof d[k] !== "string") continue;
+        if (localStorage.getItem(k) === null) localStorage.setItem(k, d[k]);
+      }
+    } catch (e) {}
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  })();
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   var bau = !lokal || /[?&]bau=1(&|$)/.test(location.search);
   var dateien = ["sprachen.js", "spiel.js"];
