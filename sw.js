@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v160";
+const VERSION = "v161";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -122,6 +122,8 @@ self.addEventListener("fetch", e => {
         caches.open(CACHE).then(c => c.put(req, copy));
         return res;
       })
-      .catch(() => caches.match(req).then(hit => hit || caches.match("./index.html")))
+      /* `ignoreSearch` (v161): Die Ladezeile hängt `?v=` an die Skripte; im
+         Vorrat liegen sie ohne. Ohne Netz zählt die Datei, nicht die Frage. */
+      .catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || caches.match("./index.html")))
   );
 });

@@ -964,7 +964,15 @@
 
   .anmKopf{display:flex;align-items:center;justify-content:space-between;gap:16px;
        max-width:1120px;margin:0 auto;padding:20px 26px 0;min-height:46px}
-  .anmSprache{display:flex;align-items:center;gap:10px;min-width:0;justify-content:flex-end}
+  .anmSprache{display:flex;align-items:center;gap:10px;min-width:0;justify-content:flex-end;position:relative}
+  /* Sprachknopf des Anmeldebildschirms (v161): Kürzel + Pfeil, Glas wie die
+     Konsolenknöpfe; das Menü klappt darunter auf (rechtsbündig). */
+  .anmLangBtn{margin:0;width:auto;height:40px;padding:0 13px;border-radius:10px;background:var(--glas);
+       border:1px solid var(--line-hell);color:#cfd4de;font-size:14px;font-weight:600;letter-spacing:.06em;
+       font-variant-caps:all-small-caps}
+  .anmLangBtn::after{content:" ▾";font-size:12px;opacity:.75}
+  .anmLangBtn:hover:not(:disabled){background:var(--plate);color:var(--paper)}
+  .anmLangMenu{top:calc(100% + 6px);right:0;left:auto;z-index:12}
   .anmSprLabel{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
        color:var(--paper-2);flex:0 0 auto}
   .anmSprache .seg{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;
@@ -1199,7 +1207,9 @@
        wäre hier eine versteckte Bedienung, und die Hälfte der Sprachen läge
        außerhalb des Bildes, ohne dass man das sieht. */
     .anmKopf{flex-wrap:wrap;padding:14px 14px 0}
-    .anmSprache{flex:1 1 100%;justify-content:flex-start}
+    /* Seit v161 ist die Sprachwahl ein Knopf — er bleibt rechts neben dem
+       Schriftzug in derselben Zeile (vorher: sieben Knöpfe in eigener Zeile). */
+    .anmSprache{flex:0 0 auto;justify-content:flex-end}
     .anmSprache .seg{flex-wrap:wrap;overflow:visible}
     .anmSprache .seg button .voll{display:none}
     .anmSprache .seg button .kurz{display:inline;letter-spacing:.06em}
@@ -1352,6 +1362,11 @@
   @media (max-height:640px) and (max-width:720px){
     .konsMarke b{display:none}
     .konsMarke{margin-right:4px}
+    /* Auf dem Anmeldebildschirm bleibt der Schriftzug (v161, Thomas: „oben
+       nur die goldene Sonne, aber kein Pulsavi-Schriftzug") — dort steht
+       seit der Sprachwahl als Menü genug Platz. */
+    #accountVeil .konsMarke b{display:block}
+    #accountVeil .konsMarke{margin-right:12px}
   }
   @media (max-width:1100px){
     .pwaKnopf span{display:none}
@@ -2285,6 +2300,19 @@
        max-width:100%;min-width:0;margin-top:calc(-12px - var(--mg, 10px));
        position:relative;z-index:2}
   .heldRang[hidden]{display:none}
+  /* Der Konto-Knopf des Gastes (v161) sitzt, wo beim Konto die Rangzeile
+     steht: im durchsichtigen unteren Rand der Bühne. Messing wie alle
+     Hauptknöpfe der Konsole, zwei Zeilen, Tippfläche über 44 Punkte. */
+  .hangarKonto{position:relative;z-index:2;align-self:center;width:auto;margin:calc(-14px - var(--mg, 10px)) 0 0;
+       display:inline-flex;align-items:center;justify-content:center;padding:0 22px;min-height:44px;
+       border-radius:12px;border:1px solid rgba(233,176,99,.55);color:var(--brass-hell, #f3d9a6);
+       background:rgba(233,176,99,.09);box-shadow:0 8px 22px rgba(0,0,0,.35)}
+  .hangarKonto b{font-family:var(--disp);font-size:13.5px;line-height:1;font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+  /* Die Unterzeile bleibt im Markup (Vorleser), gezeigt wird eine Zeile
+     (Thomas 26.09.: „das zweite Design ist gut, ein bisschen dezenter"). */
+  .hangarKonto small{display:none}
+  .hangarKonto:hover:not(:disabled){border-color:var(--brass);background:rgba(233,176,99,.16);color:var(--paper)}
+  .hangarKonto[hidden]{display:none}
   #heldAbz{display:block;flex:0 0 auto;width:48px;height:28px}
   #heldRangName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
        font-family:var(--disp);font-size:15px;font-weight:700;line-height:1.2;color:var(--paper)}
@@ -2438,7 +2466,7 @@
        Breite), also genau das, was `max-width` der Bühne erlaubt: In einem
        schmalen, hohen Fenster (1100 × 1000) ist die Bühne 316 Punkte groß,
        nicht die 474 der Formel, und der Rang rückte sonst 19 % hinein. */
-    .heldRang{margin-top:calc(-.13 * min(clamp(190px, calc(100vh - 488px), 600px), 100%))}
+    .heldRang,.hangarKonto{margin-top:calc(-.13 * min(clamp(190px, calc(100vh - 488px), 600px), 100%))}
     .heldRang{margin-top:calc(-.13 * min(clamp(190px, calc(100dvh - 488px), 600px), 100%))}
     .konsWerte{gap:0;margin:auto 0 16px;padding-top:10px}
     .konsWerte div{padding:0 26px}
@@ -2459,8 +2487,8 @@
   @media (min-width:1100px) and (max-width:1279px) and (min-height:700px){
     #heldCanvas{width:clamp(150px, calc(100vh - 526px), 600px)}
     #heldCanvas{width:clamp(150px, calc(100dvh - 526px), 600px)}
-    .heldRang{margin-top:calc(-.13 * min(clamp(150px, calc(100vh - 526px), 600px), 100%))}
-    .heldRang{margin-top:calc(-.13 * min(clamp(150px, calc(100dvh - 526px), 600px), 100%))}
+    .heldRang,.hangarKonto{margin-top:calc(-.13 * min(clamp(150px, calc(100vh - 526px), 600px), 100%))}
+    .heldRang,.hangarKonto{margin-top:calc(-.13 * min(clamp(150px, calc(100dvh - 526px), 600px), 100%))}
   }
 
   /* --- Designs, Errungenschaften, Statistik ---------------------- */
@@ -2652,6 +2680,8 @@
     .konsSp.m{justify-content:flex-start}
     .konsSp.m{border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
     #heldCanvas{width:200px;height:auto}
+    /* Gast (v161): Platz für den Konto-Knopf unter dem Körper. */
+    #startVeil.gast #heldCanvas{width:150px}
     .konsName b{font-size:22px}
     /* Level und Rang kleiner (v105): Abzeichen 31 × 18 wie früher in der
        Reiterzeile, der Rangname 12 Punkte — bei 13 passt „Capitão de mar e
@@ -2712,6 +2742,9 @@
   @media (max-width:560px){
     .konsMarke b{display:none}
     .konsMarke{margin-right:4px}
+    /* Hochkant auf dem Telefon: Schriftzug auf dem Anmeldebildschirm (v161). */
+    #accountVeil .konsMarke b{display:block}
+    #accountVeil .konsMarke{margin-right:12px}
     /* Aus zwei Gruppen wird **ein** schiebbarer Streifen. Als Raster bekam
        die linke Gruppe ihre volle Inhaltsbreite und quetschte die rechte —
        „Einstellungen" endete mitten im Wort, während links Platz war. */
@@ -2858,6 +2891,7 @@
        steht: Bei gleichem Gewicht gewinnt der spätere, und dann war der
        Körper wieder 168 Punkte groß in einem 188 Punkte hohen Fenster. */
     #startVeil #heldCanvas{width:168px;height:auto}
+    #startVeil.gast #heldCanvas{width:140px}
     .konsName b{font-size:19px;line-height:1.05}
     .konsWerte{gap:16px}
     .konsWerte b{font-size:16px}
@@ -3755,7 +3789,11 @@
     <div class="konsMarke"><i></i><b>Pulsavi</b></div>
     <div class="anmSprache">
       <span class="anmSprLabel" data-i18n="language">Language</span>
-      <div class="seg" id="langPick"></div>
+      <!-- v161 (Thomas: „die Sprachenauswahl ist so groß — ein schönes
+           Drop-down"): ein Knopf mit dem Kürzel, darunter dasselbe Menü wie
+           im Hangar (`sprachMenue` in spiel.js). -->
+      <button type="button" class="anmLangBtn" id="anmLangBtn" aria-haspopup="menu" aria-expanded="false">EN</button>
+      <div class="langMenu anmLangMenu" id="anmLangMenu" role="menu" hidden></div>
     </div>
   </div>
 
@@ -3866,8 +3904,7 @@
                Einzelheiten stehen in der Datenschutzerklärung (Link darunter). -->
           <label class="haken freiwillig" for="acctMailOk" id="acctMailRow" hidden>
             <input type="checkbox" id="acctMailOk">
-            <span data-i18n="mail_satz">Send me Pulsavi news by e-mail (opens and clicks are counted
-              anonymously; unsubscribe any time).</span>
+            <span data-i18n="mail_satz">Sign up for the newsletter (about 4 e-mails a year, unsubscribe any time)</span>
           </label>
           <p class="dsZeile"><span data-i18n="ds_satz">How we use your data:</span>
             <a href="datenschutz.html" target="_blank" rel="noopener" data-i18n="ds_link">Privacy</a></p>
@@ -4157,6 +4194,14 @@
         <div class="heldRang" id="heldRang" hidden>
           <canvas id="heldAbz" width="96" height="56"></canvas><span id="heldRangName"></span>
         </div>
+        <!-- Gäste (v161, Thomas 26.09.2026: „unter dem Bild meines Designs
+             ein schöner Button, der zur Account-Erstellung führt"). Er nimmt
+             den Platz der Rangzeile ein, die ein Gast nicht hat; `heldMalen`
+             blendet ihn ein und aus. -->
+        <button type="button" class="hangarKonto" id="hangarKonto" hidden>
+          <b data-i18n="k_neu_kopf">Create account</b>
+          <small data-i18n="hk_sub">free · keeps your progress</small>
+        </button>
         <div class="konsWerte">
           <div><b id="bestNum">0</b><span data-i18n="bestmass">best mass</span></div>
           <div><b id="runNum">0</b><span data-i18n="rec_runs">rounds</span></div>
@@ -4985,7 +5030,12 @@
     for (var i = 0; i < w.length; i++){ var b = String(w[i]).toLowerCase().split("-")[0]; if (da.indexOf(b) >= 0){ l = b; break; } }
     dateien = ["sprachen-" + l + ".js", "spiel.min.js"];
   }
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '"><\/script>');
+  /* ?v= (v161): Die Fassung steht an der Adresse, damit ein Browser nach
+     einem Upload nie neues HTML mit altem Skript aus seinem Zwischenspeicher
+     mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
+     zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
+     bauen.js prüft das. */
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=161"><\/script>');
 })();
 </script>
 </body>
