@@ -1,4 +1,4 @@
-/* Talumi — Service Worker
+/* Pulsavi — Service Worker
    Strategie: Netz zuerst, Cache als Rückfall.
 
    Grund: Das Spiel soll sich mit jedem Upload weiterentwickeln. Cache-first
@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v158";
+const VERSION = "v159";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -73,7 +73,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("push", e => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch(_){ try { d = { text: e.data.text() }; } catch(__){} }
-  const titel = String(d.titel || (d.notification && d.notification.title) || "Talumi");
+  const titel = String(d.titel || (d.notification && d.notification.title) || "Pulsavi");
   const text  = String(d.text  || (d.notification && d.notification.body)  || "");
   const ziel  = String(d.ziel || "start").replace(/[^a-z]/g, "");
   e.waitUntil(self.registration.showNotification(titel, {

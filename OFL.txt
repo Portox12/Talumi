@@ -1,7 +1,7 @@
 Copyright 2011 The Lora Project Authors (https://github.com/cyrealtype/Lora-Cyrillic), with Reserved Font Name "Lora".
 
 Diese Schrift liegt als lora-latein.woff und lora-kyrillisch.woff auf
-talumi.io und wird von dort geladen. Kein fremder Server ist beteiligt.
+pulsavi.io und wird von dort geladen. Kein fremder Server ist beteiligt.
 
 ----------------------------------------------------------------------
 
