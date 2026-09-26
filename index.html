@@ -1026,9 +1026,23 @@
   /* Zwei Nebenknöpfe nebeneinander statt untereinander: Sie gehören
      zusammen („ich habe kein Konto" / „ich weiß mein Wort nicht mehr") und
      kosten gestapelt zwei Zeilen Höhe, die auf flachen Schirmen fehlen. */
-  .anmKlein{display:flex;gap:8px;margin-top:10px}
-  .anmKlein button{margin:0;flex:1 1 0;min-width:0}
+  /* v160 (Thomas 26.09.2026: „die Account-Erstellung soll im Vordergrund
+     stehen, als Gast spielen und anmelden ist optional"): Die Nebenwege
+     sind Textzeilen, keine Knöpfe — der eine Hauptknopf wirkt allein. */
+  .anmKlein{display:flex;flex-wrap:wrap;justify-content:center;gap:0 10px;margin-top:6px}
+  .anmKlein button{margin:0;flex:0 1 auto;min-width:0}
+  .anmKlein button.quiet{width:auto;background:none;border:0;box-shadow:none;padding:6px 6px;
+       font-size:13px;font-weight:600;color:var(--brass);text-decoration:underline;
+       text-underline-offset:3px;text-decoration-color:rgba(216,167,95,.45);border-radius:8px}
+  .anmKlein button.quiet:hover:not(:disabled){background:var(--plate);color:var(--brass);text-decoration-color:var(--brass)}
   .anmKlein button[hidden]{display:none}
+  /* Überschrift des Formulars (v160): sagt, was hier passiert und was das
+     Konto bringt — nach dem Tutorial die wartende Belohnung. */
+  .anmFormKopf{margin:0 0 10px}
+  .anmFormKopf h2{margin:0;padding:0;border:0;font-family:var(--disp);font-size:22px;line-height:1.1;
+       font-weight:700;letter-spacing:-.01em;color:var(--paper)}
+  .anmFormKopf p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--paper-2)}
+  .anmFormKopf p:empty{display:none}
 
   .anmOder{display:flex;align-items:center;gap:12px;margin:14px 0 10px;
        color:var(--paper-2);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
@@ -1044,13 +1058,10 @@
   button.facebook svg path{fill:#1877F2}
   .anmRechts .two{gap:9px}
 
-  #guestBtn{margin-top:12px;padding:0;height:44px;font-size:14px;font-weight:600;border-radius:11px}
-  /* Solange er Nebenknopf ist, darf er heller sein als die anderen ruhigen
-     Knöpfe — er ist der zweite Weg ins Spiel. Fällt `quiet` weg (kein
-     Server erreichbar), gilt wieder die Grundregel für Hauptknöpfe:
-     dunkle Schrift auf Messing. Eine helle Schrift stand dort vorher
-     unlesbar auf hellem Grund. */
-  #guestBtn.quiet{color:var(--paper);border-color:var(--line-hell)}
+  /* Der Gast-Knopf ist seit v160 eine Textzeile in `.anmKlein`. Fällt
+     `quiet` weg (kein Server erreichbar), wird er wieder der Hauptknopf:
+     volle Breite, dunkle Schrift auf Messing (Grundregel für Hauptknöpfe). */
+  .anmKlein #guestBtn:not(.quiet){flex:1 1 100%;margin-top:8px;padding:0;height:44px;font-size:14px;font-weight:600;border-radius:11px}
   #accountVeil .hintline{margin-top:9px}
 
   /* Rechtliches nur noch klein ganz unten (v109, Thomas 22.09.2026: „stehen
@@ -1109,8 +1120,22 @@
     #accountVeil label{margin-bottom:3px;font-size:11px}
     #accountVeil form label + input{margin-bottom:7px}
     .anmOder{margin:9px 0 7px}
-    .anmKlein{margin-top:7px}
-    #guestBtn{margin-top:8px}
+    .anmKlein{margin-top:3px}
+    .anmKlein button.quiet{padding:4px 5px;font-size:12px}
+    .anmFormKopf{margin-bottom:6px}
+    .anmFormKopf h2{font-size:18px}
+    .anmFormKopf p{font-size:11.5px;margin-top:2px}
+  }
+  /* Ganz flache Telefone (iPhone SE quer, 375 hoch): Ohne diese Regel stand
+     „Als Gast spielen" auf Spanisch 20 Punkte unter dem Bildrand (mobil.js).
+     Die Erklärzeile unter der Überschrift fällt weg, die Überschrift bleibt. */
+  @media (max-height:400px){
+    .anmFormKopf{margin-bottom:4px}
+    .anmFormKopf p{display:none}
+    /* Beim Anmelden (zwei Spalten, schmale rechte Spalte) brechen die zwei
+       Textzeilen darunter um und kosten zwei Tippzeilen à 44 Punkte; die
+       Überschrift „Anmelden" über dem Knopf „Anmelden" ist verzichtbar. */
+    #accountVeil:not([data-schritt]) .anmFormKopf{display:none}
     #accountVeil .hintline{margin-top:6px;font-size:11px}
     /* Unter die linke Spalte: Die hat hier Luft, die rechte nicht. */
     .anmFuss{grid-column:1;grid-row:2;border-top:0;padding:0 16px 12px;
@@ -3749,6 +3774,14 @@
     </div>
 
     <div class="anmSp anmRechts">
+      <!-- Überschrift des Formulars (v160, Thomas 26.09.2026: „die
+           Account-Erstellung soll im Vordergrund stehen"). Beim Anlegen
+           steht hier, was das Konto bringt — und nach dem Tutorial als Gast
+           die Belohnung, die aufs Konto wartet. `kontoFormZeichnen` füllt. -->
+      <div class="anmFormKopf" id="acctKopf">
+        <h2 id="acctKopfTitel"></h2>
+        <p id="acctKopfSub"></p>
+      </div>
       <form id="acctForm" autocomplete="on">
         <!-- Anmelden: E-Mail und Passwort. Konto anlegen (18.09.2026, nach
              Roblox/Epic/Riot/Discord/Supercell und Baymard): **zwei kurze
@@ -3842,11 +3875,16 @@
         <button type="submit" id="acctGo" data-i18n="k_signin">Sign in</button>
       </form>
       <p class="notice" id="acctNote"></p>
+      <!-- Die Nebenwege als Textzeilen, nicht als Knöpfe (v160): Anmelden
+           bzw. Anlegen, Passwort vergessen, als Gast spielen. Der Gast-Knopf
+           steht hier mit drin; fällt der Server aus, wird er zum Hauptknopf
+           (`quiet` fällt weg) und die anderen verschwinden. -->
       <div class="anmKlein">
         <button class="quiet" id="acctSwap" data-i18n="k_new">No account yet? Create one</button>
         <!-- Nur sichtbar, wenn der Server Mails verschicken kann. Ein Knopf, der
              zuverlässig eine Fehlermeldung erzeugt, ist schlechter als keiner. -->
         <button class="quiet" id="acctForgot" data-i18n="p_head" hidden>Forgotten password</button>
+        <button class="quiet gast" id="guestBtn" data-i18n="play">Play as guest</button>
       </div>
 
       <!-- Google und Facebook. Der Streifen bleibt versteckt, solange der
@@ -3873,8 +3911,7 @@
         </div>
       </div>
 
-      <button class="quiet gast" id="guestBtn" data-i18n="play">Play as guest</button>
-      <p class="hintline" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
+      <p class="hintline" id="acctWarum" data-i18n="k_why">With an account your progress is kept and you appear in the leaderboards.</p>
       <!-- Abschnitt 3 der Nutzungsbedingungen sagt zu, dass hier ein Hinweis
            steht: Fair Play und die Regeln für Namen gelten auch ohne Konto.
            Zwei Bausteine statt eines Satzes mit eingebettetem Link — der
@@ -3902,52 +3939,51 @@
          Metadaten — Seiten mit Angaben nur in JSON-LD wurden praktisch nicht
          ausgewertet. Deshalb steht das Wichtigste hier als echter Fließtext,
          nicht als Schema-Beiwerk. -->
+    <!-- v160 (Thomas 26.09.2026): Der Text erscheint in der gewählten Sprache
+         (`ab_*` in sprachen.js, `data-i18n-md` erlaubt **fett**). Im
+         Quelltext bleibt Englisch stehen — das sehen Suchmaschinen. -->
     <section class="about">
-      <h2>What is Pulsavi?</h2>
-      <p>Pulsavi is a free browser game in the io genre. You start as a single
+      <h2 data-i18n="ab_h1">What is Pulsavi?</h2>
+      <p data-i18n-md="ab_p1">Pulsavi is a free browser game in the io genre. You start as a single
         grain of dust in an open field of stardust. Everything you swallow makes
         you bigger, and everything bigger than you is trying to swallow you.
         Grow far enough and your body changes: craters, then molten cracks,
         then an atmosphere, then rings and moons of your own.</p>
 
-      <h2>How to play</h2>
-      <p>Move with the mouse or drag anywhere on a touchscreen. Press space, or
+      <h2 data-i18n="ab_h2">How to play</h2>
+      <p data-i18n-md="ab_p2">Move with the mouse or drag anywhere on a touchscreen. Press space, or
         the on-screen button, to split — splitting is the only way to reach
         something that is running away, and it leaves your pieces vulnerable
         for several seconds. Press W to shed mass. Shed mass can be fed to a
         pulsar until it spawns a second one, which turns the hazard into a
         weapon against anyone larger than you.</p>
 
-      <h2>Four modes</h2>
-      <p><strong>Open space</strong> puts you on one field with everyone else in
-        the room, with the server deciding what happened rather than any player's
-        browser. A room holds 190 bodies; while fewer people are online, the
-        rest are computer-controlled rivals; the player number and the lasting leaderboards count only people. Without a
-        connection the same round runs on your own device.
-        <strong>Battle royale</strong> starts everyone equal and closes the
-        field in stages until one body is left. <strong>Clan battle</strong>
-        splits a mirrored arena between two clans and scores total mass after
-        five minutes. <strong>Friendly match</strong> is a mirrored practice
-        arena that pays no rewards, so it cannot be farmed.</p>
+      <h2 data-i18n="ab_h3">Two game modes</h2>
+      <p data-i18n-md="ab_p3"><strong>Ascent</strong> is the way up: levels, skills, moons and the
+        start bonus count. In the <strong>League</strong> everyone starts equal —
+        only skill decides. A room holds 190 bodies; while fewer people are online,
+        computer-controlled rivals fill it up, but the player number and the
+        leaderboards count only people. Clans can challenge each other to a
+        <strong>clan battle</strong>. Without a connection the same round runs on
+        your own device.</p>
 
-      <h2>Accounts, honour and ranks</h2>
-      <p>An account is free and needed only for online play; with one, your level,
+      <h2 data-i18n="ab_h4">Accounts, honour and ranks</h2>
+      <p data-i18n-md="ab_p4">An account is free and needed only for online play; with one, your level,
         Ore and designs live on the server instead of the browser, so they survive a
         cleared cache. <strong>Honour</strong> is earned by swallowing another account
         in an online round — never a computer-controlled rival, and the same
-        opponent counts once a day — from thirty-one achievements that each pay
-        it once, and a little from the daily bonus; it cannot be bought. It
-        carries twenty ranks, from Cadet to Grand Admiral, shown as a badge beside
-        your name.</p>
+        opponent counts once a day — from achievements that each pay it once, and a
+        little from the daily bonus; it cannot be bought. It carries twenty ranks,
+        from Cadet to Grand Admiral, shown as a badge beside your name.</p>
 
-      <h2>What it does not do</h2>
-      <p>No advertising interrupts a round, and nothing sold ever affects play.
-        All 46 designs can be earned — 21 by level, 25 with Ore you win by playing — and
-        the tier of a design is visible on the body itself, so you can tell
-        an experienced player from a merely large one.</p>
+      <h2 data-i18n="ab_h5">What it does not do</h2>
+      <p data-i18n-md="ab_p5">No advertising interrupts a round, and in the League nothing you can buy
+        has any effect. Every design can be earned — by level or with Ore won by
+        playing — and the tier of a design is visible on the body itself, so you can
+        tell an experienced player from a merely large one.</p>
 
-      <p class="updated">Version 80 · updated 15 September 2026 ·
-        <a href="about.html">More about the game</a></p>
+      <p class="updated"><span data-i18n="ab_stand">Updated 26 September 2026 ·</span>
+        <a href="about.html" data-i18n="a_more">More about the game</a></p>
     </section>
   </div>
 </div>

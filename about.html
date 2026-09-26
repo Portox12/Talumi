@@ -5,20 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#070b16">
 <title>About Pulsavi — how the io game works</title>
-<meta name="description" content="How Pulsavi works: online rounds against real players, the four modes, splitting, pulsars, the 46 designs, honour and the twenty ranks.">
+<meta name="description" content="How Pulsavi works: rounds against other players on one field, Ascent and League, splitting, pulsars, designs you earn, honour and the twenty ranks.">
 <link rel="canonical" href="https://pulsavi.io/about.html">
 <meta property="og:type" content="article">
 <meta property="og:title" content="About Pulsavi — how the io game works">
-<meta property="og:description" content="Online rounds, the four modes, splitting, pulsars, and the 46 earned designs explained.">
+<meta property="og:description" content="Rounds on one field, Ascent and League, splitting, pulsars, and the designs you earn by playing.">
 <meta property="og:image" content="https://pulsavi.io/share-1200x630.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <style>
   /* Dieselbe Schrift wie im Spiel (Lora, SIL OFL 1.1, Lizenz in OFL.txt),
-     von pulsavi.io selbst ausgeliefert — nichts wird von Google geladen.
-     Bis Schritt 88 stand hier die Systemschrift: Wer im Spiel auf
-     „Impressum" klickte, landete auf einer Seite in einer anderen Schrift. */
+     von pulsavi.io selbst ausgeliefert — nichts wird von Google geladen. */
   @font-face{
     font-family:"Pulsavi Serif";
     src:url("lora-latein.woff") format("woff");
@@ -38,7 +36,7 @@
   *{box-sizing:border-box}
   body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);
        line-height:1.65;font-size:16px}
-  main{max-width:44rem;margin:0 auto;padding:48px 22px 80px}
+  main{max-width:44rem;margin:0 auto;padding:36px 22px 80px}
   h1{font-family:var(--serif);font-size:clamp(38px,8vw,58px);line-height:.95;margin:0 0 6px;
      color:var(--brass);font-weight:600;letter-spacing:-.02em}
   .lead{font-family:var(--serif);font-size:20px;color:var(--paper);margin:0 0 26px}
@@ -51,159 +49,153 @@
   .play{display:inline-block;margin:8px 0 10px;padding:13px 26px;background:var(--brass);
         color:#161005;border-radius:2px;font-weight:600;text-decoration:none;font-size:17px}
   img{max-width:100%;height:auto;border-radius:3px;border:1px solid var(--line)}
-  table{width:100%;border-collapse:collapse;margin:10px 0 18px;font-size:14.5px}
-  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);color:var(--paper-2)}
-  th{color:var(--paper);font-weight:600}
   footer{margin-top:52px;padding-top:18px;border-top:1px solid var(--line);
          font-size:13px;color:var(--paper-2)}
+  /* Sprachwahl (v160): dieselben sieben Sprachen wie im Spiel, als ruhige
+     Reihe über dem Titel; Tippflächen 44 Punkte hoch. */
+  .sprachen{display:flex;flex-wrap:wrap;gap:4px 2px;margin:0 0 22px -8px}
+  .sprachen button{background:none;border:0;color:var(--paper-2);font:600 13px/1 var(--sans);
+       letter-spacing:.08em;padding:0 8px;min-height:44px;cursor:pointer;border-radius:8px}
+  .sprachen button:hover{color:var(--paper)}
+  .sprachen button[aria-pressed="true"]{color:var(--brass)}
 </style>
 </head>
 <body>
 <main>
-  <h1>Pulsavi</h1>
-  <p class="lead">A free browser io game where you start as a grain of dust and
-     grow into a world with rings and moons.</p>
+  <!-- v160 (Thomas 26.09.2026: „bei About steht alles auf Englisch — wenn
+       Deutsch gewählt ist, soll das auch auf Deutsch sein"): Die Texte kommen
+       aus denselben Bausteinen wie die Spielerklärung im Spiel (`ab_*` in
+       sprachen.js, ausgeliefert als sprachen-xx.js). Im Quelltext steht
+       Englisch — das sehen Suchmaschinen; das Skript unten tauscht die Texte
+       in die Sprache des Geräts (wie `pickLang` im Spiel) oder die gewählte. -->
+  <nav class="sprachen" id="sprachen" aria-label="Language"></nav>
 
-  <p><a class="play" href="index.html">Play Pulsavi</a></p>
+  <h1>Pulsavi</h1>
+  <p class="lead" data-i18n="ab_lead">A free browser io game: you start as a grain of dust and grow into a world with rings and moons.</p>
+
+  <p><a class="play" href="index.html" data-i18n="ab_spielen">Play Pulsavi</a></p>
   <p><img src="share-1200x630.png" alt="A ringed planet glowing against deep space, the Pulsavi title screen"></p>
 
-  <h2>What the game is</h2>
-  <p>Pulsavi belongs to the io genre: a single open field, everything on it is
-     either food or a threat, and the only thing that separates the two is size.
-     You begin at 24 mass, roughly a speck. Stardust scattered across the field
-     feeds you slowly; swallowing a rival feeds you instantly.</p>
-  <p>What makes it different from the games it descends from is that your body
-     changes visibly as you grow. At 60 mass craters appear. At 240 the core
-     starts to melt and heat shows through cracks. At 800 an atmosphere holds.
-     At 2000 you carry rings and three moons. You can read another player's
-     progress across the screen without a single number.</p>
+  <h2 data-i18n="ab_h1">What is Pulsavi?</h2>
+  <p data-i18n-md="ab_p1">Pulsavi is a free browser game in the io genre. You start as a single
+    grain of dust in an open field of stardust. Everything you swallow makes
+    you bigger, and everything bigger than you is trying to swallow you.
+    Grow far enough and your body changes: craters, then molten cracks,
+    then an atmosphere, then rings and moons of your own.</p>
 
-  <h2>How to play</h2>
-  <h3>Moving</h3>
-  <p>Mouse on a computer. On a phone, drag anywhere — the stick is relative, so
-     your thumb never covers your own body. The game runs in landscape and shows
-     exactly the same amount of field on a phone as on a desktop, so neither
-     device has an advantage.</p>
-  <h3>Splitting</h3>
-  <p>Space, or the on-screen button. Splitting is the heart of the game: a small
-     body always outruns a large one in a straight line, so <strong>splitting is
-     the only way to catch anything</strong>. It is also how you die, because
-     each piece is half your mass and stays separate for eight to twenty-four
-     seconds before merging back.</p>
-  <h3>Shedding mass</h3>
-  <p>W, or the second button. The lump you throw grows with your own size. Feed
-     enough of it into a pulsar and the pulsar spits out a new one along your
-     line of fire — that is how a hazard becomes a weapon against someone
-     larger than you.</p>
-  <h3>Pulsars</h3>
-  <p>Spiked bodies scattered across the field. Below 240 mass you pass through
-     them and can hide behind them. Above it, covering one tears you into as
-     many as thirteen pieces and leaves you easy prey for anyone smaller.</p>
+  <h2 data-i18n="ab_h2">How to play</h2>
+  <p data-i18n-md="ab_p2">Move with the mouse or drag anywhere on a touchscreen. Press space, or
+    the on-screen button, to split — splitting is the only way to reach
+    something that is running away, and it leaves your pieces vulnerable
+    for several seconds. Press W to shed mass. Shed mass can be fed to a
+    pulsar until it spawns a second one, which turns the hazard into a
+    weapon against anyone larger than you.</p>
 
-  <h2>The four modes</h2>
-  <table>
-    <tr><th>Mode</th><th>Field</th><th>How it ends</th></tr>
-    <tr><td>Open space</td><td>16818 × 11892 units, 190 bodies to a room</td><td>When you die</td></tr>
-    <tr><td>Battle royale</td><td>6000 units, 24 rivals, everyone equal</td>
-        <td>Last body standing, about five minutes</td></tr>
-    <tr><td>Clan battle</td><td>Mirrored arena, two clans</td>
-        <td>Highest clan mass after five minutes</td></tr>
-    <tr><td>Friendly match</td><td>Mirrored arena, equal start</td>
-        <td>Practice only, no rewards</td></tr>
-  </table>
-  <p>Open space is the mode the others practise for: everyone in a room shares
-     one field, and the server decides what happened, not your browser. A room
-     holds 190 bodies. When there are fewer people than that, computer-controlled
-     rivals fill the rest. They are not marked in the arena, but they never
-     count as players: the player number on the start screen counts only
-     people, the lasting leaderboards list only people, and honour comes only
-     from swallowing other accounts. For every person who joins, one
-     computer-controlled rival leaves. Without a
-     connection the same round runs on your own device instead, so the game
-     still works on a plane. The three arena modes are local anyway and need
-     no account.</p>
-  <p>Clan battles and friendly matches use mirrored arenas on purpose: pulsars
-     sit in point-symmetric pairs and both sides start on equivalent ground. An
-     arranged match on the open map would be unfair, because starting position
-     and stardust are random there.</p>
+  <h2 data-i18n="ab_h3">Two game modes</h2>
+  <p data-i18n-md="ab_p3"><strong>Ascent</strong> is the way up: levels, skills, moons and the
+    start bonus count. In the <strong>League</strong> everyone starts equal —
+    only skill decides. A room holds 190 bodies; while fewer people are online,
+    computer-controlled rivals fill it up, but the player number and the
+    leaderboards count only people. Clans can challenge each other to a
+    <strong>clan battle</strong>. Without a connection the same round runs on
+    your own device.</p>
 
-  <h2>Progression and designs</h2>
-  <p>There are 100 levels and 46 designs. Twenty-one unlock by level, twenty-five
-     with Ore, the currency you win by playing. Ore comes from your peak mass,
-     from the bodies you swallow, from the stages you reach, and from beating
-     your own best run.</p>
-  <p>Designs carry a tier from I to V, and the tier is visible on the body:
-     higher tiers are speckled, then banded, then split by glowing cracks, then
-     spiked, and at tier V they pulse and carry a belt of shards. Four tier VI
-     designs cost hundreds of hours and do things nothing else does: a dust
-     trail, a counter-rotating halo, light bending at the rim, cracks cycling
-     through the spectrum. Size tells you who is currently full; tier tells you
-     who has put in the hours. Who is actually good is a separate question, and
-     the game answers it with honour.</p>
+  <h2 data-i18n="ab_h4">Accounts, honour and ranks</h2>
+  <p data-i18n-md="ab_p4">An account is free and needed only for online play; with one, your level,
+    Ore and designs live on the server instead of the browser, so they survive a
+    cleared cache. <strong>Honour</strong> is earned by swallowing another account
+    in an online round — never a computer-controlled rival, and the same
+    opponent counts once a day — from achievements that each pay it once, and a
+    little from the daily bonus; it cannot be bought. It carries twenty ranks,
+    from Cadet to Grand Admiral, shown as a badge beside your name.</p>
 
-  <h2>Accounts, honour and ranks</h2>
-  <p>An account is free and takes an e-mail address and a password. Without one
-     you can still play every mode, online included, as a guest. With one, your level, Ore and designs live on the server instead of in the
-     browser, so they survive a cleared cache and follow you to another device.
-     Coming back on consecutive days pays a bonus, and there are leaderboards
-     for your country, the world, and the friends whose names you enter.</p>
-  <p><strong>Honour</strong> is the one number in the game that cannot be bought
-     or sat out. It is earned in online rounds by swallowing another
-     account, never a computer-controlled rival, and the same opponent counts
-     once a day. What a kill is worth depends on how close the prey was to your
-     own size — anything under about a third of it pays nothing, so grazing on
-     splinters gets you nowhere — and on how heavy it was. Achievements and the
-     daily bonus pay honour too.</p>
-  <p>Honour carries twenty ranks, from Cadet to Grand Admiral, shown as a badge
-     beside your name on the field. The lower fifteen are fixed thresholds: once
-     reached, they are yours for good. The top five are places in your own
-     country's standings — the best ten per cent, three per cent, one per cent,
-     the best five, and first — and those can be lost again to someone better.
-     There are also thirty-one achievements, each paid once in honour, for
-     growth, hunting, endurance, coming back, collecting and levels.</p>
+  <h2 data-i18n="ab_h5">What it does not do</h2>
+  <p data-i18n-md="ab_p5">No advertising interrupts a round, and in the League nothing you can buy
+    has any effect. Every design can be earned — by level or with Ore won by
+    playing — and the tier of a design is visible on the body itself, so you can
+    tell an experienced player from a merely large one.</p>
 
-  <h2>What this game refuses to do</h2>
-  <p>No advertisement can interrupt a round — the minimum gap between breaks is
-     enforced in the code, not promised in a policy. Every design can be earned by
-     playing, and in the Liga everyone starts equal — no level bonus, no moons.
-     There are no random loot boxes.</p>
-  <p>These are deliberate answers to the complaints players make about the games
-     this one descends from: an advertisement after nearly every death,
-     unmoderated names, and dying within a second of spawning. Pulsavi fills quiet
-     rooms with computer-controlled rivals — an empty field is no fun.
-     It also filters names to characters anyone can type, protects you for five
-     seconds after spawning, and chooses your starting position as the safest of
-     forty-eight candidates.</p>
+  <h2 data-i18n="ab_f_h">Questions</h2>
+  <h3 data-i18n="ab_f1h">Is Pulsavi free?</h3>
+  <p data-i18n="ab_f1">Yes. Every design can be earned by playing, and you can play everything
+    without an account; a free account keeps your progress on the server and
+    adds honour, ranks, achievements and clans.</p>
+  <h3 data-i18n="ab_f2h">Does it work on a phone?</h3>
+  <p data-i18n="ab_f2">Yes, in landscape, with on-screen buttons for splitting and shedding mass.
+    You can add it to your home screen; it then runs full screen.</p>
+  <h3 data-i18n="ab_f3h">Who is behind it?</h3>
+  <p data-i18n="ab_f3">An independent developer in Germany. Questions and feedback: info@pulsavi.io.</p>
 
-  <h2>Questions</h2>
-  <h3>Is Pulsavi free?</h3>
-  <p>Yes. Every design can be earned by playing, and you can play every mode
-     without an account; a free account keeps your progress on the server and
-     adds honour, ranks, achievements and clans.</p>
-  <h3>Does it work on a phone?</h3>
-  <p>Yes, in landscape, with on-screen buttons for splitting and shedding. It can
-     be installed to the home screen and then runs full screen, offline included.</p>
-  <h3>Is it multiplayer?</h3>
-  <p>Yes, in Open space. Everyone in a room shares one field and the server
-     decides what happened, not anybody's browser. A room holds 190 bodies,
-     and while fewer people are online the rest are computer-controlled rivals
-     that split to hunt you, flee toward open space, use pulsars as cover and
-     shoot them at giants. They are not marked in the arena; the player number
-     and the lasting leaderboards count only people. Without a connection the same round runs on your
-     own device, and the three arena modes are local anyway.</p>
-  <h3>Who made it?</h3>
-  <p>An independent developer. No libraries, no frameworks — the game runs on
-     its own code, down to the typeface. The game has no music; the sounds it
-     makes are the ones that tell you something, and you can turn those off.</p>
-
-  <p><a class="play" href="index.html">Play Pulsavi</a></p>
+  <p><a class="play" href="index.html" data-i18n="ab_spielen">Play Pulsavi</a></p>
 
   <footer>
-    Updated 18 September 2026 · <a href="index.html">Play</a> ·
+    <span data-i18n="ab_stand">Updated 26 September 2026 ·</span>
+    <a href="index.html">pulsavi.io</a> ·
     <a href="impressum.html">Impressum</a> ·
-    <a href="datenschutz.html">Datenschutz</a> ·
-    <a href="nutzungsbedingungen.html">Terms of use</a>
+    <a href="datenschutz.html" data-i18n="ds_link">Privacy</a> ·
+    <a href="nutzungsbedingungen.html" data-i18n="agb">Terms of use</a>
   </footer>
 </main>
+
+<script>
+(function(){
+  "use strict";
+  var NAMEN = { en:"English", de:"Deutsch", es:"Español", pt:"Português", fr:"Français", tr:"Türkçe", ru:"Русский" };
+  var code = "en";
+  /* Sprache des Geräts, wie `pickLang` im Spiel (das Spiel merkt sich keine Wahl). */
+  function geraeteSprache(){
+    var liste = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || "en"];
+    for (var i = 0; i < liste.length; i++){
+      var b = String(liste[i]).toLowerCase().split("-")[0];
+      if (NAMEN[b]) return b;
+    }
+    return "en";
+  }
+  function t(k){
+    var L = window.LANGS || {};
+    return (L[code] && L[code][k]) || (L.en && L.en[k]) || "";
+  }
+  function entschaerfen(s){ return String(s).replace(/[<>&"]/g, function(c){ return {"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c]; }); }
+  function anwenden(){
+    var i, el, s, alle;
+    alle = document.querySelectorAll("[data-i18n]");
+    for (i = 0; i < alle.length; i++){ el = alle[i]; s = t(el.getAttribute("data-i18n")); if (s) el.textContent = s; }
+    alle = document.querySelectorAll("[data-i18n-md]");
+    for (i = 0; i < alle.length; i++){ el = alle[i]; s = t(el.getAttribute("data-i18n-md"));
+      if (s) el.innerHTML = entschaerfen(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
+    s = t("ab_titel"); if (s) document.title = s;
+    document.documentElement.lang = code;
+    var kn = document.querySelectorAll("#sprachen button");
+    for (i = 0; i < kn.length; i++) kn[i].setAttribute("aria-pressed", String(kn[i].getAttribute("data-code") === code));
+  }
+  /* sprachen-xx.js trägt Englisch und die eine Sprache; eine weitere wird
+     nachgeladen (dieselben Dateien wie im Spiel, im Offline-Speicher). */
+  var geladen = {};
+  function laden(c, danach){
+    if (geladen[c] || (window.LANGS && window.LANGS[c])){ danach(); return; }
+    var s = document.createElement("script");
+    s.src = "sprachen-" + c + ".js?v=160";
+    s.onload = function(){ geladen[c] = true; danach(); };
+    s.onerror = function(){ danach(); };
+    document.head.appendChild(s);
+  }
+  function waehlen(c){
+    var vorher = code;
+    laden(c, function(){
+      if (window.LANGS && window.LANGS[c]) code = c; else code = vorher;
+      anwenden();
+    });
+  }
+  var nav = document.getElementById("sprachen");
+  Object.keys(NAMEN).forEach(function(c){
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = c.toUpperCase(); b.setAttribute("data-code", c);
+    b.setAttribute("aria-label", NAMEN[c]); b.title = NAMEN[c];
+    b.addEventListener("click", function(){ waehlen(c); });
+    nav.appendChild(b);
+  });
+  waehlen(geraeteSprache());
+})();
+</script>
 </body>
 </html>
