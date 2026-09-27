@@ -741,6 +741,45 @@
      gestorben ist, muss ohne Scrollen zurück ins Menü kommen. Lieber scrollt
      die Liste in sich, als dass „Menü" unter dem Bildrand verschwindet. */
   #endGains,#endRecap{max-height:min(46vh,300px);overflow:auto;padding-right:4px}
+  /* v166 (Thomas 27.09.2026: „komplett am oberen Bildschirmrand … die
+     Statistik ist nicht schön angezeigt"): Das Fenster steht mittig, solange
+     es ins Bild passt (`margin:auto` fällt auf null, wenn es höher ist — dann
+     beginnt es oben und der Schleier scrollt). Die Werte der Runde und der
+     Lohn stehen als Kacheln da, nicht mehr als Satz. */
+  #endVeil .card{margin:auto 0}
+  .endSatz{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .endErgebnis{margin:10px 0 0;font-size:14px;line-height:1.4;color:var(--paper)}
+  .endWerte{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0 10px}
+  .endWerte div,.endLohn div{min-width:0;padding:9px 6px 8px;border-radius:12px;text-align:center;
+     background:var(--block);border:1px solid var(--line)}
+  .endWerte b,.endLohn b{display:block;font-family:var(--disp);font-size:19px;line-height:1.15;
+     color:var(--brass-hell);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .endWerte div.wort b{font-size:15px;line-height:1.5}
+  .endWerte span,.endLohn span{display:block;margin-top:3px;font-size:11px;line-height:1.25;letter-spacing:.06em;
+     text-transform:uppercase;color:var(--paper-2);overflow-wrap:break-word;hyphens:auto}
+  /* Reihen je nach Zahl der Kacheln (`data-n`): bis vier in einer Reihe, fünf
+     als drei und zwei, sechs als drei und drei — nie eine einzelne verwaist. */
+  .endLohn{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:0 0 10px}
+  .endLohn div{grid-column:span 2}
+  .endLohn[data-n="1"] div{grid-column:span 6}
+  .endLohn[data-n="2"] div,.endLohn[data-n="4"] div{grid-column:span 3}
+  .endLohn[data-n="5"] div:nth-child(n+4){grid-column:span 3}
+  @media (min-width:660px){
+    .endLohn[data-n="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .endLohn[data-n="4"] div{grid-column:span 1}
+  }
+  .endLohn:empty{display:none}
+  .endLohn div{border-color:rgba(233,176,99,.38);
+     background:linear-gradient(180deg, rgba(233,176,99,.13), rgba(233,176,99,.03) 60%), var(--block)}
+  .endLohn b{color:var(--brass)}
+  .endLohn .ico,.endLohn .iriKristall{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:4px;filter:none}
+  .endLohn div.iri{border-color:color-mix(in srgb, var(--iri) 45%, transparent);
+     background:linear-gradient(180deg, color-mix(in srgb, var(--iri) 14%, transparent), transparent 60%), var(--block)}
+  .endLohn div.iri b{color:var(--iri)}
+  .endLohn div.null b{color:var(--paper-2)}
+  /* Die Summen stehen in den Kacheln; in der Liste darunter bleiben die Posten. */
+  #endGains .tally.sum,#endGains .gain.xp{display:none}
+  #endVeil .recap{margin-top:2px}
   /* Schritt 96: Ergebnisbildschirm ohne Scrollen auf Handys im Querformat.
      Die Einzelposten der Abrechnung weichen der Summe, der Tastaturhinweis
      entfällt auf Touchgeräten, und „Nochmal" rückt nach oben. */
@@ -748,8 +787,15 @@
   @media (max-height:500px){
     #endVeil .card{padding:12px 18px}
     #endVeil h1{font-size:30px;margin-bottom:2px}
-    #endVeil .tally:not(.sum){display:none}
+    #endVeil .tally{display:none}
+    #endVeil #endGains .ehreHinweis{display:none}
     #endVeil .gain{line-height:1.4;margin:4px 0 2px}
+    .endWerte{margin:8px 0 8px;gap:6px}
+    .endWerte div,.endLohn div{padding:6px 5px 6px}
+    .endWerte b,.endLohn b{font-size:17px}
+    .endWerte div.wort b{font-size:14px;line-height:1.45}
+    .endLohn{gap:6px;margin-bottom:6px}
+    #endVeil .lesson{margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     #endVeil #endGains{max-height:none;overflow:visible}
     #endVeil #rwNote{display:none}
     #endVeil #again{margin-top:6px}
@@ -1607,7 +1653,15 @@
   .pfErf .bild svg{width:100%;height:100%}
   .pfErf b{font-size:12px;font-weight:600}
   .pfErf small{font-size:11px;color:var(--paper-2)}
-  .pfFuss{margin:14px 0 0;text-align:right}
+  .pfFuss{margin:14px 0 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px 12px}
+  /* v166: „Als Freund hinzufügen" und „In den Clan einladen" — Messing als
+     Umriss, damit der Startknopf der einzige gefüllte Blickfang bleibt. */
+  .pfFuss .pfTat{width:auto;margin:0;padding:9px 16px;border-radius:999px;font-size:13.5px;font-weight:600;
+     background:rgba(233,176,99,.08);border:1px solid rgba(233,176,99,.55);color:var(--brass-hell)}
+  .pfFuss .pfTat.ist{background:transparent;border-color:var(--line-hell);color:var(--paper-2);font-weight:500}
+  .pfFuss .pfTat:disabled{opacity:.55}
+  .pfFuss .linkKnopf{margin-left:auto}
+  body.touch .pfFuss .pfTat{min-height:44px}
   .bildRaster{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:12px 0 4px}
   .bildKachel{margin:0;padding:6px 4px 6px;border-radius:14px;background:var(--block);border:1px solid var(--line);
        display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--paper-2)}
@@ -4684,7 +4738,11 @@
   <div class="card wide">
     <div class="col">
       <h1 data-i18n="scattered">Scattered</h1>
-      <p class="sub" id="endText"></p>
+      <!-- v166 (Thomas 27.09.2026): Die Werte der Runde stehen als Kacheln da.
+           Der ganze Satz bleibt für Vorleseprogramme und für „Problem melden". -->
+      <p class="endSatz" id="endText"></p>
+      <p class="endErgebnis" id="endErgebnis" hidden></p>
+      <div class="endWerte" id="endWerte"></div>
       <div id="endRecap"></div>
       <div id="endZiel"></div>
       <!-- Problem melden (17.09.2026): unter der Zusammenfassung. Erscheint
@@ -4692,6 +4750,7 @@
       <button class="quiet meldeKnopf" id="endMelden" data-i18n="md_knopf" hidden>Report a problem</button>
     </div>
     <div class="col">
+      <div class="endLohn" id="endLohn"></div>
       <div id="endGains"></div>
       <button id="again" data-i18n="again">Play again</button>
       <p class="hintline" style="text-align:center" data-i18n="enterstarts">Enter or space starts the next run</p>
@@ -5132,7 +5191,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=165"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=166"><\/script>');
 })();
 </script>
 </body>
