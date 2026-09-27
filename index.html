@@ -788,6 +788,7 @@
      background:linear-gradient(180deg, color-mix(in srgb, var(--iri) 14%, transparent), transparent 60%), var(--block)}
   .endLohn div.iri b{color:var(--iri)}
   .endLohn div.null b{color:var(--paper-2)}
+  .endLohn div.clan b{color:var(--paper-2)}
   /* Die Summen stehen in den Kacheln; in der Liste darunter bleiben die Posten. */
   #endGains .tally.sum,#endGains .gain.xp{display:none}
   #endVeil .recap{margin-top:2px}
@@ -1705,6 +1706,22 @@
   .pfFuss .pfTat:disabled{opacity:.55}
   .pfFuss .linkKnopf{margin-left:auto}
   body.touch .pfFuss .pfTat{min-height:44px}
+  /* v169: Clan-Ränge und Clanbank. */
+  .clanZeile small .rgTag{color:var(--brass)}
+  .clanZeile .clanWer{min-width:0}
+  .clanZeile .clanWer small{display:block;margin-top:1px;font-size:11.5px;color:var(--paper-2)}
+  .clanTat{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+  .clanTat select{width:auto;max-width:140px;margin:0;padding:5px 8px;border-radius:9px;font:inherit;font-size:12.5px;
+     background:var(--block);border:1px solid var(--line-hell);color:var(--paper)}
+  .clanTat button{width:auto;margin:0}
+  body.touch .clanTat select,body.touch .clanTat button{min-height:44px}
+  .clanBank{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 6px}
+  .clanBank b{font-family:var(--disp);font-size:22px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .clanBank span{color:var(--paper-2);font-size:12.5px}
+  .clanBankSeg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .clanBankSeg button{width:auto;flex:1 1 44px;margin:0;padding:7px 6px;font-size:13px}
+  .clanBankSeg button[aria-pressed="true"]{border-color:var(--brass);color:var(--brass-hell);background:rgba(233,176,99,.12)}
+  body.touch .clanBankSeg button{min-height:44px}
   .bildRaster{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:12px 0 4px}
   .bildKachel{margin:0;padding:6px 4px 6px;border-radius:14px;background:var(--block);border:1px solid var(--line);
        display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--paper-2)}
@@ -5238,7 +5255,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=168"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=169"><\/script>');
 })();
 </script>
 </body>
