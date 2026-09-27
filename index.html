@@ -780,6 +780,38 @@
   /* Die Summen stehen in den Kacheln; in der Liste darunter bleiben die Posten. */
   #endGains .tally.sum,#endGains .gain.xp{display:none}
   #endVeil .recap{margin-top:2px}
+  /* v167: Streak im Tagesbonus-Fenster — drei Kacheln wie im Ergebnisfenster.
+     Der Kälteschlaf trägt ein eigenes Eisweiß; Iridium-Blau bleibt dem
+     Iridium. */
+  .streakLeiste{--kryo:#d6f1ff;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:8px;margin:0 0 12px}
+  .streakLeiste[hidden]{display:none}
+  .streakLeiste > div{min-width:0;padding:8px 6px 7px;border-radius:12px;text-align:center;
+     background:var(--block);border:1px solid var(--line)}
+  .streakLeiste > div.tage{border-color:rgba(233,176,99,.45);
+     background:linear-gradient(180deg, rgba(233,176,99,.14), rgba(233,176,99,.03) 60%), var(--block)}
+  .streakLeiste b{display:block;font-family:var(--disp);font-size:20px;line-height:1.15;color:var(--brass-hell);
+     font-variant-numeric:tabular-nums}
+  .streakLeiste span{display:block;margin-top:3px;font-size:11px;line-height:1.25;letter-spacing:.06em;
+     text-transform:uppercase;color:var(--paper-2);overflow-wrap:break-word;hyphens:auto}
+  .streakLeiste .kryoReihe{display:flex;justify-content:center;gap:5px;height:23px;align-items:center}
+  .kryoZeichen{width:19px;height:19px;flex:0 0 auto;fill:none;stroke:var(--line-hell);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+  .kryoZeichen .innen{opacity:0}
+  .kryoZeichen.voll{stroke:var(--kryo,#d6f1ff);fill:rgba(214,241,255,.16);filter:drop-shadow(0 0 4px rgba(190,230,255,.55))}
+  .kryoZeichen.voll .innen{opacity:1}
+  .streakHinweis{margin:8px 0 0;font-size:12px;line-height:1.45;color:var(--paper-2)}
+  .streakHinweis[hidden]{display:none}
+  .endLohn div.kryo{border-color:rgba(214,241,255,.4);
+     background:linear-gradient(180deg, rgba(214,241,255,.12), transparent 60%), var(--block)}
+  .endLohn div.kryo b{color:#d6f1ff}
+  .endLohn .kryoZeichen{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:4px}
+  @media (max-height:520px){
+    .streakLeiste{margin-bottom:8px;gap:6px}
+    .streakLeiste > div{padding:5px 5px 5px}
+    .streakLeiste b{font-size:17px}
+    .streakLeiste .kryoReihe{height:20px}
+    .kryoZeichen{width:16px;height:16px}
+    .streakHinweis{margin-top:5px}
+  }
   /* Schritt 96: Ergebnisbildschirm ohne Scrollen auf Handys im Querformat.
      Die Einzelposten der Abrechnung weichen der Summe, der Tastaturhinweis
      entfällt auf Touchgeräten, und „Nochmal" rückt nach oben. */
@@ -5057,8 +5089,12 @@
   <div class="card bonusKarte">
     <h1 style="font-size:34px;margin-bottom:4px" data-i18n="b_title">Täglicher Bonus</h1>
     <p class="sub" id="bonusVeilSub" style="margin:0 0 14px"></p>
+    <!-- v167 (Idee von Andi, Thomas 27.09.2026): der Streak — Tage in Folge,
+         die Kälteschlaf-Reserven und der längste Streak. `streakMalen`. -->
+    <div class="streakLeiste" id="bonusStreak" hidden></div>
     <div class="beads gross" id="bonusVeilBeads"></div>
     <p class="hinweis" id="bonusVeilWochen" style="margin:10px 0 0;color:var(--brass)"></p>
+    <p class="hinweis streakHinweis" id="bonusStreakHinweis" hidden></p>
     <div id="bonusAnsporn"></div>
     <button id="bonusVeilGo" data-i18n="b_holen">Abholen</button>
     <button class="quiet" id="bonusVeilSpaeter" data-i18n="b_spaeter">Später</button>
@@ -5191,7 +5227,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=166"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=167"><\/script>');
 })();
 </script>
 </body>
