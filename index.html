@@ -2561,6 +2561,89 @@
     .mondOben{grid-template-columns:minmax(180px,230px) minmax(0,1fr);gap:10px 16px;margin-bottom:8px}
     .mondKarte{padding:8px 10px;grid-template-columns:44px minmax(0,1fr)}
   }
+  /* ---- Monde v162 (Entwurf A) ---- */
+  #paneMonde{position:relative}
+  /* `.plate` ist nowrap (Statistik) — hier soll Text umbrechen. */
+  .mondZeilen,.mondInfo,.mondBlatt{white-space:normal}
+  .mondA{display:grid;grid-template-columns:250px minmax(0,1fr);gap:10px 16px;align-items:start;height:100%}
+  .mondA .mondLinks{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0}
+  .mondA .mondBuehne{position:relative;width:200px;aspect-ratio:1;line-height:0;margin:0 auto}
+  .mondA .mondPlatzKn{position:absolute;inset:0;margin:0;display:block;pointer-events:none}
+  .mondA .mondPlatzKn button{pointer-events:auto;position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;padding:0;
+       border-radius:50%;background:transparent;border:0;box-shadow:none;display:grid;place-items:center;
+       color:var(--brass);font:700 17px/1 var(--disp);min-height:44px}
+  .mondA .mondPlatzKn button::before{content:"";position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;
+       border-radius:50%;border:1.5px dashed rgba(233,176,99,.6);background:rgba(10,14,23,.35)}
+  .mondA .mondPlatzKn button.voll::before{width:32px;height:32px;margin:-16px 0 0 -16px;border:1px solid rgba(255,255,255,.14);background:transparent}
+  .mondA .mondPlatzKn button.voll{color:transparent}
+  .mondA .mondPlatzKn button.voll::after{content:none}
+  .mondA .mondPlatzKn button:hover::before{border-color:var(--brass)}
+  .mondStand{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;font-size:11.5px;line-height:1.35;color:var(--paper-2);text-align:center;padding:0 4px}
+  .mondStand span+span::before{content:"·";margin-right:8px;opacity:.6}
+  .mondStaubPille{color:var(--brass-hell);font-weight:700;display:inline-flex;gap:5px;align-items:center}
+  .mondStaubPille i{width:11px;height:11px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#d8a75f 60%,#7a4e14);display:inline-block}
+  .mondInfo{width:100%;padding:8px 10px;display:flex;gap:8px;align-items:center}
+  .mondInfo span{flex:1;font-size:11px;line-height:1.4;color:var(--paper-2)}
+  .mondInfoKn{display:flex;gap:6px;flex:0 0 auto}
+  .mondInfoKn button{margin:0;width:auto;height:30px;padding:0 10px;font-size:11.5px;white-space:nowrap}
+  .mondZeilen{padding:2px 12px;display:flex;flex-direction:column;justify-content:space-evenly;min-height:0;align-self:stretch}
+  .mondZeile{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+  .mondZeile:last-child{border-bottom:0}
+  .mondZeile canvas{width:34px;height:34px;display:block}
+  .mondZeile.aus canvas{opacity:.35;filter:grayscale(.6)}
+  .mondZeile.aus b{color:var(--paper-2)}
+  .mondText{min-width:0}
+  .mondText b{font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1.2}
+  .mondText small{display:block;font-size:11px;color:var(--paper-2);line-height:1.35;margin-top:1px}
+  .mondPips{display:inline-flex;gap:3px}
+  .mondPips i{width:13px;height:5px;border-radius:3px;background:rgba(255,255,255,.12)}
+  .mondPips i.an{background:var(--brass)}
+  .mondZahl{font-weight:600;color:var(--paper-2);font-size:12px}
+  .mondKn{display:flex;gap:6px;flex:0 0 auto}
+  .mondKn button{margin:0;width:auto;height:30px;padding:0 11px;font-size:11.5px;white-space:nowrap}
+  .mondZeile.blink{animation:mondBlink 1.2s ease}
+  @keyframes mondBlink{0%,100%{background:transparent}30%{background:rgba(233,176,99,.12)}}
+  .mondBlatt{position:absolute;inset:10px 16px;border-radius:14px;border:1px solid var(--line-hell);
+       background:linear-gradient(180deg,var(--fenster-1),var(--fenster-2));box-shadow:0 20px 60px rgba(0,0,0,.6);
+       padding:10px 14px 14px;overflow:auto;z-index:5}
+  .mondBlatt[hidden]{display:none}
+  .mondBlattKopf{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .mondBlattKopf h3{margin:0;font-size:15px}
+  .mondBlattKopf button{margin:0;width:36px;height:36px;padding:0;border-radius:50%;font-size:18px;line-height:1}
+  .mondBlatt .mondWoher{margin:4px 0 10px}
+  .mondBlatt h3{margin:10px 0 2px;font-size:13px}
+  /* Im Kern-Blatt steht der Titel schon oben — die Überschrift der Karte entfällt. */
+  .mondBlatt #kernSeite > h3{display:none}
+  .mondBlatt .plate.recbox{margin-top:8px}
+  body.touch .mondKn button,body.touch .mondInfoKn button{min-height:44px}
+  @media (max-height:560px){
+    .mondA{grid-template-columns:232px minmax(0,1fr);gap:6px 12px}
+    .mondA .mondLinks{gap:4px}
+    .mondA .mondBuehne{width:168px}
+    .mondInfo{justify-content:center;padding:4px 8px}
+    .mondInfo span{display:none}
+    .mondZeilen{padding:0 10px}
+    .mondZeile{padding:2px 0;gap:8px}
+    .mondText b{font-size:12.5px}
+    .mondText small{font-size:10.5px}
+    .mondStand{font-size:11px}
+    .mondInfo{padding:6px 8px}
+    .mondInfo span{font-size:10.5px}
+    body.touch .mondKn button,body.touch .mondInfoKn button{min-height:40px}
+  }
+  /* Nur hochkant/schmal untereinander (dort ist das Spiel ohnehin nicht
+     spielbar); ein kleines Telefon quer (667 breit) bleibt zweispaltig. */
+  @media (max-width:600px){ .mondA{grid-template-columns:1fr} }
+  @media (min-width:601px) and (max-width:720px){
+    .mondA{grid-template-columns:200px minmax(0,1fr);gap:6px 8px}
+    .mondA .mondBuehne{width:150px}
+    .mondKn button{padding:0 8px;font-size:11px}
+    .mondText b{font-size:12px}
+    .mondText small{font-size:10px}
+    .mondZeile{gap:6px}
+    /* Der Raubmond steht im Shop; ohne ihn passt die Liste auf ein kleines Telefon ohne Scrollen. */
+    .mondZeile.aus[data-art="raub"]{display:none}
+  }
   .mondPlaetze{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
   .mondPlatz{width:78px;height:92px;border:1px dashed rgba(233,176,99,.35);border-radius:12px;
        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -4294,9 +4377,16 @@
     <!-- Monde (v109): links die eigene Welt im gewählten Design mit vier
          Plätzen auf dem Ring, rechts Mondstaub und die Wege zu Monden,
          darunter der Vorrat mit Anlegen, Verschmelzen, Aufwerten. -->
-    <div class="konsPane eine" id="paneMonde" hidden>
-      <div class="konsKopfzeile"><h2 data-i18n="mo_kopf">Moons</h2><p data-i18n="mo_erkl"></p></div>
-      <div class="mondOben">
+    <!-- Monde (v162, Thomas 26.09.2026, Entwurf A „eine Zeile je Mond"):
+         links die Welt mit den vier Plätzen **auf dem Ring** (Knöpfe über
+         der Bühne, Lage aus `mondPlatzLage`), darunter Mondstaub, Plätze und
+         Kern in einer Zeile und ein Kasten mit „Wege"/„Kern" — beide öffnen
+         ein Blatt über dem Reiter (`#mondBlatt`). Rechts eine Zeile je
+         Mondart, auch für Monde, die man noch nicht hat (mit dem Weg dorthin).
+         Kein Textblock mehr, auf dem iPhone quer ohne Scrollen. Gebaut von
+         buildMonde() in spiel.js. -->
+    <div class="konsPane eine mondPane" id="paneMonde" hidden>
+      <div class="mondA">
         <div class="mondLinks">
           <div class="mondBuehne" id="mondBuehne">
             <canvas id="mondGL" width="720" height="720" hidden></canvas>
@@ -4304,12 +4394,19 @@
             <!-- Der Kernplatz (v113): ein Knopf in der Mitte der Welt, leuchtet
                  in der Farbe des angelegten Kerns. Gemalt von `kernKnopfMalen()`. -->
             <button type="button" class="kernKnopf" id="kernKnopf" hidden aria-label="Core slot"></button>
+            <div class="mondPlatzKn" id="mondPlatzKn"></div>
           </div>
-          <div class="mondPlatzKn" id="mondPlatzKn"></div>
+          <div class="mondStand" id="mondStand"></div>
+          <div class="plate mondInfo"><span id="mondInfoText"></span>
+            <div class="mondInfoKn"><button type="button" class="quiet" id="mondWegeKn" data-i18n="mo_wege_kn">How to get</button><button type="button" class="quiet" id="mondKernKn" data-i18n="ke_kopf">Core</button></div>
+          </div>
         </div>
-        <div class="mondSeite" id="mondSeite"></div>
+        <div class="plate mondZeilen" id="mondeInhalt"></div>
       </div>
-      <div id="mondeInhalt"></div>
+      <div class="mondBlatt" id="mondBlatt" hidden>
+        <div class="mondBlattKopf"><h3 id="mondBlattTitel"></h3><button type="button" class="quiet" id="mondBlattZu" aria-label="Close">×</button></div>
+        <div id="mondBlattInhalt"></div>
+      </div>
     </div>
     <!-- ---------- Reiter: Shop (v127) ---------- -->
     <div class="konsPane shopPane" id="paneShop" hidden>
@@ -5035,7 +5132,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=161"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=162"><\/script>');
 })();
 </script>
 </body>
