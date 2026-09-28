@@ -1803,7 +1803,10 @@
        box-shadow:0 0 0 1px rgba(141,245,189,.45), 0 16px 44px rgba(61,220,132,.38),
                   inset 0 2px 0 rgba(255,255,255,.5)}
   .willkStart:hover{background:linear-gradient(180deg,#a5f8cd,#4ae692)}
-  .willkZeile{margin:0}
+  .willkZeile{margin:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 16px}
+  /* „Konto anlegen" (v172): Aussehen wie `.hangarKonto`, aber ohne dessen
+     Platz in der Bühne (negativer Rand, Ebene). */
+  #willkVeil .willkNeu{margin:0;z-index:auto;box-shadow:none}
   .linkKnopf{margin:0;background:none;border:0;box-shadow:none;padding:6px 10px;
        color:var(--brass);font-size:14px;text-decoration:underline;cursor:pointer;width:auto}
   .willkRecht{margin:0;font-size:11.5px;line-height:1.5;color:var(--paper-2);max-width:32rem}
@@ -3964,7 +3967,11 @@
     <p class="willkFrage" data-i18n="w_wer">Who will guide you?</p>
     <div class="bildRaster klein" id="willkBilder"></div>
     <button type="button" id="willkStart" class="willkStart" data-i18n="w_start">Play</button>
+    <!-- v172 (Thomas 28.09.2026: „Auf der Startseite gibt es keine
+         Möglichkeit zur Registrierung eines neuen Spielers. Die muss unbedingt
+         hin!"): derselbe Messing-Knopf wie im Hangar für Gäste. -->
     <p class="willkZeile">
+      <button type="button" class="hangarKonto willkNeu" id="willkNeu"><b data-i18n="k_neu_kopf">Create account</b></button>
       <button type="button" class="linkKnopf" id="willkKonto" data-i18n="w_konto">I have an account</button>
     </p>
     <p class="willkRecht">
@@ -5261,7 +5268,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=171"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=172"><\/script>');
 })();
 </script>
 </body>
