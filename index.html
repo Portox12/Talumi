@@ -132,6 +132,43 @@
   .mass{font-family:var(--serif);font-size:36px;line-height:.9;color:var(--brass)}
   .mass small{display:block;font-family:var(--sans);font-size:11px;color:var(--paper-2);margin-top:7px}
   .stage{margin-top:14px;max-width:260px}
+  /* v173: Startgeschenk — doppelter Sternenstaub. Der große Auftritt glüht
+     golden in der Bildmitte (Glanz, drehende Strahlen, Funken), dann fliegt
+     die „×2" in das kleine Feld unter der Stufe. Nur transform/opacity, damit
+     es auf einem günstigen Handy flüssig bleibt. Grün bleibt beim Startknopf. */
+  .shAuftritt{position:fixed;inset:0;z-index:6;pointer-events:none;display:grid;place-items:center;overflow:hidden}
+  .shAuftritt[hidden]{display:none}
+  .shGlanz{position:absolute;left:50%;top:50%;width:min(125vmin,980px);aspect-ratio:1;margin:calc(min(125vmin,980px) / -2) 0 0 calc(min(125vmin,980px) / -2);
+     border-radius:50%;background:radial-gradient(circle, rgba(255,232,176,.62) 0%, rgba(240,186,104,.30) 20%, rgba(233,176,99,.10) 42%, transparent 66%);
+     animation:shGlanz 2.7s ease-out both}
+  .shGlanz::before{content:"";position:absolute;inset:14%;border-radius:50%;
+     background:repeating-conic-gradient(from 0deg, rgba(255,238,196,.26) 0deg 5deg, transparent 5deg 20deg);
+     -webkit-mask:radial-gradient(circle, #000 18%, transparent 70%);mask:radial-gradient(circle, #000 18%, transparent 70%);
+     animation:shDreh 9s linear infinite}
+  .shInhalt{position:relative;text-align:center;animation:shAuf .75s cubic-bezier(.2,1.5,.4,1) both}
+  .shTitel{margin:0;font:700 13px/1.2 var(--sans);letter-spacing:.34em;text-transform:uppercase;color:var(--brass-hell);
+     text-shadow:0 0 12px rgba(255,210,140,.85)}
+  .shZahl{display:inline-block;font-family:var(--disp);font-weight:800;font-size:clamp(84px, 27vmin, 196px);line-height:1;
+     background:linear-gradient(180deg,#fff7e0 0%,#ffdc8e 36%,#e3a54c 62%,#a66921 100%);-webkit-background-clip:text;background-clip:text;
+     color:transparent;filter:drop-shadow(0 0 20px rgba(255,200,110,.8)) drop-shadow(0 4px 0 rgba(60,30,5,.55));transform-origin:50% 50%}
+  .shText{margin:2px 0 0;font:700 clamp(18px,4.8vmin,32px)/1.2 var(--disp);color:var(--paper);text-shadow:0 2px 14px rgba(0,0,0,.85)}
+  .shRunde{margin:6px 0 0;font:600 13px/1.3 var(--sans);letter-spacing:.1em;color:var(--brass-hell);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+  .shFunke{position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;background:#ffeabf;
+     box-shadow:0 0 10px 3px rgba(255,210,130,.9);animation:shFunke var(--t,1.5s) cubic-bezier(.1,.7,.3,1) var(--d,0s) both}
+  @keyframes shGlanz{0%{opacity:0;transform:scale(.3)}22%{opacity:1;transform:scale(1)}78%{opacity:.85}100%{opacity:0;transform:scale(1.12)}}
+  @keyframes shAuf{from{opacity:0;transform:scale(.35)}to{opacity:1;transform:none}}
+  @keyframes shDreh{to{transform:rotate(360deg)}}
+  @keyframes shFunke{from{opacity:1;transform:translate(0,0) scale(.3)}70%{opacity:1}to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1)}}
+  .shBadge{display:inline-flex;align-items:center;gap:5px;margin-top:9px;padding:4px 10px 4px 7px;border-radius:999px;
+     border:1px solid rgba(255,214,140,.75);background:linear-gradient(180deg,rgba(255,214,140,.24),rgba(233,176,99,.08)),rgba(20,14,8,.6);
+     box-shadow:0 0 14px rgba(255,200,110,.35), inset 0 0 8px rgba(255,220,160,.15)}
+  .shBadge[hidden]{display:none}
+  .shBadge b{font-family:var(--disp);font-size:18px;line-height:1;color:#ffe2a6;text-shadow:0 0 8px rgba(255,200,110,.7)}
+  .shBadge small{font-size:11px;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .shStern{width:15px;height:15px;fill:#ffd98a;filter:drop-shadow(0 0 4px rgba(255,210,130,.9))}
+  .shBadge.an{animation:shPuls 2.8s ease-in-out infinite}
+  @keyframes shPuls{50%{box-shadow:0 0 24px rgba(255,200,110,.65), inset 0 0 10px rgba(255,220,160,.28)}}
+  @media (prefers-reduced-motion:reduce){ .shGlanz::before,.shBadge.an{animation:none} .shFunke{display:none} }
   .stage b{font-family:var(--serif);font-size:16px;font-weight:600}
   .stage p{margin:3px 0 0;font-size:12px;color:var(--paper-2);line-height:1.4}
   #safeLine{color:var(--brass)}
@@ -775,6 +812,8 @@
   .endLohn[data-n="1"] div{grid-column:span 6}
   .endLohn[data-n="2"] div,.endLohn[data-n="4"] div{grid-column:span 3}
   .endLohn[data-n="5"] div:nth-child(n+4){grid-column:span 3}
+  /* v173 (Clan-Schub): sieben als drei, zwei, zwei; acht als drei, drei, zwei. */
+  .endLohn[data-n="7"] div:nth-child(n+4),.endLohn[data-n="8"] div:nth-child(n+7){grid-column:span 3}
   @media (min-width:660px){
     .endLohn[data-n="4"]{grid-template-columns:repeat(4,minmax(0,1fr))}
     .endLohn[data-n="4"] div{grid-column:span 1}
@@ -1714,7 +1753,7 @@
   .clanTat select{width:auto;max-width:140px;margin:0;padding:5px 8px;border-radius:9px;font:inherit;font-size:12.5px;
      background:var(--block);border:1px solid var(--line-hell);color:var(--paper)}
   .clanTat button{width:auto;margin:0}
-  body.touch .clanTat select,body.touch .clanTat button{min-height:44px}
+  body.touch .clanTat select,body.touch .clanTat button{min-height:44px;min-width:44px}
   .clanBank{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 6px}
   .clanBank b{font-family:var(--disp);font-size:22px;color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .clanBank span{color:var(--paper-2);font-size:12.5px}
@@ -1722,6 +1761,32 @@
   .clanBankSeg button{width:auto;flex:1 1 44px;margin:0;padding:7px 6px;font-size:13px}
   .clanBankSeg button[aria-pressed="true"]{border-color:var(--brass);color:var(--brass-hell);background:rgba(233,176,99,.12)}
   body.touch .clanBankSeg button{min-height:44px}
+  /* v173: Clan-Schub in der Clanbank — je Art eine Zeile (Zeichen, Name und
+     Stand, Knopf), darunter Preis und Kassenbuch. Ein laufender Schub trägt
+     Messing am Rand; grün bleibt allein der Startknopf. */
+  .schubBlock{margin:12px 0 0;padding:12px 0 0;border-top:1px solid var(--line-hell)}
+  .schubBlock h3{margin:0 0 4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+  .schubBlock h3:not(:first-child){margin-top:12px}
+  .schubZeile{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;margin:6px 0 0;
+     padding:7px 8px;border-radius:12px;border:1px solid var(--line-hell);background:var(--block)}
+  .schubZeile.an{border-color:rgba(233,176,99,.55);
+     background:linear-gradient(180deg, rgba(233,176,99,.12), rgba(233,176,99,.02) 70%), var(--block)}
+  .schubBild{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;color:var(--paper-2);
+     border:1px solid var(--line-hell)}
+  .schubZeile.an .schubBild{color:var(--brass-hell);border-color:rgba(233,176,99,.6)}
+  .schubBild .ico{width:17px;height:17px}
+  .schubWas{min-width:0}
+  .schubWas b{display:block;font-family:var(--disp);font-size:15px;color:var(--paper)}
+  .schubWas small{display:block;margin-top:1px;font-size:11.5px;color:var(--paper-2)}
+  .schubZeile.an .schubWas small{color:var(--brass-hell)}
+  .schubZeile button{width:auto;margin:0;padding:7px 12px;font-size:12.5px;white-space:nowrap}
+  body.touch .schubZeile button{min-height:44px}
+  #schubNote:empty{display:none}
+  #schubNote{margin:6px 0 0}
+  #schubNote.schubOk{color:var(--brass-hell)}
+  .schubKasse{display:grid;gap:2px;font-size:12px;color:var(--paper-2);font-variant-numeric:tabular-nums}
+  .schubKasse div{display:grid;grid-template-columns:auto 1fr auto;gap:10px}
+  .schubKasse div span:last-child{color:var(--paper)}
   .bildRaster{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:12px 0 4px}
   .bildKachel{margin:0;padding:6px 4px 6px;border-radius:14px;background:var(--block);border:1px solid var(--line);
        display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;color:var(--paper-2)}
@@ -3830,6 +3895,17 @@
 <div id="toast" hidden></div>
 <div id="hint" hidden></div>
 
+<!-- Startgeschenk (v173): die große Einblendung zu Beginn einer Runde mit
+     doppeltem Sternenstaub. Lässt jeden Tipp durch (pointer-events:none). -->
+<div class="shAuftritt" id="shAuftritt" aria-live="polite" hidden>
+  <div class="shGlanz"></div>
+  <div class="shInhalt">
+    <p class="shTitel" id="shTitel"></p>
+    <div class="shZahl" id="shZahl">×2</div>
+    <p class="shText" id="shText"></p>
+    <p class="shRunde" id="shRunde"></p>
+  </div>
+</div>
 <div class="hud" id="hud" hidden>
   <!-- Runde beenden (v104, Thomas 17.09.2026): klein und blass, oben in der
        Mitte — dort liegt kein Daumen und keine Tafel. Erster Tipp fragt nach
@@ -3849,6 +3925,12 @@
       <p id="stageHint">Sweep up stardust.</p>
       <p id="safeLine" hidden></p>
       <div class="track"><i id="stageBar"></i></div>
+    </div>
+    <!-- Startgeschenk (v173): doppelter Sternenstaub in den ersten Runden —
+         das kleine Feld am Rand, in das die große Einblendung fliegt. -->
+    <div class="shBadge" id="shBadge" role="img" hidden>
+      <svg class="shStern" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.3 6.9h7.2l-5.8 4.3 2.2 6.9L12 16.4l-5.9 4.2 2.2-6.9-5.8-4.3h7.2z"/></svg>
+      <b>×2</b><small id="shBadgeRunde"></small>
     </div>
   </div>
   <div class="side">
@@ -5268,7 +5350,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=172"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=173"><\/script>');
 })();
 </script>
 </body>
