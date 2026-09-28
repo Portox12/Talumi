@@ -169,6 +169,54 @@
   .shBadge.an{animation:shPuls 2.8s ease-in-out infinite}
   @keyframes shPuls{50%{box-shadow:0 0 24px rgba(255,200,110,.65), inset 0 0 10px rgba(255,220,160,.28)}}
   @media (prefers-reduced-motion:reduce){ .shGlanz::before,.shBadge.an{animation:none} .shFunke{display:none} }
+  /* v174: Jubel — große Feiern (Thomas 28.09.2026: „Das Hirn muss nur so
+     sprühen vor Endorphinen! Man muss denken: ich bin der Beste und ich habe
+     so viel Glück!"). Strahlen, Glanz, Funken, leuchtender Bildschirmrand;
+     die Farbe (`--jb`) sagt, was es ist: Gold (Level, Stufe, Platz 1,
+     Bestmasse, Erfolg), Iridium-Blau, Eisweiß (Kälteschlaf). Im Spiel sitzt
+     die Feier über dem eigenen Körper und lässt jeden Tipp durch. */
+  .jubel{--jb:#ffd98a;--jb-a:rgba(255,200,110,.55);--dauer:1.9s;position:fixed;inset:0;z-index:22;pointer-events:none;
+     display:grid;place-items:center;overflow:hidden}
+  .jubel[hidden]{display:none}
+  .jubel.iri{--jb:#8fd8ff;--jb-a:rgba(110,200,255,.55)}
+  /* Über Menüs und dem Ergebnis: ein dunkler Grund, damit die Feier nicht
+     über Kacheln und Knöpfen verschwimmt. Im Spiel bleibt das Feld frei. */
+  .jubel:not(.imSpiel){background:radial-gradient(ellipse at center, rgba(6,8,14,.93) 0%, rgba(6,8,14,.84) 50%, rgba(6,8,14,.66) 100%);
+     animation:jbGrund var(--dauer) ease-out both}
+  @keyframes jbGrund{0%{opacity:0}10%{opacity:1}85%{opacity:1}100%{opacity:0}}
+  .jubel.kryo{--jb:#dff4ff;--jb-a:rgba(200,236,255,.5)}
+  .jbRand{position:absolute;inset:0;box-shadow:inset 0 0 14vmin 3vmin var(--jb-a);opacity:0;will-change:opacity;
+     animation:jbRand var(--dauer) ease-out both}
+  .jbFeld{position:relative;display:grid;place-items:center}
+  .jubel.imSpiel .jbFeld{transform:translateY(-17vh) scale(.82)}
+  .jbGlanz{position:absolute;left:50%;top:50%;width:min(110vmin,860px);aspect-ratio:1;margin:calc(min(110vmin,860px) / -2) 0 0 calc(min(110vmin,860px) / -2);
+     border-radius:50%;background:radial-gradient(circle, color-mix(in srgb, var(--jb) 60%, transparent) 0%, color-mix(in srgb, var(--jb) 26%, transparent) 20%,
+     color-mix(in srgb, var(--jb) 8%, transparent) 42%, transparent 66%);will-change:transform,opacity;animation:jbGlanz var(--dauer) ease-out both}
+  .jbGlanz::before{content:"";position:absolute;inset:12%;border-radius:50%;
+     background:repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--jb) 30%, transparent) 0deg 5deg, transparent 5deg 18deg);
+     -webkit-mask:radial-gradient(circle, #000 16%, transparent 70%);mask:radial-gradient(circle, #000 16%, transparent 70%);
+     animation:shDreh 7s linear infinite}
+  .jbInhalt{position:relative;text-align:center;animation:jbAuf .6s cubic-bezier(.2,1.6,.4,1) both}
+  .jbKlein{margin:0;font:700 13px/1.2 var(--sans);letter-spacing:.3em;text-transform:uppercase;color:var(--jb);
+     text-shadow:0 0 12px var(--jb-a), 0 1px 6px rgba(0,0,0,.8)}
+  .jbGross{display:block;margin:2px 0 0;font-family:var(--disp);font-weight:800;font-size:clamp(46px, 15vmin, 128px);line-height:1.02;
+     background:linear-gradient(180deg,#fff 0%, color-mix(in srgb, var(--jb) 70%, #fff) 35%, var(--jb) 60%, color-mix(in srgb, var(--jb) 55%, #5a3510) 100%);
+     -webkit-background-clip:text;background-clip:text;color:transparent;
+     filter:drop-shadow(0 0 18px var(--jb-a)) drop-shadow(0 3px 0 rgba(40,20,5,.6))}
+  .jbGross.lang{font-size:clamp(32px, 9vmin, 76px)}
+  .jbBild{display:flex;justify-content:center;margin:0 0 4px}
+  .jbBild .ico,.jbBild svg{width:44px;height:44px;color:var(--jb);filter:drop-shadow(0 0 10px var(--jb-a))}
+  .jbText{margin:4px 0 0;font:700 clamp(15px,3.6vmin,24px)/1.25 var(--disp);color:var(--paper);text-shadow:0 2px 12px rgba(0,0,0,.85)}
+  .jbFunke{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;
+     background:color-mix(in srgb, var(--jb) 45%, #fff);box-shadow:0 0 12px 3px var(--jb-a);
+     animation:shFunke var(--t,1.4s) cubic-bezier(.1,.7,.3,1) var(--d,0s) both}
+  @keyframes jbRand{0%{opacity:0}14%{opacity:1}60%{opacity:.7}100%{opacity:0}}
+  @keyframes jbGlanz{0%{opacity:0;transform:scale(.25)}18%{opacity:1;transform:scale(1)}72%{opacity:.85}100%{opacity:0;transform:scale(1.1)}}
+  @keyframes jbAuf{0%{opacity:0;transform:scale(.3)}100%{opacity:1;transform:none}}
+  .jubel.aus .jbInhalt{animation:jbAus .32s ease-in both}
+  @keyframes jbAus{to{opacity:0;transform:scale(1.15)}}
+  @media (prefers-reduced-motion:reduce){ .jbGlanz::before{animation:none} .jbFunke{display:none}
+     .jbInhalt,.jbGlanz,.jbRand{animation-duration:.01s} .jbGlanz,.jbRand{opacity:.6} }
   .stage b{font-family:var(--serif);font-size:16px;font-weight:600}
   .stage p{margin:3px 0 0;font-size:12px;color:var(--paper-2);line-height:1.4}
   #safeLine{color:var(--brass)}
@@ -3906,6 +3954,20 @@
     <p class="shRunde" id="shRunde"></p>
   </div>
 </div>
+<!-- Jubel (v174): Feiern für Level, Stufen, Platz 1, Bestmasse, Kapseln,
+     Erfolge, Ränge und Monde — im Spiel und nach der Runde. -->
+<div class="jubel" id="jubel" aria-live="polite" hidden>
+  <div class="jbRand"></div>
+  <div class="jbFeld">
+    <div class="jbGlanz"></div>
+    <div class="jbInhalt">
+      <div class="jbBild" id="jbBild"></div>
+      <p class="jbKlein" id="jbKlein"></p>
+      <b class="jbGross" id="jbGross"></b>
+      <p class="jbText" id="jbText"></p>
+    </div>
+  </div>
+</div>
 <div class="hud" id="hud" hidden>
   <!-- Runde beenden (v104, Thomas 17.09.2026): klein und blass, oben in der
        Mitte — dort liegt kein Daumen und keine Tafel. Erster Tipp fragt nach
@@ -5350,7 +5412,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=173"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=174"><\/script>');
 })();
 </script>
 </body>
