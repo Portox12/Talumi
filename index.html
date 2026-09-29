@@ -684,6 +684,63 @@
   @media (max-height:560px){
     .clanKarte{max-height:calc(calc(100 * var(--vh, 1vh)) - 20px);overflow:auto}
   }
+  /* v176: Clan-Fenster nach Entwurf A — Kopf mit Chips und ×, links Bank und
+     Knöpfe, rechts die Mitglieder mit ⋯; alles Weitere in einem Blatt. Die
+     Karte scrollt nicht mehr, nur die Mitgliederliste in sich. */
+  .clanKarte.imClan{display:flex!important;flex-direction:column;position:relative;overflow:hidden;max-height:none;
+     height:min(calc(calc(100 * var(--dvh, 1dvh)) - 28px), 640px)}
+  .clanKarte.imClan > #clanBody{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-self:stretch;width:100%}
+  .clanKarte.imClan > #clanNote:empty{display:none}
+  .clanKarte.imClan > h1,.clanKarte.imClan > #clanClose{display:none}
+  .clanKarte.imClan > #clanBody > .clanA{align-self:stretch;width:100%}
+  .clanA{flex:1 1 auto;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;min-height:0}
+  .clanAKopf{display:flex;align-items:center;gap:10px;min-width:0}
+  .clanAKopf .tag{font-family:var(--disp);font-size:22px;font-weight:700;color:var(--brass-hell);letter-spacing:.06em;flex:0 0 auto}
+  .clanAKopf .nm{font-family:var(--disp);font-size:20px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .clanAKopf .chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:6px;min-width:0}
+  .clanAKopf .chip{padding:4px 10px;border-radius:999px;border:1px solid var(--line-hell);font-size:12.5px;color:var(--paper-2);white-space:nowrap}
+  .clanAKopf .chip b{color:var(--paper)}
+  .clanAZu{margin:0 0 0 auto;flex:0 0 auto;width:44px;height:44px;padding:0;border-radius:12px;font-size:22px;line-height:1}
+  .clanAGrid{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:12px;min-height:0}
+  .clanALinks{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
+  .clanABank{padding:9px 12px!important}
+  .clanAKl{display:flex;justify-content:space-between;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--paper-2)}
+  .clanAKl .pct{color:var(--brass)}
+  .clanAZeile{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:2px 0 0}
+  .clanABank .clanBank{margin:0}
+  .clanPctRegler{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto}
+  .clanPctRegler button{margin:0;width:34px;height:34px;padding:0;border-radius:10px;font-size:18px;line-height:1}
+  body.touch .clanPctRegler button{width:44px;height:44px}
+  .clanPctRegler b{min-width:42px;text-align:center;font-family:var(--disp);color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .clanASchub{display:flex;align-items:center;gap:8px;width:100%;margin:8px 0 0;padding:6px 10px;text-align:left;border-radius:10px}
+  .clanASchub .ico{width:18px;height:18px;flex:0 0 auto;color:var(--paper-2)}
+  .clanASchub span{display:flex;flex-direction:column;min-width:0;font-weight:600}
+  .clanASchub small{font-weight:400;font-size:11.5px;color:var(--paper-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .clanASchub.an{border-color:rgba(233,176,99,.6)}
+  .clanASchub.an .ico,.clanASchub.an small{color:var(--brass-hell)}
+  .clanAKnoepfe{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .clanAKnoepfe button{margin:0;width:100%;padding:9px 8px;font-size:13px}
+  .clanAKnoepfe .clanAHaupt{color:#1a120c;background:linear-gradient(180deg,#f3cf8e,#c8944b);border-color:transparent;font-weight:700}
+  .clanAKnoepfe .leise{color:var(--paper-2)}
+  .clanATipp{margin:auto 0 0!important;font-size:11.5px}
+  .clanAListe{padding:2px 12px!important;min-height:0;overflow:auto}
+  .clanAListe .clanZeile{grid-template-columns:22px 1fr auto auto}
+  .clanZeile .clanMehr{margin:0;width:44px;min-width:44px;padding:4px 0;font-size:16px;letter-spacing:.1em;line-height:1}
+  @media (max-height:420px){ .clanATipp{display:none} }
+  body.touch .clanZeile .clanMehr,body.touch .clanAKnoepfe button,body.touch .clanASchub{min-height:44px}
+  .clanBlatt{position:absolute;inset:10px 14px;border-radius:14px;border:1px solid var(--line-hell);
+     background:linear-gradient(180deg,var(--fenster-1),var(--fenster-2)),#0b0f19;box-shadow:0 20px 60px rgba(0,0,0,.6);
+     padding:10px 14px 14px;overflow:auto;z-index:5}
+  .clanBlatt[hidden]{display:none}
+  .clanBlattKopf{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .clanBlattKopf h3{margin:0;font-size:16px}
+  .clanBlattKopf button{margin:0;width:44px;height:44px;padding:0;border-radius:12px;font-size:20px;line-height:1}
+  .clanBlatt h4{margin:12px 0 4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--brass)}
+  .clanBlatt .schubBlock{margin:0;padding:0;border-top:0}
+  .clanBlatt .schubBlock > h3:first-child{display:none}
+  .clanRangSeg button{flex:1 1 auto}
+  @media (max-width:600px){ .clanAGrid{grid-template-columns:1fr} .clanKarte.imClan{height:auto;max-height:calc(calc(100 * var(--dvh, 1dvh)) - 20px);overflow:auto}
+     .clanAListe{max-height:none} }
 
   .friend{display:flex;justify-content:space-between;align-items:center;gap:10px;
      padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
@@ -5509,7 +5566,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=175"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=176"><\/script>');
 })();
 </script>
 </body>
