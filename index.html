@@ -178,6 +178,13 @@
      die Farbe (`--jb`) sagt, was es ist: Gold (Level, Stufe, Platz 1,
      Bestmasse, Erfolg), Iridium-Blau, Eisweiß (Kälteschlaf). Im Spiel sitzt
      die Feier über dem eigenen Körper und lässt jeden Tipp durch. */
+  /* Neustart-Ankündigung (v177): schmales Band oben in der Mitte, nimmt keine Tipps an. */
+  .neustartBand{position:fixed;left:0;right:0;margin:auto;width:fit-content;max-width:min(560px, calc(100 * var(--vw, 1vw) - 32px));
+       top:calc(env(safe-area-inset-top) + 8px);z-index:23;pointer-events:none;padding:7px 14px;border-radius:999px;
+       background:rgba(20,14,8,.9);border:1px solid var(--brass);color:var(--paper);font-size:13px;line-height:1.3;text-align:center;
+       box-shadow:0 4px 18px rgba(0,0,0,.45)}
+  .neustartBand b{color:var(--brass-hell);font-variant-numeric:tabular-nums}
+  .neustartBand[hidden]{display:none}
   .jubel{--jb:#ffd98a;--jb-a:rgba(255,200,110,.55);--dauer:1.9s;position:fixed;inset:0;z-index:22;pointer-events:none;
      display:grid;place-items:center;overflow:hidden}
   .jubel[hidden]{display:none}
@@ -2451,6 +2458,10 @@
   .konsPane.shopPane{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));overflow:hidden}
   .shopSp{padding:14px 18px;display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0}
   .shopSp.m{border-left:1px solid var(--line);border-right:1px solid var(--line)}
+  /* Auf Portalen keine Iridium-Pakete (v177): zwei Spalten. */
+  .konsPane.shopPane.ohneIri{grid-template-columns:repeat(2, minmax(0,1fr))}
+  .shopPane.ohneIri .shopSp.m{border-left:0}
+  .shopSp[hidden]{display:none}
   .shopSp > h2{margin-bottom:2px}
   .shopPaket{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;
        padding:0 12px;border-radius:12px;background:var(--block);border:1px solid var(--line)}
@@ -2495,7 +2506,7 @@
   .shopStufen span{padding:3px 9px;border-radius:999px;border:1px solid var(--line);font-size:11.5px;color:var(--paper-2);font-variant-numeric:tabular-nums}
   .shopStufen span.hat{border-color:var(--brass);color:var(--brass-hell)}
   @media (orientation:portrait), (max-width:640px){
-    .konsPane.shopPane{grid-template-columns:1fr;overflow:auto}
+    .konsPane.shopPane,.konsPane.shopPane.ohneIri{grid-template-columns:1fr;overflow:auto}
     .shopSp,.shopSp.m{overflow:visible}
     /* Untereinander hat die Spalte keine feste Höhe — die Bühne bekommt ihre eigene. */
     #shopDesignBild{flex:0 0 auto;height:min(180px, calc(42 * var(--vw, 1vw)))}
@@ -4074,6 +4085,8 @@
 </div>
 <!-- Jubel (v174): Feiern für Level, Stufen, Platz 1, Bestmasse, Kapseln,
      Erfolge, Ränge und Monde — im Spiel und nach der Runde. -->
+<!-- Neustart-Ankündigung (v177): Countdown-Band oben in der Mitte. -->
+<div class="neustartBand" id="neustartBand" role="status" hidden></div>
 <div class="jubel" id="jubel" aria-live="polite" hidden>
   <div class="jbRand"></div>
   <div class="jbFeld">
@@ -5566,7 +5579,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=176"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=177"><\/script>');
 })();
 </script>
 </body>
