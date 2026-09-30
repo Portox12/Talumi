@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v181";
+const VERSION = "v182";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -32,7 +32,17 @@ const ASSETS = [
   "./nutzungsbedingungen.html",
   "./share-1200x630.png",
   "./lora-latein.woff",
-  "./lora-kyrillisch.woff"
+  "./lora-kyrillisch.woff",
+  /* v182: die kurzen Töne (Kenney, CC0; zusammen ~110 KB) — offline mit dabei. */
+  "./ton-kombo.wav",
+  "./ton-biss.wav",
+  "./ton-serie.wav",
+  "./ton-tick.wav",
+  "./ton-muenze.wav",
+  "./ton-kapsel.wav",
+  "./ton-selten.wav",
+  "./ton-legende.wav",
+  "./ton-ziel.wav"
 ];
 
 /* Die Musikdateien stehen bewusst NICHT in dieser Liste. Zusammen sind sie
