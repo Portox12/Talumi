@@ -2681,6 +2681,35 @@
   }
   .auftragBonus{font-size:12px;color:var(--paper-2);padding-top:6px;border-top:1px solid var(--line);margin-top:4px}
   .auftragBonus.fertig{color:var(--iri)}
+  /* Anfänger-Pfad (v183): im Hangar statt „Nächste Errungenschaften“,
+     solange er läuft — dieselbe Zeile, rechts der Lohn in Messing; der
+     ganze Block öffnet `#pfadVeil` (dasselbe Fenster wie die Aufträge). */
+  #naechstBox.pfad .konsBlock{cursor:pointer;transition:border-color .15s}
+  #naechstBox.pfad .konsBlock:hover,#naechstBox.pfad .konsBlock:focus-visible{border-color:var(--brass)}
+  .konsFort .apLohn{color:var(--brass-hell);font-weight:600;font-size:12px;white-space:nowrap;min-width:0}
+  .konsFort.fertig .apLohn{color:var(--brass);opacity:.8}
+  #pfadVoll .konsFort.fertig span:first-child{color:var(--paper-2)}
+  .pfadKarte #pfadVoll{padding:0;background:none;border:0;overflow:auto;min-height:0;flex:1 1 auto}
+  .pfadKarte #pfadZu{flex:0 0 auto;margin-top:10px}
+  #pfadVoll .konsFort span:first-child{white-space:normal;line-height:1.25}
+  .apErkl{font-size:12.5px;color:var(--paper-2);margin:0 0 8px;line-height:1.35}
+  .apErkl.apTipp{margin:8px 0 0;font-size:12px}
+  .apEnde{margin-top:10px;padding:6px 12px;border:1px solid var(--brass);border-radius:12px;display:flex;align-items:center;gap:10px;
+       color:var(--brass-hell);font-size:13px;background:rgba(233,176,99,.06)}
+  .apEnde canvas{width:44px;height:44px;flex:0 0 auto}
+  /* Breite, flache Schirme (Handy quer): zwei Spalten, damit alle acht Ziele
+     und das Design ohne Scrollen zu sehen sind. */
+  @media (min-width:640px){
+    .pfadKarte{max-width:min(780px,100%)}
+    #pfadVoll .konsBlock{display:grid;grid-template-columns:1fr 1fr;column-gap:24px}
+    #pfadVoll .konsFort{padding:5px 0}
+  }
+  @media (min-width:640px) and (max-height:420px){
+    .pfadKarte{padding:12px 18px}
+    .pfadKarte .apErkl{margin-bottom:6px}
+    .pfadKarte .apEnde{margin-top:8px;padding:3px 12px}
+    .pfadKarte #pfadZu{margin-top:8px}
+  }
 
   .konsFr{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:4px 0}
   .konsFr span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -5025,6 +5054,14 @@
   </div>
 </div>
 
+<!-- v183: Anfänger-Pfad — alle acht Ziele mit Lohn, am Ende das Design. -->
+<div class="veil" id="pfadVeil" hidden>
+  <div class="card auftragKarte pfadKarte">
+    <div id="pfadVoll" class="konsSek"></div>
+    <button id="pfadZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
 <div class="veil" id="setVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="settings">Settings</h1>
@@ -5693,7 +5730,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=182"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=183"><\/script>');
 })();
 </script>
 </body>
