@@ -1853,6 +1853,23 @@
   .ddTeile:disabled{cursor:default;opacity:1}
   .ddTeile.ziel{background:rgba(233,176,99,.08)}
   .ddNote.good{color:var(--good)}
+  /* Veredelung (v186): fünf Perlen, ein Knopf, darunter das Prestige. */
+  .ddGlanz{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+  .ddGlanz[hidden]{display:none}
+  .ddGlanzKopf{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .ddGlanzKopf b{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--paper-2)}
+  .ddGlanzKopf small{font-size:12px;color:var(--brass-hell)}
+  .ddPerlen{display:inline-flex;gap:4px}
+  .ddPerlen i{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(233,176,99,.55)}
+  .ddPerlen i.an{background:radial-gradient(circle at 35% 35%, #fff3c4, #e9b063);border-color:#ffd98a;box-shadow:0 0 6px rgba(255,210,122,.7)}
+  .ddGlanzKnopf,.ddPrestigeKauf{margin:0;width:100%;min-height:44px;border-radius:12px;font-size:13.5px;font-weight:700;
+       background:transparent;color:var(--brass-hell);border:1px solid rgba(233,176,99,.6);cursor:pointer}
+  .ddGlanzKnopf.sicher,.ddPrestigeKauf.sicher{background:linear-gradient(180deg,var(--brass-hell),var(--brass));color:var(--on-brass)}
+  .ddGlanzKnopf:disabled,.ddPrestigeKauf:disabled{cursor:default;opacity:.6}
+  .ddPrestige{display:flex;gap:6px}
+  .ddPrestige button{flex:1;margin:0;min-height:44px;border-radius:12px;font-size:13px;font-weight:700;background:transparent;
+       color:var(--paper-2);border:1px solid var(--line-hell)}
+  .ddPrestige button.an{color:var(--on-brass);background:linear-gradient(180deg,#ffe6a8,#e9b063);border-color:#ffd98a}
   .ddNote.warn{color:var(--ember)}
   .ddZu{position:absolute;top:10px;right:12px;z-index:3;width:44px;height:44px;margin:0;padding:0;border-radius:50%;
        background:transparent;border:0;color:var(--paper-2);font-size:28px;line-height:1}
@@ -5045,6 +5062,8 @@
       <button type="button" class="ddKnopf" id="ddKnopf"></button>
       <!-- Bruchstücke aus Kapseln (v134): dafür sammeln oder freischalten. -->
       <button type="button" class="ddTeile" id="ddTeile" hidden></button>
+      <!-- v186: Design-Veredelung und Prestige (eigene Designs, mit Konto). -->
+      <div class="ddGlanz" id="ddGlanz" hidden></div>
       <p class="ddNote" id="ddNote" role="status"></p>
     </div>
   </div>
@@ -5795,7 +5814,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=185"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=186"><\/script>');
 })();
 </script>
 </body>
