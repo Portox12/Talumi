@@ -2727,6 +2727,12 @@
   @keyframes kkGlanz{to{transform:translateX(120%)}}
   @keyframes kkWackeln{0%{transform:rotate(0) scale(.7)}30%{transform:rotate(-12deg) scale(1.08)}60%{transform:rotate(9deg)}100%{transform:rotate(0) scale(1)}}
   @media (prefers-reduced-motion:reduce){.kapselKarte,.kkBild,.kapselKarte.aus{animation:none}.kapselKarte::after{display:none}}
+  /* Grund für morgen (v185): Zeile im Ergebnis, Hinweis an der Spielart. */
+  .endMorgen{margin:6px 0 0;font-size:12.5px;line-height:1.35;color:var(--brass-hell)}
+  .endMorgen[hidden]{display:none}
+  .tgChip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;border:1px solid var(--brass);
+       font:700 11px/1.3 var(--sans);font-style:normal;letter-spacing:.04em;color:var(--brass-hell);vertical-align:2px;white-space:nowrap}
+  .tgChip[hidden]{display:none}
   /* Kapsel-Chancen (v184). */
   #kapselVoll{padding:0;background:none;border:0;overflow:auto;min-height:0;flex:1 1 auto}
   .pfadKarte #kapselZu{flex:0 0 auto;margin-top:10px}
@@ -5305,6 +5311,8 @@
       <div class="endWerte" id="endWerte"></div>
       <div id="endRecap"></div>
       <div id="endZiel"></div>
+      <!-- v185: was morgen wartet (Tagesbonus, doppelte erste Runde). -->
+      <p class="endMorgen" id="endMorgen" hidden></p>
       <!-- Problem melden (17.09.2026): unter der Zusammenfassung. Erscheint
            nur, wenn der Server die Meldestelle anbietet (`/health`). -->
       <button class="quiet meldeKnopf" id="endMelden" data-i18n="md_knopf" hidden>Report a problem</button>
@@ -5787,7 +5795,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=184"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=185"><\/script>');
 })();
 </script>
 </body>
