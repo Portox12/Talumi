@@ -216,6 +216,8 @@
   .jbGross.lang{font-size:clamp(32px, 9vmin, 76px)}
   .jbBild{display:flex;justify-content:center;margin:0 0 4px}
   .jbBild .ico,.jbBild svg{width:44px;height:44px;color:var(--jb);filter:drop-shadow(0 0 10px var(--jb-a))}
+  /* v184: die geöffnete Kapsel bei legendären Funden größer. */
+  .jbBild .kapselBild svg{width:92px;height:92px}
   .jbText{margin:4px 0 0;font:700 clamp(15px,3.6vmin,24px)/1.25 var(--disp);color:var(--paper);text-shadow:0 2px 12px rgba(0,0,0,.85)}
   .jbFunke{position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;
      background:color-mix(in srgb, var(--jb) 45%, #fff);box-shadow:0 0 12px 3px var(--jb-a);
@@ -2697,6 +2699,51 @@
   .apEnde{margin-top:10px;padding:6px 12px;border:1px solid var(--brass);border-radius:12px;display:flex;align-items:center;gap:10px;
        color:var(--brass-hell);font-size:13px;background:rgba(233,176,99,.06)}
   .apEnde canvas{width:44px;height:44px;flex:0 0 auto}
+  /* Glückskapseln (v184): Karte oben für gewöhnliche, seltene und epische
+     Funde. Farben der Seltenheit: Silber, Blau, Violett, Gold (Legendär
+     feiert `#jubel`). Kein Klick nötig, verdeckt den Körper nicht. */
+  .kapselKarte{--f:#c9d2de;--g:201,210,222;position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 50px);z-index:21;pointer-events:none;
+       display:flex;align-items:center;gap:12px;padding:8px 20px 8px 10px;border-radius:16px;border:1.5px solid var(--f);
+       min-width:260px;max-width:min(440px, calc(100% - 32px));overflow:hidden;
+       background:linear-gradient(100deg, rgba(var(--g),.26), rgba(14,17,26,.92) 42%), rgba(10,12,18,.9);
+       box-shadow:0 0 0 4px rgba(var(--g),.10), 0 0 30px rgba(var(--g),.42), inset 0 1px 0 rgba(255,255,255,.12);
+       transform:translateX(-50%);animation:kkRein .38s cubic-bezier(.2,1.3,.4,1) both}
+  .kapselKarte[hidden]{display:none}
+  .kapselKarte.sel{--f:#6fb8ff;--g:111,184,255}
+  .kapselKarte.epi{--f:#b98cff;--g:185,140,255}
+  .kapselKarte::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg, transparent 35%, rgba(255,255,255,.22) 47%, transparent 58%);
+       transform:translateX(-120%);animation:kkGlanz .9s .3s ease-out both}
+  .kkBild{flex:0 0 auto;width:56px;height:56px;animation:kkWackeln .5s ease-in-out both}
+  .kkBild svg{display:block;width:56px;height:56px}
+  .kkText{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .kkStufe{font:800 11px/1.1 var(--sans);letter-spacing:.28em;text-transform:uppercase;color:var(--f)}
+  .kkGross{font:700 21px/1.12 var(--disp);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kapselKarte small{font:600 12.5px/1.2 var(--sans);color:rgba(255,255,255,.72)}
+  .kkBalken{margin-top:3px;width:170px;max-width:100%;height:5px;border-radius:99px;background:rgba(255,255,255,.14);overflow:hidden}
+  .kkBalken i{display:block;height:100%;background:var(--f);box-shadow:0 0 8px var(--f)}
+  .kapselKarte.aus{animation:kkRaus .3s ease-in both}
+  @keyframes kkRein{from{opacity:0;transform:translate(-50%,-24px) scale(.94)}to{opacity:1;transform:translate(-50%,0) scale(1)}}
+  @keyframes kkRaus{to{opacity:0;transform:translate(-50%,-16px)}}
+  @keyframes kkGlanz{to{transform:translateX(120%)}}
+  @keyframes kkWackeln{0%{transform:rotate(0) scale(.7)}30%{transform:rotate(-12deg) scale(1.08)}60%{transform:rotate(9deg)}100%{transform:rotate(0) scale(1)}}
+  @media (prefers-reduced-motion:reduce){.kapselKarte,.kkBild,.kapselKarte.aus{animation:none}.kapselKarte::after{display:none}}
+  /* Kapsel-Chancen (v184). */
+  #kapselVoll{padding:0;background:none;border:0;overflow:auto;min-height:0;flex:1 1 auto}
+  .pfadKarte #kapselZu{flex:0 0 auto;margin-top:10px}
+  .ksZeile{display:grid;grid-template-columns:auto 1fr auto;gap:4px 10px;align-items:center;padding:6px 0;font-size:12.5px;color:var(--paper-2)}
+  .ksZeile + .ksZeile{border-top:1px solid var(--line)}
+  .ksZeile b{color:var(--paper);font-weight:600}
+  .ksZeile em{font-style:normal;font-weight:700;color:var(--paper)}
+  .ksStufe{font:800 10px/1 var(--sans);letter-spacing:.2em;text-transform:uppercase;padding:5px 8px;border-radius:99px;color:#10131a;background:#c9d2de;white-space:nowrap}
+  .ksZeile.sel .ksStufe{background:#6fb8ff}
+  .ksZeile.epi .ksStufe{background:#b98cff}
+  .ksZeile.leg .ksStufe{background:#ffd27a}
+  .ksKopf{margin:10px 0 4px;font:700 11px/1.2 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:#ffd27a}
+  .ksGold{margin:8px 0 0;font-size:12.5px;line-height:1.7;color:var(--paper-2)}
+  .ksGold b{color:#ffd27a;font-weight:700}
+  .ksGold .ksStufe{font-size:9px;padding:3px 7px}
+  #kapselVoll .konsBlock{padding-top:4px;padding-bottom:4px}
+  #kapselVoll .ksZeile{padding:5px 0}
   /* Breite, flache Schirme (Handy quer): zwei Spalten, damit alle acht Ziele
      und das Design ohne Scrollen zu sehen sind. */
   @media (min-width:640px){
@@ -4208,6 +4255,8 @@
      Erfolge, Ränge und Monde — im Spiel und nach der Runde. -->
 <!-- Neustart-Ankündigung (v177): Countdown-Band oben in der Mitte. -->
 <div class="neustartBand" id="neustartBand" role="status" hidden></div>
+<!-- v184: Kapselfund unter „legendär“ — Karte oben (Entwurf B, Thomas 30.09.). -->
+<div class="kapselKarte" id="kapselKarte" aria-live="polite" hidden></div>
 <div class="jubel" id="jubel" aria-live="polite" hidden>
   <div class="jbRand"></div>
   <div class="jbFeld">
@@ -5054,6 +5103,14 @@
   </div>
 </div>
 
+<!-- v184: Kapsel-Chancen (aus den Einstellungen). -->
+<div class="veil" id="kapselVeil" hidden>
+  <div class="card auftragKarte pfadKarte">
+    <div id="kapselVoll" class="konsSek"></div>
+    <button id="kapselZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
 <!-- v183: Anfänger-Pfad — alle acht Ziele mit Lohn, am Ende das Design. -->
 <div class="veil" id="pfadVeil" hidden>
   <div class="card auftragKarte pfadKarte">
@@ -5730,7 +5787,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=183"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=184"><\/script>');
 })();
 </script>
 </body>
