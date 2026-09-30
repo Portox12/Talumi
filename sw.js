@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v190";
+const VERSION = "v191";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -33,6 +33,10 @@ const ASSETS = [
   "./share-1200x630.png",
   "./lora-latein.woff",
   "./lora-kyrillisch.woff",
+  /* v191 „Nova“: Exo 2 (OFL) als „Pulsavi Display“. */
+  "./exo2-latein.woff2",
+  "./exo2-latein-ext.woff2",
+  "./exo2-kyrillisch.woff2",
   /* v182: die kurzen Töne (Kenney, CC0; zusammen ~110 KB) — offline mit dabei. */
   "./ton-kombo.wav",
   "./ton-biss.wav",
