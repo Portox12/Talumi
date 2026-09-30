@@ -2761,7 +2761,107 @@
      background:conic-gradient(#ffd98a calc(var(--a) * 1%), rgba(255,255,255,.14) 0)}
   .psRing b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#16100a;font:800 12px/1 var(--sans);color:var(--brass-hell)}
   .passHangar .psKurz{display:none}
-  @media (max-width:999px){ .passHangar .psWort{display:none} .passHangar .psKurz{display:inline} .passHangar{top:auto;bottom:8px;right:8px;padding:5px 10px 5px 5px;font-size:12px} }
+  /* v190 (Thomas, iPhone 14: „das Pass-Symbol wird vom Namen des Rangs
+     überdeckt … rechts über dem Design“): oben rechts auf der Bühne. */
+  @media (max-width:999px){ .passHangar .psWort{display:none} .passHangar .psKurz{display:inline} .passHangar{top:8px;bottom:auto;right:8px;padding:5px 10px 5px 5px;font-size:12px}
+ }
+  /* v190: Kapseln im Vorrat — oben links auf der Bühne (am Rechner unter dem Glücksrad). */
+  .kapselHangar{position:absolute;top:62px;left:12px;z-index:2;display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;
+     padding:4px 12px 4px 4px;border-radius:999px;border:1px solid rgba(143,227,255,.75);color:#dff6ff;
+     background:linear-gradient(180deg,rgba(143,227,255,.2),rgba(143,227,255,.05)),rgba(8,14,24,.78);
+     font:700 13px/1 var(--disp);box-shadow:0 0 16px rgba(143,227,255,.35);animation:kvPuls 2.2s ease-in-out infinite}
+  .kapselHangar[hidden]{display:none}
+  .kapselHangar svg{display:block;flex:0 0 auto}
+  .kapselHangar b{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#8fe3ff;color:#06202c;font:800 12px/20px var(--sans);text-align:center}
+  .kapselHangar.oeffnet{opacity:.6;pointer-events:none}
+  .kapselHangar:hover:not(:disabled),.kapselHangar:active{background:linear-gradient(180deg,rgba(143,227,255,.3),rgba(143,227,255,.08)),rgba(8,14,24,.78);color:#dff6ff}
+  body.touch .kapselHangar{min-height:44px;min-width:44px}
+  @keyframes kvPuls{0%,100%{box-shadow:0 0 10px rgba(143,227,255,.3)}50%{box-shadow:0 0 22px rgba(143,227,255,.65)}}
+  /* Auf allen Größen (v190, Prüfstand testv190: 568×320 bis 1920×1080):
+     Kapseln oben links, Pass oben rechts, Glücksrad unten links — schmal
+     und hoch (Zeichen, darunter ein kurzes Wort). Name und Rang nehmen die
+     ganze Breite der Bühne und halten zu beiden Seiten Abstand; lange
+     Namen werden gekürzt statt überdeckt. */
+  .kapselHangar,.passHangar{top:6px;bottom:auto;flex-direction:column;gap:2px;padding:4px 6px 3px;border-radius:14px;
+     font:800 9px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase}
+  .kapselHangar{left:6px} .passHangar{right:6px}
+  .passHangar .psWort{display:none} .passHangar .psKurz{display:inline}
+  .kapselHangar svg{width:28px;height:28px}
+  .kapselHangar b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;font-size:11px;line-height:18px;padding:0 4px}
+  .radHangar span{display:none} .radHangar{top:auto;bottom:8px;left:8px;padding:6px 8px;gap:5px}
+  .konsSp.m .konsName{align-self:stretch;padding:0 66px}
+  .konsSp.m .heldRang{align-self:stretch;padding:0 56px}
+  @media (prefers-reduced-motion:reduce){ .kapselHangar{animation:none} }
+  /* v190: Lohn der Errungenschaften als Marken. */
+  .elLohn{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 8px;max-width:210px}
+  .elLohn.zeile{max-width:none}
+  .elM{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+  .elM b{font:700 13px/1 var(--disp);color:var(--paper);font-variant-numeric:tabular-nums}
+  .elM svg{width:17px;height:17px;display:block;flex:0 0 auto}
+  .elM.ehre svg{color:#ff8a8a}
+  .elM.ehre b{color:#ffc2c2;font-size:15px}
+  .elM.ore svg{color:var(--brass-hell)} .elM.ore b{color:var(--brass-hell)}
+  .elM.iri b{color:var(--iri)}
+  .elM.teil svg{color:#d9b6ff} .elM.mteil svg{color:#c9d6ea}
+  .erfZ .rechts{min-width:0}
+  .erfTally .elLohn{justify-content:flex-end}
+  .ehreIco{color:#ff8a8a}
+  .konsW .chip .wIco{display:inline-flex;align-items:center;margin-right:2px}
+  .konsW .chip .wIco svg{width:16px;height:16px}
+  /* Die Währungen in der Leiste sind Knöpfe (v190): größere unsichtbare Tippfläche. */
+  .konsW > span{position:relative;cursor:pointer}
+  .konsW > span::after{content:"";position:absolute;left:-4px;right:-4px;top:-12px;bottom:-12px}
+  .konsW > span:hover b{text-decoration:underline;text-underline-offset:3px}
+  /* v190: Info-Fenster zu Ore, Iridium, Ehre. */
+  .waehrKarte{--wa:#ffc53d;--wa2:#ffe7a0;position:relative;width:min(760px,100%);padding:18px 20px;overflow:hidden;
+     background:radial-gradient(460px 300px at 16% 24%, color-mix(in srgb, var(--wa) 20%, transparent), transparent 72%),
+                linear-gradient(180deg,var(--fenster-1),var(--fenster-2));
+     border:1px solid color-mix(in srgb, var(--wa) 42%, transparent);box-shadow:0 0 50px color-mix(in srgb, var(--wa) 16%, transparent),0 30px 80px rgba(0,0,0,.6)}
+  .waehrKarte.wi-iri{--wa:#5fd6ff;--wa2:#cdf4ff}
+  .waehrKarte.wi-ehre{--wa:#ff6b7d;--wa2:#ffc9cf}
+  .wiHaupt{display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;align-items:stretch}
+  .wiHeld{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;padding:12px 10px;border-radius:18px;
+     background:radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--wa) 16%, transparent), rgba(0,0,0,.28) 70%);
+     border:1px solid color-mix(in srgb, var(--wa) 35%, transparent)}
+  .wiIco svg{width:62px;height:62px;display:block;color:var(--wa);filter:drop-shadow(0 0 12px color-mix(in srgb, var(--wa) 70%, transparent))}
+  .wiZahl{font:800 30px/1.05 var(--disp);color:var(--wa2);font-variant-numeric:tabular-nums;text-shadow:0 0 18px color-mix(in srgb, var(--wa) 50%, transparent)}
+  .wiName{display:inline-flex;align-items:center;gap:5px;font:700 12px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--wa)}
+  .wiName svg{width:16px;height:16px}
+  .wiRang{font:800 20px/1.1 var(--disp);color:var(--paper)}
+  canvas.wiAbz{width:72px;height:72px;display:block}
+  .wiSub{margin:4px 0 2px;font-size:12.5px;line-height:1.35;color:var(--paper-2)}
+  .wiQTitel{margin-top:6px;font:700 10.5px/1.2 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--paper-2)}
+  .wiChips{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
+  .wiChips span{padding:4px 9px;border-radius:99px;font-size:11.5px;line-height:1.2;color:var(--wa2);
+     background:color-mix(in srgb, var(--wa) 13%, transparent);border:1px solid color-mix(in srgb, var(--wa) 38%, transparent)}
+  .wiFort{width:100%;margin-top:8px}
+  .wiFort .bar{display:block;height:9px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  .wiFort .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--wa),var(--wa2));box-shadow:0 0 10px var(--wa)}
+  .wiNaechst{display:block;margin-top:6px;font-size:12.5px;line-height:1.3;color:var(--wa2)}
+  .wiRechts h3{margin:0 0 8px;min-height:40px;display:flex;align-items:center;padding-right:48px;font:700 11px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--wa)}
+  .waehrKarte .ddZu{top:4px;right:6px}
+  .wiKacheln{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .wiK{margin:0;width:100%;min-height:58px;display:grid;grid-template-columns:32px minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;
+     text-align:left;padding:8px 12px;border-radius:14px;color:var(--paper);cursor:pointer;
+     background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);
+     animation:wiRein .32s ease-out both}
+  .wiK:nth-child(2){animation-delay:.04s} .wiK:nth-child(3){animation-delay:.08s} .wiK:nth-child(4){animation-delay:.12s} .wiK:nth-child(5){animation-delay:.16s}
+  .wiK:hover:not(:disabled){border-color:var(--wa);background:linear-gradient(180deg,color-mix(in srgb, var(--wa) 16%, transparent),rgba(255,255,255,.02))}
+  .wiK:disabled{opacity:1;cursor:default}
+  .wiK svg{grid-row:1 / 3;width:30px;height:30px;color:var(--wa);fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .wiK b{font:700 14px/1.15 var(--disp);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .wiK small{font-size:11.5px;line-height:1.25;color:var(--paper-2)}
+  .wiK:not(.info)::after{content:"›";position:absolute;right:10px;color:var(--wa);font-size:18px;opacity:.7}
+  .wiK{position:relative}
+  @keyframes wiRein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){ .wiK{animation:none} }
+  @media (max-height:430px){
+    .waehrKarte{padding:12px 14px}
+    .wiHaupt{grid-template-columns:200px minmax(0,1fr);gap:12px}
+    .wiIco svg{width:48px;height:48px} .wiZahl{font-size:26px} canvas.wiAbz{width:60px;height:60px}
+    .wiK{min-height:52px;padding:6px 10px} .wiK svg{width:26px;height:26px}
+  }
+  @media (max-width:640px){ .wiHaupt{grid-template-columns:1fr} }
   .passKarte{position:relative;width:min(980px,100%);max-height:calc(calc(100 * var(--vh, 1vh)) - 16px);max-height:calc(calc(100 * var(--dvh, 1dvh)) - 16px);
      display:flex;flex-direction:column;padding:14px 18px;overflow:hidden}
   #passVoll{display:flex;flex-direction:column;min-height:0;flex:1 1 auto}
@@ -4915,7 +5015,7 @@
         <!-- Iridium (v113): die zweite Währung, nur erspielbar. Nur mit
              Konto — Gäste haben keins, und was es nicht gibt, steht nicht da. -->
         <span class="iri" id="iriZeile" title="Iridium" hidden><i class="wIco" id="iriIco" aria-hidden="true"></i><b id="iriNum">0</b> <span class="wWort" data-i18n="iridium">Iridium</span></span>
-        <span class="chip" id="ehreZeile" hidden><span data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
+        <span class="chip" id="ehreZeile" hidden><i class="wIco ehreI" id="ehreIco" aria-hidden="true"></i><span class="wWort" data-i18n="ehre">Honour</span> <b id="ehreNum">0</b></span>
       </div>
     </div>
 
@@ -4945,6 +5045,8 @@
              mittleren Spalte; in der Kopfzeile war kein Platz (iPhone 14/16 quer:
              ein halber Knopf am Ende), auf der Bühne verdeckte er Level oder Rang. -->
         <button type="button" id="radHangar" class="radHangar" hidden></button>
+        <!-- v190: Kapseln im Vorrat (Lohn der Errungenschaften). -->
+        <button type="button" id="kapselHangar" class="kapselHangar" hidden></button>
         <!-- v188: Saisonpass (Ring = Weg zur nächsten Stufe). -->
         <button type="button" id="passHangar" class="passHangar" hidden></button>
         <div class="konsName"><button type="button" class="heldBild" id="heldBild" aria-label="Profile"></button><b id="heldName">—</b></div>
@@ -5238,6 +5340,14 @@
 </div>
 
 <!-- v188: Saisonpass — Entwurf A „Messing-Leiter“. -->
+<!-- v190: Was kann ich mir von Ore, Iridium, Ehre holen? -->
+<div class="veil" id="waehrVeil" hidden>
+  <div class="card waehrKarte">
+    <button type="button" class="ddZu" id="waehrZu" data-i18n-name="zu_schliessen" aria-label="Close">×</button>
+    <div id="waehrVoll"></div>
+  </div>
+</div>
+
 <div class="veil" id="passVeil" hidden>
   <div class="card passKarte">
     <button type="button" class="ddZu" id="passZu" data-i18n-name="zu_schliessen" aria-label="Close">×</button>
@@ -5931,7 +6041,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=189"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=190"><\/script>');
 })();
 </script>
 </body>
