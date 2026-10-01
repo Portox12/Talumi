@@ -4523,6 +4523,112 @@
   .quitBtn{color:#9fb2e0}
   /* Maße, Abstände und Zeichenabstände der Kopfzeile bleiben die der
      einzelnen Formate (weiter oben) — Nova ändert nur Farbe und Schrift. */
+
+  /* ---- v192: prunkvolle Feiern --------------------------------------- */
+  .jbLohn{justify-content:center;max-width:none;margin:10px 0 0;gap:8px 14px}
+  .jbLohn[hidden]{display:none}
+  .jbLohn .elM{padding:5px 12px;border-radius:999px;background:rgba(4,8,26,.78);border:1.5px solid rgba(255,214,110,.6);
+     animation:jbMarke .45s cubic-bezier(.2,1.7,.4,1) both}
+  .jbLohn .elM:nth-child(2){animation-delay:.18s} .jbLohn .elM:nth-child(3){animation-delay:.36s} .jbLohn .elM:nth-child(4){animation-delay:.54s}
+  .jbLohn .elM b{font-size:17px} .jbLohn .elM svg{width:22px;height:22px}
+  .jbLohn .elM.ehre b{font-size:19px}
+  @keyframes jbMarke{from{opacity:0;transform:scale(.3) translateY(14px)}to{opacity:1;transform:none}}
+  .jubel.prunk .jbGlanz{width:min(140vmin,1100px);margin:calc(min(140vmin,1100px) / -2) 0 0 calc(min(140vmin,1100px) / -2)}
+  .jubel.prunk .jbGlanz::after{content:"";position:absolute;inset:4%;border-radius:50%;
+     background:repeating-conic-gradient(from 9deg, color-mix(in srgb, var(--cyan) 22%, transparent) 0deg 3deg, transparent 3deg 24deg);
+     -webkit-mask:radial-gradient(circle, #000 12%, transparent 66%);mask:radial-gradient(circle, #000 12%, transparent 66%);
+     animation:shDreh 11s linear infinite reverse}
+  .jubel.prunk .jbKlein{font-size:15px;letter-spacing:.34em}
+  .jubel.prunk .jbBild .ico,.jubel.prunk .jbBild svg{width:58px;height:58px}
+  .jubel.prunk.imSpiel .jbFeld{transform:translateY(-13vh) scale(.94)}
+  .jubel.prunk .jbInhalt::before{content:"";position:absolute;left:50%;top:50%;width:min(86vw,560px);height:2px;margin-left:calc(min(86vw,560px) / -2);
+     background:linear-gradient(90deg,transparent,var(--jb),transparent);transform:translateY(-78px);opacity:.8}
+  .jbKonfetti{position:absolute;left:50%;top:50%;width:9px;height:15px;margin:-7px 0 0 -4px;border-radius:2px;opacity:0;
+     animation:jbKonfetti 1.7s cubic-bezier(.15,.7,.3,1) var(--d, 0s) both}
+  @keyframes jbKonfetti{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.4)}12%{opacity:1}
+     70%{opacity:1}100%{opacity:0;transform:translate(var(--dx), calc(var(--dy) + 130px)) rotate(calc(var(--r) + 540deg)) scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .jbKonfetti{display:none} .jbLohn .elM{animation:none} }
+  /* Neue Errungenschaft im Ergebnis: goldener Rahmen mit Glanz. */
+  .erfTally{position:relative;border-radius:12px;padding:8px 12px;margin:4px 0;overflow:hidden;
+     background:linear-gradient(90deg,rgba(255,197,61,.16),rgba(255,197,61,.04));border:1px solid rgba(255,214,110,.5)}
+  .erfTally::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;transform:skewX(-20deg);
+     background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);animation:erfGlanz 2.8s ease-in-out infinite}
+  @keyframes erfGlanz{0%,55%{left:-40%}100%{left:120%}}
+  @media (prefers-reduced-motion:reduce){ .erfTally::after{display:none} }
+  .endLohn div.lang b{font-size:15px;letter-spacing:-.02em;line-height:1.45}
+  .endLohn div.lang2 b{font-size:13px;line-height:1.7}
+  /* ---- v192: Truhe ---------------------------------------------------- */
+  .truhe{display:block;overflow:visible}
+  .truhe .trStrahlen{opacity:0;transform-origin:0 -20px;transform-box:view-box}
+  .truhe .trLicht{opacity:.3}
+  .truhe .trDeckel{transition:transform .5s cubic-bezier(.25,1.7,.45,1)}
+  .truhe .trFunken{opacity:.75}
+  .kapselHangar .truhe,.truheKnopf .truhe,.elM .truhe{overflow:hidden}
+  .elM.kap .truhe{width:22px;height:22px}
+  .truheKnopf{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(54,226,255,.6);color:#dff6ff;
+     box-shadow:0 0 14px rgba(54,226,255,.3)}
+  .truheKnopf[hidden]{display:none}
+  .truheAuf{position:fixed;inset:0;z-index:24;display:grid;place-items:center;overflow:hidden;
+     background:radial-gradient(ellipse at 50% 46%, rgba(16,30,84,.94) 0%, rgba(5,8,23,.97) 62%);
+     animation:trRein .28s ease-out both}
+  .truheAuf[hidden]{display:none}
+  @keyframes trRein{from{opacity:0}to{opacity:1}}
+  .trFeld{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;padding:10px 16px;max-width:560px;width:100%}
+  .trTitel{margin:0;font:800 clamp(20px,5.2vmin,30px)/1.1 var(--disp);color:var(--paper);text-shadow:0 0 18px rgba(54,226,255,.5)}
+  .trUnter{margin:2px 0 0;font:600 13px/1.3 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--cyan)}
+  .trKnopf{margin:0;padding:0;width:auto;background:none;border:0;border-radius:24px;cursor:pointer;line-height:0;box-shadow:none}
+  .trKnopf:hover:not(:disabled){background:none}
+  .trKnopf:disabled{opacity:1;cursor:default}
+  .trKnopf .truhe{width:min(calc(46 * var(--vh, 1vh)), 230px);height:min(calc(46 * var(--vh, 1vh)), 230px);animation:trSchweb 2.6s ease-in-out infinite}
+  @keyframes trSchweb{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .truheAuf.rappelt .trKnopf .truhe{animation:trRappel .14s linear infinite}
+  @keyframes trRappel{0%{transform:rotate(-2.4deg) translateX(-2px)}50%{transform:rotate(2.4deg) translateX(2px)}100%{transform:rotate(-2.4deg) translateX(-2px)}}
+  /* Geöffnet: Der Inhalt ist die Überschrift — Titel weg, Truhe kleiner,
+     damit alles samt Knopf auf ein iPhone quer passt (auch mit Safari-Leisten). */
+  .truheAuf.offen .trTitel,.truheAuf.offen .trUnter,.truheAuf.offen .trTippen{display:none}
+  .truheAuf.offen .trKnopf .truhe{animation:none;width:min(calc(40 * var(--vh, 1vh)), 190px);height:min(calc(40 * var(--vh, 1vh)), 190px);margin-top:calc(4 * var(--vh, 1vh))}
+  .truheAuf.offen .truhe .trDeckel{transform:translate(-14px,-62px) rotate(-13deg)}
+  .truheAuf.offen .truhe .trLicht{opacity:1;animation:trLicht 1.6s ease-in-out infinite}
+  .truheAuf.offen .truhe .trStrahlen{opacity:.2;animation:shDreh 14s linear infinite}
+  .truheAuf.offen.epi .truhe .trStrahlen{fill:#d9b6ff;opacity:.3}
+  .truheAuf.offen.leg .truhe .trStrahlen{fill:#ffe08a;opacity:.38}
+  @keyframes trLicht{0%,100%{opacity:.85}50%{opacity:1}}
+  .trTippen{margin:0;min-height:20px;font:700 15px/1.3 var(--disp);color:var(--brass-hell);animation:trPuls 1.3s ease-in-out infinite}
+  @keyframes trPuls{0%,100%{opacity:.55}50%{opacity:1}}
+  .trLohn{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:-6px;animation:jbAuf .55s cubic-bezier(.2,1.6,.4,1) both}
+  .trLohn[hidden]{display:none}
+  .trLohn small{font:800 12px/1.2 var(--sans);letter-spacing:.3em;text-transform:uppercase;color:#8ff3ff}
+  .truheAuf.epi .trLohn small{color:#d9b6ff} .truheAuf.leg .trLohn small{color:#ffe08a}
+  .trLohn b{display:inline-flex;align-items:center;gap:8px;font:800 clamp(22px,6.4vmin,36px)/1.1 var(--disp);color:#fff;text-shadow:0 0 18px rgba(54,226,255,.55)}
+  .truheAuf.leg .trLohn b{color:#ffe9a8;text-shadow:0 0 20px rgba(255,197,61,.7)}
+  .trLohn b svg{width:30px;height:30px}
+  .trLohn span{font-size:13.5px;color:var(--paper-2)}
+  .trLohn .bar{width:180px;height:7px;margin-top:4px}
+  #trWeiter{margin:8px 0 0;width:auto;min-width:200px;min-height:46px;padding:0 26px;font-size:16px}
+  #trWeiter[hidden],.trSpaeter[hidden]{display:none}
+  .trSpaeter{margin:6px 0 0;width:auto;min-height:44px;padding:0 18px;background:none;border:0;color:var(--paper-2)}
+  @media (prefers-reduced-motion:reduce){ .trKnopf .truhe,.truheAuf.rappelt .trKnopf .truhe,.trTippen,.trLohn,.truheAuf.offen .truhe .trStrahlen,.truheAuf.offen .truhe .trLicht{animation:none}
+     .truhe .trDeckel{transition:none} }
+  /* ---- v192: Werbe-Stufen ---------------------------------------------- */
+  .werbeStufen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px}
+  .wsKarte{display:flex;flex-direction:column;gap:5px;padding:9px 10px;border-radius:14px;min-width:0;
+     background:linear-gradient(180deg,rgba(60,110,255,.12),rgba(60,110,255,.03));border:1px solid rgba(120,170,255,.25)}
+  .wsKarte.gross{background:linear-gradient(180deg,rgba(255,197,61,.18),rgba(255,197,61,.04));border-color:rgba(255,214,110,.6);box-shadow:0 0 18px rgba(255,197,61,.18)}
+  .wsKarte.da{opacity:.72}
+  .wsKopf{font:800 13px/1.2 var(--disp);color:var(--paper)}
+  .wsKopf i{font-style:normal;color:var(--gold)}
+  .wsLohn{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center}
+  .wsDesign{font-size:11.5px;line-height:1.3;color:var(--brass-hell)}
+  .wsDesign em{font-style:normal;color:var(--cyan)}
+  .wsKarte .bar{margin-top:auto}
+  @media (max-width:560px){ .werbeStufen{grid-template-columns:1fr} }
+
+  /* ---- v192: Titelbild beim Öffnen ------------------------------------ */
+  #splash{position:fixed;inset:0;z-index:60;background:#050817;pointer-events:none;opacity:1;transition:opacity .5s ease}
+  #splash img{width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block}
+  #splash.weg{opacity:0}
+  #splash[hidden]{display:none}
+  @media (prefers-reduced-motion:reduce){ #splash{transition:none} }
 </style>
 <script type="application/ld+json">
 {
@@ -4544,7 +4650,12 @@
 </head>
 <body>
 
+<!-- v192: das Titelbild beim Öffnen — steht da, bis das Spiel bereit ist
+     (frühestens 1,5 s), fängt keine Tipps ab. Ausgeblendet von spiel.js. -->
+<div id="splash" aria-hidden="true"><picture><source media="(max-width:1000px)" srcset="titel-1280.webp"><img src="titel-1920.webp" alt="" decoding="async" fetchpriority="high"></picture></div>
+
 <noscript>
+  <style>#splash{display:none}</style>
   <h1>Pulsavi</h1>
   <p>Pulsavi is a free browser io game. You start as a grain of dust, swallow
      stardust and rivals, and grow into a world with rings and moons. The game
@@ -4630,6 +4741,8 @@
       <p class="jbKlein" id="jbKlein"></p>
       <b class="jbGross" id="jbGross"></b>
       <p class="jbText" id="jbText"></p>
+      <!-- v192: der Lohn als Marken (Ehre, Truhen, Ore …) unter der Feier. -->
+      <div class="jbLohn elLohn" id="jbLohn" hidden></div>
     </div>
   </div>
 </div>
@@ -5484,6 +5597,22 @@
 </div>
 
 <!-- v188: Saisonpass — Entwurf A „Messing-Leiter“. -->
+<!-- v192: Truhe öffnen — liegt über allem (auch über dem Ergebnis). -->
+<div class="truheAuf" id="truheAuf" hidden>
+  <div class="trFeld">
+    <p class="trTitel" id="trTitel"></p>
+    <p class="trUnter" id="trUnter"></p>
+    <button type="button" class="trKnopf" id="trKnopf"><span id="trBild"></span></button>
+    <p class="trTippen" id="trTippen"></p>
+    <div class="trLohn" id="trLohn" hidden>
+      <small id="trStufe"></small><b id="trGross"></b><span id="trKlein"></span>
+      <span class="bar" id="trBalken" hidden><i></i></span>
+    </div>
+    <button type="button" id="trWeiter" hidden></button>
+    <button type="button" class="quiet trSpaeter" id="trSpaeter"></button>
+  </div>
+</div>
+
 <!-- v190: Was kann ich mir von Ore, Iridium, Ehre holen? -->
 <div class="veil" id="waehrVeil" hidden>
   <div class="card waehrKarte">
@@ -5722,6 +5851,8 @@
       <div class="two" id="endZwei">
         <!-- v175: das Glücksrad, wenn eine Drehung offen ist. -->
         <button type="button" class="quiet radKnopf" id="endRad" hidden></button>
+        <!-- v192: Truhen im Vorrat (Tageskiste, Errungenschaften, Werben). -->
+        <button type="button" class="quiet truheKnopf" id="endTruhe" hidden></button>
         <button class="quiet" id="endShop" data-i18n="skins">Designs</button>
         <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
       </div>
@@ -6185,7 +6316,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=191"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=192"><\/script>');
 })();
 </script>
 </body>
