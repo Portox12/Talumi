@@ -2806,15 +2806,30 @@
      und hoch (Zeichen, darunter ein kurzes Wort). Name und Rang nehmen die
      ganze Breite der Bühne und halten zu beiden Seiten Abstand; lange
      Namen werden gekürzt statt überdeckt. */
-  .kapselHangar,.passHangar{top:6px;bottom:auto;flex-direction:column;gap:2px;padding:4px 6px 3px;border-radius:14px;
+  /* v193 (Thomas 02.10.2026: „mein Spielername ist abgekürzt: Port… ; auch
+     der Rang: Geschwad…“): Die Knöpfe standen in derselben Zeile wie der
+     Name und nahmen ihm links und rechts je 66 Punkte — auf dem iPhone
+     blieben für den Namen keine 70. Jetzt gehören die beiden Textzeilen
+     ganz dem Text: Truhen und Pass hängen **unter** der Namenszeile neben
+     dem Körper (`.heldKopf` ist ihr Bezug), das Glücksrad **über** der
+     Rangzeile (`.heldRang` ist sein Bezug). Reicht die Breite trotzdem
+     nicht (14 breite Buchstaben auf einem iPhone SE), verkleinert
+     `textEinpassen()` in spiel.js erst die Schrift, gekürzt wird zuletzt. */
+  .heldKopf{position:relative;z-index:3;align-self:stretch;min-width:0}
+  .kapselHangar,.passHangar{top:calc(100% + 6px);bottom:auto;flex-direction:column;gap:2px;padding:4px 6px 3px;border-radius:14px;
      font:800 9px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase}
-  .kapselHangar{left:6px} .passHangar{right:6px}
+  .kapselHangar{left:-6px} .passHangar{right:-6px}
   .passHangar .psWort{display:none} .passHangar .psKurz{display:inline}
   .kapselHangar svg{width:28px;height:28px}
   .kapselHangar b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;font-size:11px;line-height:18px;padding:0 4px}
-  .radHangar span{display:none} .radHangar{top:auto;bottom:8px;left:8px;padding:6px 8px;gap:5px}
-  .konsSp.m .konsName{align-self:stretch;padding:0 66px}
-  .konsSp.m .heldRang{align-self:stretch;padding:0 56px}
+  .radHangar span{display:none} .radHangar{top:auto;bottom:calc(100% + 4px);left:-6px;padding:6px 8px;gap:5px}
+  .konsSp.m .konsName{padding:0}
+  .konsSp.m .heldRang{align-self:stretch;padding:0}
+  /* Handys und Tablets: Die Bühne ist schmal, und „Уровень 23“ mit Leiste
+     braucht zwischen den Knöpfen mehr Platz, als da ist (gemessen: Türkisch
+     und Russisch auf dem iPhone 14) — die Knöpfe hängen deshalb unter der
+     Levelzeile. Am Rechner bleibt sie zwischen ihnen. */
+  @media (max-width:999px){ .kapselHangar,.passHangar{top:calc(100% + 22px)} }
   @media (prefers-reduced-motion:reduce){ .kapselHangar{animation:none} }
   /* v190: Lohn der Errungenschaften als Marken. */
   .elLohn{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 8px;max-width:210px}
@@ -3565,12 +3580,24 @@
        stehen dort ohnehin in Kurzform (`leisteZahl` in spiel.js). */
     @media (max-width:700px){
       /* Über die Kennung, sonst gewinnt die Regel für max-width:760px oben. */
-      #konsReiter button{padding:0 4px;font-size:12px}
+      #konsReiter button{padding:0 3px;font-size:12px}
       #konsReiter{padding:0 4px}
-      #konsReiter .konsW{gap:6px}
+      /* v193: Seit „Nova“ (v191) sind Ore, Iridium und Ehre Pillen mit Rand
+         und Polster — zusammen 60 Punkte breiter. Auf 667 Punkten wurden die
+         Reiter dafür zusammengedrückt, und ihre Wörter standen ineinander
+         („ErrungenschafStatistik“, gemessen in allen sieben Sprachen). Hier
+         bleiben es Pillen, aber schmale. Über die Kennung, weil der
+         Nova-Block weiter unten sonst gewinnt. */
+      #konsReiter .konsW{gap:4px}
+      #konsReiter .konsW .ore,#konsReiter .konsW .iri,#konsReiter .konsW .chip{padding:0 5px;gap:2px;border-width:1px}
+      #konsReiter .konsW .wIco{margin-right:1px}
     }
     #konsReiter{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
     #konsReiter::-webkit-scrollbar{display:none}
+    /* Die Reiter dürfen in ihr Polster hinein schrumpfen (nicht
+       `flex:0 0 auto`): Am 02.10.2026 ausprobiert — dann schiebt sich die
+       Leiste schon auf dem iPhone 14 um 24 Punkte, und „Ehre“ ist rechts
+       abgeschnitten. */
     .konsW{gap:10px;font-size:12px}
     /* Auf flachen Schirmen ohne Rahmen: Die Plakette kostete 18 Punkte
        Breite, und genau die fehlten bei 667 px auf Deutsch, Französisch und
@@ -4624,9 +4651,14 @@
   @media (max-width:560px){ .werbeStufen{grid-template-columns:1fr} }
 
   /* ---- v192: Titelbild beim Öffnen ------------------------------------ */
-  #splash{position:fixed;inset:0;z-index:60;background:#050817;pointer-events:none;opacity:1;transition:opacity .5s ease}
-  #splash img{width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block}
-  #splash.weg{opacity:0}
+  /* v193: fängt Tipps ab (ein Tipp überspringt es, statt blind einen Knopf
+     dahinter zu treffen); beim Ausblenden nicht mehr. */
+  #splash{position:fixed;inset:0;z-index:60;background:#050817;opacity:1;transition:opacity .7s ease;
+       touch-action:none;-webkit-tap-highlight-color:transparent}
+  #splash img{width:100%;height:100%;object-fit:cover;object-position:60% 50%;display:block;
+       -webkit-user-drag:none;user-select:none;-webkit-user-select:none}
+  #splash.weg{opacity:0;pointer-events:none}
+  #splash.schnell{transition-duration:.18s}
   #splash[hidden]{display:none}
   @media (prefers-reduced-motion:reduce){ #splash{transition:none} }
 </style>
@@ -4650,8 +4682,9 @@
 </head>
 <body>
 
-<!-- v192: das Titelbild beim Öffnen — steht da, bis das Spiel bereit ist
-     (frühestens 1,5 s), fängt keine Tipps ab. Ausgeblendet von spiel.js. -->
+<!-- v192/v193: das Titelbild beim Öffnen — steht da, bis das Spiel bereit ist
+     und es drei Sekunden zu sehen war; ein Tipp überspringt es.
+     Ausgeblendet von spiel.js (`titelbildAus`). -->
 <div id="splash" aria-hidden="true"><picture><source media="(max-width:1000px)" srcset="titel-1280.webp"><img src="titel-1920.webp" alt="" decoding="async" fetchpriority="high"></picture></div>
 
 <noscript>
@@ -5298,15 +5331,18 @@
       </div>
 
       <div class="konsSp m">
-        <!-- v175: Glücksrad, solange eine Drehung offen ist — oben rechts in der
-             mittleren Spalte; in der Kopfzeile war kein Platz (iPhone 14/16 quer:
-             ein halber Knopf am Ende), auf der Bühne verdeckte er Level oder Rang. -->
-        <button type="button" id="radHangar" class="radHangar" hidden></button>
-        <!-- v190: Kapseln im Vorrat (Lohn der Errungenschaften). -->
-        <button type="button" id="kapselHangar" class="kapselHangar" hidden></button>
-        <!-- v188: Saisonpass (Ring = Weg zur nächsten Stufe). -->
-        <button type="button" id="passHangar" class="passHangar" hidden></button>
-        <div class="konsName"><button type="button" class="heldBild" id="heldBild" aria-label="Profile"></button><b id="heldName">—</b></div>
+        <!-- v193 (Thomas 02.10.2026: „mein Spielername ist abgekürzt: Port… ;
+             auch der Rang: Geschwad…“): Name und Rang bekommen die ganze
+             Breite der Bühne. Truhen und Pass hängen **unter** der Namenszeile
+             links und rechts neben dem Körper, das Glücksrad **über** der
+             Rangzeile (es steht deshalb in `.heldRang`). -->
+        <div class="heldKopf">
+          <div class="konsName"><button type="button" class="heldBild" id="heldBild" aria-label="Profile"></button><b id="heldName">—</b></div>
+          <!-- v190: Kapseln im Vorrat (Lohn der Errungenschaften). -->
+          <button type="button" id="kapselHangar" class="kapselHangar" hidden></button>
+          <!-- v188: Saisonpass (Ring = Weg zur nächsten Stufe). -->
+          <button type="button" id="passHangar" class="passHangar" hidden></button>
+        </div>
         <!-- Das Level zwischen Name und Körper (v105, Thomas: „das Level im
              Hangar zwischen Spielername und Designbild"), für Gäste wie für
              Konten. Ersetzt die Plakette „Stufe 5 — Welt". Die XP-Zahlen
@@ -5332,6 +5368,9 @@
              und Rang — Gäste haben keinen, und was es nicht gibt, steht
              nicht da. Die Leinwand ist doppelt so groß wie die Anzeige. -->
         <div class="heldRang" id="heldRang" hidden>
+          <!-- v175: Glücksrad, solange eine Drehung offen ist; seit v193 über
+               der Rangzeile links (in der Kopfzeile war kein Platz). -->
+          <button type="button" id="radHangar" class="radHangar" hidden></button>
           <canvas id="heldAbz" width="96" height="56"></canvas><span id="heldRangName"></span>
         </div>
         <!-- Gäste (v161, Thomas 26.09.2026: „unter dem Bild meines Designs
@@ -6316,7 +6355,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=192"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=193"><\/script>');
 })();
 </script>
 </body>
