@@ -286,19 +286,9 @@
   @keyframes radSieg{to{opacity:.35}}
   @media (max-width:600px){ .radBuehne{grid-template-columns:1fr;justify-items:center}
      .radRad{width:min(calc(46 * var(--dvh, 1dvh)), calc(86 * var(--vw, 1vw)))} .radInfo{justify-items:center;text-align:center} }
-  /* Knöpfe: Glücksrad im Hangar (wie der Tagesbonus) und im Ergebnis; Ticket. */
+  /* Knöpfe: Glücksrad im Ergebnis; Ticket. (Der Knopf im Hangar ist seit
+     v194 weg — das Glücksrad liegt auf dem Gabentisch und im Shop.) */
   .konsSp.m{position:relative}
-  .radHangar{position:absolute;top:12px;left:12px;z-index:2;display:inline-flex;align-items:center;gap:7px;width:auto;margin:0;
-     padding:6px 12px 6px 8px;border-radius:999px;border:1px solid rgba(255,214,110,.8);color:var(--brass-hell);
-     background:linear-gradient(180deg,rgba(255,214,110,.22),rgba(255,197,61,.07)),rgba(8,14,34,.72);
-     font:700 13px/1 var(--disp);line-height:1;box-shadow:0 0 16px rgba(255,205,90,.35);animation:radPuls 2.4s ease-in-out infinite}
-  .radHangar[hidden]{display:none}
-  .radHangar svg{width:22px;height:22px;display:block}
-  .radHangar b{min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#ffc53d;color:#1a120c;font:800 12px/20px var(--sans);text-align:center}
-  body.touch .radHangar{min-height:44px;min-width:44px}
-  /* Schmale Bildschirme: nur Zeichen und Zahl — ein Wort daneben läge über dem
-     Namen oder der Rangzeile. */
-  @media (max-width:999px){ .radHangar span{display:none} .radHangar{top:auto;bottom:8px;left:8px;padding:6px 8px;gap:5px} }
   .radKnopf{border-color:rgba(255,197,61,.7)!important;color:var(--brass-hell)!important;animation:radPuls 2.4s ease-in-out infinite}
   .radKnopf svg{width:16px;height:16px;vertical-align:-3px;margin-right:5px}
   .endWeiter{display:flex;gap:10px;align-items:stretch}
@@ -308,7 +298,7 @@
      font:700 14px/1.2 var(--disp);box-shadow:0 0 18px rgba(255,205,90,.35)}
   .ticketKnopf small{display:block;margin-top:2px;font:600 11px/1.2 var(--sans);color:var(--paper-2)}
   #endVeil .endWeiter #again{margin-top:8px}
-  @media (prefers-reduced-motion:reduce){ .radDrehen.bereit,.radHangar,.radKnopf,.radSieg{animation:none} }
+  @media (prefers-reduced-motion:reduce){ .radDrehen.bereit,.radKnopf,.radSieg{animation:none} }
   @media (prefers-reduced-motion:reduce){ .jbGlanz::before{animation:none} .jbFunke{display:none}
      .jbInhalt,.jbGlanz,.jbRand{animation-duration:.01s} .jbGlanz,.jbRand{opacity:.6} }
   .stage b{font-family:var(--serif);font-size:16px;font-weight:600}
@@ -2774,63 +2764,22 @@
   .tgChip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;border:1px solid var(--brass);
        font:700 11px/1.3 var(--sans);font-style:normal;letter-spacing:.04em;color:var(--brass-hell);vertical-align:2px;white-space:nowrap}
   .tgChip[hidden]{display:none}
-  /* Saisonpass (v188): Knopf im Hangar gegenüber dem Glücksrad, Fenster mit
-     zwei Spuren (frei oben, Premium unten) auf einer Messingschiene. */
-  .passHangar{position:absolute;top:12px;right:12px;z-index:2;display:inline-flex;align-items:center;gap:8px;width:auto;margin:0;
-     padding:5px 12px 5px 5px;border-radius:999px;border:1px solid rgba(255,214,110,.7);color:var(--brass-hell);
-     background:linear-gradient(180deg,rgba(255,214,110,.16),rgba(255,197,61,.05)),rgba(8,14,34,.72);font:700 13px/1 var(--disp)}
-  .passHangar[hidden]{display:none}
-  body.touch .passHangar{min-height:44px;min-width:44px}
+  /* Saisonpass (v188): Fenster mit zwei Spuren (frei oben, Premium unten)
+     auf einer Schiene. Der Ring zeigt den Weg zur nächsten Stufe — auf dem
+     Gabentisch und im Shop (v194). */
   .psRing{--a:0;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
      background:conic-gradient(#ffe08a calc(var(--a) * 1%), rgba(255,255,255,.14) 0)}
   .psRing b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#0a1030;font:800 12px/1 var(--sans);color:var(--brass-hell)}
-  .passHangar .psKurz{display:none}
-  /* v190 (Thomas, iPhone 14: „das Pass-Symbol wird vom Namen des Rangs
-     überdeckt … rechts über dem Design“): oben rechts auf der Bühne. */
-  @media (max-width:999px){ .passHangar .psWort{display:none} .passHangar .psKurz{display:inline} .passHangar{top:8px;bottom:auto;right:8px;padding:5px 10px 5px 5px;font-size:12px}
- }
-  /* v190: Kapseln im Vorrat — oben links auf der Bühne (am Rechner unter dem Glücksrad). */
-  .kapselHangar{position:absolute;top:62px;left:12px;z-index:2;display:inline-flex;align-items:center;gap:6px;width:auto;margin:0;
-     padding:4px 12px 4px 4px;border-radius:999px;border:1px solid rgba(143,227,255,.75);color:#dff6ff;
-     background:linear-gradient(180deg,rgba(143,227,255,.2),rgba(143,227,255,.05)),rgba(8,14,24,.78);
-     font:700 13px/1 var(--disp);box-shadow:0 0 16px rgba(143,227,255,.35);animation:kvPuls 2.2s ease-in-out infinite}
-  .kapselHangar[hidden]{display:none}
-  .kapselHangar svg{display:block;flex:0 0 auto}
-  .kapselHangar b{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#8fe3ff;color:#06202c;font:800 12px/20px var(--sans);text-align:center}
-  .kapselHangar.oeffnet{opacity:.6;pointer-events:none}
-  .kapselHangar:hover:not(:disabled),.kapselHangar:active{background:linear-gradient(180deg,rgba(143,227,255,.3),rgba(143,227,255,.08)),rgba(8,14,24,.78);color:#dff6ff}
-  body.touch .kapselHangar{min-height:44px;min-width:44px}
-  @keyframes kvPuls{0%,100%{box-shadow:0 0 10px rgba(143,227,255,.3)}50%{box-shadow:0 0 22px rgba(143,227,255,.65)}}
-  /* Auf allen Größen (v190, Prüfstand testv190: 568×320 bis 1920×1080):
-     Kapseln oben links, Pass oben rechts, Glücksrad unten links — schmal
-     und hoch (Zeichen, darunter ein kurzes Wort). Name und Rang nehmen die
-     ganze Breite der Bühne und halten zu beiden Seiten Abstand; lange
-     Namen werden gekürzt statt überdeckt. */
-  /* v193 (Thomas 02.10.2026: „mein Spielername ist abgekürzt: Port… ; auch
-     der Rang: Geschwad…“): Die Knöpfe standen in derselben Zeile wie der
-     Name und nahmen ihm links und rechts je 66 Punkte — auf dem iPhone
-     blieben für den Namen keine 70. Jetzt gehören die beiden Textzeilen
-     ganz dem Text: Truhen und Pass hängen **unter** der Namenszeile neben
-     dem Körper (`.heldKopf` ist ihr Bezug), das Glücksrad **über** der
-     Rangzeile (`.heldRang` ist sein Bezug). Reicht die Breite trotzdem
-     nicht (14 breite Buchstaben auf einem iPhone SE), verkleinert
-     `textEinpassen()` in spiel.js erst die Schrift, gekürzt wird zuletzt. */
+  /* Die Bühne gehört dem Körper, dem Namen und dem Rang (v193/v194, Thomas
+     02.10.2026: „mein Spielername ist abgekürzt: Port…“, dann: „es ist kein
+     Platz für die zusätzlichen Bilder“). Bis v193 standen hier die Knöpfe
+     für Truhen, Pass und Glücksrad; sie liegen jetzt auf dem Gabentisch
+     (`#gabenVeil`) und im Shop (`#shopGaben`). Name und Rang haben die
+     ganze Breite; reicht selbst die nicht, verkleinert `textEinpassen()`
+     in spiel.js erst die Schrift, gekürzt wird zuletzt. */
   .heldKopf{position:relative;z-index:3;align-self:stretch;min-width:0}
-  .kapselHangar,.passHangar{top:calc(100% + 6px);bottom:auto;flex-direction:column;gap:2px;padding:4px 6px 3px;border-radius:14px;
-     font:800 9px/1 var(--sans);letter-spacing:.04em;text-transform:uppercase}
-  .kapselHangar{left:-6px} .passHangar{right:-6px}
-  .passHangar .psWort{display:none} .passHangar .psKurz{display:inline}
-  .kapselHangar svg{width:28px;height:28px}
-  .kapselHangar b{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;font-size:11px;line-height:18px;padding:0 4px}
-  .radHangar span{display:none} .radHangar{top:auto;bottom:calc(100% + 4px);left:-6px;padding:6px 8px;gap:5px}
   .konsSp.m .konsName{padding:0}
   .konsSp.m .heldRang{align-self:stretch;padding:0}
-  /* Handys und Tablets: Die Bühne ist schmal, und „Уровень 23“ mit Leiste
-     braucht zwischen den Knöpfen mehr Platz, als da ist (gemessen: Türkisch
-     und Russisch auf dem iPhone 14) — die Knöpfe hängen deshalb unter der
-     Levelzeile. Am Rechner bleibt sie zwischen ihnen. */
-  @media (max-width:999px){ .kapselHangar,.passHangar{top:calc(100% + 22px)} }
-  @media (prefers-reduced-motion:reduce){ .kapselHangar{animation:none} }
   /* v190: Lohn der Errungenschaften als Marken. */
   .elLohn{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:4px 8px;max-width:210px}
   .elLohn.zeile{max-width:none}
@@ -4520,9 +4469,7 @@
   .heldLevel{color:var(--gold);font-family:var(--disp)}
   .heldXp{background:rgba(120,170,255,.2)}
   .heldXp i{background:linear-gradient(90deg,var(--cyan),var(--gold))}
-  .passHangar{border-color:var(--gold);background:linear-gradient(180deg,rgba(255,197,61,.26),rgba(255,90,110,.16)),rgba(8,12,34,.86);color:#fff;box-shadow:0 0 16px rgba(255,197,61,.32)}
   .psRing b{background:#0a1030;color:var(--gold)}
-  .radHangar{border-color:rgba(255,197,61,.8);background:linear-gradient(180deg,rgba(255,197,61,.24),rgba(255,197,61,.06)),rgba(8,12,34,.8)}
   /* Shop */
   .shopSp.m{border-color:rgba(120,170,255,.14)}
   .shopPaket{border-radius:16px;background:linear-gradient(90deg,rgba(54,226,255,.13),rgba(20,40,110,.35));border:1.5px solid rgba(54,226,255,.34)}
@@ -4590,7 +4537,7 @@
   .truhe .trLicht{opacity:.3}
   .truhe .trDeckel{transition:transform .5s cubic-bezier(.25,1.7,.45,1)}
   .truhe .trFunken{opacity:.75}
-  .kapselHangar .truhe,.truheKnopf .truhe,.elM .truhe{overflow:hidden}
+  .truheKnopf .truhe,.elM .truhe,.sgKachel .truhe{overflow:hidden}
   .elM.kap .truhe{width:22px;height:22px}
   .truheKnopf{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-color:rgba(54,226,255,.6);color:#dff6ff;
      box-shadow:0 0 14px rgba(54,226,255,.3)}
@@ -4649,6 +4596,129 @@
   .wsDesign em{font-style:normal;color:var(--cyan)}
   .wsKarte .bar{margin-top:auto}
   @media (max-width:560px){ .werbeStufen{grid-template-columns:1fr} }
+
+  /* ---- v194: Gabentisch — Geschenke beim Öffnen ----------------------- */
+  /* Thomas 02.10.2026: „Game Pass usw. nur anzeigen, wenn man das Spiel
+     öffnet. Dann kommen direkt groß und prunkvoll die Truhen und alles
+     andere zum Öffnen. Schön farbig und feierlich.“ Entwurf A, aber ohne
+     „Alles öffnen“: Jede Karte wird einzeln angetippt („das gibt mehr
+     Belohnungsgefühl“). Eigener Hintergrund statt des Menühimmels — das
+     Fenster ist die Bühne. Farben aus Nova: Cyan (Truhen), Gold
+     (Glücksrad, Tagesbonus), Koralle (Pass). Nichts Grünes. */
+  #gabenVeil{--rand-y:10px;--rand-x:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+     gap:clamp(12px, calc(3.4 * var(--vh, 1vh)), 18px);overflow:hidden;backdrop-filter:none;
+     background:radial-gradient(ellipse 80% 90% at 50% 38%, #1b3a94 0%, #0a1238 55%, #03050f 100%)}
+  /* Die Kennung schlägt `.veil[hidden]` — ohne diese Zeile läge das
+     geschlossene Fenster unsichtbar über allem und finge jeden Tipp ab. */
+  #gabenVeil[hidden]{display:none}
+  #gabenVeil > *{position:relative;z-index:1}
+  .gbStrahl{position:absolute!important;z-index:0!important;left:50%;top:44%;width:2400px;height:2400px;margin:-1200px 0 0 -1200px;border-radius:50%;pointer-events:none;
+     background:repeating-conic-gradient(from 0deg, rgba(255,214,110,.13) 0 9deg, rgba(255,214,110,0) 9deg 22.5deg);
+     -webkit-mask:radial-gradient(circle, #000 0, #000 16%, transparent 46%);mask:radial-gradient(circle, #000 0, #000 16%, transparent 46%);
+     animation:shDreh 70s linear infinite}
+  .gbKonfetti{position:absolute!important;z-index:0!important;inset:0;pointer-events:none;overflow:hidden}
+  .gbKonfetti i{position:absolute;top:-14px;width:7px;height:11px;border-radius:2px;opacity:.9;
+     animation:gbFall var(--d, 7s) linear var(--v, 0s) infinite}
+  @keyframes gbFall{from{transform:translateY(-30px) rotate(var(--w, 0deg))}to{transform:translateY(calc(104 * var(--vh, 1vh))) rotate(calc(var(--w, 0deg) + 420deg))}}
+  .gbKopf{text-align:center}
+  .gbKopf small{display:block;margin-bottom:5px;font:800 11px/1 var(--disp);letter-spacing:.3em;text-transform:uppercase;color:#7fe9ff;
+     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .gbKopf b{display:block;font:800 clamp(24px, calc(8.6 * var(--vh, 1vh)), 40px)/1.05 var(--disp);letter-spacing:.01em;
+     background:linear-gradient(180deg,#fff3c4 0%,#ffd45e 42%,#f0a51e 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+     filter:drop-shadow(0 2px 0 rgba(90,54,8,.9)) drop-shadow(0 0 18px rgba(255,197,61,.55))}
+  .gbTisch{display:flex;justify-content:center;gap:16px;width:100%;max-width:900px}
+  button.gbKarte{position:relative;flex:1 1 0;min-width:0;max-width:196px;width:auto;margin:0;padding:0 8px 11px;
+     height:clamp(124px, calc(45 * var(--vh, 1vh)), 196px);border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+     color:#fff;font-family:var(--disp);cursor:pointer;border:2px solid var(--gf, #58e6ff);
+     background:linear-gradient(180deg,rgba(90,140,255,.30),rgba(10,18,60,.88));
+     box-shadow:0 0 30px var(--gs, rgba(54,226,255,.45)),inset 0 0 26px var(--gi, rgba(54,226,255,.16));
+     animation:gbRein .5s cubic-bezier(.2,1.5,.4,1) calc(var(--i, 0) * 90ms) both;transition:transform .12s ease}
+  button.gbKarte:hover:not(:disabled){background:linear-gradient(180deg,rgba(110,160,255,.38),rgba(14,24,72,.9));color:#fff}
+  button.gbKarte:active{transform:scale(.96)}
+  button.gbKarte.t{--gf:#58e6ff;--gs:rgba(54,226,255,.45);--gi:rgba(54,226,255,.16)}
+  button.gbKarte.r,button.gbKarte.b{--gf:#ffd45e;--gs:rgba(255,197,61,.45);--gi:rgba(255,197,61,.14)}
+  button.gbKarte.p{--gf:#ff7a8a;--gs:rgba(255,90,110,.45);--gi:rgba(255,90,110,.14)}
+  @keyframes gbRein{from{transform:translateY(22px) scale(.84);opacity:0}to{transform:none;opacity:1}}
+  .gbBild{position:absolute;left:8px;right:8px;top:8px;bottom:50px;display:grid;place-items:center;pointer-events:none}
+  .gbKarte:not(.fertig) .gbBild{animation:gbSchweb 2.6s ease-in-out calc(var(--i, 0) * -.6s) infinite}
+  @keyframes gbSchweb{0%,100%{transform:translateY(2px)}50%{transform:translateY(-4px)}}
+  /* Das Bild füllt seine Fläche und wird in sie eingepasst — nie größer
+     (mit „Höhe 100 %“ blieb die Truhe bei ihrer eigenen Größe und ragte auf
+     flachen Schirmen in den Namen der Karte). */
+  .gbBild > *{position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%;display:block}
+  .gbBild > svg{width:100%;height:100%}
+  .gbBild > img,.gbBild > canvas,.gbBild > svg.ik,.gbBild > svg.ico{width:auto;height:80%;aspect-ratio:1;object-fit:contain}
+  .gbBild .psRing{height:76%;width:auto;aspect-ratio:1;display:grid;box-shadow:0 0 18px rgba(255,197,61,.5)}
+  .gbBild .psRing b{width:78%;height:78%;font:800 clamp(22px, calc(9 * var(--vh, 1vh)), 36px)/1 var(--disp);background:radial-gradient(circle at 50% 35%,#2a1a4e,#0a1030)}
+  .gbName{display:block;margin:0;width:100%;text-align:center;font:800 17px/1.1 var(--disp);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gbUnter{display:block;margin:4px 0 0;width:100%;text-align:center;font:700 11.5px/1.2 var(--disp);letter-spacing:.05em;text-transform:uppercase;color:#bcd0ff;
+     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gbZahl{position:absolute;top:-10px;right:-10px;min-width:34px;height:34px;padding:0 8px;border-radius:17px;display:grid;place-items:center;
+     font:800 18px/1 var(--disp);color:#04122b;background:linear-gradient(180deg,#c9f8ff,#36c8ff);border:2px solid #04122b;
+     box-shadow:0 0 14px rgba(54,226,255,.8),inset 0 1px 0 #fff}
+  /* Erledigt: die Karte tritt zurück, die Zahl wird ein goldener Haken. */
+  .gbKarte.fertig{border-color:rgba(160,185,255,.3);box-shadow:none;cursor:default}
+  .gbKarte.fertig .gbBild{opacity:.4;filter:saturate(.4)}
+  /* Passt die Unterzeile nicht (Russisch, Französisch), steht sie eng und
+     in normaler Schreibung; `Gaben.einpassen()` setzt die Klasse. */
+  .gbUnter.eng{letter-spacing:0;text-transform:none;font-size:11px}
+  .gbKarte.fertig .gbUnter{color:var(--gold)}
+  .gbTisch.da button.gbKarte{animation:none}
+  .gbKarte.fertig .gbZahl{color:#3a2203;background:linear-gradient(180deg,#fff0b0,#ffc53d);box-shadow:0 0 12px rgba(255,197,61,.7),inset 0 1px 0 #fff}
+  .gbFuss{display:flex;align-items:center;justify-content:center;gap:22px;min-height:44px}
+  #gabenVeil button.gbWeiter{width:auto;margin:0;height:48px;padding:0 34px;border:0;border-radius:16px;font:800 17px/1 var(--disp);letter-spacing:.04em;color:#3a2203;
+     background:linear-gradient(180deg,#fff0b0,#ffc53d 55%,#e89a12);box-shadow:0 4px 0 #9a5f07,0 0 26px rgba(255,197,61,.55),inset 0 2px 0 rgba(255,255,255,.75)}
+  #gabenVeil button.gbSpaeter{width:auto;margin:0;min-height:44px;padding:0 10px;background:none;border:0;border-radius:8px;color:#9fb3e6;
+     font:700 13px/1 var(--disp);letter-spacing:.05em;text-decoration:underline;text-underline-offset:4px}
+  #gabenVeil button.gbSpaeter:hover:not(:disabled){background:none;color:#dfe9ff}
+  #gabenVeil button[hidden]{display:none}
+  @media (max-width:700px){ .gbTisch{gap:9px} .gbZahl{top:-8px;right:-6px;min-width:28px;height:28px;font-size:15px}
+     .gbName{font-size:14px} .gbUnter{font-size:11px;letter-spacing:.02em} }
+  /* Hochkant und sehr schmal: zwei Karten je Reihe. */
+  @media (max-width:520px){ .gbTisch{flex-wrap:wrap} button.gbKarte{flex:0 0 calc(50% - 5px);max-width:none;height:150px}
+     #gabenVeil{overflow:auto;justify-content:flex-start} }
+  @media (prefers-reduced-motion:reduce){ .gbStrahl,.gbKonfetti i,button.gbKarte,.gbKarte .gbBild{animation:none!important}
+     .gbKonfetti i{top:var(--y, 50%)} }
+
+  /* Danach liegt alles im Shop: Zahl am Reiter, Zeile „Deine Geschenke“. */
+  #konsReiter button[data-marke]::before{content:attr(data-marke);position:absolute;top:1px;right:-4px;z-index:1;box-sizing:border-box;min-width:18px;height:18px;padding:0 5px;
+     border-radius:9px;font:800 11px/18px var(--disp);text-align:center;color:#3a2203;
+     background:linear-gradient(180deg,#fff0b0,#ffc53d);box-shadow:0 0 10px rgba(255,197,61,.9)}
+  .konsPane.shopPane{grid-template-rows:auto minmax(0,1fr)}
+  /* Untereinander (hochkant, sehr schmal): jede Zeile so hoch wie ihr Inhalt. */
+  @media (orientation:portrait), (max-width:640px){ .konsPane.shopPane,.konsPane.shopPane.ohneIri{grid-template-rows:none;grid-auto-rows:auto} .shopGaben{flex-wrap:wrap} button.sgKachel{flex:1 1 140px} }
+  .shopGaben{grid-column:1 / -1;display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid rgba(120,170,255,.2);min-width:0;
+     background:linear-gradient(90deg,rgba(255,197,61,.12),rgba(54,226,255,.07) 60%,rgba(255,90,110,.08))}
+  .shopGaben[hidden]{display:none}
+  .shopGaben h2{margin:0;flex:0 0 auto;font:800 11px/1.15 var(--disp);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);max-width:104px}
+  button.sgKachel{flex:1 1 0;min-width:0;width:auto;margin:0;display:flex;align-items:center;gap:8px;height:48px;padding:0 10px 0 6px;border-radius:14px;
+     text-align:left;color:#fff;font-family:var(--disp);
+     background:linear-gradient(180deg,rgba(60,110,255,.28),rgba(10,18,60,.8));border:1.5px solid rgba(255,214,110,.75);box-shadow:0 0 12px rgba(255,197,61,.25)}
+  button.sgKachel:hover:not(:disabled){background:linear-gradient(180deg,rgba(80,130,255,.38),rgba(14,24,72,.85));color:#fff}
+  button.sgKachel.leer{border-color:rgba(120,170,255,.25);box-shadow:none;opacity:1}
+  button.sgKachel.leer .sgBild{opacity:.45;filter:saturate(.4)}
+  .sgBild{flex:0 0 auto;width:36px;height:36px;display:grid;place-items:center}
+  .sgBild > svg{width:100%;height:100%;display:block}
+  .sgBild .psRing{width:34px;height:34px} .sgBild .psRing b{width:26px;height:26px;font-size:14px}
+  .sgText{flex:1 1 auto;min-width:0}
+  .sgText b{display:block;font:800 13.5px/1.1 var(--disp);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sgText small{display:block;margin-top:2px;font:700 10.5px/1.1 var(--disp);color:#bcd0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sgLos{flex:0 0 auto;height:28px;padding:0 11px;border-radius:9px;font:800 11.5px/28px var(--disp);color:#3a2203;white-space:nowrap;
+     background:linear-gradient(180deg,#fff0b0,#ffc53d 60%,#e89a12)}
+  .sgKachel.leer .sgLos{display:none}
+  @media (max-width:900px){ .sgLos{display:none} .shopGaben{padding:6px 10px;gap:8px} }
+  /* Flache Schirme (Handy quer): Die Zeile kostet 53 Punkte Höhe — Spalten und Pakete rücken dafür zusammen,
+     damit der Shop weiter ohne Scrollen passt (testshop.js). */
+  @media (max-height:470px){ .shopGaben{padding:4px 10px} button.sgKachel{height:44px}
+     .shopPane .shopSp{padding:6px 16px;gap:6px} .shopPane .shopPaket{min-height:36px} }
+  /* Sehr flach (iPhone quer in Safari, 340 Punkte): Kachel 40 hoch, die Tippfläche bleibt 44. */
+  @media (max-height:360px){ .shopGaben{padding:2px 10px} button.sgKachel{height:40px;position:relative}
+     button.sgKachel::after{content:"";position:absolute;left:0;right:0;top:-2px;bottom:-2px}
+     .shopPane .shopSp{padding:5px 16px;gap:4px} .shopPane .shopSp > h2{margin-bottom:0}
+     /* Über die Kennung: Die Regel für Safari mit Leisten (v138) setzt #shopDesign selbst. */
+     #shopDesign{gap:3px;padding-top:3px;padding-bottom:4px} }
+  @media (max-height:470px) and (min-height:361px){ #shopDesign{gap:5px;padding-top:4px;padding-bottom:5px} }
+  @media (max-width:700px){ .shopGaben h2{display:none} .sgText small{display:none} button.sgKachel{height:44px} }
 
   /* ---- v192: Titelbild beim Öffnen ------------------------------------ */
   /* v193: fängt Tipps ab (ein Tipp überspringt es, statt blind einen Knopf
@@ -5336,12 +5406,12 @@
              Breite der Bühne. Truhen und Pass hängen **unter** der Namenszeile
              links und rechts neben dem Körper, das Glücksrad **über** der
              Rangzeile (es steht deshalb in `.heldRang`). -->
+        <!-- v194 (Thomas 02.10.2026: „es ist kein Platz für die zusätzlichen
+             Bilder“): Truhen, Pass und Glücksrad stehen nicht mehr auf der
+             Bühne. Sie kommen beim Öffnen des Spiels groß im Fenster
+             `#gabenVeil` und liegen danach im Shop (`#shopGaben`). -->
         <div class="heldKopf">
           <div class="konsName"><button type="button" class="heldBild" id="heldBild" aria-label="Profile"></button><b id="heldName">—</b></div>
-          <!-- v190: Kapseln im Vorrat (Lohn der Errungenschaften). -->
-          <button type="button" id="kapselHangar" class="kapselHangar" hidden></button>
-          <!-- v188: Saisonpass (Ring = Weg zur nächsten Stufe). -->
-          <button type="button" id="passHangar" class="passHangar" hidden></button>
         </div>
         <!-- Das Level zwischen Name und Körper (v105, Thomas: „das Level im
              Hangar zwischen Spielername und Designbild"), für Gäste wie für
@@ -5368,9 +5438,6 @@
              und Rang — Gäste haben keinen, und was es nicht gibt, steht
              nicht da. Die Leinwand ist doppelt so groß wie die Anzeige. -->
         <div class="heldRang" id="heldRang" hidden>
-          <!-- v175: Glücksrad, solange eine Drehung offen ist; seit v193 über
-               der Rangzeile links (in der Kopfzeile war kein Platz). -->
-          <button type="button" id="radHangar" class="radHangar" hidden></button>
           <canvas id="heldAbz" width="96" height="56"></canvas><span id="heldRangName"></span>
         </div>
         <!-- Gäste (v161, Thomas 26.09.2026: „unter dem Bild meines Designs
@@ -5508,6 +5575,10 @@
     </div>
     <!-- ---------- Reiter: Shop (v127) ---------- -->
     <div class="konsPane shopPane" id="paneShop" hidden>
+      <!-- v194: „Deine Geschenke“ — Truhen, Glücksrad und Saisonpass liegen
+           hier (nur mit Konto; gemalt von `Gaben.shopMalen()`). Kein Angebot,
+           sondern der Abholplatz: Truhen und Drehungen sind nie käuflich. -->
+      <div class="shopGaben" id="shopGaben" hidden></div>
       <section class="shopSp konsSek" id="shopIri"></section>
       <section class="shopSp konsSek m" id="shopDesign"></section>
       <section class="shopSp konsSek" id="shopRaub"></section>
@@ -5680,6 +5751,22 @@
   <div class="card auftragKarte pfadKarte">
     <div id="pfadVoll" class="konsSek"></div>
     <button id="pfadZu" data-i18n="back">Back</button>
+  </div>
+</div>
+
+<!-- v194: der Gabentisch (Thomas 02.10.2026: „Game Pass usw. nur anzeigen,
+     wenn man das Spiel öffnet. Dann kommen direkt groß und prunkvoll die
+     Truhen und alles andere zum Öffnen. Schön farbig und feierlich.“ —
+     Entwurf A, jede Karte wird einzeln angetippt: „das gibt mehr
+     Belohnungsgefühl“). Gemalt von `Gaben` in spiel.js. -->
+<div class="veil" id="gabenVeil" hidden role="dialog" aria-labelledby="gbTitel">
+  <div class="gbStrahl" aria-hidden="true"></div>
+  <div class="gbKonfetti" id="gbKonfetti" aria-hidden="true"></div>
+  <div class="gbKopf"><small id="gbGruss"></small><b id="gbTitel" data-i18n="gb_titel">Your gifts</b></div>
+  <div class="gbTisch" id="gbTisch"></div>
+  <div class="gbFuss">
+    <button type="button" class="gbWeiter" id="gbWeiter" data-i18n="gb_weiter" hidden>Continue</button>
+    <button type="button" class="gbSpaeter" id="gbSpaeter" data-i18n="gb_spaeter">Later – it waits in the shop</button>
   </div>
 </div>
 
@@ -6355,7 +6442,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=193"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=194"><\/script>');
 })();
 </script>
 </body>
