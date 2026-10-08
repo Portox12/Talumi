@@ -7,7 +7,7 @@
 
    Beim Ausrollen einer neuen Fassung nur VERSION hochzählen. */
 
-const VERSION = "v194";
+const VERSION = "v195";
 const CACHE = "talumi-" + VERSION;
 const ASSETS = [
   "./index.html",
@@ -39,6 +39,7 @@ const ASSETS = [
   "./exo2-kyrillisch.woff2",
   /* v192: Titelbild beim Öffnen. */
   "./titel-1280.webp",
+  "./titel-breit.webp",
   "./titel-1920.webp",
   /* v182: die kurzen Töne (Kenney, CC0; zusammen ~110 KB) — offline mit dabei. */
   "./ton-kombo.wav",
