@@ -4735,6 +4735,106 @@
   #splash.schnell{transition-duration:.18s}
   #splash[hidden]{display:none}
   @media (prefers-reduced-motion:reduce){ #splash{transition:none} }
+
+  /* ---- v196: großer Shop (Entwurf A „Schaufenster“) und Ultra-Kiste ------------ */
+  .konsPane.shopPane.gross{display:block;overflow-y:auto;overflow-x:hidden;padding:10px 14px 18px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .konsPane.shopPane.gross[hidden]{display:none}
+  .shopPane.gross > *{margin:0 0 14px}
+  .shopPane.gross > .shopGaben{border:1px solid rgba(255,214,110,.35);border-radius:14px}
+  .shopKopf{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:2px 0 8px;font:800 12px/1.2 var(--disp);letter-spacing:.2em;text-transform:uppercase;color:#9fb3e6}
+  .shopKopf em{font-style:normal;font-weight:700;letter-spacing:.03em;text-transform:none;font-size:11px;color:#7f90bb}
+  .shopBlock[hidden]{display:none}
+  /* Ultra-Kiste */
+  .shopUltra{position:relative;display:flex;align-items:center;gap:14px;min-height:min(178px, calc(56 * var(--vh, 1vh)));padding:10px 16px;border-radius:20px;overflow:hidden;
+    border:2px solid transparent;background:radial-gradient(ellipse 60% 120% at 18% 50%,rgba(178,140,255,.42),transparent 70%) padding-box,linear-gradient(110deg,#1a0f4a,#0a1238 55%,#06091f) padding-box,
+    linear-gradient(120deg,#36e2ff,#b28cff 30%,#ff5a6e 55%,#ffc53d 80%,#36e2ff) border-box;box-shadow:0 0 22px rgba(178,140,255,.4)}
+  .shopUltra:empty{display:none}
+  .ukKiste{flex:0 0 auto;width:min(150px, calc(44 * var(--vh, 1vh)));display:grid;place-items:center;filter:drop-shadow(0 0 16px rgba(178,140,255,.7))}
+  .ukKiste .truhe,.truheAuf.ultra .trKnopf .truhe,.shopStarter .truhe{filter:sepia(1) hue-rotate(225deg) saturate(2.4) brightness(1.08)}
+  .ukKiste .truhe{width:100%;height:auto}
+  .ukText{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:6px}
+  .ukText small{font:800 11px/1 var(--disp);letter-spacing:.28em;color:#c9b8ff}
+  .ukName,.ukDesign b,.truheAuf.leg.ultra .trLohn b{background:linear-gradient(90deg,#9ff3ff,#d4b8ff 35%,#ffb0bc 65%,#ffe08a);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ukName{font:800 30px/1 var(--disp)}
+  .ukText p{margin:0;font:700 13px/1.35 var(--disp);color:#dfe6ff}
+  .ukKnoepfe{display:flex;align-items:center;flex-wrap:wrap;gap:8px 10px;margin-top:2px}
+  button.ukKauf{width:auto;margin:0;min-height:40px;display:inline-flex;align-items:center;gap:6px;padding:0 16px;border:0;border-radius:12px;font:800 16px/1 var(--disp);white-space:nowrap}
+  button.ukKauf.ore,.skPreis.ore,.skPreis.konto,.skPreis.waehlen{color:#3a2203;background:linear-gradient(180deg,#fff0b0,#ffc53d 60%,#e89a12);box-shadow:0 2px 0 #9a5f07,inset 0 1px 0 rgba(255,255,255,.7)}
+  button.ukKauf.iri{color:#04122b;background:linear-gradient(180deg,#d8fbff,#36c8ff 60%,#1a8fd0);box-shadow:0 2px 0 #0b4f80,inset 0 1px 0 rgba(255,255,255,.7)}
+  button.ukKauf:disabled,.skPreis:disabled{filter:grayscale(.75) brightness(.7);opacity:.8}
+  button.ukKauf svg,.skPreis svg,.ukPreisZeile svg{width:15px;height:15px;flex:0 0 auto}
+  .ukOder{font:700 12px/1 var(--disp);color:#9fb3e6}
+  button.ukChancen{width:auto;margin:0;min-height:32px;padding:0 4px;border:0;background:none;box-shadow:none;font:700 12px/1 var(--disp);color:#9fe9ff;text-decoration:underline;text-underline-offset:3px}
+  .ukAlle{font:800 13px/1.2 var(--disp);color:#8fe3a0}
+  .ukDesigns{flex:0 0 auto;display:flex;gap:8px;margin-left:auto}
+  button.ukDesign{position:relative;width:96px;height:118px;margin:0;padding:18px 4px 8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;border-radius:14px;
+    border:2px solid transparent;background:linear-gradient(180deg,rgba(40,20,90,.85),rgba(8,10,40,.95)) padding-box,linear-gradient(120deg,#36e2ff,#b28cff 30%,#ff5a6e 55%,#ffc53d 80%,#36e2ff) border-box}
+  button.ukDesign img{width:76px;height:76px;object-fit:contain;flex:1 1 auto;min-height:0}
+  button.ukDesign b{font:800 11.5px/1 var(--disp);white-space:nowrap}
+  button.ukDesign i{position:absolute;bottom:6px;right:7px;font-style:normal;font:800 12px/1 var(--disp);color:#8fe3a0}
+  .ultraTag{position:absolute;top:5px;left:50%;transform:translateX(-50%);padding:2px 6px;border-radius:6px;font:800 8.5px/1 var(--disp);letter-spacing:.14em;color:#130827;background:linear-gradient(90deg,#36e2ff,#b28cff,#ff8a98,#ffd45e)}
+  /* Kachelreihen */
+  .shopReihe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+  .shopReihe.drei{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .shopKachel{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px 9px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(60,100,230,.24),rgba(8,14,46,.92));border:1.5px solid rgba(120,170,255,.35)}
+  .shopKachel.rabatt{border-color:rgba(255,197,61,.8);box-shadow:inset 0 0 18px rgba(255,197,61,.16)}
+  .shopKachel.effekt{border-color:rgba(54,226,255,.55)}
+  .shopKachel.hat{opacity:.92}
+  .skMarke{position:absolute;top:6px;left:6px;padding:3px 6px;border-radius:7px;font:800 10.5px/1 var(--disp);color:#fff;background:#ff5a6e;box-shadow:0 0 10px rgba(255,90,110,.6);z-index:1}
+  button.skBild{width:100%;height:auto;margin:0;padding:0;border:0;background:none;box-shadow:none;display:grid;place-items:center;min-height:0}
+  button.skBild img{width:min(76px, 100%);aspect-ratio:1;object-fit:contain}
+  .skFx{width:100%;max-width:140px;height:auto;aspect-ratio:150/84}
+  .skIcon{display:grid;place-items:center;width:42px;height:42px;color:#9fe9ff}
+  .skIcon svg{width:34px;height:34px}
+  .skIcon.staub{color:#d4b8ff} .skIcon.ticket{color:#ffd45e}
+  .skName{font:800 12.5px/1.15 var(--disp);color:#fff;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .skUnter{font:700 10.5px/1.2 var(--disp);color:#9fb3e6;text-align:center}
+  .shopKachel s{font:700 10.5px/1 var(--disp);color:#8090b8}
+  .skPreis{width:auto;margin:auto 0 0;min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 10px;border:0;border-radius:10px;font:800 12.5px/1 var(--disp);white-space:nowrap;max-width:100%}
+  .skHat{margin-top:auto;min-height:32px;display:inline-flex;align-items:center;font:800 12px/1 var(--disp);color:#8fe3a0}
+  /* Design des Monats und Raubmond nebeneinander, Bild links */
+  .shopBreit{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}
+  .shopBreit .shopSp{display:grid;grid-template-columns:auto minmax(0,1fr);grid-auto-rows:auto;align-content:center;column-gap:14px;row-gap:5px;overflow:visible;padding:12px 16px;border-radius:16px;
+    background:linear-gradient(180deg,rgba(60,100,230,.2),rgba(8,14,46,.92));border:1.5px solid rgba(120,170,255,.35)}
+  .shopBreit .shopSp.m{border:1.5px solid rgba(255,197,61,.7)}
+  .shopBreit .shopSp > *{grid-column:2;margin:0}
+  .shopBreit .shopSp > .shopBild{grid-column:1;grid-row:1 / span 6;align-self:center;width:min(112px, calc(32 * var(--vh, 1vh)))!important}
+  .shopBreit .shopSp > h2{font-size:12px;letter-spacing:.06em}
+  .shopBreit .shopName{text-align:left;font-size:19px}
+  .shopBreit .shopStufen{justify-content:flex-start}
+  .shopBreit .shopKauf{width:auto;justify-self:start;padding:0 16px}
+  /* Iridium als Kachelreihe */
+  .shopPane.gross #shopIri{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px;overflow:visible;padding:0}
+  .shopPane.gross #shopIri .shopPaket:not(.shopStarter){grid-template-columns:1fr;justify-items:center;text-align:center;gap:6px;padding:10px 6px}
+  .shopPane.gross #shopIri .shopPaket:not(.shopStarter) .iriKristall{width:30px;height:30px}
+  .shopPane.gross #shopIri .shopPaket b{white-space:nowrap}
+  .shopPane.gross #shopIri[hidden]{display:none}
+  .shopPane.gross #shopIri > h2,.shopPane.gross #shopIri > .shopHinweis{grid-column:1 / -1;margin:0}
+  .shopPane.gross #shopIri > h2{font:800 12px/1.2 var(--disp);letter-spacing:.2em;text-transform:uppercase;color:#9fb3e6}
+  .shopStarter{grid-column:span 2;position:relative;border-color:#ff8a98!important;background:linear-gradient(120deg,rgba(255,90,110,.35),rgba(30,16,70,.95))!important}
+  .shopPane.gross #shopIri .shopStarter b{white-space:normal;min-width:0;line-height:1.15}
+  .shopStarter b small{display:block;margin:3px 0 0!important;font:700 11px/1.2 var(--disp)!important;color:#ffd0d6!important}
+  .ssKiste{display:grid;place-items:center} .ssKiste .truhe{width:40px;height:40px}
+  button.skBild:hover,button.skBild:focus,button.skBild:active{background:none!important;box-shadow:none!important}
+  button.ukDesign:hover,button.ukDesign:focus{filter:brightness(1.12)}
+  .ssMarke{position:absolute;top:-8px;left:10px;padding:2px 7px;border-radius:7px;font:800 9.5px/1.2 var(--disp);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:#ff5a6e}
+  /* Ultra-Kiste im Truhen-Fenster */
+  .truheAuf.ultra{background:radial-gradient(ellipse 70% 90% at 50% 42%,rgba(120,70,220,.55),rgba(10,8,40,.96) 65%,#03030c)}
+  .ukPreisZeile{display:inline-flex;align-items:center;gap:4px;vertical-align:middle}
+  .ukPreisZeile b{font-weight:800}
+  img.ukGewinn{width:min(calc(48 * var(--vh, 1vh)), 240px);height:auto;filter:drop-shadow(0 0 26px rgba(178,140,255,.7))}
+  .truheAuf.ultra.offen .trKnopf img.ukGewinn{animation:ukDreh 6s ease-in-out infinite}
+  @keyframes ukDreh{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+  @media (prefers-reduced-motion:reduce){ .truheAuf.ultra.offen .trKnopf img.ukGewinn{animation:none} }
+  @media (max-width:760px){
+    .shopUltra{flex-wrap:wrap} .ukDesigns{margin-left:0;width:100%;justify-content:center}
+    .shopReihe{grid-template-columns:repeat(3,minmax(0,1fr))} .shopBreit{grid-template-columns:1fr}
+    .shopPane.gross #shopIri{grid-template-columns:repeat(3,minmax(0,1fr))}
+  }
+  body.touch .skPreis,body.touch button.ukKauf,body.touch button.ukChancen,body.touch .skHat{min-height:44px}
+  body.touch button.ukChancen{padding:0 8px}
+  @media (max-height:400px){ .ukName{font-size:26px} button.ukDesign{width:88px;height:108px} button.ukDesign img{width:66px;height:66px} }
 </style>
 <script type="application/ld+json">
 {
@@ -5578,14 +5678,21 @@
       </div>
     </div>
     <!-- ---------- Reiter: Shop (v127) ---------- -->
-    <div class="konsPane shopPane" id="paneShop" hidden>
+    <div class="konsPane shopPane gross" id="paneShop" hidden>
       <!-- v194: „Deine Geschenke“ — Truhen, Glücksrad und Saisonpass liegen
            hier (nur mit Konto; gemalt von `Gaben.shopMalen()`). Kein Angebot,
            sondern der Abholplatz: Truhen und Drehungen sind nie käuflich. -->
       <div class="shopGaben" id="shopGaben" hidden></div>
+      <!-- v196: großer Shop (Entwurf A „Schaufenster“): eine Spalte zum Scrollen. -->
+      <section class="shopUltra" id="shopUltra"></section>
+      <section class="shopBlock" id="shopTag" hidden></section>
+      <div class="shopBreit">
+        <section class="shopSp konsSek m" id="shopDesign"></section>
+        <section class="shopSp konsSek" id="shopRaub"></section>
+      </div>
+      <section class="shopBlock" id="shopEffekte"></section>
+      <section class="shopBlock" id="shopOre" hidden></section>
       <section class="shopSp konsSek" id="shopIri"></section>
-      <section class="shopSp konsSek m" id="shopDesign"></section>
-      <section class="shopSp konsSek" id="shopRaub"></section>
     </div>
 
     <div class="konsPane eine" id="paneSkill" hidden>
@@ -6446,7 +6553,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=195"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=196"><\/script>');
 })();
 </script>
 </body>
