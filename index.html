@@ -3086,6 +3086,10 @@
        border:1px dashed var(--line);background:none;display:grid;place-content:center;
        font-size:11px;line-height:1.3}
   .konsSp.m .strip .more b{display:block;font-family:var(--disp);font-size:14px;color:var(--paper)}
+  /* v197: Kacheln dürfen schmaler werden statt über die Spalte zu ragen —
+     am Rechner mit Vergrößerung (`pcgross`) war die Spalte 402 Punkte breit,
+     die Leiste mit 64er Kacheln 429 (testformate, 10.10.2026). */
+  .konsSp.m .strip button,.konsSp.m .strip .more{flex-shrink:1;min-width:46px}
   /* Bis 1180 Breite ist die mittlere Spalte schmal: 48 statt 54 Punkte je
      Kachel, 6 statt 8 Abstand — sonst scrollte die Spalte seitlich
      (Tablet quer, testformate.js, 25.09.2026). Tippfläche bleibt ≥ 44. */
@@ -3543,6 +3547,12 @@
     }
     #konsReiter{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
     #konsReiter::-webkit-scrollbar{display:none}
+    /* v197: Zwischen 601 und 760 Punkten (kleine Android quer 740, iPhone 8 quer 667) liefen die Wörter
+       um bis zu 7 Punkte ineinander — dort 11 Punkte Schrift (die Untergrenze), so passen sie und „Ehre“
+       bleibt ganz sichtbar (testhangar). Unter 600 (iPhone SE 568) reicht auch das nicht: volle Breite,
+       die Leiste schiebt sich seitlich (testultragroessen.js, alle sieben Sprachen). */
+    @media (min-width:601px) and (max-width:760px){ #konsReiter button{font-size:11px} }
+    @media (max-width:600px){ #konsReiter button{flex:0 0 auto;font-size:11.5px} }
     /* Die Reiter dürfen in ihr Polster hinein schrumpfen (nicht
        `flex:0 0 auto`): Am 02.10.2026 ausprobiert — dann schiebt sich die
        Leiste schon auf dem iPhone 14 um 24 Punkte, und „Ehre“ ist rechts
@@ -4584,7 +4594,7 @@
   @media (prefers-reduced-motion:reduce){ .trKnopf .truhe,.truheAuf.rappelt .trKnopf .truhe,.trTippen,.trLohn,.truheAuf.offen .truhe .trStrahlen,.truheAuf.offen .truhe .trLicht{animation:none}
      .truhe .trDeckel{transition:none} }
   /* ---- v192: Werbe-Stufen ---------------------------------------------- */
-  .werbeStufen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px}
+  .werbeStufen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;white-space:normal}   /* v197: .plate drumherum ist nowrap — „+1 % de velocidade“ ragte auf dem Tablet hinaus */
   .wsKarte{display:flex;flex-direction:column;gap:5px;padding:9px 10px;border-radius:14px;min-width:0;
      background:linear-gradient(180deg,rgba(60,110,255,.12),rgba(60,110,255,.03));border:1px solid rgba(120,170,255,.25)}
   .wsKarte.gross{background:linear-gradient(180deg,rgba(255,197,61,.18),rgba(255,197,61,.04));border-color:rgba(255,214,110,.6);box-shadow:0 0 18px rgba(255,197,61,.18)}
@@ -4788,7 +4798,7 @@
   .skIcon{display:grid;place-items:center;width:42px;height:42px;color:#9fe9ff}
   .skIcon svg{width:34px;height:34px}
   .skIcon.staub{color:#d4b8ff} .skIcon.ticket{color:#ffd45e}
-  .skName{font:800 12.5px/1.15 var(--disp);color:#fff;text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .skName{font:800 12.5px/1.15 var(--disp);color:#fff;text-align:center;max-width:100%;overflow:hidden;overflow-wrap:anywhere;hyphens:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
   .skUnter{font:700 10.5px/1.2 var(--disp);color:#9fb3e6;text-align:center}
   .shopKachel s{font:700 10.5px/1 var(--disp);color:#8090b8}
   .skPreis{width:auto;margin:auto 0 0;min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0 10px;border:0;border-radius:10px;font:800 12.5px/1 var(--disp);white-space:nowrap;max-width:100%}
@@ -6523,6 +6533,9 @@
        1001juegos); dort ist ein Rahmen normal. */
     if (document.querySelector('meta[name="talumi-portal"]'))
       return /poki|crazygames|1001juegos/.test(h) ? "ok" : "portal";
+    /* v197: App-Fassung (Google Play, App Store) — die App liefert die Dateien
+       selbst unter dieser Adresse aus (Capacitor `server.hostname`). */
+    if (document.querySelector('meta[name="talumi-app"]')) return h === "app.pulsavi.io" ? "ok" : "fremd";
     if (h !== "pulsavi.io" && h !== "www.pulsavi.io" && h !== "portox12.github.io") return "fremd";
     try { if (window.top !== window.self) return "rahmen"; } catch (e) { return "rahmen"; }
     return "ok";
@@ -6553,7 +6566,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=196"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=197"><\/script>');
 })();
 </script>
 </body>
