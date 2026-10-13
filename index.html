@@ -4787,6 +4787,23 @@
   .shopReihe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
   .shopReihe.drei{grid-template-columns:repeat(3,minmax(0,1fr))}
   .shopReihe.fuenf{grid-template-columns:repeat(5,minmax(0,1fr))}   /* v202: Extras mit zwei Start-Päckchen */
+  /* v204: Premium */
+  .shopPremium{display:flex;align-items:center;gap:16px;padding:12px 18px;border-radius:20px;margin:0 0 12px;
+     background:linear-gradient(120deg,rgba(255,197,61,.20),rgba(54,200,255,.10) 55%,rgba(255,197,61,.12));border:1px solid rgba(255,214,110,.65);box-shadow:0 0 22px rgba(255,197,61,.18)}
+  .shopPremium[hidden]{display:none}
+  .pmText{flex:1;min-width:0}
+  .pmText small{font:800 11px/1 var(--disp);letter-spacing:.24em;color:var(--gold)}
+  .pmName{display:block;font:900 24px/1.1 var(--disp);color:#fff3cf;margin:4px 0 6px}
+  .pmListe{margin:0;padding:0 0 0 1.1em;columns:2;column-gap:22px;font:700 12.5px/1.45 var(--disp);color:#e7ecff}
+  .pmFuss{margin:6px 0 0;font:600 10.5px/1.35 var(--disp);color:#9fb3e6}
+  .pmPreis{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:150px;text-align:center}
+  .pmPreis b{font:900 26px/1 var(--disp);color:var(--gold)}
+  .pmPreis small,.pmPreis span{font:700 11.5px/1.2 var(--disp);color:#cfd8f5}
+  .pmPreis .pmKauf{margin-top:6px;min-height:40px;padding:0 16px;border-radius:12px;font:800 13px/1 var(--disp)}
+  .pmAktiv{margin-top:6px;font:800 13px/1.2 var(--disp);color:#8fe3a0}
+  button.ukKauf.gratis{color:#3a2203;background:linear-gradient(180deg,#fff6c9,#ffd76a 60%,#f2a91e);box-shadow:0 2px 0 #9a5f07,inset 0 1px 0 rgba(255,255,255,.75)}
+  .chip.premium{color:#3a2203;background:linear-gradient(180deg,#fff0b0,#ffc53d);border-color:#ffd76a}
+  @media (max-width:760px){ .shopPremium{flex-wrap:wrap} .pmListe{columns:1} .pmPreis{width:100%;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:6px 10px} }
   .skStartX{font:900 22px/1 var(--disp);color:var(--gold);text-shadow:0 0 12px rgba(255,197,61,.45)}
   .shopKachel{position:relative;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 6px 9px;border-radius:16px;
     background:linear-gradient(180deg,rgba(60,100,230,.24),rgba(8,14,46,.92));border:1.5px solid rgba(120,170,255,.35)}
@@ -5696,6 +5713,8 @@
            sondern der Abholplatz: Truhen und Drehungen sind nie käuflich. -->
       <div class="shopGaben" id="shopGaben" hidden></div>
       <!-- v196: großer Shop (Entwurf A „Schaufenster“): eine Spalte zum Scrollen. -->
+      <!-- v204: Premium (Kauf erst mit Zahlungsanbieter; nicht auf Portalen, nicht in der App, ab 18). -->
+      <section class="shopPremium" id="shopPremium" hidden></section>
       <section class="shopUltra" id="shopUltra"></section>
       <section class="shopBlock" id="shopTag" hidden></section>
       <div class="shopBreit">
@@ -6568,7 +6587,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=203"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=204"><\/script>');
 })();
 </script>
 </body>
