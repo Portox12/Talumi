@@ -4486,6 +4486,12 @@
   .shopPaket b{font-family:var(--disp)}
   .shopPaket b small{color:var(--koralle);font-weight:700}
   .shopPaket .preis{font-weight:700;padding:5px 12px;border-radius:999px;background:linear-gradient(180deg,#ffe38a,#ffb020);color:#2a1400}
+  /* v205: in der App sind die Pakete Knöpfe (Google Play). */
+  button.shopPaket{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
+  button.shopPaket:disabled{opacity:.55;cursor:default}
+  .pbHinweis{font-size:11px;line-height:1.35;color:var(--paper-2);margin:6px 0 0;max-width:100%}
+  .pmPreis .pmKauf.jahr{opacity:.92}
+  .pmPreis .pmVerwalten{margin-top:6px;background:none;border:1px solid var(--line);color:var(--paper-2);font:700 12px/1 var(--disp);padding:8px 12px;border-radius:10px}
   .shopName{font-family:var(--disp);font-weight:800;color:var(--gold);text-shadow:0 0 16px rgba(255,197,61,.4)}
   .shopKauf{border-radius:14px}
   .shopKauf:disabled{background:rgba(8,14,40,.6);border:1px solid rgba(120,170,255,.2)}
@@ -6602,7 +6608,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=205"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=206"><\/script>');
 })();
 </script>
 </body>
