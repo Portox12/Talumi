@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070b16">
+<title>Abo kündigen — Pulsavi</title>
+<meta name="robots" content="index, follow">
+<link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<!-- v207 (27.10.2026): Kündigungsknopf nach § 312k BGB — ohne Anmeldung, zwei Schritte („Verträge hier kündigen“ →
+     Bestätigungsseite → „Jetzt kündigen“), Eingang sofort angezeigt und per E-Mail bestätigt. Der Server
+     (/konto/kuendigung) beendet die Verlängerung bei Google Play. Freigabe Thomas 27.10.2026. -->
+<style>
+  @font-face{ font-family:"Pulsavi Serif"; src:url("lora-latein.woff") format("woff");
+    font-weight:400 700; font-style:normal; font-display:swap;
+    unicode-range:U+0000-024F, U+2010-205E, U+20AC, U+2122, U+2212, U+00D7, U+00B7; }
+  :root{--ink:#070b16;--plate:#141d31;--line:#243149;--brass:#d8b25f;
+        --paper:#dfe8f5;--paper-2:#8494ad;
+        --serif:"Pulsavi Serif","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+        --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);line-height:1.65;font-size:16px}
+  main{max-width:42rem;margin:0 auto;padding:44px 22px 80px}
+  h1{font-family:var(--serif);font-size:clamp(30px,6vw,44px);line-height:1.05;margin:0 0 20px;color:var(--brass);font-weight:600}
+  h2{font-family:var(--serif);font-size:21px;color:var(--brass);font-weight:600;margin:30px 0 6px}
+  p,li,label{color:var(--paper-2)}
+  p{margin:0 0 12px} ul{margin:0 0 12px;padding-left:1.3em}
+  strong{color:var(--paper);font-weight:600}
+  a{color:var(--brass)}
+  .kasten{background:var(--plate);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 14px}
+  .sprache{display:flex;gap:6px;margin:-12px 0 14px;font-size:15px}
+  .sprache a{display:inline-block;min-height:44px;padding:12px 8px}
+  label{display:block;margin:10px 0 4px;font-size:14px}
+  input[type=text],input[type=email],input[type=date]{width:100%;min-height:44px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0b1224;color:var(--paper);font:inherit}
+  .radio{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 2px} .radio label{display:flex;align-items:center;gap:6px;margin:0;min-height:44px}
+  button{min-height:48px;padding:12px 20px;border-radius:12px;border:0;background:var(--brass);color:#1a1200;font:700 16px/1 var(--sans);cursor:pointer;margin-top:14px}
+  button.leise{background:transparent;color:var(--paper-2);border:1px solid var(--line);margin-left:8px}
+  .fehler{color:#ff8a8a} [hidden]{display:none!important}
+  .ok{border-color:#3a6b47}
+  hr{border:0;border-top:1px solid var(--line);margin:48px 0 36px}
+</style>
+</head>
+<body>
+<main>
+<div class="sprache"><a href="#de">Deutsch</a><a href="#en">English</a></div>
+
+<section id="de" lang="de">
+<h1>Pulsavi Premium kündigen</h1>
+<p>Hier kündigst du dein Abo <strong>„Pulsavi Premium“</strong> ohne Anmeldung. Die Kündigung wirkt zum Ende des
+   bezahlten Zeitraums; bis dahin behältst du alle Vorteile, danach wird nichts mehr abgebucht. Schneller geht es
+   direkt in Google Play: Profil → <strong>Zahlungen und Abos</strong> → <strong>Abos</strong> → Pulsavi Premium →
+   <strong>Abo kündigen</strong>.</p>
+
+<div class="kasten" id="deSchritt1">
+  <h2 style="margin-top:0">1. Wer kündigt?</h2>
+  <form id="deForm" novalidate>
+    <label for="deMail">E-Mail-Adresse deines Pulsavi-Kontos</label>
+    <input type="email" id="deMail" autocomplete="email" autocapitalize="off" placeholder="name@beispiel.de">
+    <label for="deName">oder dein Spielername</label>
+    <input type="text" id="deName" maxlength="30" autocomplete="nickname">
+    <label>Zeitpunkt</label>
+    <div class="radio">
+      <label><input type="radio" name="deWann" value="naechst" checked> zum nächstmöglichen Zeitpunkt</label>
+      <label><input type="radio" name="deWann" value="datum"> zum Datum: <input type="date" id="deDatum" style="width:auto;min-height:36px;padding:4px 8px"></label>
+    </div>
+    <p class="fehler" id="deFehler" hidden></p>
+    <button type="submit">Verträge hier kündigen</button>
+  </form>
+</div>
+
+<div class="kasten" id="deSchritt2" hidden>
+  <h2 style="margin-top:0">2. Bitte bestätigen</h2>
+  <p>Du kündigst das Abo <strong>Pulsavi Premium</strong> für das Konto <strong id="deWer"></strong>
+     <span id="deZeit"></span>. Wir beenden die automatische Verlängerung bei Google Play und schicken dir sofort eine
+     Bestätigung per E-Mail.</p>
+  <button type="button" id="deJetzt">Jetzt kündigen</button><button type="button" class="leise" id="deZurueck">Zurück</button>
+</div>
+
+<div class="kasten ok" id="deFertig" hidden>
+  <h2 style="margin-top:0">Kündigung eingegangen</h2>
+  <p id="deErgebnis"></p>
+  <p>Bitte prüfe sicherheitshalber auch in Google Play unter <strong>Zahlungen und Abos → Abos</strong>, dass kein Abo
+     mehr als aktiv geführt wird. Fragen: <a href="mailto:info@pulsavi.io">info@pulsavi.io</a>.</p>
+</div>
+
+<p>Rechtliches: <a href="nutzungsbedingungen.html#premium">Nutzungsbedingungen, Abschnitt 7a</a> ·
+   <a href="datenschutz.html#kaeufe">Datenschutzerklärung, Abschnitt 6h</a> · <a href="impressum.html">Impressum</a></p>
+</section>
+
+<hr>
+
+<section id="en" lang="en">
+<h1>Cancel Pulsavi Premium</h1>
+<p>Cancel your <strong>“Pulsavi Premium”</strong> subscription here without signing in. The cancellation takes effect at the
+   end of the paid period; you keep all benefits until then and nothing is charged afterwards. It is faster directly in
+   Google Play: Profile → <strong>Payments &amp; subscriptions</strong> → <strong>Subscriptions</strong> → Pulsavi Premium →
+   <strong>Cancel subscription</strong>.</p>
+<div class="kasten" id="enSchritt1">
+  <h2 style="margin-top:0">1. Who is cancelling?</h2>
+  <form id="enForm" novalidate>
+    <label for="enMail">E-mail address of your Pulsavi account</label>
+    <input type="email" id="enMail" autocomplete="email" autocapitalize="off" placeholder="name@example.com">
+    <label for="enName">or your player name</label>
+    <input type="text" id="enName" maxlength="30" autocomplete="nickname">
+    <p class="fehler" id="enFehler" hidden></p>
+    <button type="submit">Cancel contracts here</button>
+  </form>
+</div>
+<div class="kasten" id="enSchritt2" hidden>
+  <h2 style="margin-top:0">2. Please confirm</h2>
+  <p>You are cancelling the <strong>Pulsavi Premium</strong> subscription for the account <strong id="enWer"></strong> at the
+     earliest possible date. We stop auto-renewal at Google Play and send you a confirmation e-mail right away.</p>
+  <button type="button" id="enJetzt">Cancel now</button><button type="button" class="leise" id="enZurueck">Back</button>
+</div>
+<div class="kasten ok" id="enFertig" hidden>
+  <h2 style="margin-top:0">Cancellation received</h2>
+  <p id="enErgebnis"></p>
+  <p>Please also check Google Play under <strong>Payments &amp; subscriptions → Subscriptions</strong>. Questions:
+     <a href="mailto:info@pulsavi.io">info@pulsavi.io</a>.</p>
+</div>
+</section>
+</main>
+<script>
+(function(){
+  var API = location.hostname === "localhost" || location.hostname === "127.0.0.1" ? "http://localhost:8080" : "https://api.pulsavi.io";
+  var p = new URLSearchParams(location.search); if (p.get("api") && /^https?:\/\/(localhost|127\.0\.0\.1)/.test(p.get("api"))) API = p.get("api");
+  function $(id){ return document.getElementById(id); }
+  function richten(pre, de){
+    var mail = $(pre + "Mail"), name = $(pre + "Name"), fehler = $(pre + "Fehler"), wer = "", wann = "";
+    $(pre + "Form").addEventListener("submit", function(e){
+      e.preventDefault(); fehler.hidden = true;
+      var m = mail.value.trim(), n = name.value.trim();
+      if (!m && !n){ fehler.textContent = de ? "Bitte E-Mail-Adresse oder Spielername eintragen." : "Please enter your e-mail address or player name."; fehler.hidden = false; return; }
+      if (m && !/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(m)){ fehler.textContent = de ? "Die E-Mail-Adresse sieht nicht richtig aus." : "That e-mail address doesn’t look right."; fehler.hidden = false; return; }
+      wer = m || n;
+      if (de){ var d = document.querySelector("input[name=deWann]:checked").value === "datum" && $("deDatum").value; wann = d ? "zum " + new Date(d + "T12:00:00").toLocaleDateString("de-DE") : "zum nächstmöglichen Zeitpunkt"; $("deZeit").textContent = wann; }
+      $(pre + "Wer").textContent = wer; $(pre + "Schritt1").hidden = true; $(pre + "Schritt2").hidden = false; $(pre + "Schritt2").scrollIntoView({ behavior: "smooth" });
+    });
+    $(pre + "Zurueck").addEventListener("click", function(){ $(pre + "Schritt2").hidden = true; $(pre + "Schritt1").hidden = false; });
+    $(pre + "Jetzt").addEventListener("click", function(){
+      var b = $(pre + "Jetzt"); b.disabled = true; b.textContent = de ? "Wird gesendet …" : "Sending …";
+      fetch(API + "/konto/kuendigung", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: mail.value.trim(), name: name.value.trim(), wann: wann }) })
+        .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ j.status = r.status; return j; }); })
+        .then(function(j){
+          if (!j.ok){ b.disabled = false; b.textContent = de ? "Jetzt kündigen" : "Cancel now";
+            fehler.textContent = j.fehler === "zu_viele_versuche" ? (de ? "Zu viele Versuche – bitte in einer Stunde noch einmal oder per E-Mail an info@pulsavi.io." : "Too many attempts – please try again in an hour or e-mail info@pulsavi.io.")
+                                 : (de ? "Das hat nicht geklappt. Bitte schreib an info@pulsavi.io." : "That didn’t work. Please e-mail info@pulsavi.io.");
+            fehler.hidden = false; $(pre + "Schritt2").hidden = true; $(pre + "Schritt1").hidden = false; return; }
+          var t = new Date(j.eingang), bis = j.bis ? new Date(j.bis) : null;
+          var zeit = de ? t.toLocaleDateString("de-DE") + " um " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr" : t.toLocaleDateString("en-GB") + " at " + t.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+          var text = de ? "Deine Kündigung ist eingegangen am " + zeit + "." : "Your cancellation was received on " + zeit + ".";
+          if (j.abo) text += de ? " Die automatische Verlängerung bei Google Play ist beendet; Premium läuft noch bis " + (bis ? bis.toLocaleDateString("de-DE") : "zum Ende des bezahlten Zeitraums") + "." : " Auto-renewal at Google Play has been stopped; Premium runs until " + (bis ? bis.toLocaleDateString("en-GB") : "the end of the paid period") + ".";
+          else if (j.konto) text += de ? " Zu diesem Konto läuft derzeit kein Premium-Abo – es wird nichts abgebucht." : " No Premium subscription is active for this account – nothing will be charged.";
+          else text += de ? " Zu den Angaben haben wir kein Konto gefunden; wir melden uns per E-Mail." : " We could not find an account for these details; we will get in touch by e-mail.";
+          text += j.mail === "ok" ? (de ? " Eine Bestätigung ist per E-Mail unterwegs." : " A confirmation e-mail is on its way.") : (de ? " Die Bestätigung per E-Mail konnte nicht verschickt werden – bitte diese Seite aufbewahren oder an info@pulsavi.io schreiben." : " The confirmation e-mail could not be sent – please keep this page or write to info@pulsavi.io.");
+          $(pre + "Ergebnis").textContent = text; $(pre + "Schritt2").hidden = true; $(pre + "Fertig").hidden = false; $(pre + "Fertig").scrollIntoView({ behavior: "smooth" });
+        })
+        .catch(function(){ b.disabled = false; b.textContent = de ? "Jetzt kündigen" : "Cancel now"; fehler.textContent = de ? "Keine Verbindung. Bitte später noch einmal oder per E-Mail an info@pulsavi.io." : "No connection. Please try again later or e-mail info@pulsavi.io."; fehler.hidden = false; $(pre + "Schritt2").hidden = true; $(pre + "Schritt1").hidden = false; });
+    });
+  }
+  richten("de", true); richten("en", false);
+})();
+</script>
+</body>
+</html>
