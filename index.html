@@ -4771,6 +4771,9 @@
      dort die eigene Breitfassung (2,16 : 1); schneidet Safari mit Leisten
      noch etwas ab, dann lieber unten als am Schriftzug oben. */
   @media (min-aspect-ratio:2/1){ #splash img{object-position:50% 35%} }
+  /* v209 (Thomas 28.10.2026): Urhebervermerk auf dem Titelbild. */
+  #splash .splashCopy{position:absolute;right:max(14px, env(safe-area-inset-right));bottom:max(10px, env(safe-area-inset-bottom));
+       font:500 11px/1.2 system-ui, sans-serif;letter-spacing:.04em;color:rgba(232,238,255,.72);text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none}
   #splash.weg{opacity:0;pointer-events:none}
   #splash.schnell{transition-duration:.18s}
   #splash[hidden]{display:none}
@@ -4924,7 +4927,7 @@
 <!-- v192/v193: das Titelbild beim Öffnen — steht da, bis das Spiel bereit ist
      und es drei Sekunden zu sehen war; ein Tipp überspringt es.
      Ausgeblendet von spiel.js (`titelbildAus`). -->
-<div id="splash" aria-hidden="true"><picture><source media="(min-aspect-ratio:2/1)" srcset="titel-breit.webp"><source media="(max-width:1000px)" srcset="titel-1280.webp"><img src="titel-1920.webp" alt="" decoding="async" fetchpriority="high"></picture></div>
+<div id="splash" aria-hidden="true"><picture><source media="(min-aspect-ratio:2/1)" srcset="titel-breit.webp"><source media="(max-width:1000px)" srcset="titel-1280.webp"><img src="titel-1920.webp" alt="" decoding="async" fetchpriority="high"></picture><small class="splashCopy">© 2026 Lightvale Studios</small></div>
 
 <noscript>
   <style>#splash{display:none}</style>
@@ -6631,7 +6634,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=208"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=209"><\/script>');
 })();
 </script>
 </body>
