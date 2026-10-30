@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "212";
+  var PULSAVI_V = "213";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -6185,6 +6185,7 @@
         <button type="button" class="quiet radKnopf" id="endRad" hidden></button>
         <!-- v192: Truhen im Vorrat (Tageskiste, Errungenschaften, Werben). -->
         <button type="button" class="quiet truheKnopf" id="endTruhe" hidden></button>
+        <button type="button" class="quiet" id="endTeilen" data-i18n="te_knopf" hidden>Share</button>
         <button class="quiet" id="endShop" data-i18n="skins">Designs</button>
         <button class="quiet" id="endMenu" data-i18n="menu">Menu</button>
       </div>
@@ -6651,7 +6652,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=212"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=213"><\/script>');
 })();
 </script>
 </body>
