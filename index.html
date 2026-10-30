@@ -22,7 +22,24 @@
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Pulsavi — free online multiplayer io game, dust to planet</title>
-<link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="exo2-latein.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+/* Gesamtcheck 30.10.2026 (Ladezeit): Die Ladezeile am Ende der Seite schreibt die Skripte erst, wenn das ganze HTML
+   gelesen ist — im langsamen Mobilfunk begann der Spielcode so erst nach 3,5 s. Hier im Kopf werden dieselben Dateien
+   schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
+   Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
+(function(){ try {
+  var PULSAVI_V = "212";
+  /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
+  var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
+  var da = ["en", "de", "es", "pt", "fr", "tr", "ru", "zh"], l = "en";
+  var w = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
+  for (var i = 0; i < w.length; i++){ var b = String(w[i]).toLowerCase().split("-")[0]; if (da.indexOf(b) >= 0){ l = b; break; } }
+  ["sprachen-" + l + ".js", "spiel.min.js"].forEach(function(f){
+    var k = document.createElement("link"); k.rel = "preload"; k.as = "script"; k.href = f + "?v=" + PULSAVI_V; document.head.appendChild(k); });
+} catch(_){} })();
+</script>
 <style>
   /* --- Eigene Schrift, auf pulsavi.io selbst gehostet -------------------
      Lora (SIL OFL 1.1, Lizenz in OFL.txt). Zwei Dateien, getrennt nach
@@ -6634,7 +6651,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=211"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=212"><\/script>');
 })();
 </script>
 </body>

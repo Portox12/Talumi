@@ -150,6 +150,14 @@
           var t = new Date(j.eingang), bis = j.bis ? new Date(j.bis) : null;
           var zeit = de ? t.toLocaleDateString("de-DE") + " um " + t.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr" : t.toLocaleDateString("en-GB") + " at " + t.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
           var text = de ? "Deine Kündigung ist eingegangen am " + zeit + "." : "Your cancellation was received on " + zeit + ".";
+          /* Nur mit Spielernamen: Bestätigung über die Adresse des Kontos (Spielernamen sind öffentlich). */
+          if (j.bestaetigen || j.keineAdresse){
+            text += j.keineAdresse
+              ? (de ? " Zu diesem Spielernamen ist keine E-Mail-Adresse hinterlegt, mit der wir die Kündigung bestätigen können. Bitte schreib an info@pulsavi.io – wir kümmern uns darum." : " There is no e-mail address on this account to confirm the cancellation with. Please write to info@pulsavi.io and we will take care of it.")
+              : (de ? " Weil nur der Spielername angegeben wurde, haben wir eine E-Mail mit einem Bestätigungsknopf an die Adresse des Kontos geschickt. Die Kündigung gilt, sobald du dort bestätigst (3 Tage gültig). So kann niemand anderes dein Abo kündigen." : " Because only the player name was given, we sent an e-mail with a confirmation button to the account’s address. The cancellation takes effect once you confirm there (valid for 3 days). This way nobody else can cancel your subscription.");
+            $(pre + "Ergebnis").textContent = text; $(pre + "Schritt2").hidden = true; $(pre + "Fertig").hidden = false; $(pre + "Fertig").scrollIntoView({ behavior: "smooth" });
+            return;
+          }
           if (j.abo) text += de ? " Die automatische Verlängerung bei Google Play ist beendet; Premium läuft noch bis " + (bis ? bis.toLocaleDateString("de-DE") : "zum Ende des bezahlten Zeitraums") + "." : " Auto-renewal at Google Play has been stopped; Premium runs until " + (bis ? bis.toLocaleDateString("en-GB") : "the end of the paid period") + ".";
           else if (j.konto) text += de ? " Zu diesem Konto läuft derzeit kein Premium-Abo – es wird nichts abgebucht." : " No Premium subscription is active for this account – nothing will be charged.";
           else text += de ? " Zu den Angaben haben wir kein Konto gefunden; wir melden uns per E-Mail." : " We could not find an account for these details; we will get in touch by e-mail.";
@@ -160,6 +168,26 @@
     });
   }
   richten("de", true); richten("en", false);
+  /* Bestätigungslink aus der Mail (Kündigung per Spielername): kuendigen.html#k=… */
+  var k = /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash);
+  if (k){
+    try { history.replaceState(null, "", location.pathname + location.search); } catch(_){}
+    var zeigen = function(textDe, textEn){
+      ["de", "en"].forEach(function(pre){ $(pre + "Schritt1").hidden = true; $(pre + "Schritt2").hidden = true; $(pre + "Ergebnis").textContent = pre === "de" ? textDe : textEn; $(pre + "Fertig").hidden = false; });
+      $("deFertig").scrollIntoView();
+    };
+    zeigen("Kündigung wird bestätigt …", "Confirming cancellation …");
+    fetch(API + "/konto/kuendigung/bestaetigen", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ marke: k[1] }) })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(j){
+        if (!j.ok) return zeigen("Dieser Bestätigungslink ist abgelaufen oder wurde schon benutzt. Bitte kündige noch einmal mit der E-Mail-Adresse deines Kontos oder schreib an info@pulsavi.io.",
+                                 "This confirmation link has expired or was already used. Please cancel again with your account’s e-mail address or write to info@pulsavi.io.");
+        var t = new Date(j.eingang), bis = j.bis ? new Date(j.bis) : null;
+        zeigen("Deine Kündigung ist bestätigt (" + t.toLocaleString("de-DE") + ")." + (j.abo ? " Die automatische Verlängerung bei Google Play ist beendet; Premium läuft noch bis " + (bis ? bis.toLocaleDateString("de-DE") : "zum Ende des bezahlten Zeitraums") + "." : " Zu diesem Konto läuft derzeit kein Premium-Abo – es wird nichts abgebucht.") + (j.mail === "ok" ? " Eine Bestätigung ist per E-Mail unterwegs." : ""),
+               "Your cancellation is confirmed (" + t.toLocaleString("en-GB") + ")." + (j.abo ? " Auto-renewal at Google Play has been stopped; Premium runs until " + (bis ? bis.toLocaleDateString("en-GB") : "the end of the paid period") + "." : " No Premium subscription is active for this account – nothing will be charged.") + (j.mail === "ok" ? " A confirmation e-mail is on its way." : ""));
+      })
+      .catch(function(){ zeigen("Keine Verbindung. Bitte öffne den Link später noch einmal oder schreib an info@pulsavi.io.", "No connection. Please open the link again later or write to info@pulsavi.io."); });
+  }
 })();
 </script>
 </body>
