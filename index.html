@@ -6624,7 +6624,7 @@
   var bau = !lokal || /[?&]bau=1(&|$)/.test(location.search);
   var dateien = ["sprachen.js", "spiel.js"];
   if (bau){
-    var da = ["en", "de", "es", "pt", "fr", "tr", "ru"], l = "en";
+    var da = ["en", "de", "es", "pt", "fr", "tr", "ru", "zh"], l = "en";
     var w = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
     for (var i = 0; i < w.length; i++){ var b = String(w[i]).toLowerCase().split("-")[0]; if (da.indexOf(b) >= 0){ l = b; break; } }
     dateien = ["sprachen-" + l + ".js", "spiel.min.js"];
@@ -6634,7 +6634,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=210"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=211"><\/script>');
 })();
 </script>
 </body>
