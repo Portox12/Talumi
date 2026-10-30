@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "215";
+  var PULSAVI_V = "216";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -533,6 +533,10 @@
   #bonusBox.klein h2 em .wochen{font-size:11px;letter-spacing:0;text-transform:none;color:var(--paper-2)}
   /* Das große Bonusfenster */
   .bonusKarte{max-width:min(560px,100%);text-align:center}
+  .bonusKopf,.bonusTitel,.bonusFuss,.bonusMehr,.bonusKnoepfe{display:contents}
+  .bonusKarte h1{font-size:34px;margin-bottom:4px}
+  #bonusVeilSub{margin:0 0 14px}
+  #bonusVeilWochen{margin:10px 0 0;color:var(--brass)}
   .bonusKarte .beads.gross{gap:6px;margin:0}
   .bonusKarte .beads.gross .bead{height:72px}
   .bead .bb img.ik{width:22px;height:22px;display:block}
@@ -1069,6 +1073,49 @@
     .kryoZeichen{width:16px;height:16px}
     .streakHinweis{margin-top:5px}
   }
+  .streakLeiste span i{font-style:normal}
+  /* Tagesbonus auf flachen Telefonen (v216, Thomas 30.10.2026: „passt nicht
+     auf mein huawei p30 … ohne alles zusammen zu quetschen“; 780 × 360 hatte
+     226 Punkte zu wenig). Nichts wird kleiner als nötig, das Fenster wird nur
+     quer gelegt: oben Titel und Streak nebeneinander, darunter die sieben
+     Tage als das Wichtigste, unten links Ansporn, rechts die Knöpfe. Die
+     allgemeine Erklärung zum Streak tritt zurück; was heute wirklich gilt
+     (`sk_schutz`, `sk_neu`), bleibt stehen. */
+  @media (max-height:520px) and (min-width:560px){
+    #bonusVeil{--rand-y:8px;--rand-x:10px;place-items:center}
+    .bonusKarte{max-width:min(900px,100%);padding:10px 14px 12px;text-align:left}
+    .bonusKopf{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .bonusTitel{display:block;min-width:0}
+    .bonusKarte h1{font-size:24px;line-height:1.1;margin:0}
+    #bonusVeilSub{margin:2px 0 0;font-size:13px}
+    #bonusStreak{flex:0 1 auto;margin:0;grid-template-columns:repeat(3,auto);gap:6px}
+    #bonusStreak > div{min-width:72px;padding:4px 9px}
+    #bonusStreak b{font-size:15px}
+    #bonusStreak span{margin-top:1px;letter-spacing:.03em}
+    #bonusStreak span i{display:none}
+    #bonusStreak .kryoReihe{height:18px;gap:3px}
+    #bonusStreak .kryoZeichen{width:14px;height:14px}
+    .bonusKarte .beads.gross{margin:8px 0}
+    .bonusKarte .beads.gross .bead{height:clamp(82px,calc(25 * var(--vh, 1vh)),110px)}
+    .bonusFuss{display:flex;align-items:flex-end;gap:14px}
+    .bonusMehr{display:block;flex:1 1 auto;min-width:0}
+    #bonusVeilWochen{margin:0 0 4px;font-size:12.5px}
+    .bonusMehr .streakHinweis{margin:0 0 4px;font-size:11.5px}
+    .bonusMehr .streakHinweis.erkl{display:none}
+    #bonusAnsporn p.hinweis:not(.wahlKopf){display:none}
+    #bonusAnsporn .wahlKopf{margin:0 0 4px}
+    .ziele{justify-content:flex-start;gap:6px}
+    .ziele button.ziel{flex:1 1 0;min-width:0;padding:4px 6px;display:grid;grid-template-columns:auto minmax(0,1fr);
+         align-items:center;justify-items:start;column-gap:5px;text-align:left}
+    .ziele .ziel img.ik.hd{grid-row:1 / span 2;width:50px;height:50px;margin:-2px 0}
+    .ziele .ziel b{font-size:12px;line-height:1.15;align-self:end}
+    .ziele .ziel small{font-size:11px;line-height:1.15;align-self:start}
+    .bonusKnoepfe{display:flex;flex-direction:column;gap:2px;flex:0 0 168px}
+    .bonusKarte #bonusVeilGo{margin:0;height:46px}
+    #bonusVeilSpaeter{margin:0;min-height:44px}
+  }
+  @media (max-width:559px){ .ziele{flex-wrap:wrap} }
+  @media (max-height:820px){ .bonusMehr .streakHinweis.erkl{display:none} }
   /* Schritt 96: Ergebnisbildschirm ohne Scrollen auf Handys im Querformat.
      Die Einzelposten der Abrechnung weichen der Summe, der Tastaturhinweis
      entfällt auf Touchgeräten, und „Nochmal" rückt nach oben. */
@@ -1297,8 +1344,8 @@
      seit Schritt 79 aus genau demselben Grund. */
   #accountVeil[hidden]{display:none}
 
-  .anmKopf{display:flex;align-items:center;justify-content:space-between;gap:16px;
-       max-width:1120px;margin:0 auto;padding:20px 26px 0;min-height:46px}
+  .anmKopf{grid-column:1;grid-row:1;display:flex;align-items:center;justify-content:space-between;gap:16px;
+       padding:24px 28px 0;min-width:0}
   .anmSprache{display:flex;align-items:center;gap:10px;min-width:0;justify-content:flex-end;position:relative}
   /* Sprachknopf des Anmeldebildschirms (v161): Kürzel + Pfeil, Glas wie die
      Konsolenknöpfe; das Menü klappt darunter auf (rechtsbündig). */
@@ -1325,16 +1372,17 @@
      über die ganze Breite, und zwischen Überschrift und Formular stand ein
      halber Meter Leere. Die Konsole darf breit sein — sie hat drei Spalten
      voller Inhalt —, dieser Bildschirm hat zwei. */
-  .anmFenster{max-width:1120px;margin:18px auto 0;border-radius:18px;border:1px solid var(--line-hell);
+  .anmFenster{max-width:1120px;margin:calc(7 * var(--vh, 1vh)) auto 0;border-radius:18px;border:1px solid var(--line-hell);
        background:linear-gradient(180deg, var(--fenster-1), var(--fenster-2));
        box-shadow:0 36px 100px rgba(0,0,0,.55);
-       display:grid;grid-template-columns:1.05fr .95fr;overflow:hidden}
+       display:grid;grid-template-columns:1.05fr .95fr;grid-template-rows:auto 1fr auto;overflow:hidden}
   .anmSp{padding:26px 28px;min-width:0}
-  .anmLinks{display:flex;flex-direction:column;justify-content:center;gap:2px}
-  .anmRechts{border-left:1px solid var(--line)}
-  #accountVeil h1{font-family:var(--disp);font-weight:700;letter-spacing:-.02em;
-       font-size:clamp(36px,calc(6 * var(--vw, 1vw)),54px);line-height:.95;margin:0 0 4px;
-       border:0;padding:0;color:var(--paper)}
+  .anmLinks{grid-column:1;grid-row:2;display:flex;flex-direction:column;justify-content:center;gap:2px}
+  .anmRechts{grid-column:2;grid-row:1 / span 2;border-left:1px solid var(--line)}
+  #accountVeil h1{margin:0;padding:0;border:0;font:inherit}
+  #accountVeil .konsMarke{margin-right:0}
+  #accountVeil .konsMarke i{width:34px;height:34px}
+  #accountVeil .konsMarke b{font-size:21px}
   #accountVeil .sub{font-family:var(--sans);font-size:16px;line-height:1.55;margin:10px 0 16px;
        max-width:34ch;color:var(--paper)}
   .anmPunkte{list-style:none;margin:0;padding:0;display:grid;gap:7px}
@@ -1342,6 +1390,8 @@
        color:var(--paper-2)}
   .anmPunkte li::before{content:"";position:absolute;left:2px;top:.55em;width:7px;height:7px;
        border-radius:50%;background:var(--brass);box-shadow:0 0 9px var(--brass)}
+  /* In der App stimmt „im Browser, kein Download“ nicht, und der Text für Suchmaschinen ist dort sinnlos. */
+  .app .anmPunkte li:first-child,.app .anmText{display:none}
   #anmOnline{margin-top:14px;color:var(--brass)}
   #anmOnline[hidden]{display:none}
   /* Happy Hour: läuft sie gerade, steht die Zeile in hellem Messing mit
@@ -1406,6 +1456,7 @@
      volle Breite, dunkle Schrift auf Messing (Grundregel für Hauptknöpfe). */
   .anmKlein #guestBtn:not(.quiet){flex:1 1 100%;margin-top:8px;padding:0;height:44px;font-size:14px;font-weight:600;border-radius:11px}
   #accountVeil .hintline{margin-top:9px}
+  #accountVeil .hintline a{color:var(--brass)}
 
   /* Rechtliches nur noch klein ganz unten (v109, Thomas 22.09.2026: „stehen
      mir beim Login-Fenster zu sehr im Mittelpunkt. Das interessiert kaum
@@ -1439,7 +1490,8 @@
 
   /* Zwei Spalten haben ihre Grenze, wo eine Zeile zu kurz zum Lesen wird. */
   @media (max-width:820px){
-    .anmFenster{grid-template-columns:1fr}
+    .anmFenster{grid-template-columns:1fr;grid-template-rows:none}
+    .anmKopf,.anmLinks,.anmRechts,.anmFuss{grid-column:1;grid-row:auto}
     .anmRechts{border-left:0;border-top:1px solid var(--line)}
     .anmLinks{padding-bottom:6px}
     #accountVeil .sub{margin-bottom:12px}
@@ -1450,16 +1502,8 @@
      Spalten bleiben **nebeneinander** — gestapelt läge „Als Gast spielen"
      unter dem Bildrand, und genau das war der alte Zustand. */
   @media (max-height:560px){
-    .anmKopf{padding:10px 14px 0;min-height:0}
     .konsMarke b{font-size:13px;letter-spacing:.2em}
     .anmSprLabel{display:none}
-    .anmFenster{margin:10px 14px 0;max-width:none;border-radius:14px;grid-template-columns:.92fr 1.08fr}
-    .anmSp{padding:14px 16px}
-    #accountVeil h1{font-size:clamp(26px,calc(5.4 * var(--vh, 1vh)),38px)}
-    #accountVeil .sub{font-size:13px;line-height:1.45;margin:6px 0 10px;max-width:30ch}
-    .anmPunkte{gap:4px}
-    .anmPunkte li{font-size:11.5px;padding-left:17px}
-    .anmPunkte li::before{width:6px;height:6px}
     #accountVeil label{margin-bottom:3px;font-size:11px}
     #accountVeil form label + input{margin-bottom:7px}
     .anmOder{margin:9px 0 7px}
@@ -1480,24 +1524,6 @@
        Überschrift „Anmelden" über dem Knopf „Anmelden" ist verzichtbar. */
     #accountVeil:not([data-schritt]) .anmFormKopf{display:none}
     #accountVeil .hintline{margin-top:6px;font-size:11px}
-    /* Unter die linke Spalte: Die hat hier Luft, die rechte nicht. */
-    .anmFuss{grid-column:1;grid-row:2;border-top:0;padding:0 16px 12px;
-         justify-content:flex-start;gap:4px 0;font-size:11px;align-self:end}
-    /* Drei Links passen in eine Zeile, vier brachen um — und die zweite
-       Zeile begann dann mit einem verwaisten Punkt. „Mehr über das Spiel"
-       steht hochkant weiter da (dort sieht auch Googles Bot die Seite). */
-    .anmFuss a[href="about.html"], body.touch .anmFuss a[href="about.html"]{display:none}
-    .anmFenster{align-items:stretch}
-    .anmLinks{grid-column:1;grid-row:1}
-    .anmRechts{grid-column:2;grid-row:1 / span 2}
-    /* Der Fließtext für Trefferlisten verschwindet **nur im Querformat auf
-       einem flachen Schirm** — also genau dort, wo das Spiel gespielt wird
-       und wo er 770 Punkte Scrollweg kostet (gemessen auf 844 × 390).
-
-       Für Suchmaschinen ändert das nichts: Googles Bot sieht die Seite
-       hochkant (412 × 732), und bei 732 Punkten Höhe greift diese Regel
-       nicht. Der Text steht dort vollständig da, wie bisher. */
-    .anmText{display:none}
     /* Sieben ausgeschriebene Sprachnamen kosten hier eine ganze Zeile Höhe.
        Gemessen auf 844 × 390: Mit vollen Namen lag „Als Gast spielen" 30
        Punkte unter dem Bildrand, mit Kürzeln steht er im Bild. */
@@ -1520,19 +1546,10 @@
      auskommen. Geholt wird an den Abständen, nicht an den Tippflächen —
      die bleiben bei 44 Punkten. Gemessen: zusammen 23 Punkte. */
   @media (max-height:470px){
-    .anmFenster{margin-top:6px}
-    .anmSp{padding:10px 14px}
     #accountVeil form label + input{margin-bottom:4px}
     #acctGo{margin-top:3px}
     .anmKlein{margin-top:5px}
     #guestBtn{margin-top:5px}
-    .anmFuss{padding-bottom:10px}
-  }
-  @media (max-height:420px){
-    .anmPunkte{display:none}
-    #accountVeil .sub{margin-bottom:4px}
-    .anmFenster{margin-top:6px}
-    .anmSp{padding:8px 14px}
   }
   /* Schmal und hoch (Telefon hochkant — das Spiel verlangt Querformat, aber
      die Anmeldung erscheint kurz, bevor der Drehhinweis greift). */
@@ -1569,6 +1586,38 @@
     .anmFuss{gap:8px 12px;font-size:11.5px}
     .anmRechts .two{flex-direction:column}
     .anmText{padding:20px 14px 30px}
+  }
+
+  /* Flache Telefone im Querformat (v216, Thomas 30.10.2026 vom Huawei P30:
+     zweimal „Pulsavi“, die Sprachwahl in einer eigenen Zeile, und man musste
+     scrollen; 780 × 360 hatte 12 Punkte zu wenig). Das Fenster füllt jetzt
+     den Schirm: Links steht das Titelbild — sein Schriftzug mit Sonne ist der
+     Name —, darunter Sprache und Rechtliches, rechts das Formular. Das Bild
+     hat das Telefon vom Start ohnehin schon geladen. Das `h1` bleibt für
+     Vorleser im Dokument. Der Fließtext für Trefferlisten fällt hier weg: Das
+     ist die Größe, in der gespielt wird, und Googles Bot sieht die Seite
+     hochkant (412 × 732). */
+  @media (max-height:560px) and (min-width:600px){
+    #accountVeil{padding:calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right))
+                 calc(8px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left))}
+    .anmFenster{position:relative;width:100%;margin:0;max-width:none;border-radius:14px;
+         min-height:calc(100 * var(--vh, 1vh) - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+         grid-template-columns:minmax(0,.86fr) minmax(0,1fr);grid-template-rows:1fr auto auto}
+    .anmFenster::before{content:"";grid-column:1;grid-row:1 / -1;
+         background:linear-gradient(180deg,transparent 54%,rgba(5,8,23,.9)),
+                    linear-gradient(90deg,transparent 62%,var(--fenster-1)),
+                    url(titel-breit.webp) left center/cover no-repeat}
+    .anmKopf{grid-column:1;grid-row:2;position:relative;justify-content:flex-start;padding:0 14px}
+    .anmKopf .konsMarke{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .anmLinks{display:none}
+    .anmRechts{grid-column:2;grid-row:1 / -1;align-self:center;border-left:0;border-top:0}
+    .anmSp{padding:8px 16px 8px 12px}
+    .anmFuss{grid-column:1;grid-row:3;position:relative;justify-content:flex-start;padding:6px 14px 10px;font-size:11px}
+    .anmFuss a[href="about.html"], body.touch .anmFuss a[href="about.html"]{display:none}
+    .anmFuss a{color:var(--paper-2)}
+    .anmText{display:none}
+    /* Das Menü klappt nach oben, zweispaltig: acht Sprachen passen ins Bild. */
+    #anmLangMenu{top:auto;bottom:calc(100% + 6px);left:0;right:auto;grid-template-columns:1fr 1fr;min-width:236px}
   }
 
   /* =====================================================================
@@ -4256,11 +4305,23 @@
      bleiben nur für Vorleser (die Felder tragen Platzhalter). */
   /* Gestapelt (schmal) oder flach: beim Anlegen ohne die Werbespalte. */
   @media (max-width:820px){ #accountVeil[data-schritt] .anmLinks{display:none} }
+  @media (max-height:560px) and (min-width:600px){
+    /* Schritt 2 braucht die ganze Breite: Das Bild tritt zurück, oben stehen
+       Sonne, Überschrift und Sprache in einer Zeile (v216). */
+    #accountVeil[data-schritt="2"] .anmFenster{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto}
+    #accountVeil[data-schritt="2"] .anmFenster::before{display:none}
+    #accountVeil[data-schritt="2"] .anmKopf{grid-column:1;grid-row:1;justify-content:space-between;padding:8px 14px 0}
+    #accountVeil[data-schritt="2"] .anmKopf .konsMarke{position:static;width:auto;height:auto;overflow:visible;clip:auto}
+    #accountVeil[data-schritt="2"] .konsMarke i{width:26px;height:26px}
+    #accountVeil[data-schritt="2"] .konsMarke b{font-size:15px}
+    #accountVeil[data-schritt="2"] .anmRechts{grid-column:1;grid-row:2;align-self:start;padding:4px 14px 0}
+    #accountVeil[data-schritt="2"] .anmFuss{grid-column:1;grid-row:3;justify-content:center;padding:0 14px 3px}
+    #accountVeil[data-schritt="2"] .anmKlein{margin-top:0}
+    #accountVeil[data-schritt="2"] .anmFormKopf{position:absolute;top:18px;left:0;right:0;margin:0;text-align:center;pointer-events:none}
+    #accountVeil[data-schritt="2"] .anmFormKopf p{display:none}
+    #accountVeil[data-schritt="2"] #anmLangMenu{top:calc(100% + 6px);bottom:auto;left:auto;right:0}
+  }
   @media (max-height:560px){
-    #accountVeil[data-schritt] .anmLinks{display:none}
-    #accountVeil[data-schritt] .anmFenster{grid-template-columns:1fr}
-    #accountVeil[data-schritt] .anmRechts{grid-column:1;grid-row:1;border-left:0}
-    #accountVeil[data-schritt] .anmFuss{grid-column:1;grid-row:2;padding-top:4px}
     #accountVeil[data-schritt="2"] .feld > label{position:absolute;width:1px;height:1px;overflow:hidden;
          clip:rect(0 0 0 0);white-space:nowrap;margin:0}
     #accountVeil[data-schritt="2"] .feld > input,#accountVeil[data-schritt="2"] .feld > select,
@@ -4524,7 +4585,25 @@
   button.shopPaket{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
   button.shopPaket:disabled{opacity:.55;cursor:default}
   .pbHinweis{font-size:11px;line-height:1.35;color:var(--paper-2);margin:6px 0 0;max-width:100%}
-  .pmPreis .pmKauf.jahr{opacity:.92}
+  .pmAngebot{position:fixed;inset:0;z-index:25;display:grid;place-items:center;overflow:auto;
+     padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+     background:color-mix(in srgb, var(--ink) 88%, transparent)}
+  .pmAngebot[hidden]{display:none}
+  .pmBlatt{position:relative;width:100%;max-width:540px;padding:14px 18px 12px;border-radius:18px;border:1px solid rgba(255,197,61,.45);
+     background:linear-gradient(180deg,var(--fenster-1),var(--fenster-2));box-shadow:0 30px 90px rgba(0,0,0,.6);text-align:center}
+  .pmAnTitel{display:block;padding:0 40px;font:800 21px/1.15 var(--disp);color:var(--paper)}
+  .pmZu{position:absolute;top:2px;right:2px;margin:0;width:44px;height:44px;padding:0;background:none;border:0;box-shadow:none;
+     color:var(--paper-2);font-size:24px;line-height:1}
+  .pmZu:hover:not(:disabled){background:none;color:var(--paper)}
+  .pmPlaene{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin:10px 0 0}
+  .pmPlan{margin:0;width:auto;min-height:112px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 6px;
+     border-radius:14px;border:1px solid var(--line-hell);background:var(--glas);color:var(--paper);box-shadow:none;cursor:pointer}
+  .pmPlan.jahr{border:2px solid var(--gold);background:linear-gradient(180deg,rgba(255,197,61,.2),rgba(255,197,61,.05))}
+  .pmPlan:hover:not(:disabled){background:var(--plate)}
+  .pmPlan span{font:700 12.5px/1.2 var(--disp);color:#cfd8f5}
+  .pmPlan b{font:900 26px/1 var(--disp);color:var(--gold)}
+  .pmPlan small{font:700 11.5px/1.2 var(--disp);color:#cfd8f5}
+  .pmPlan em{margin-top:3px;padding:4px 9px;border-radius:999px;background:var(--gold);color:#241500;font:800 11.5px/1.15 var(--disp);font-style:normal}
   .pmPreis .pmVerwalten{margin-top:6px;background:none;border:1px solid var(--line);color:var(--paper-2);font:700 12px/1 var(--disp);padding:8px 12px;border-radius:10px}
   .shopName{font-family:var(--disp);font-weight:800;color:var(--gold);text-shadow:0 0 16px rgba(255,197,61,.4)}
   .shopKauf{border-radius:14px}
@@ -4609,9 +4688,57 @@
   @keyframes trRappel{0%{transform:rotate(-2.4deg) translateX(-2px)}50%{transform:rotate(2.4deg) translateX(2px)}100%{transform:rotate(-2.4deg) translateX(-2px)}}
   /* Geöffnet: Der Inhalt ist die Überschrift — Titel weg, Truhe kleiner,
      damit alles samt Knopf auf ein iPhone quer passt (auch mit Safari-Leisten). */
-  .truheAuf.offen .trTitel,.truheAuf.offen .trUnter,.truheAuf.offen .trTippen{display:none}
-  .truheAuf.offen .trKnopf .truhe{animation:none;width:min(calc(40 * var(--vh, 1vh)), 190px);height:min(calc(40 * var(--vh, 1vh)), 190px);margin-top:calc(4 * var(--vh, 1vh))}
-  .truheAuf.offen .truhe .trDeckel{transform:translate(-14px,-62px) rotate(-13deg)}
+  .truheAuf .truhe{overflow:visible}
+  .truheAuf.offen .trTippen{visibility:hidden}
+  .truheAuf.offen .trKnopf .truhe{animation:none}
+  .truheAuf.offen .truhe .trDeckel{transform:translate(-22px,-84px) rotate(-17deg)}
+  /* v216 (Thomas 30.10.2026: „schön öffnen, dann verschwinden und das item … groß im vordergrund“):
+     Der Deckel springt auf (`offen`), die Truhe zerfällt in Licht (`zieht`), dann steht der Gewinn allein da (`gewinn`). */
+  .truheAuf.zieht .trKnopf{animation:trWeg .34s ease-in both}
+  @keyframes trWeg{to{opacity:0;transform:scale(1.35)}}
+  .truheAuf.zieht::after{content:"";position:absolute;inset:0;pointer-events:none;
+     background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.95),rgba(255,236,190,.5) 22%,transparent 58%);animation:trBlitz .62s ease-out both}
+  @keyframes trBlitz{from{opacity:0}18%{opacity:1}to{opacity:0}}
+  .truheAuf.gewinn .trTitel,.truheAuf.gewinn .trUnter,.truheAuf.gewinn .trTippen,.truheAuf.gewinn .trKnopf{display:none}
+  .truheAuf.gewinn.alle .trTitel{display:block}
+  .truheAuf.gewinn:not(.ultra){background:radial-gradient(ellipse 80% 110% at 50% 46%,#12205f,#04061a 62%,#03030c)}
+  .trItem{--tr-glanz:rgba(120,235,255,.5);position:relative;width:min(calc(50 * var(--vh, 1vh)), 300px);height:min(calc(50 * var(--vh, 1vh)), 300px);
+     display:grid;place-items:center;color:#9fe9ff;animation:trGross .62s cubic-bezier(.2,1.5,.35,1) both}
+  .trItem[hidden]{display:none}
+  .truheAuf.epi .trItem{--tr-glanz:rgba(190,140,255,.6);color:#d9b6ff}
+  .truheAuf.leg .trItem{--tr-glanz:rgba(255,205,90,.7);color:#ffe08a}
+  .trItem::before{content:"";position:absolute;inset:-18%;border-radius:50%;
+     background:radial-gradient(circle,var(--tr-glanz),transparent 66%);animation:trLicht 2.2s ease-in-out infinite}
+  .trItem::after{content:"";position:absolute;inset:-26%;border-radius:50%;opacity:.3;
+     background:repeating-conic-gradient(from 0deg,var(--tr-glanz) 0 7deg,transparent 7deg 22.5deg);
+     -webkit-mask:radial-gradient(circle,#000 30%,transparent 68%);mask:radial-gradient(circle,#000 30%,transparent 68%);animation:shDreh 16s linear infinite}
+  .trItem > *{position:relative;z-index:1;width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 8px 22px rgba(0,0,0,.55));animation:trSchweb 3.2s ease-in-out infinite}
+  .trItem .iriKristall,.trItem .ico,.trItem .kryoZeichen{width:82%;height:82%}
+  .truheAuf .trItem > img{width:124%;height:124%;max-width:none}
+  @keyframes trGross{from{opacity:0;transform:scale(.25) rotate(-10deg)}to{opacity:1;transform:none}}
+  .truheAuf.gewinn{cursor:default}
+  /* Auf dem Telefon quer steht der Gewinn links, so groß es geht, und die Worte rechts daneben. */
+  @media (max-height:520px) and (min-width:560px){
+    .truheAuf.gewinn:not(.alle) .trFeld{display:grid;grid-template-columns:auto minmax(0,300px);justify-content:center;align-items:center;
+       justify-items:center;column-gap:30px;max-width:none}
+    .truheAuf.gewinn:not(.alle) .trItem{grid-row:1 / span 3;width:calc(68 * var(--vh, 1vh));height:calc(68 * var(--vh, 1vh))}
+  }
+  .trListe{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;width:min(720px,100%);
+     max-height:calc(62 * var(--vh, 1vh));overflow:auto;padding:4px;margin:6px 0 0}
+  .trListe[hidden]{display:none}
+  .trKachel{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:8px 6px;border-radius:12px;
+     border:1px solid var(--line-hell);background:var(--glas);color:#9fe9ff;text-align:center;animation:trGross .4s ease-out both}
+  .trKachel.epi{border-color:rgba(190,140,255,.7);color:#d9b6ff}
+  .trKachel.leg{border-color:rgba(255,197,61,.8);color:#ffe08a}
+  .trKachel > span{width:50px;height:50px;display:grid;place-items:center}
+  .trKachel > span > *{width:100%;height:100%;object-fit:contain}
+  .trKachel b{font:800 13px/1.15 var(--disp);color:#fff;overflow-wrap:anywhere}
+  .trKachel small{font:600 11px/1.2 var(--sans);color:var(--paper-2)}
+  .trAlle{position:absolute;right:calc(8px + env(safe-area-inset-right));bottom:calc(4px + env(safe-area-inset-bottom));margin:0;width:auto;
+     min-width:44px;min-height:44px;padding:0 8px;background:none;border:0;box-shadow:none;color:var(--paper-2);
+     font:600 11px/1 var(--sans);text-decoration:underline;text-underline-offset:2px;opacity:.72}
+  .trAlle:hover:not(:disabled){background:none;opacity:1}
+  .trAlle[hidden]{display:none}
   .truheAuf.offen .truhe .trLicht{opacity:1;animation:trLicht 1.6s ease-in-out infinite}
   .truheAuf.offen .truhe .trStrahlen{opacity:.2;animation:shDreh 14s linear infinite}
   .truheAuf.offen.epi .truhe .trStrahlen{fill:#d9b6ff;opacity:.3}
@@ -4619,7 +4746,7 @@
   @keyframes trLicht{0%,100%{opacity:.85}50%{opacity:1}}
   .trTippen{margin:0;min-height:20px;font:700 15px/1.3 var(--disp);color:var(--brass-hell);animation:trPuls 1.3s ease-in-out infinite}
   @keyframes trPuls{0%,100%{opacity:.55}50%{opacity:1}}
-  .trLohn{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:-6px;animation:jbAuf .55s cubic-bezier(.2,1.6,.4,1) both}
+  .trLohn{display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:6px;animation:jbAuf .55s cubic-bezier(.2,1.6,.4,1) both}
   .trLohn[hidden]{display:none}
   .trLohn small{font:800 12px/1.2 var(--sans);letter-spacing:.3em;text-transform:uppercase;color:#8ff3ff}
   .truheAuf.epi .trLohn small{color:#d9b6ff} .truheAuf.leg .trLohn small{color:#ffe08a}
@@ -4631,7 +4758,8 @@
   #trWeiter{margin:8px 0 0;width:auto;min-width:200px;min-height:46px;padding:0 26px;font-size:16px}
   #trWeiter[hidden],.trSpaeter[hidden]{display:none}
   .trSpaeter{margin:6px 0 0;width:auto;min-height:44px;padding:0 18px;background:none;border:0;color:var(--paper-2)}
-  @media (prefers-reduced-motion:reduce){ .trKnopf .truhe,.truheAuf.rappelt .trKnopf .truhe,.trTippen,.trLohn,.truheAuf.offen .truhe .trStrahlen,.truheAuf.offen .truhe .trLicht{animation:none}
+  @media (prefers-reduced-motion:reduce){ .trKnopf .truhe,.truheAuf.rappelt .trKnopf .truhe,.trTippen,.trLohn,.truheAuf.offen .truhe .trStrahlen,.truheAuf.offen .truhe .trLicht,
+     .truheAuf.zieht .trKnopf,.truheAuf.zieht::after,.trItem,.trItem::before,.trItem::after,.trItem > *,.trKachel{animation:none}
      .truhe .trDeckel{transition:none} }
   /* ---- v192: Werbe-Stufen ---------------------------------------------- */
   .werbeStufen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:8px 0 10px;white-space:normal}   /* v197: .plate drumherum ist nowrap — „+1 % de velocidade“ ragte auf dem Tablet hinaus */
@@ -4909,9 +5037,9 @@
   .ukPreisZeile{display:inline-flex;align-items:center;gap:4px;vertical-align:middle}
   .ukPreisZeile b{font-weight:800}
   img.ukGewinn{width:min(calc(48 * var(--vh, 1vh)), 240px);height:auto;filter:drop-shadow(0 0 26px rgba(178,140,255,.7))}
-  .truheAuf.ultra.offen .trKnopf img.ukGewinn{animation:ukDreh 6s ease-in-out infinite}
+  .truheAuf.ultra .trItem img.ukGewinn{animation:ukDreh 6s ease-in-out infinite}
   @keyframes ukDreh{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-  @media (prefers-reduced-motion:reduce){ .truheAuf.ultra.offen .trKnopf img.ukGewinn{animation:none} }
+  @media (prefers-reduced-motion:reduce){ .truheAuf.ultra .trItem img.ukGewinn{animation:none} }
   @media (max-width:760px){
     .shopUltra{flex-wrap:wrap} .ukDesigns{margin-left:0;width:100%;justify-content:center}
     .shopReihe{grid-template-columns:repeat(3,minmax(0,1fr))} .shopBreit{grid-template-columns:1fr}
@@ -5209,21 +5337,22 @@
 
 <div class="veil" id="accountVeil">
 
-  <div class="anmKopf">
-    <div class="konsMarke"><i></i><b>Pulsavi</b></div>
-    <div class="anmSprache">
-      <span class="anmSprLabel" data-i18n="language">Language</span>
-      <!-- v161 (Thomas: „die Sprachenauswahl ist so groß — ein schönes
-           Drop-down"): ein Knopf mit dem Kürzel, darunter dasselbe Menü wie
-           im Hangar (`sprachMenue` in spiel.js). -->
-      <button type="button" class="anmLangBtn" id="anmLangBtn" aria-haspopup="menu" aria-expanded="false">EN</button>
-      <div class="langMenu anmLangMenu" id="anmLangMenu" role="menu" hidden></div>
-    </div>
-  </div>
-
   <div class="anmFenster">
+    <!-- v216 (Thomas 30.10.2026, Huawei P30): Schriftzug mit Sonne und Sprachwahl
+         stehen im Fenster, nicht mehr in einer eigenen Zeile darüber, und das
+         zweite „Pulsavi“ ist weg. -->
+    <div class="anmKopf">
+      <h1 class="konsMarke"><i></i><b>Pulsavi</b></h1>
+      <div class="anmSprache">
+        <span class="anmSprLabel" data-i18n="language">Language</span>
+        <!-- v161 (Thomas: „die Sprachenauswahl ist so groß — ein schönes
+             Drop-down"): ein Knopf mit dem Kürzel, darunter dasselbe Menü wie
+             im Hangar (`sprachMenue` in spiel.js). -->
+        <button type="button" class="anmLangBtn" id="anmLangBtn" aria-haspopup="menu" aria-expanded="false">EN</button>
+        <div class="langMenu anmLangMenu" id="anmLangMenu" role="menu" hidden></div>
+      </div>
+    </div>
     <div class="anmSp anmLinks">
-      <h1>Pulsavi</h1>
       <p class="sub" data-i18n="tagline">You begin as a grain of dust. Swallow stardust, swallow rivals, and pull
         yourself into a world with rings and moons of your own.</p>
       <ul class="anmPunkte">
@@ -5276,19 +5405,19 @@
         </div>
         <div class="feld" id="acctNameRow" hidden>
           <label for="acctName" data-i18n="designation">Name</label>
-          <input type="text" id="acctName" maxlength="14" autocomplete="nickname"
+          <input type="text" id="acctName" maxlength="14" autocomplete="nickname" enterkeyhint="next"
                  autocapitalize="off" spellcheck="false" placeholder="Choose a player name"
                  data-i18n-ph="namepick">
         </div>
         <div class="feld" id="acctMailFeld">
           <label for="acctMail" data-i18n="k_email">E-mail</label>
-          <input type="email" id="acctMail" autocomplete="email" autocapitalize="off"
+          <input type="email" id="acctMail" autocomplete="email" autocapitalize="off" enterkeyhint="next"
                  spellcheck="false" inputmode="email" placeholder="name@beispiel.de">
         </div>
         <div class="feld" id="acctPwFeld">
           <label for="acctPw" data-i18n="k_pw">Password</label>
           <div class="pwFeld">
-            <input type="password" id="acctPw" autocomplete="current-password">
+            <input type="password" id="acctPw" autocomplete="current-password" enterkeyhint="go">
             <!-- Das Auge zeigt das Passwort (statt es zweimal einzutippen). -->
             <button type="button" id="acctPwAuge" class="pwAuge" aria-pressed="false"
                     data-i18n-name="k_pw_zeigen">
@@ -5912,12 +6041,30 @@
     <p class="trUnter" id="trUnter"></p>
     <button type="button" class="trKnopf" id="trKnopf"><span id="trBild"></span></button>
     <p class="trTippen" id="trTippen"></p>
+    <div class="trItem" id="trItem" hidden></div>
     <div class="trLohn" id="trLohn" hidden>
       <small id="trStufe"></small><b id="trGross"></b><span id="trKlein"></span>
       <span class="bar" id="trBalken" hidden><i></i></span>
     </div>
+    <div class="trListe" id="trListe" hidden></div>
     <button type="button" id="trWeiter" hidden></button>
     <button type="button" class="quiet trSpaeter" id="trSpaeter"></button>
+  </div>
+  <!-- v216 (Thomas 30.10.2026): „nur ein ganz kleiner Knopf“ — nach einer Runde, nie auf dem Gabentisch. -->
+  <button type="button" class="trAlle" id="trAlle" hidden></button>
+</div>
+
+<!-- Premium-Angebot (v216, Thomas 30.10.2026): Die Karte im Shop nennt den Monatspreis,
+     hier steht das Jahresabo vorn. `PremiumAngebot` füllt. -->
+<div class="pmAngebot" id="pmAngebot" hidden role="dialog" aria-modal="true">
+  <div class="pmBlatt">
+    <button type="button" class="pmZu" id="pmZu" aria-label="Close">×</button>
+    <b class="pmAnTitel" id="pmAnTitel"></b>
+    <div class="pmPlaene">
+      <button type="button" class="pmPlan jahr" id="pmJahr"></button>
+      <button type="button" class="pmPlan" id="pmMonat"></button>
+    </div>
+    <p class="pbHinweis" id="pmAnHinweis"></p>
   </div>
 </div>
 
@@ -6509,17 +6656,29 @@
 <!-- Tagesbonus, einmal am Tag groß (Schritt 106) -->
 <div class="veil" id="bonusVeil" hidden>
   <div class="card bonusKarte">
-    <h1 style="font-size:34px;margin-bottom:4px" data-i18n="b_title">Täglicher Bonus</h1>
-    <p class="sub" id="bonusVeilSub" style="margin:0 0 14px"></p>
-    <!-- v167 (Idee von Andi, Thomas 27.09.2026): der Streak — Tage in Folge,
-         die Kälteschlaf-Reserven und der längste Streak. `streakMalen`. -->
-    <div class="streakLeiste" id="bonusStreak" hidden></div>
+    <!-- v216: Die Gruppen ordnen das Fenster auf flachen Telefonen neu an,
+         sonst fallen sie weg (`display:contents`). -->
+    <div class="bonusKopf">
+      <div class="bonusTitel">
+        <h1 data-i18n="b_title">Täglicher Bonus</h1>
+        <p class="sub" id="bonusVeilSub"></p>
+      </div>
+      <!-- v167 (Idee von Andi, Thomas 27.09.2026): der Streak — Tage in Folge,
+           die Kälteschlaf-Reserven und der längste Streak. `streakMalen`. -->
+      <div class="streakLeiste" id="bonusStreak" hidden></div>
+    </div>
     <div class="beads gross" id="bonusVeilBeads"></div>
-    <p class="hinweis" id="bonusVeilWochen" style="margin:10px 0 0;color:var(--brass)"></p>
-    <p class="hinweis streakHinweis" id="bonusStreakHinweis" hidden></p>
-    <div id="bonusAnsporn"></div>
-    <button id="bonusVeilGo" data-i18n="b_holen">Abholen</button>
-    <button class="quiet" id="bonusVeilSpaeter" data-i18n="b_spaeter">Später</button>
+    <div class="bonusFuss">
+      <div class="bonusMehr">
+        <p class="hinweis" id="bonusVeilWochen"></p>
+        <p class="hinweis streakHinweis" id="bonusStreakHinweis" hidden></p>
+        <div id="bonusAnsporn"></div>
+      </div>
+      <div class="bonusKnoepfe">
+        <button id="bonusVeilGo" data-i18n="b_holen">Abholen</button>
+        <button class="quiet" id="bonusVeilSpaeter" data-i18n="b_spaeter">Später</button>
+      </div>
+    </div>
   </div>
 </div>
 <!-- Ein Design groß (v104): 3D-Standbild über dem Bonusfenster. -->
@@ -6652,7 +6811,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=215"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=216"><\/script>');
 })();
 </script>
 </body>
