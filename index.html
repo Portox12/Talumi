@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "216";
+  var PULSAVI_V = "217";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -2961,6 +2961,7 @@
      background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:10.5px;color:var(--paper-2);text-align:center;position:relative;padding:4px}
   .psB b{font:800 14px/1 var(--disp);color:var(--paper)}
   .psB .ico{width:18px;height:18px}
+  .psB img.psBild,.psB .truhe{width:24px;height:24px}
   .psB.leer{background:none;border:1px dashed rgba(255,255,255,.07)}
   .psB.pr{background:linear-gradient(180deg,rgba(255,210,122,.14),rgba(255,210,122,.04));border-color:rgba(255,210,122,.45)}
   .psB.zu::after{content:"🔒";position:absolute;right:4px;top:3px;font-size:10px;opacity:.8}
@@ -2971,12 +2972,23 @@
      align-items:center;justify-content:center;gap:4px;padding:8px;text-align:center;font-size:11px;color:var(--paper-2)}
   .psVorschau .ico{width:34px;height:34px;color:var(--iri)}
   .psVorschau b{font:800 20px/1 var(--disp);color:#ffe08a}
+  .psVorschau img{width:min(calc(26 * var(--vh, 1vh)),130px);height:auto}
   .psPrem{margin:0;width:100%;min-height:44px;border:0;border-radius:13px;font:800 13px/1.15 var(--disp);
      background:linear-gradient(180deg,#fff0b8,#ffc53d);color:var(--on-brass)}
   .psPrem small{display:block;font:700 11px/1.2 var(--sans);color:#3a2610;margin-top:2px}
   .psPrem:disabled{opacity:.75;cursor:default}
   .psPrem.an{opacity:1}
   .psBald{font-size:10.5px;color:var(--paper-2);text-align:center}
+  .psFort b{white-space:nowrap}
+  .psPrem,.psOderAbo,.psBald{flex:0 0 auto}
+  .psVorschau{min-height:0;overflow:hidden}
+  @media (max-height:520px){
+    .psVorschau img{width:auto;height:calc(17 * var(--vh, 1vh))}
+    .psVorschau b{font-size:15px}
+    .psVorschau span{font-size:11px;line-height:1.2}
+  }
+  .psOderAbo{margin:0;width:100%;min-height:44px;padding:0 8px;background:none;border:1px solid var(--line-hell);border-radius:12px;box-shadow:none;
+     color:var(--paper);font:700 12px/1.15 var(--disp)}
   .psErkl{margin:8px 0 0}
   #passVoll.ohnePrem .psB.pr,#passVoll.ohnePrem .psRechts,#passVoll.ohnePrem .psSeiten .pr{display:none}
   #passVoll.ohnePrem .psHaupt{grid-template-columns:14px minmax(0,1fr)}
@@ -6811,7 +6823,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=216"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=217"><\/script>');
 })();
 </script>
 </body>
