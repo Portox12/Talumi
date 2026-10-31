@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "220";
+  var PULSAVI_V = "221";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -2287,7 +2287,7 @@
        box-shadow:0 10px 30px rgba(0,0,0,.45);
        animation:tutAuf .35s ease-out}
   .tutBox[hidden]{display:none}
-  /* Die Führerin (v109): das gewählte Profilbild, links im Kasten. */
+  /* Bis v220 stand hier das gewählte Profilbild im Kreis, seit v221 der Kapitän (Regeln weiter unten). */
   .tutFigur{flex:0 0 auto;width:44px;height:44px;border-radius:50%;display:block;
        box-shadow:0 4px 14px rgba(0,0,0,.5)}
   .tutFigur img{width:100%;height:100%;display:block;border-radius:50%}
@@ -2346,6 +2346,18 @@
   @keyframes tutTaste{0%,100%{transform:translateY(0);box-shadow:0 0 0 rgba(255,197,61,0)}50%{transform:translateY(2px);box-shadow:0 0 14px rgba(255,197,61,.6)}}
   .tutBox.fertig{border-color:rgba(61,220,132,.7);box-shadow:0 14px 44px rgba(0,0,0,.55), 0 0 26px rgba(61,220,132,.25)}
   @media (max-height:420px){ .tutBox p{font-size:13.5px} .tutFigur{width:40px;height:40px} }
+  /* v221: Der Kapitän (Nano Banana, Thomas 31.10.2026, Bild 420 × 620). Er steht am unteren Bildrand links vom Kasten und zeigt
+     auf den Text; der Text beginnt rechts von ihm. Im Rundgang bleibt der runde Rahmen, dort sieht man nur den Kopf. */
+  .tutBox{--kapH:clamp(150px, calc(46 * var(--vh, 1vh)), 300px);--kapB:calc(var(--kapH) * .677);
+       padding-left:calc(var(--kapB) * .9 + 10px);
+       max-width:min(calc(600px + var(--kapB) * .9), calc(calc(100 * var(--vw, 1vw)) - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
+  .tutBox .tutFigur{position:absolute;left:calc(var(--kapB) * -.1);bottom:calc(-14px - env(safe-area-inset-bottom) - var(--vv-unten, 0px));
+       width:var(--kapB);height:var(--kapH);border-radius:0;box-shadow:none;pointer-events:none;
+       filter:drop-shadow(0 6px 14px rgba(0,0,0,.55))}
+  .tutBox .tutFigur img{height:100%;border-radius:0;object-fit:contain;object-position:bottom}
+  .tutTipp .tutFigur{position:relative;overflow:hidden;background:#0b1230}
+  .tutTipp .tutFigur img{position:absolute;left:-100%;top:-14%;width:270%;height:auto;max-width:none;border-radius:0}
+  @media (max-height:420px){ .tutBox .tutFigur{bottom:calc(-8px - env(safe-area-inset-bottom) - var(--vv-unten, 0px))} }
 
   /* ---- Tutorial v122: „Verstanden" und der Stand ohne Satz -------------
      Thomas (24.09.): Der Kasten erklärt, ein Knopf „Verstanden" schließt
@@ -6849,7 +6861,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=220"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=221"><\/script>');
 })();
 </script>
 </body>
