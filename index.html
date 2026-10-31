@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "219";
+  var PULSAVI_V = "220";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -2873,7 +2873,7 @@
   .elM.ehre b{color:#ffc2c2;font-size:15px}
   .elM.ore svg{color:var(--brass-hell)} .elM.ore b{color:var(--brass-hell)}
   .elM.iri b{color:var(--iri)}
-  .elM.teil svg{color:#d9b6ff} .elM.mteil svg{color:#c9d6ea}
+  .elM.teil svg{color:#d9b6ff} .elM.mteil svg{color:#c9d6ea} .elM.rteil svg{color:var(--koralle)}
   .erfZ .rechts{min-width:0}
   .erfTally .elLohn{justify-content:flex-end}
   .ehreIco{color:#ff8a8a}
@@ -2952,7 +2952,7 @@
   .psSpur{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;min-height:0;
      background:linear-gradient(transparent calc(50% - 1.5px), rgba(216,167,95,.35) calc(50% - 1.5px), rgba(216,167,95,.35) calc(50% + 1.5px), transparent calc(50% + 1.5px))}
   .psReihe{display:flex;gap:8px;height:100%;padding:2px}
-  .psSp{flex:0 0 74px;display:grid;grid-template-rows:1fr 26px 1fr;gap:6px;scroll-snap-align:start}
+  .psSp{flex:0 0 84px;display:grid;grid-template-rows:1fr 26px 1fr;gap:6px;scroll-snap-align:start}
   .psNr{width:26px;height:26px;margin:auto;border-radius:50%;display:grid;place-items:center;font:800 12px/1 var(--sans);
      border:1.5px solid rgba(216,167,95,.6);color:var(--brass-hell);background:#0e1320}
   .psSp.hat .psNr{background:linear-gradient(180deg,#fff0b8,#ffc53d);color:var(--on-brass);border-color:#ffe08a}
@@ -2966,7 +2966,23 @@
   .psB.pr{background:linear-gradient(180deg,rgba(255,210,122,.14),rgba(255,210,122,.04));border-color:rgba(255,210,122,.45)}
   .psB.zu::after{content:"🔒";position:absolute;right:4px;top:3px;font-size:10px;opacity:.8}
   .psB.hat{opacity:.55}
-  .psB.hat::before{content:"✓";position:absolute;left:6px;top:3px;color:var(--brass-hell);font-weight:800}
+  .psB.hat::before{content:"✓";position:absolute;left:6px;top:3px;color:var(--brass-hell);font-weight:800;z-index:1}
+  /* v220: Sammelkarten (Entwurf C). Die Farbe zeigt die Seltenheit, das Bild füllt die Karte, Zahl und Name liegen unten. */
+  .psB[data-selten]{overflow:hidden;justify-content:flex-end;padding:0 2px 4px;border-width:2px;border-color:#8fb4d6;
+     background:radial-gradient(circle at 50% 34%,rgba(255,255,255,.3),transparent 62%),conic-gradient(from 210deg at 50% 36%,#123a6e,#1f6aa0,#123a6e,#0f2a58,#123a6e)}
+  .psB[data-selten=sel]{border-color:#6ff0d8;background:radial-gradient(circle at 50% 34%,rgba(220,255,250,.38),transparent 62%),conic-gradient(from 210deg at 50% 36%,#0e4f5c,#159a8e,#0e4f5c,#0a3346,#0e4f5c)}
+  .psB[data-selten=epi]{border-color:#ff8a6b;background:radial-gradient(circle at 50% 34%,rgba(255,220,190,.42),transparent 62%),conic-gradient(from 210deg at 50% 36%,#5a1626,#b0382e,#5a1626,#2c0e22,#5a1626)}
+  .psB[data-selten=leg]{border-color:#ffe08a;background:radial-gradient(circle at 50% 34%,rgba(255,250,210,.5),transparent 62%),conic-gradient(from 210deg at 50% 36%,#7a4a0e,#e0a02a,#7a4a0e,#4a2c08,#7a4a0e)}
+  .psB[data-selten] .kunst,.psB[data-selten] img.psBild,.psB[data-selten] .truhe{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:76px;height:76px;margin:0}
+  .psB[data-selten] img.psBild{top:2px;width:64px;height:64px}
+  .psB[data-selten] b{position:relative;font:800 13.5px/1 var(--disp);color:#fff;text-shadow:0 1px 2px #000,0 0 6px #000}
+  .psB[data-selten] b.wort{max-width:100%;font-size:10.5px;overflow-wrap:anywhere}
+  .psB[data-selten] span{position:relative;max-width:100%;font-size:9.5px;line-height:1.05;color:#fff;background:rgba(4,8,26,.72);border-radius:6px;padding:2px 5px}
+  .psSp.jetzt .psB[data-selten]{box-shadow:0 0 0 2px #fff,0 0 20px rgba(255,255,255,.55)}
+  .psSp.jetzt .psB[data-selten] .kunst{animation:psWippen 1.5s ease-in-out infinite alternate}
+  @keyframes psWippen{from{transform:translateX(-50%) scale(1)}to{transform:translateX(-50%) scale(1.07)}}
+  @media (prefers-reduced-motion:reduce){.psSp.jetzt .psB[data-selten] .kunst{animation:none}}
+  .jubel .jbBild svg.kunst,.jubel.prunk .jbBild svg.kunst,.jubel .jbBild svg.truhe,.jubel.prunk .jbBild svg.truhe{width:112px;height:112px}
   .psRechts{display:flex;flex-direction:column;gap:8px;min-height:0}
   .psVorschau{flex:1;border-radius:14px;border:1px solid rgba(255,210,122,.4);background:rgba(255,210,122,.06);display:flex;flex-direction:column;
      align-items:center;justify-content:center;gap:4px;padding:8px;text-align:center;font-size:11px;color:var(--paper-2)}
@@ -6833,7 +6849,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=219"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=220"><\/script>');
 })();
 </script>
 </body>
