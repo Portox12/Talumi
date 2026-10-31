@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "221";
+  var PULSAVI_V = "222";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -4625,6 +4625,12 @@
   button.shopPaket{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.08)}
   button.shopPaket:disabled{opacity:.55;cursor:default}
   .pbHinweis{font-size:11px;line-height:1.35;color:var(--paper-2);margin:6px 0 0;max-width:100%}
+  .pbLinks{display:flex;gap:18px;flex-wrap:wrap}
+  .pbLinks[hidden]{display:none}
+  .kaufHinweis{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:40;width:max-content;max-width:min(560px, calc(100% - 32px));
+     padding:10px 16px;border-radius:12px;background:#0b1230;border:1px solid rgba(255,197,61,.45);color:var(--paper);font-size:13px;line-height:1.35;text-align:center;pointer-events:none}
+  .kaufHinweis[hidden]{display:none}
+  .pbLinks a{color:inherit;text-decoration:underline;padding:6px 0}
   .pmAngebot{position:fixed;inset:0;z-index:25;display:grid;place-items:center;overflow:auto;
      padding:calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
      background:color-mix(in srgb, var(--ink) 88%, transparent)}
@@ -6104,6 +6110,8 @@
   <button type="button" class="trAlle" id="trAlle" hidden></button>
 </div>
 
+<div class="kaufHinweis" id="kaufHinweis" role="status" hidden></div>
+
 <!-- Premium-Angebot (v216, Thomas 30.10.2026): Die Karte im Shop nennt den Monatspreis,
      hier steht das Jahresabo vorn. `PremiumAngebot` füllt. -->
 <div class="pmAngebot" id="pmAngebot" hidden role="dialog" aria-modal="true">
@@ -6115,6 +6123,7 @@
       <button type="button" class="pmPlan" id="pmMonat"></button>
     </div>
     <p class="pbHinweis" id="pmAnHinweis"></p>
+    <p class="pbHinweis pbLinks" id="pmAnLinks" hidden><a href="nutzungsbedingungen.html" target="_blank" rel="noopener" data-i18n="agb">Terms of use</a><a href="datenschutz.html" target="_blank" rel="noopener" data-i18n="ds_link">Privacy</a></p>
   </div>
 </div>
 
@@ -6861,7 +6870,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=221"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=222"><\/script>');
 })();
 </script>
 </body>
