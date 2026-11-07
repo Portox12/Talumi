@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "239";
+  var PULSAVI_V = "240";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -6808,94 +6808,12 @@
 <div class="veil" id="hilfeVeil" hidden>
   <div class="card hilfe">
     <h1 style="font-size:34px;margin-bottom:4px" data-i18n="hilfe">Spielanleitung</h1>
-    <p class="sub" style="margin:0">Aus einem Staubkorn wird ein Planet. Alles, was du wissen musst, auf einer Seite.</p>
+    <p class="sub" style="margin:0" data-i18n="hl_sub">A grain of dust becomes a planet. Everything you need to know, on one page.</p>
     <!-- Tutorial noch einmal (v114): die geführte Runde auf der kleinen Karte. -->
     <p style="margin:10px 0 0"><button type="button" class="quiet" id="hilfeTutorial" style="width:auto;margin:0;padding:0 16px" data-i18n="tu_hilfe_tutorial">Tutorial noch einmal spielen</button></p>
 
-    <h2>Das Ziel</h2>
-    <p>Du beginnst als <b>Staubkorn</b>. Sammle den Sternenstaub ein und verschlinge Körper, die deutlich kleiner sind als du. So wächst du über <b>Geröll</b>, <b>Planetesimal</b> und <b>Protoplanet</b> zur <b>Welt</b> mit Ringen und Monden. Wer dich verschlingt, beendet deine Runde — und dann heißt es: Nochmal.</p>
-
-    <h2>Steuerung</h2>
-    <ul>
-      <li><b>Am Rechner:</b> Die Maus bewegen, dein Körper folgt dem Zeiger. <b>Leertaste</b> teilt dich in Richtung Zeiger. <b>W</b> wirft ein Stück Masse ab. <b>M</b> schaltet den Ton aus und ein.</li>
-      <li><b>Am Handy:</b> Irgendwo auf dem Bildschirm ziehen, um zu steuern. Die beiden Tasten am Rand sind <b>Teilen</b> und <b>Abwerfen</b>.</li>
-    </ul>
-
-    <h2>Fressen und gefressen werden</h2>
-    <ul>
-      <li>Du kannst alles verschlingen, das <b>deutlich kleiner</b> ist als du — einfach überfahren. Ist der andere ähnlich groß, passiert nichts.</li>
-      <li><b>Größer heißt langsamer.</b> Kleine Körper entkommen großen immer. Die eigentliche Gefahr sind Körper in deiner Größenordnung.</li>
-      <li>Ab etwa <b>1.200 Masse</b> schrumpfst du langsam von selbst. Friss weiter oder bleib absichtlich handlich.</li>
-      <li>Nach dem Start bist du <b>5 Sekunden geschützt</b>. Der Schutz endet, sobald du teilst oder abwirfst.</li>
-    </ul>
-
-    <h2>Teilen und Abwerfen</h2>
-    <ul>
-      <li><b>Teilen</b> geht ab 36 Masse: Die Hälfte springt nach vorn — der einzige Weg, einen Fliehenden zu fangen. Bis zu 16 Stücke sind möglich; sie verschmelzen nach einigen Sekunden wieder. Geteilt bist du verwundbar: Teile nur, wenn das Ziel schon in Reichweite ist.</li>
-      <li><b>Abwerfen</b> schleudert ein kleines Stück Masse in Blickrichtung. Damit wirst du etwas schneller, kannst Mitspieler füttern — und Pulsare.</li>
-    </ul>
-
-    <h2>Warnpfeile</h2>
-    <p>Rote Pfeile um deinen Körper zeigen auf Gegner außerhalb des Bildes, die dich <b>durch Teilen</b> erreichen könnten — mindestens das Zweieinhalbfache deiner Masse, in Sprungweite. Wohin der Pfeil zeigt, dorthin nicht.</p>
-
-    <h2>Pulsare</h2>
-    <p>Die stacheligen, leuchtenden Körper sind <b>Pulsare</b>. Solange du klein bist, sind sie Deckung: Große, die einen Pulsar überdecken, werden in Stücke gerissen — und das gilt auch für dich, sobald du groß genug bist. Fütterst du einen Pulsar <b>fünfmal</b> mit abgeworfener Masse, stößt er einen neuen Pulsar in Wurfrichtung aus. So sprengt man Riesen.</p>
-
-    <p>Die meisten Pulsare liegen <b>am Rand der Karte</b>; in der Mitte sind sie selten. Aus der Ferne leuchtet um jeden Pulsar ein Hof — rot, sobald du groß genug bist, um zerrissen zu werden.</p>
-
-    <h2>Spielarten</h2>
-    <ul>
-      <li><b>Aufstieg</b> — online, ohne Zeitlimit. Hier zählen Level, Skillpunkte, Monde und der Startbonus. Ore, XP, Ehre und Ranglistenplätze gibt es in beiden Spielarten; der Server rechnet alles selbst.</li>
-      <li><b>Liga</b> — online, alle gleich stark: kein Levelbonus, keine Monde, kein Startbonus. Es zählen nur Geschick, Ehre und Rang. Am Ende jeder Saison bekommen die Besten Ore, Monde und Titel.</li>
-      <li><b>Clankampf</b> — zwei Clans, fünf Minuten, auf Herausforderung über das Clanmenü.</li>
-    </ul>
-    <p>Solange wenige Menschen online sind, füllen Computergegner die Räume auf. Sie sind im Spiel nicht gekennzeichnet, zählen aber nie als Spieler: Die Spielerzahl und die dauerhaften Ranglisten zählen nur Menschen. Für jeden Menschen, der dazukommt, verschwindet einer. Wer im Freien Raum den Titel <b>Titan</b> trägt, ist der Größte im Raum; wer sein letztes Stück verschlingt, übernimmt den Titel.</p>
-
-    <h2>Ore, XP und Level</h2>
-    <ul>
-      <li>Nach jeder Onlinerunde bekommst du <b>Ore</b> (Spielwährung) und <b>XP</b>: für deine Bestmasse, für jeden verschlungenen Körper, für jede erreichte Stufe und für einen neuen Rekord.</li>
-      <li><b>Happy Hour:</b> täglich von 20 bis 21 Uhr zahlt jede Onlinerunde das 2,5-Fache an Ore.</li>
-      <li>XP bringen dich bis <b>Level 100</b>. Jedes Level ist ein Schritt näher an neuen Designs.</li>
-      <li><b>Designs</b> sind das Aussehen deines Körpers: 46 Stück, freigeschaltet durch Level oder gekauft mit Ore. Kein Design bringt einen Vorteil im Spiel.</li>
-      <li>Der <b>Startbonus</b> lässt dich im Aufstieg mit doppelter oder dreifacher Masse beginnen — bezahlt mit erspieltem Ore. Größer heißt aber auch langsamer und auffälliger.</li>
-      <li>Der <b>Tagesbonus</b> wartet jeden Tag im Hangar; sieben Tage in Folge geben die volle Reihe. Tag 5 bringt einen Mond, <b>Tag 7 ein Design deiner Wahl</b> — und nach zehn vollen Wochen das Design Rime.</li>
-      <li>Ein Design lässt sich im Reiter <b>Designs</b> groß und in 3D ansehen, bevor du es wählst oder kaufst.</li>
-    </ul>
-
-    <h2>Monde und Skillpunkte — nur im Aufstieg</h2>
-    <ul>
-      <li><b>Monde</b> sind erspielte Begleiter: fünf Arten, drei Stufen, bis zu <b>vier</b> gleichzeitig, höchstens 8 % Wirkung je Mond — weniger Zerfall, früheres Verschmelzen, weiteres Teilen, mehr aus Sternenstaub, mehr Startmasse. Kaufen kann man sie nicht.</li>
-      <li>Woher: alle zehn Level einer, fünf Erfolge, Tag 5 des Tagesbonus, die Liga-Saison (Platz 1–100) — und am Ende jeder Aufstiegsrunde ab einer Minute mit etwas Glück, deutlich öfter, wenn du Pulsare gefressen hast.</li>
-      <li><b>Drei gleiche Monde verschmelzen</b> garantiert zu einem der nächsten Stufe; alternativ steigt ein Mond gegen <b>Mondstaub</b> (1 je Aufstiegsrunde, 3 bei neuer Bestmasse).</li>
-      <li><b>Skillpunkte:</b> ein Punkt je Level. Gesetzte Punkte wirken doppelt (0,2 %) dort, wo du sie setzt — Teilweite 0,1 %. Ungesetzte wirken mit 0,1 % gleichmäßig auf alles.</li>
-    </ul>
-
-    <h2>Profil und Hüter</h2>
-    <ul>
-      <li>Beim ersten Start wählst du einen <b>Hüter</b> — dein Profilbild, und der Begleiter, der dich durch das Tutorial führt. Ändern kannst du ihn jederzeit über dein Profil (Tipp auf das Bild im Hangar).</li>
-      <li>Ein Tipp auf einen Namen in den Ranglisten öffnet sein <b>Profil</b>: Level, Rang, Design, Bestmasse, Ehre, Abschüsse, Erfolge und Saisontitel. Monde und Skillpunkte sind nicht zu sehen.</li>
-    </ul>
-
-    <h2>Ehre und Ränge</h2>
-    <ul>
-      <li><b>Ehre</b> verdienst du online, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — Computergegner zählen nicht. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag. Etwas Ehre steckt außerdem im Tagesbonus.</li>
-      <li>Ehre bringt dich durch <b>20 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Flottenkapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
-      <li><b>Erfolge</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
-      <li>Alle <b>drei Monate</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet; am Ende gibt es Ore nach Platz, für die Plätze 1–100 einen Mond und für die ersten zehn einen Titel im Profil. Dann beginnt alles von vorn.</li>
-      <li><b>Clans:</b> Bis zu 30 Spieler, die Ehre aller Mitglieder zählt zusammen. Gründen oder beitreten über den Knopf <b>Clan</b>.</li>
-    </ul>
-
-    <h2>Konto oder Gast</h2>
-    <p>Als Gast bleibt dein Fortschritt in diesem Browser. Mit Konto liegt er auf dem Spielserver — dann zählen Ehre, Ränge, Erfolge, Saison und Ranglisten. Anmelden geht jederzeit über die <b>Einstellungen</b>.</p>
-
-    <h2>Fünf Tipps</h2>
-    <ul>
-      <li>Nutz die geschützten Sekunden am Anfang, um Abstand zu allem Großen zu gewinnen.</li>
-      <li>Behalte die Rangliste im Blick: Wo die Größten stehen, sollte man wissen, bevor sie nah sind.</li>
-      <li>Wer sich halbiert, halbiert auch, was er überlebt. Teile nur mit Ziel in Reichweite.</li>
-      <li>Klein neben einem Pulsar ist sicherer als groß auf freier Fläche.</li>
-      <li>Ein Pulsar zwischen dir und einem Riesen ist eine Waffe: fünfmal füttern, und er schießt in seine Richtung.</li>
-    </ul>
+    <!-- v240: Inhalt aus den Sprachdateien (hilfe_inhalt, 8 Sprachen), gemalt von hilfeMalen() in spiel.js. -->
+    <div id="hilfeInhalt"></div>
 
     <button id="hilfeClose" data-i18n="back">Zurück</button>
   </div>
@@ -7059,7 +6977,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=239"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=240"><\/script>');
 })();
 </script>
 </body>
