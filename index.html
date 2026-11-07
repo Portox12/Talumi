@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "234";
+  var PULSAVI_V = "235";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -6773,7 +6773,7 @@
     <h2>Monde und Skillpunkte — nur im Aufstieg</h2>
     <ul>
       <li><b>Monde</b> sind erspielte Begleiter: fünf Arten, drei Stufen, bis zu <b>vier</b> gleichzeitig, höchstens 8 % Wirkung je Mond — weniger Zerfall, früheres Verschmelzen, weiteres Teilen, mehr aus Sternenstaub, mehr Startmasse. Kaufen kann man sie nicht.</li>
-      <li>Woher: alle zehn Level einer, fünf Errungenschaften, Tag 5 des Tagesbonus, die Liga-Saison (Platz 1–100) — und am Ende jeder Aufstiegsrunde ab einer Minute mit etwas Glück, deutlich öfter, wenn du Pulsare gefressen hast.</li>
+      <li>Woher: alle zehn Level einer, fünf Erfolge, Tag 5 des Tagesbonus, die Liga-Saison (Platz 1–100) — und am Ende jeder Aufstiegsrunde ab einer Minute mit etwas Glück, deutlich öfter, wenn du Pulsare gefressen hast.</li>
       <li><b>Drei gleiche Monde verschmelzen</b> garantiert zu einem der nächsten Stufe; alternativ steigt ein Mond gegen <b>Mondstaub</b> (1 je Aufstiegsrunde, 3 bei neuer Bestmasse).</li>
       <li><b>Skillpunkte:</b> ein Punkt je Level. Gesetzte Punkte wirken doppelt (0,2 %) dort, wo du sie setzt — Teilweite 0,1 %. Ungesetzte wirken mit 0,1 % gleichmäßig auf alles.</li>
     </ul>
@@ -6781,20 +6781,20 @@
     <h2>Profil und Hüter</h2>
     <ul>
       <li>Beim ersten Start wählst du einen <b>Hüter</b> — dein Profilbild, und der Begleiter, der dich durch das Tutorial führt. Ändern kannst du ihn jederzeit über dein Profil (Tipp auf das Bild im Hangar).</li>
-      <li>Ein Tipp auf einen Namen in den Ranglisten öffnet sein <b>Profil</b>: Level, Rang, Design, Bestmasse, Ehre, Abschüsse, Errungenschaften und Saisontitel. Monde und Skillpunkte sind nicht zu sehen.</li>
+      <li>Ein Tipp auf einen Namen in den Ranglisten öffnet sein <b>Profil</b>: Level, Rang, Design, Bestmasse, Ehre, Abschüsse, Erfolge und Saisontitel. Monde und Skillpunkte sind nicht zu sehen.</li>
     </ul>
 
     <h2>Ehre und Ränge</h2>
     <ul>
       <li><b>Ehre</b> verdienst du online, wenn du einen anderen <b>angemeldeten Spieler</b> verschlingst — Computergegner zählen nicht. Je näher die Beute an deiner eigenen Größe war, desto mehr Ehre. Jeder Gegner zählt einmal am Tag. Etwas Ehre steckt außerdem im Tagesbonus.</li>
       <li>Ehre bringt dich durch <b>20 Ränge</b> vom Kadetten bis zum Großadmiral. Bis zum Flottenkapitän entscheidet allein deine Ehre; darüber zählt dein Platz unter den Spielern deines Landes. Die Übersicht mit allen Schwellen steht im Reiter <b>Statistik</b>.</li>
-      <li><b>Errungenschaften</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
+      <li><b>Erfolge</b> zählen je einmal und bringen ebenfalls Ehre — vom ersten verschlungenen Körper bis zu allen 46 Designs.</li>
       <li>Alle <b>drei Monate</b> endet eine <b>Saison</b>. Die in der Saison gesammelte Ehre wird gewertet; am Ende gibt es Ore nach Platz, für die Plätze 1–100 einen Mond und für die ersten zehn einen Titel im Profil. Dann beginnt alles von vorn.</li>
       <li><b>Clans:</b> Bis zu 30 Spieler, die Ehre aller Mitglieder zählt zusammen. Gründen oder beitreten über den Knopf <b>Clan</b>.</li>
     </ul>
 
     <h2>Konto oder Gast</h2>
-    <p>Als Gast bleibt dein Fortschritt in diesem Browser. Mit Konto liegt er auf dem Spielserver — dann zählen Ehre, Ränge, Errungenschaften, Saison und Ranglisten. Anmelden geht jederzeit über die <b>Einstellungen</b>.</p>
+    <p>Als Gast bleibt dein Fortschritt in diesem Browser. Mit Konto liegt er auf dem Spielserver — dann zählen Ehre, Ränge, Erfolge, Saison und Ranglisten. Anmelden geht jederzeit über die <b>Einstellungen</b>.</p>
 
     <h2>Fünf Tipps</h2>
     <ul>
@@ -6967,7 +6967,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=234"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=235"><\/script>');
 })();
 </script>
 </body>
