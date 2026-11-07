@@ -22,7 +22,12 @@
   </url>
   <url>
     <loc>https://pulsavi.io/nutzungsbedingungen.html</loc>
-    <lastmod>2026-09-18</lastmod>
+    <lastmod>2026-11-07</lastmod>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://pulsavi.io/terms.html</loc>
+    <lastmod>2026-11-07</lastmod>
     <priority>0.2</priority>
   </url>
 </urlset>
