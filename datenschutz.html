@@ -180,7 +180,7 @@
         längerer Schutz) noch übrig sind, deine offenen Drehungen am Glücksrad,
         wie oft eine neue Bestmasse schon eine Drehung gebracht hat, deine
         Tickets für den Wiedereinstieg,
-        Ehre und Errungenschaften. Wirst du zerstreut, merkt sich der
+        Ehre und Erfolge. Wirst du zerstreut, merkt sich der
         Spielserver für 90 Sekunden nur im Arbeitsspeicher, mit welcher Masse
         du mit einem Ticket weiterspielen kannst.</li>
     <li><strong>Saisonwerte</strong> — die in der laufenden Saison gesammelte
@@ -245,7 +245,7 @@
      <strong>Spielerprofil</strong>: dasselbe wie oben, dazu dein gewähltes
      Profilbild (eine von zwanzig gezeichneten Figuren, kein Foto), dein
      gewähltes Design, Anzahl der Runden und Abschüsse, Spielzeit, der Monat
-     der Kontoeröffnung, erreichte Errungenschaften und Saisontitel, dein Platz
+     der Kontoeröffnung, erreichte Erfolge und Saisontitel, dein Platz
      in der Bestmasse-Rangliste (weltweit und in deinem Land) und dein längster
      Streak. Nicht im Profil: dein laufender Streak, Monde, Skillpunkte, Ore,
      Iridium, Kerne, Freunde. Deine E-Mail-Adresse ist es
@@ -793,6 +793,47 @@
   <p>Auf pulsavi.io und auf Spieleportalen gibt es diese Käufe nicht; dort
      fallen keine Kaufdaten an.</p>
 
+  <!-- v236 (07.11.2026). Fristen ≡ chat.js (CHAT.ALT_MS 30 min, VERLAUF 50, MELDUNG_MS 7 Tage, STUFE_VERFALL_MS 30 Tage);
+       der Server löscht stündlich (`chat.putzen`), Chattexte stehen nie im Protokoll (testchat.js prüft beides). -->
+  <h2 id="chat">6i. Chat</h2>
+  <p>Mit Konto kannst du im Chat der Karte schreiben, auf der du spielst
+     (<a href="nutzungsbedingungen.html#chat">Nutzungsbedingungen, Abschnitt 5a</a>). Ohne Konto
+     gibt es keinen Chat; in den Einstellungen lässt er sich ganz abschalten.</p>
+  <h3>Welche Daten verarbeitet werden</h3>
+  <p>Der Text deiner Nachricht oder der gewählte Schnellsatz, dein Spielername, deine
+     Kontonummer, im Aufstieg das Kürzel deines Clans, die Karte und die Uhrzeit. Diese Angaben
+     sehen alle, die auf derselben Karte den Chat lesen – also andere Spieler mit Konto. Die
+     Kontonummer braucht ihr Spiel, damit sie dich ausblenden oder eine Nachricht von dir melden
+     können.</p>
+  <h3>Speicherdauer</h3>
+  <p>Nachrichten liegen nur im Arbeitsspeicher des Spielservers: je Karte die letzten 50,
+     höchstens 30 Minuten lang. Bei einem Neustart des Servers sind sie weg. In die Datenbank und
+     in die Serverprotokolle werden sie nicht geschrieben.</p>
+  <p>Meldet jemand eine Nachricht, speichern wir sie mit dem Grund, der Karte, der Uhrzeit und den
+     Kontonummern von Verfasser und Meldendem <strong>sieben Tage</strong> – damit das
+     automatische Stummschalten funktioniert und wir einen Widerspruch prüfen können. Danach
+     löscht der Server sie von selbst. Eine Stummschaltung speichern wir mit Ablauf und Stufe, bis
+     sie abgelaufen ist und 30 Tage lang keine neue dazukam.</p>
+  <p>Löschst du dein Konto, löschen wir sofort deine Nachrichten im Arbeitsspeicher, deine
+     Stummschaltung und die Meldungen, die du selbst abgegeben hast. Meldungen über deine
+     Nachrichten bleiben bis zum Ende ihrer sieben Tage, weil sie Beweis für einen möglichen
+     Rechtsverstoß sein können.</p>
+  <p>Meldungen mit dem Grund „Bedrohung“ schickt der Server zusätzlich als E-Mail über unseren
+     Versanddienst Brevo (Abschnitt 6) an das Postfach des Verantwortlichen – mit der Nachricht,
+     dem Spielernamen und den Kontonummern. Wir löschen diese E-Mail, sobald der Fall erledigt ist,
+     spätestens nach zwölf Monaten, sofern sie nicht für ein Strafverfahren gebraucht wird.</p>
+  <h3>Wie geprüft wird</h3>
+  <p>Der Filter läuft auf unserem eigenen Server; Chatnachrichten gehen an keinen anderen Dienst
+     und an keine künstliche Intelligenz. Das Stummschalten nach Meldungen ist eine automatische
+     Entscheidung, die nur den Chat betrifft und höchstens sieben Tage dauert. Du kannst ihr
+     widersprechen (Nutzungsbedingungen, Abschnitt 10); dann prüft ein Mensch.</p>
+  <h3>Rechtsgrundlage</h3>
+  <p>Art. 6 Abs. 1 lit. b DSGVO – der Chat gehört zum Spiel, das du mit deinem Konto nutzt. Für
+     Filter, Meldungen, Stummschaltungen und die E-Mail bei „Bedrohung“ zusätzlich Art. 6 Abs. 1
+     lit. c DSGVO in Verbindung mit Art. 16 bis 18 des Digital Services Act und Art. 6 Abs. 1
+     lit. f DSGVO – unser berechtigtes Interesse und das der anderen Spieler an einem Chat ohne
+     Beleidigungen, Belästigung und Kontaktversuche.</p>
+
   <h2>7. Deine Rechte</h2>
   <p>Dir stehen gegenüber dem Verantwortlichen folgende Rechte zu:</p>
   <ul>
@@ -823,7 +864,7 @@
         Einwilligungsverwaltung</li>
   </ul>
 
-  <p class="stand">Stand: 6. November 2026</p>
+  <p class="stand">Stand: 7. November 2026</p>
 
   <nav>
     <a href="index.html">Zum Spiel</a> ·

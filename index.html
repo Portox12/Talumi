@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "235";
+  var PULSAVI_V = "236";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -5198,6 +5198,95 @@
   body.touch .skPreis,body.touch button.ukKauf,body.touch button.ukChancen,body.touch .skHat{min-height:44px}
   body.touch button.ukChancen{padding:0 8px}
   @media (max-height:400px){ .ukName{font-size:26px} button.ukDesign{width:88px;height:108px} button.ukDesign img{width:66px;height:66px} }
+
+  /* ---- Chat (v236, Thomas 07.11.2026: Entwurf A „Leiste links“) ----------------------------------------------
+     data-z: zu = nur der Pfeil am linken Rand, klein = die letzten drei Zeilen wie Untertitel (nehmen keine Tipps an),
+     offen = Glaskasten links unter der Stufenleiste. Lage und Größe setzt ChatUI.anpassen() (spiel.js). Knöpfe sind
+     auf Tippgeräten 44 × 44 groß; gezeichnet wird das Innere (span) kleiner, wie im Entwurf. */
+  #chat{position:fixed;inset:0;z-index:6;pointer-events:none;font-family:var(--disp);color:#eef8ff}
+  #chat[hidden]{display:none}
+  #chat button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;min-height:0;min-width:0;width:auto;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;opacity:1;box-shadow:none;text-transform:none;letter-spacing:normal}
+  #chatBtn[hidden]{display:none}
+  #chatBtn[aria-expanded="true"]{border-color:var(--cyan, #39d6ff);color:var(--cyan, #39d6ff)}
+  #chat[data-ort="menue"] .chPfeil{display:none}
+  #chat[data-ort="menue"] .chPanel{background:linear-gradient(180deg,rgba(14,24,58,.985),rgba(6,12,34,.985))}
+  #chat .chKopf .raum:disabled{opacity:1;cursor:default}
+  #chat button:focus-visible > span{outline:2px solid var(--cyan, #39d6ff);outline-offset:2px}
+  #chat .chPfeil{position:absolute;left:max(0px, calc(env(safe-area-inset-left) - 6px));width:44px;height:62px;pointer-events:auto;color:var(--cyan, #39d6ff)}
+  #chat .chPfeil > span{position:absolute;left:0;top:0;width:34px;height:62px;display:grid;place-items:center;
+    background:linear-gradient(180deg,rgba(14,24,58,.92),rgba(6,12,34,.92));border:1.5px solid rgba(57,214,255,.55);border-left:none;
+    border-radius:0 14px 14px 0;box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 12px rgba(57,214,255,.25)}
+  #chat .chPfeil svg{width:18px;height:18px}
+  #chat .chPfeil .neu{position:absolute;top:-8px;right:-9px;min-width:19px;height:19px;border-radius:99px;background:var(--koralle, #ff6f61);
+    color:#fff;font-size:11px;font-weight:800;font-style:normal;display:grid;place-items:center;padding:0 5px;box-shadow:0 0 10px rgba(255,111,97,.6)}
+  #chat .chPfeil .neu[hidden]{display:none}
+  #chat .chUnter{position:absolute;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+  #chat .chUnter .chZ{text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.9);font-size:13px;transition:opacity 1.2s;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #chat .chUnter .chZ.alt{opacity:0}
+  #chat .chPanel{position:absolute;border-radius:16px;pointer-events:auto;display:flex;flex-direction:column;overflow:hidden;
+    background:linear-gradient(180deg,rgba(14,24,58,.9),rgba(6,12,34,.9));border:1.5px solid rgba(57,214,255,.45);
+    box-shadow:0 10px 28px rgba(0,0,0,.55),0 0 18px rgba(57,214,255,.18)}
+  #chat[data-z="zu"] .chUnter,#chat[data-z="zu"] .chPanel,#chat[data-z="klein"] .chPanel,
+  #chat[data-z="offen"] .chPfeil,#chat[data-z="offen"] .chUnter{display:none}
+  #chat[data-ort="menue"] #chatKlein{display:none}
+  #chat .chKopf{display:flex;align-items:center;gap:8px;padding:2px 4px 2px 12px;border-bottom:1px solid rgba(57,214,255,.18);flex:0 0 auto}
+  #chat .chKopf .t{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--cyan, #39d6ff);text-transform:uppercase}
+  #chat .chKopf .raum{height:38px;display:grid;place-items:center;cursor:default;max-width:160px}
+  #chat .chKopf .raum > span{display:block;font-size:11.5px;font-weight:800;color:var(--gold, #ffc53d);padding:2px 9px;border-radius:99px;
+    border:1px solid rgba(255,197,61,.55);white-space:nowrap;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+  #chat .chKopf .raum.wahl{cursor:pointer}
+  #chat .chKopf .raum.wahl > span::after{content:" ⇄";opacity:.75}
+  #chat .chKopf .kn{margin-left:auto;display:flex}
+  #chat .chKopf .kn button{width:38px;height:38px;display:grid;place-items:center;color:#cfe4ff}
+  #chat .chKopf .kn button > span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(160,190,255,.28)}
+  #chat .chKopf .kn svg{width:14px;height:14px}
+  #chat .chListe{flex:1 1 auto;min-height:0;padding:6px 12px 2px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;overflow-x:hidden;
+    touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:rgba(57,214,255,.35) transparent}
+  #chat .chListe::before{content:"";margin-top:auto}
+  #chat .chZ{font-size:13.5px;line-height:1.28;color:#e6eefc;overflow-wrap:anywhere}
+  #chat .chListe .chZ{padding:3px 4px;margin:0 -4px;border-radius:6px;min-height:24px;flex:0 0 auto}
+  #chat .chListe .chZ.fremd{cursor:pointer}
+  #chat .chListe .chZ.gewaehlt{background:rgba(57,214,255,.14);box-shadow:inset 0 0 0 1px rgba(57,214,255,.45)}
+  #chat .chZ b{font-weight:800;margin-right:5px;color:#9fe6ff}
+  #chat .chZ .tag{color:var(--gold, #ffc53d);font-weight:800;margin-right:4px;font-size:12px}
+  #chat .chZ.ich b{color:var(--gold, #ffc53d)}
+  #chat .chZ.sys{color:#8fa3cc;font-style:italic;font-size:12px}
+  #chat .chZ.sys.warn{color:#ffb4aa}
+  #chat .chZ .dots{float:right;color:#5f74a3;font-weight:800;margin-left:6px;letter-spacing:1px}
+  #chat .chLeiste{display:flex;align-items:center;gap:2px;padding:0 8px;flex:0 0 auto;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-x}
+  #chat .chLeiste[hidden]{display:none}
+  #chat .chLeiste.gruende{flex-wrap:wrap;overflow:visible;padding-top:2px}
+  #chat .chLeiste::-webkit-scrollbar{display:none}
+  #chat .chLeiste button{flex:0 0 auto;height:32px;padding:0 2px;display:grid;place-items:center}
+  #chat .chLeiste button > span{display:block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;
+    background:rgba(57,214,255,.12);border:1px solid rgba(57,214,255,.42);color:#c9f3ff}
+  #chat .chLeiste button.warn > span{background:rgba(255,111,97,.14);border-color:rgba(255,111,97,.55);color:#ffd0ca}
+  #chat .chLeiste .frage{font-size:12px;color:#8fa3cc;white-space:nowrap;padding:0 4px}
+  #chat .chHinweis{padding:8px 12px 10px;font-size:12.5px;line-height:1.35;color:#c9d6f2;display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:0 0 auto}
+  #chat .chHinweis[hidden]{display:none}
+  #chat .chHinweis p{margin:0}
+  #chat .chHinweis button > span{display:block;padding:6px 14px;border-radius:99px;font-size:12.5px;font-weight:800;color:#1a1200;
+    background:linear-gradient(180deg,#ffd76a,#f0a91c)}
+  #chat .chEin{display:flex;align-items:center;gap:4px;padding:4px 4px 6px 8px;flex:0 0 auto;margin:0}
+  #chat .chEin[hidden]{display:none}
+  #chat .chEin input{flex:1 1 auto;min-width:0;height:34px;min-height:0;margin:0;border-radius:99px;background:rgba(255,255,255,.07);
+    border:1px solid rgba(160,190,255,.32);padding:0 14px;font:inherit;font-size:14px;color:#eef8ff;outline:none;user-select:text;-webkit-user-select:text}
+  #chat .chEin input::placeholder{color:#8fa3cc}
+  #chat .chEin input:focus{border-color:rgba(57,214,255,.7)}
+  #chat .chEin button{width:40px;height:40px;flex:0 0 auto;display:grid;place-items:center;color:#1a1200}
+  #chat .chEin button > span{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+    background:linear-gradient(180deg,#ffd76a,#f0a91c);box-shadow:0 0 12px rgba(255,197,61,.45)}
+  #chat .chEin svg{width:16px;height:16px}
+  #chat.tippt .chLeiste{display:none}
+  /* Tippgeräte: Tippflächen 44 × 44, gezeichnet wie im Entwurf. 16 px im Eingabefeld, sonst vergrößert Safari. */
+  body.touch #chat .chKopf .kn button,body.touch #chat .chEin button{width:44px;height:44px}
+  body.touch #chat .chKopf .raum{height:44px}
+  body.touch #chat .chLeiste button{height:44px;min-width:44px}
+  body.touch #chat .chHinweis button{min-height:44px}
+  body.touch #chat .chEin input{height:38px;font-size:16px}
+  @media (prefers-reduced-motion:reduce){ #chat .chUnter .chZ{transition:none} }
 </style>
 <script type="application/ld+json">
 {
@@ -5746,6 +5835,8 @@
       <button class="konsNav" id="clanBtn"><span data-i18n="clan">Clan</span><b id="clanBtnTag" hidden></b></button>
       <button class="konsNav" id="friendsBtn" data-i18n="friends">Friends</button>
       <button class="konsNav" id="rankBtn" data-i18n="r_head">Leaderboards</button>
+      <!-- v236: Chat im Menü (im Spiel öffnet ihn der Pfeil am linken Rand). Sichtbar macht ihn ChatUI. -->
+      <button class="konsNav" id="chatBtn" type="button" aria-expanded="false" hidden><span data-i18n="ch_titel">Chat</span></button>
     </div>
     <div class="konsStart">
       <div class="startZeile">
@@ -6967,7 +7058,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=235"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=236"><\/script>');
 })();
 </script>
 </body>

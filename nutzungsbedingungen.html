@@ -9,7 +9,7 @@
 <!-- Fassungsnummer dieser Bedingungen. Wird bei jeder Zustimmung mit
      gespeichert; bei jeder inhaltlichen Änderung hochzählen und die
      sichtbare Zeile „Fassung … · Stand: …“ unten und oben mitziehen. -->
-<meta name="talumi-nutzungsbedingungen-fassung" content="7">
+<meta name="talumi-nutzungsbedingungen-fassung" content="8">
 <link rel="preload" href="lora-latein.woff" as="font" type="font/woff" crossorigin>
 <link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
 <style>
@@ -67,7 +67,7 @@
        360-px-Telefon (gemessen 386 px) — ohne Trennung schob es die Seite
        seitlich. -->
   <h1>Nutzungs&shy;bedingungen</h1>
-  <p class="fassung">Fassung 7 · Stand: 6. November 2026</p>
+  <p class="fassung">Fassung 8 · Stand: 7. November 2026</p>
 
   <div class="kurz">
     <b>Das Wichtigste in Kürze</b>
@@ -96,6 +96,9 @@
           Premium für echtes Geld kaufen (Abschnitt 7). Ore wird nie verkauft. Die
           Ultra-Kiste hat zufälligen Inhalt; die Chancen stehen vor dem Kauf im
           Spiel.</li>
+      <li>Mit Konto kannst du im Chat deiner Karte schreiben: keine Beleidigungen, keine Links,
+          keine Kontaktdaten. Ein Filter prüft jede Nachricht automatisch, und wen mehrere Spieler
+          melden, schaltet das Spiel automatisch stumm (<a href="#chat">Abschnitt 5a</a>).</li>
     </ul>
     <p class="hinweis" style="margin:10px 0 0">Die Kurzfassung ersetzt nicht den
        Text darunter – dort steht alles genau.</p>
@@ -184,7 +187,7 @@
      Browsers</strong>. Löschst du die Websitedaten oder wechselst du Browser oder
      Gerät, ist er weg. Wiederherstellen können wir ihn nicht, weil er nie bei
      uns lag. Ein Gast-Spielstand lässt sich nicht in ein Konto übernehmen.</p>
-  <p>Ehre, Ränge, Errungenschaften, Saisonwertung und Clans gibt es nur mit
+  <p>Ehre, Ränge, Erfolge, Saisonwertung, Clans und den Chat gibt es nur mit
      Konto. Spielst du als Gast, gelten diese Bedingungen ebenfalls, soweit sie
      kein Konto voraussetzen – vor allem die Regeln zu Fair Play (Abschnitt 4)
      und zu Namen (Abschnitt 5). Darauf weist das Spiel neben „Als Gast
@@ -203,7 +206,7 @@
     <li><strong>Fehler im Spiel absichtlich auszunutzen.</strong> Findest du
         einen, melde ihn uns lieber über „Problem melden“ – danke!</li>
     <li><strong>Zweitkonten oder Absprachen</strong>, um dir oder anderen Ehre,
-        Ränge, Errungenschaften, Belohnungen aus „Freunde werben“ oder andere
+        Ränge, Erfolge, Belohnungen aus „Freunde werben“ oder andere
         Vorteile zu verschaffen – etwa indem du dich absichtlich von einem
         eigenen oder verabredeten Konto fressen lässt oder dich selbst
         wirbst;</li>
@@ -245,11 +248,79 @@
   <p>Siehst du einen Namen, der gegen diese Regeln verstößt, melde ihn bitte
      über „Problem melden“ (Art „Spieler“) oder per E-Mail.</p>
 
+  <!-- v236 (Thomas 07.11.2026: Chat ab 13 „wenn das gesetzlich so erlaubt ist“). Pflichten: DSA Art. 14 (Regeln und
+       Moderation in den Bedingungen, verständlich auch für Minderjährige), Art. 16 (Meldeweg mit Bestätigung und
+       Hinweis auf Automatik), Art. 17 (Begründung bei Einschränkungen), Art. 18 (Gefahr für Leib und Leben); Google
+       Play „Von Nutzern erstellte Inhalte“ (Regeln vor dem ersten Beitrag, Melden, Blockieren); Apple 1.2 (Filter,
+       Melden, Blockieren, Kontakt). Zahlen hier ≡ chat.js (CHAT): 3 Melder in 1 h, 1 h / 24 h / 7 Tage, 30 Tage,
+       7 Tage Aufbewahrung, eine Nachricht je 2 s. -->
+  <h2 id="chat">5a. Chat</h2>
+  <p>Mit Konto kannst du im Chat der Karte schreiben, auf der du spielst (Aufstieg oder Liga) –
+     im Spiel und im Menü. Was du schreibst, sehen alle, die gerade auf dieser Karte den Chat
+     lesen. Private Nachrichten an einzelne Spieler gibt es nicht. Ohne Konto gibt es keinen
+     Chat. In den Einstellungen kannst du ihn ganz abschalten.</p>
+  <h3>Die Regeln</h3>
+  <p>Im Chat gilt alles aus Abschnitt 5, dazu:</p>
+  <ul>
+    <li>keine Beleidigungen, kein Mobbing, keine Drohungen und kein Hass gegen Menschen oder
+        Gruppen;</li>
+    <li>nichts Sexuelles, nichts Gewaltverherrlichendes und nichts, was gegen Gesetze
+        verstößt;</li>
+    <li>keine Links, keine Werbung und kein Spam (etwa dieselbe Nachricht immer wieder);</li>
+    <li><strong>keine persönlichen Daten</strong> – weder deine noch die anderer: keine
+        Telefonnummern, Adressen, E-Mail-Adressen und keine Namen in Messengern oder sozialen
+        Netzwerken. Frag niemanden nach Alter, Wohnort, Bildern oder Passwörtern;</li>
+    <li>nicht so tun, als wärst du jemand anderes – vor allem nicht wir als Betreiber.
+        <strong>Wir fragen dich nie nach deinem Passwort.</strong></li>
+  </ul>
+  <p>Gib niemandem aus dem Chat deine Kontaktdaten und triff dich nicht mit Menschen, die du nur
+     von hier kennst. Belästigt dich jemand, melde ihn und sprich mit deinen Eltern oder einer
+     Person, der du vertraust.</p>
+  <h3>Wie der Chat geschützt wird</h3>
+  <ul>
+    <li><strong>Filter:</strong> Bevor eine Nachricht hinausgeht, prüft das Spiel sie
+        automatisch auf gesperrte Wörter, Links und Kontaktdaten. Bleibt sie hängen, wird sie
+        nicht verschickt, und du siehst sofort den Grund. Kein Filter erkennt alles – deshalb
+        gibt es auch die folgenden Punkte.</li>
+    <li><strong>Bremse:</strong> höchstens eine Nachricht alle zwei Sekunden, dieselbe
+        Nachricht nicht mehrmals kurz hintereinander.</li>
+    <li><strong>Melden:</strong> Tippe eine Nachricht an, wähle „Melden“ und einen Grund. Du
+        siehst die Nachricht danach nicht mehr.</li>
+    <li><strong>Automatisch stumm:</strong> Melden mindestens drei verschiedene Spieler binnen
+        einer Stunde Nachrichten desselben Spielers, schaltet das Spiel ihn automatisch stumm –
+        beim ersten Mal für eine Stunde, beim nächsten Mal innerhalb von 30 Tagen für 24 Stunden,
+        danach jeweils für sieben Tage. Seine Nachrichten verschwinden dann für alle; lesen kann
+        er weiter, nur nicht schreiben. Damit Meldungen nicht missbraucht werden, zählen dafür nur
+        Konten, die mindestens einen Tag alt sind und schon einige Runden gespielt haben.</li>
+    <li><strong>Ausblenden:</strong> Du kannst einen Spieler für dich ausblenden; das gilt auf
+        deinem Gerät, wieder einblenden kannst du ihn in den Einstellungen.</li>
+  </ul>
+  <p>Über das Stummschalten entscheidet eine Automatik, ohne dass ein Mensch vorher prüft. Du
+     siehst sofort, bis wann und warum. Hältst du es für falsch, schreib uns an
+     <a href="mailto:info@pulsavi.io">info@pulsavi.io</a>: Dann prüft ein Mensch die
+     gespeicherten Meldungen und hebt die Stummschaltung auf, wenn sie falsch war
+     (Abschnitt 10). Über eine Sperre deines Kontos entscheidet immer ein Mensch.</p>
+  <h3>Rechtswidrige Inhalte und Gefahren melden</h3>
+  <p>Wählst du beim Melden den Grund <strong>„Bedrohung“</strong>, bekommen wir zusätzlich
+     eine E-Mail mit der Nachricht – gedacht für Drohungen, Hinweise auf Selbstverletzung und die
+     Belästigung von Kindern. Besteht eine Gefahr für Leib oder Leben, informieren wir die
+     Polizei.</p>
+  <p>Rechtswidrige Inhalte kannst du uns außerdem jederzeit per E-Mail an
+     <a href="mailto:info@pulsavi.io">info@pulsavi.io</a> melden. Schreib dazu, um welche
+     Nachricht es geht (Karte, Uhrzeit, Spielername), warum sie deiner Meinung nach rechtswidrig
+     ist, deinen Namen und deine E-Mail-Adresse und dass deine Angaben nach bestem Wissen stimmen
+     (Art. 16 Digital Services Act). Bei Hinweisen auf sexuellen Missbrauch von Kindern darfst du
+     ohne Namen melden. Wir bestätigen den Eingang und sagen dir, was wir entschieden haben.</p>
+  <p>Wir lesen den Chat nicht mit. Nachrichten liegen nur kurz im Arbeitsspeicher des Servers;
+     gemeldete Nachrichten heben wir sieben Tage auf (<a href="datenschutz.html#chat">Datenschutzerklärung,
+     Abschnitt 6i</a>). Einen Anspruch darauf, dass eine Nachricht verschickt oder angezeigt
+     wird, gibt es nicht; der Chat kann zeitweise abgeschaltet sein.</p>
+
   <h2>6. Ore, Iridium, Designs und andere virtuelle Inhalte</h2>
   <p>Zu Pulsavi gehören virtuelle Inhalte: <strong>Ore</strong> (die
      Spielwährung, die du erspielst), <strong>Iridium</strong> (die zweite
      Spielwährung), <strong>Designs</strong>, XP und Level, Ehre und Ränge,
-     Errungenschaften, Titel wie „Titan“, Monde (auch der Raubmond), Mondstaub,
+     Erfolge, Titel wie „Titan“, Monde (auch der Raubmond), Mondstaub,
      Skillpunkte, <strong>Kerne</strong>, Aufträge, <strong>Kapseln</strong> und
      die Bruchstücke daraus, Belohnungen aus Saisons, Tagesbonus, „Freunde
      werben“ und – sobald es sie gibt – aus Werbevideos, Gutscheine wie der
@@ -282,7 +353,7 @@
         alle Ultra-Designs, kannst du keine Kiste mehr kaufen. Ultra-Designs
         bringen keinen Spielvorteil.</li>
     <li>Was du dir schon erspielt hast – dein Ore- und Iridium-Guthaben,
-        freigeschaltete Designs, Kerne, Monde, Level und Errungenschaften –,
+        freigeschaltete Designs, Kerne, Monde, Level und Erfolge –,
         <strong>nehmen wir dir nicht
         nachträglich weg, solange dein Konto besteht</strong>. Ausnahme: Es ist
         durch einen Fehler im Spiel oder einen Regelverstoß entstanden; dann
@@ -548,6 +619,8 @@
         und einen Clan auflösen,</li>
     <li>zu Unrecht erlangte Inhalte wieder abziehen (etwa Ore, Ehre,
         Belohnungen oder Ranglistenplätze),</li>
+    <li>dich im Chat stumm schalten – nach Meldungen automatisch (Abschnitt 5a), sonst durch
+        uns für höchstens 30 Tage,</li>
     <li>dich vorübergehend, höchstens 30 Tage, vom Onlinespiel oder von deinem
         Konto aussperren,</li>
     <li>dein Konto dauerhaft sperren und den Vertrag fristlos kündigen: bei
@@ -564,7 +637,7 @@
      entscheidet ein Mensch neu. Nur wenn sofort gehandelt werden muss – etwa
      bei einem Angriff auf die Server –, sperren wir vorläufig sofort und holen
      das unverzüglich nach.</p>
-  <p>Unternehmen wir etwas gegen dich, sagen wir dir – mit Konto per E-Mail –,
+  <p>Unternehmen wir etwas gegen dich, sagen wir dir – im Spiel oder mit Konto per E-Mail –,
      <strong>was</strong> wir getan haben, <strong>warum</strong> (welcher
      Sachverhalt, welche Regel), ob dabei eine Automatik beteiligt war und wie
      du dich wehren kannst.</p>
@@ -588,7 +661,7 @@
      Widerrufsfrist geht das auch im Spiel über „Vertrag widerrufen“
      (<a href="#widerruf">Abschnitt 11a</a>).</p>
   <p>Mit dem Konto löschen wir alles, was dazugehört: Ore, Iridium, Designs,
-     Level, Ehre, Ränge, Errungenschaften, Monde, Mondstaub, Kerne und deine
+     Level, Ehre, Ränge, Erfolge, Monde, Mondstaub, Kerne und deine
      Einträge in den Ranglisten.
      Das lässt sich nicht rückgängig machen. Weil diese Inhalte keinen Geldwert
      haben, gibt es dafür keinen Ausgleich. Das gilt auch für gekauftes Iridium
@@ -766,7 +839,7 @@
   <p>Die E-Mail-Adresse ist auch unsere zentrale Kontaktstelle für Nutzer und
      Behörden nach Art. 11 und 12 des Digital Services Act.</p>
 
-  <p class="stand">Fassung 7 · Stand: 6. November 2026</p>
+  <p class="stand">Fassung 8 · Stand: 7. November 2026</p>
 
   <nav>
     <a href="index.html">Zum Spiel</a> ·
