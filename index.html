@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "233";
+  var PULSAVI_V = "234";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -226,6 +226,21 @@
        box-shadow:0 4px 18px rgba(0,0,0,.45)}
   .neustartBand b{color:var(--brass-hell);font-variant-numeric:tabular-nums}
   .neustartBand[hidden]{display:none}
+  /* v234: Todesmoment — „Gefressen von …“ oben in der Mitte, nimmt keine Tipps an (ein Tipp überspringt den Moment). */
+  .todBand{position:fixed;left:0;right:0;margin:auto;width:fit-content;max-width:min(520px, calc(100 * var(--vw, 1vw) - 32px));
+       top:calc(env(safe-area-inset-top) + 13%);z-index:23;pointer-events:none;padding:9px 22px 11px;border-radius:18px;
+       background:linear-gradient(180deg, rgba(14,20,44,.94), rgba(6,10,26,.94));border:1px solid rgba(255,90,110,.55);
+       box-shadow:0 0 0 1px rgba(255,90,110,.16), 0 10px 34px rgba(0,0,0,.55), 0 0 28px rgba(255,90,110,.22);
+       text-align:center;opacity:0;transform:translateY(-8px) scale(.96);
+       transition:opacity .18s ease-out, transform .24s cubic-bezier(.2,.9,.3,1.2)}
+  .todBand.an{opacity:1;transform:none}
+  .todBand[hidden]{display:none}
+  .todBand small{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--koralle);font-weight:700;margin-bottom:1px}
+  .todBand b{display:block;font-family:"Pulsavi Display", var(--serif), sans-serif;font-size:clamp(22px, 3.4vw, 34px);line-height:1.15;
+       color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  @media (prefers-reduced-motion: reduce){ .todBand{transition:opacity .12s linear;transform:none} }
+  /* Im Todesmoment gibt es nichts mehr zu steuern — die Daumentasten weg, das Bild gehört dem Biss. */
+  body.sterben #pads{display:none!important}
   .jubel{--jb:#ffe08a;--jb-a:rgba(255,205,90,.55);--dauer:1.9s;position:fixed;inset:0;z-index:22;pointer-events:none;
      display:grid;place-items:center;overflow:hidden}
   .jubel[hidden]{display:none}
@@ -837,6 +852,11 @@
   .erfZ .rechts b{display:block;font-family:var(--disp);font-size:17px;font-weight:700;color:var(--brass-hell)}
   .erfZ .rechts b.fertig{color:var(--brass)}
   .erfZ .rechts small{font-size:11px;color:var(--paper-2);letter-spacing:.06em;text-transform:uppercase}
+  /* v234: Werben-Errungenschaft — die Bedingung in einem Satz und der Teilen-Knopf. */
+  .erfZ .erfWerben{display:flex;align-items:center;gap:10px;margin-top:7px;font-size:12px;line-height:1.3;color:var(--paper-2)}
+  .erfZ .erfWerben span{flex:1 1 auto;min-width:0}
+  .erfZ .erfTeilen{flex:0 0 auto;width:auto;margin:0;padding:0 14px;height:32px;border-radius:999px;font-size:13px;white-space:nowrap}
+  body.touch .erfZ .erfTeilen{height:44px;min-width:44px}
   @media (max-width:560px){
     .erfZ{grid-template-columns:34px minmax(0,1fr) auto;gap:10px}
     .erfZ .fort .bar{flex-basis:56px}
@@ -2601,8 +2621,11 @@
        border-bottom:1px solid var(--line);min-width:0}
   .konsReiter button{margin:0;width:auto;height:54px;padding:0 20px;background:none;border:0;
        color:var(--paper-2);font-size:14.5px;font-weight:600;position:relative;border-radius:0}
-  .konsReiter button:hover:not(:disabled){background:none;color:var(--paper)}
-  .konsReiter button[aria-selected=true]{color:var(--brass-hell)}
+  /* v234 (Thomas 07.11.2026: „Errungenschaften angeklickt, aber es leuchtet nicht blau. Erst wenn ich … scrolle“):
+     Auf dem iPhone bleibt ein angetippter Knopf im Zustand :hover, bis man scrollt — und die Hover-Regel war
+     spezifischer als die Auswahl. Hover jetzt nur auf Geräten mit Maus, die Auswahl gewinnt immer. */
+  @media (hover:hover){ .konsReiter button:hover:not(:disabled){background:none;color:var(--paper)} }
+  .konsReiter button[aria-selected=true],.konsReiter button[aria-selected=true]:hover:not(:disabled){color:var(--brass-hell)}
   .konsReiter button[aria-selected=true]::after{content:"";position:absolute;left:12px;right:12px;
        bottom:-1px;height:2px;background:var(--brass);border-radius:2px;
        box-shadow:0 0 12px var(--brass)}
@@ -3497,6 +3520,26 @@
   .mondA .mondPlatzKn button.voll{color:transparent}
   .mondA .mondPlatzKn button.voll::after{content:none}
   .mondA .mondPlatzKn button:hover::before{border-color:var(--brass)}
+  /* v234: Mondplätze für Ore — der nächste mit goldenem Schloss (kaufbar), die übrigen gesperrt. */
+  .mondA .mondPlatzKn button.zu,.mondA .mondPlatzKn button.kauf{color:rgba(190,205,235,.55)}
+  .mondA .mondPlatzKn button.zu::before{border-style:solid;border-color:rgba(190,205,235,.22);background:rgba(10,14,23,.55)}
+  .mondA .mondPlatzKn button.kauf{color:var(--brass-hell)}
+  .mondA .mondPlatzKn button.kauf::before{border-style:solid;border-color:rgba(255,197,61,.75);background:rgba(40,30,8,.55);
+       box-shadow:0 0 10px rgba(255,197,61,.35)}
+  .mondA .mondPlatzKn button svg{position:relative;width:14px;height:14px}
+  .kernKnopf.zu{opacity:.55;border-style:dashed}
+  .mpListe{display:grid;gap:6px;margin:8px 0}
+  .mpZeile{display:flex;align-items:center;gap:10px;padding:5px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+       background:rgba(255,255,255,.03);font-size:13.5px;min-height:34px}
+  .mpZeile.da{border-color:rgba(255,197,61,.35);background:rgba(255,197,61,.07)}
+  .mpZeile.jetzt{border-color:rgba(255,197,61,.6)}
+  .mpZeile .mpName{flex:1 1 auto;min-width:0;display:inline-flex;align-items:center;gap:7px;color:var(--paper)}
+  .mpZeile .mpName svg{width:14px;height:14px;flex:0 0 auto;color:rgba(190,205,235,.6)}
+  .mpZeile .mpPreis{display:inline-flex;align-items:center;gap:4px;color:var(--brass-hell);white-space:nowrap}
+  .mpZeile .mpPreis svg{width:15px;height:15px}
+  .mpZeile .mpOk{color:var(--brass);font-size:16px}
+  .mpZeile button{flex:0 0 auto;width:auto;margin:0;padding:0 14px;height:34px;border-radius:999px;font-size:13px;white-space:nowrap}
+  body.touch .mpZeile button{height:44px}
   .mondStand{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 8px;font-size:11.5px;line-height:1.35;color:var(--paper-2);text-align:center;padding:0 4px}
   .mondStand span+span::before{content:"·";margin-right:8px;opacity:.6}
   .mondStaubPille{color:var(--brass-hell);font-weight:700;display:inline-flex;gap:5px;align-items:center}
@@ -4623,8 +4666,8 @@
      box-shadow:0 0 40px rgba(54,226,255,.12),0 30px 80px rgba(0,0,0,.6)}
   .konsReiter{border-bottom:1px solid rgba(120,170,255,.18);gap:4px}
   .konsReiter button{font-family:var(--disp);font-weight:700;color:#8ea2d4;height:38px;border-radius:12px;background:none}
-  .konsReiter button:hover:not(:disabled){background:rgba(54,226,255,.08);color:#dbe8ff}
-  .konsReiter button[aria-selected=true]{color:#04122b;background:linear-gradient(180deg,#8ff3ff,#36c8ff);box-shadow:0 0 16px rgba(54,226,255,.5),inset 0 1px 0 rgba(255,255,255,.7)}
+  @media (hover:hover){ .konsReiter button:hover:not(:disabled){background:rgba(54,226,255,.08);color:#dbe8ff} }
+  .konsReiter button[aria-selected=true],.konsReiter button[aria-selected=true]:hover:not(:disabled){color:#04122b;background:linear-gradient(180deg,#8ff3ff,#36c8ff);box-shadow:0 0 16px rgba(54,226,255,.5),inset 0 1px 0 rgba(255,255,255,.7)}
   .konsReiter button[aria-selected=true]::after{display:none}
   .konsW{gap:8px}
   .konsW .ore,.konsW .iri,.konsW .chip{display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 10px;border-radius:999px;background:rgba(4,8,26,.75);border:1.5px solid rgba(255,197,61,.55)}
@@ -6924,7 +6967,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=233"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=234"><\/script>');
 })();
 </script>
 </body>
