@@ -165,9 +165,11 @@
       if (s) el.innerHTML = entschaerfen(s).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>"); }
     s = t("ab_titel"); if (s) document.title = s;
     document.documentElement.lang = code;
-    /* v237: Nutzungsbedingungen auf Deutsch nur für Deutsch, sonst die englische Übersetzung. */
+    /* v237/v238: Rechtstexte auf Deutsch nur für Deutsch, sonst die englische Übersetzung. */
     alle = document.querySelectorAll('a[href^="nutzungsbedingungen.html"], a[href^="terms.html"]');
     for (i = 0; i < alle.length; i++) alle[i].setAttribute("href", code === "de" ? "nutzungsbedingungen.html" : "terms.html");
+    alle = document.querySelectorAll('a[href^="datenschutz.html"], a[href^="privacy.html"]');
+    for (i = 0; i < alle.length; i++) alle[i].setAttribute("href", code === "de" ? "datenschutz.html" : "privacy.html");
     var kn = document.querySelectorAll("#sprachen button");
     for (i = 0; i < kn.length; i++) kn[i].setAttribute("aria-pressed", String(kn[i].getAttribute("data-code") === code));
   }
