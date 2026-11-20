@@ -29,7 +29,7 @@
    schon vorgeladen (gleiche Sprachwahl wie unten; PULSAVI_V ≡ ?v= der Ladezeile ≡ VERSION in sw.js, bauen.js prüft).
    Lora wird nicht mehr vorgeladen: seit v191 benutzt das Spiel sie nicht. */
 (function(){ try {
-  var PULSAVI_V = "242";
+  var PULSAVI_V = "243";
   /* Nur auf pulsavi.io (und lokal mit ?bau=1): auf fremden Adressen darf der Spielcode gar nicht erst laden (Kopierschutz, testbau). */
   var lokal = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
   if (lokal ? !/[?&]bau=1(&|$)/.test(location.search) : !/(^|\.)pulsavi\.io$/.test(location.hostname)) return;
@@ -6675,6 +6675,19 @@
   </div>
 </div>
 
+<!-- v243 (20.11.2026): Ranglisten-Hinweis vor der ersten Online-Runde, nur in der iPhone-App (Apple, Richtlinie 5.1.2,
+     Ablehnung vom 18.11.2026). Gesteuert von `Ranghinweis` in spiel.js; der Link wechselt je Sprache auf privacy.html
+     und öffnet auf dem iPhone pulsavi.io im Browser. -->
+<div class="veil" id="ranghVeil" hidden>
+  <div class="card kleinKarte" role="dialog" aria-labelledby="ranghKopf">
+    <h1 id="ranghKopf" data-i18n="rh_kopf">Leaderboards</h1>
+    <p class="foot" data-i18n="rh_text">Pulsavi is an online game. For this, your player name and your results are sent to our server: other players see them during a round and, if you have an account, in the public leaderboards.</p>
+    <p class="foot"><a href="datenschutz.html" target="_blank" rel="noopener" data-i18n="rh_link">More in our privacy policy</a></p>
+    <button type="button" id="ranghJa" data-i18n="rh_ja">Agree and play</button>
+    <button type="button" class="quiet" id="ranghNein" data-i18n="rh_nein">Not now</button>
+  </div>
+</div>
+
 <div class="veil" id="legalVeil" hidden>
   <div class="card">
     <h1 style="font-size:34px" data-i18n="fair">Fair play</h1>
@@ -6977,7 +6990,7 @@
      mischt (GitHub Pages erlaubt 10 Minuten Zwischenspeicher; am 26.09.2026
      zeigte genau das rohe Textschlüssel). Muss zur VERSION in sw.js passen —
      bauen.js prüft das. */
-  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=242"><\/script>');
+  for (var j = 0; j < dateien.length; j++) document.write('<script src="' + dateien[j] + '?v=243"><\/script>');
 })();
 </script>
 </body>
